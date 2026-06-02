@@ -6,6 +6,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field
 
+from .policy import PolicyEngine
+
 
 class BlackboardEntry(BaseModel):
     """A single typed, timestamped entry on the blackboard."""
@@ -25,6 +27,9 @@ class Blackboard(BaseModel):
     entries: dict[str, BlackboardEntry] = {}
     history: list[BlackboardEntry] = []
     hypothesis: Optional[str] = None
+    policy_engine: Optional[PolicyEngine] = Field(default=None, exclude=True)
+
+    model_config = {"arbitrary_types_allowed": True}
 
     def write(
         self,
@@ -34,6 +39,8 @@ class Blackboard(BaseModel):
         confidence: float = 1.0,
         tags: list[str] | None = None,
     ) -> BlackboardEntry:
+        if self.policy_engine is not None:
+            self.policy_engine.enforce(source, "write", key)
         entry = BlackboardEntry(
             key=key,
             value=value,
@@ -45,7 +52,13 @@ class Blackboard(BaseModel):
         self.history.append(entry)
         return entry
 
-    def read(self, key: str) -> Optional[Any]:
+    def read(self, key: str, principal: str | None = None) -> Optional[Any]:
+        if self.policy_engine is not None:
+            if principal is None:
+                raise PermissionError(
+                    f"Blackboard has a policy_engine; read({key!r}) requires principal=..."
+                )
+            self.policy_engine.enforce(principal, "read", key)
         entry = self.entries.get(key)
         return entry.value if entry else None
 
