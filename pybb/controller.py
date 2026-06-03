@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from .blackboard import Blackboard, BlackboardEntry
 from .knowledge_source import KnowledgeSource
 
+#TODO: communication and state sharing between knowledge sources
+
 class BlackboardController(BaseModel):
     """
     for each cycle:

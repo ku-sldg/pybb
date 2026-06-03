@@ -1,6 +1,8 @@
 from .blackboard import Blackboard
 from .knowledge_source import KnowledgeSource
 
+# TODO: add another partition that is valid/no need repair
+#TODO: add another knowledge source
 
 def less_than_3(num: int) -> bool:
     return num < 3

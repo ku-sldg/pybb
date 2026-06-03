@@ -12,5 +12,3 @@ if __name__ == "__main__":
         measurement=5)
     controller.run()
     print(controller.status())
-
-# TODO: add another partition that is valid/no need repair
