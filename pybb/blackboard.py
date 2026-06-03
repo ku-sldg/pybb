@@ -9,12 +9,14 @@ class BlackboardEntry(BaseModel):
 
 class Blackboard(BaseModel):
     entries: dict[str, BlackboardEntry] = {} # key: id of entry, value: entry itself
+    history: list[tuple[str, BlackboardEntry]] = []
     
     def write_entry(self, key: str, predicate: str, measurement: Any, result: Any = None) -> BlackboardEntry:
         entry = BlackboardEntry(
             predicate=predicate, 
             measurement=measurement, 
             result=result)
+        self.history.append((key, entry))
         self.entries[key] = entry
         return entry
 
@@ -24,3 +26,6 @@ class Blackboard(BaseModel):
 
     def get_all_entries(self) -> dict:
         return self.entries
+    
+    def get_history(self) -> list:
+        return self.history

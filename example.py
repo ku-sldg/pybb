@@ -12,3 +12,5 @@ if __name__ == "__main__":
         measurement=5)
     controller.run()
     print(controller.status())
+    print()
+    bb_history = [print(entry) for entry in controller.blackboard.get_history()]
