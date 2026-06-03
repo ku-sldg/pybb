@@ -1,8 +1,6 @@
 from pydantic import BaseModel
 from typing import Any
 
-#TODO: partitioning of escalate
-
 class BlackboardEntry(BaseModel):
     predicate: str
     measurement: Any
