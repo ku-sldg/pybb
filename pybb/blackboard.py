@@ -1,17 +1,20 @@
 from pydantic import BaseModel
 from typing import Any
 
+#TODO: partitioning of good and bad
+#TODO: keys are kinda duplicate
+
 class BlackboardEntry(BaseModel):
     key: str
-    predicate: str # TODO: implement registry of predicate name mappings str and fn name
+    predicate: str
     measurement: Any
     result: Any
+    good_standing: bool = False
 
-    
 class Blackboard(BaseModel):
     entries: dict[str, BlackboardEntry] = {} # key: index of entry, value: entry itself
     
-    def write_entry(self, key: str, predicate: str, measurement: Any, result: Any) -> BlackboardEntry:
+    def write_entry(self, key: str, predicate: str, measurement: Any, result: Any = None) -> BlackboardEntry:
         entry = BlackboardEntry(
             key=key, 
             predicate=predicate, 

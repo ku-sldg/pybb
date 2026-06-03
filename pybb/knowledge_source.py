@@ -1,30 +1,23 @@
-from __future__ import annotations
-
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
 from .blackboard import Blackboard
 
 
-class KnowledgeSource(BaseModel):
-    """
-    Abstract base for all knowledge sources (experts/agents).
-
-    Subclass this and implement `can_contribute` and `execute`.
-    """
-
+class KnowledgeSource(ABC, BaseModel):
     name: str
-    priority: int = 0
+    partition: list[str]  # blackboard keys this KS is responsible for
 
-    model_config = {"arbitrary_types_allowed": True}
-
-    @abstractmethod
     def can_contribute(self, blackboard: Blackboard) -> bool:
-        """Return True if this KS has something to add given current blackboard state."""
-        ...
+        """return True if any entry in KS partition not in good standing."""
+        for key in self.partition:
+            entry = blackboard.get_entry(key)
+            if entry is not None and not entry.good_standing:
+                return True
+        return False
 
     @abstractmethod
     def execute(self, blackboard: Blackboard) -> None:
-        """Read from and write to the blackboard."""
-        ...
+        """write a repair suggestion to blackboard for entries not in good standing"""
+        pass

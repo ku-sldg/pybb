@@ -1,53 +1,64 @@
-from __future__ import annotations
-
-import logging
-from typing import Optional
+from typing import Callable
 
 from pydantic import BaseModel, Field
 
-from .blackboard import Blackboard
+from .blackboard import Blackboard, BlackboardEntry
 from .knowledge_source import KnowledgeSource
-
-logger = logging.getLogger(__name__)
-
 
 class BlackboardController(BaseModel):
     """
-    Coordinates knowledge sources against the shared blackboard.
-
-    Selection strategy: highest-priority eligible KS runs each cycle.
-    Halts when no KS can contribute or max_cycles is reached.
+    for each cycle:
+      1. eval all entries
+        a. run predicate from registry
+        b. set good_standing based on result
+      2. ask each KS if can contribute
+        a. iterates through all its keys to check if good_standing
+      3. run all KS that can_contribute
+         a. currently partitions are considered to be unique (two KS don't look at same key)
+    stop when no KS can contribute or max_cycles is reached.
     """
 
     blackboard: Blackboard = Field(default_factory=Blackboard)
     knowledge_sources: list[KnowledgeSource] = []
+    predicate_registry: dict[str, Callable] = {}
     max_cycles: int = 100
     cycle_count: int = 0
 
     model_config = {"arbitrary_types_allowed": True}
 
+    def register_predicate(self, name: str, fn: Callable) -> None:
+        self.predicate_registry[name] = fn
+
     def add_ks(self, ks: KnowledgeSource) -> None:
         self.knowledge_sources.append(ks)
+
+    def _evaluate_entry(self, entry: BlackboardEntry) -> None:
+        fn = self.predicate_registry.get(entry.predicate)
+        if fn is None:
+            return
+        result = fn(entry.measurement)
+        entry.result = result
+        entry.good_standing = bool(result)
+
+    def _evaluate_all(self) -> None:
+        for entry in self.blackboard.entries.values():
+            self._evaluate_entry(entry)
 
     def run(self) -> Blackboard:
         for i in range(self.max_cycles):
             self.cycle_count = i + 1
-            active = [
-                ks for ks in self.knowledge_sources
-                if ks.can_contribute(self.blackboard)
-            ]
+            self._evaluate_all()
+            active = [ks for ks in self.knowledge_sources if ks.can_contribute(self.blackboard)]
             if not active:
-                logger.info("No active knowledge sources at cycle %d; halting.", self.cycle_count)
+                print(f"Cycle {self.cycle_count}: all entries in good standing - halting")
                 break
-            best = max(active, key=lambda ks: ks.priority)
-            logger.info("Cycle %d: running '%s' (priority=%d)", self.cycle_count, best.name, best.priority)
-            best.execute(self.blackboard)
+            for ks in active:
+                print(f"Cycle {self.cycle_count}: running '{ks.name}'")
+                ks.execute(self.blackboard)
         return self.blackboard
 
     def status(self) -> dict:
         return {
             "cycles_run": self.cycle_count,
-            "blackboard_keys": self.blackboard.keys(),
-            "hypothesis": self.blackboard.hypothesis,
-            "history_length": len(self.blackboard.history),
+            "entries": self.blackboard.get_all_entries()
         }
