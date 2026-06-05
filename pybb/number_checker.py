@@ -5,12 +5,13 @@ def less_than_3(num: int) -> bool:
     return num < 3
 
 def is_positive(num: int) -> bool:
-    return num < 0
+    return num > 0
 
 
 class NumberChecker(KnowledgeSource):
     name: str = "NumberChecker"
-    partition: list[str] = ["less_than_3", "is_negative"]
+    partition: list[str] = ["less_than_3", "is_positive"]
+    max_attempts: int = 3
 
     def execute(self, blackboard: Blackboard) -> None:
         for key in self.partition:

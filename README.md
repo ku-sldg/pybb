@@ -25,3 +25,6 @@ NumberChecker monitors lt_3, is_positive
 5. reach threshold for attempts
 6. move entry to escalate segment w/ history
   a. ensure that original measurement is on bb
+
+# Questions
+- what happens when KS has 2 bad standings to resolve?

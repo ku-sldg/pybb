@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from pydantic import BaseModel
 
@@ -8,6 +9,7 @@ from .blackboard import Blackboard
 class KnowledgeSource(ABC, BaseModel):
     name: str
     partition: list[str]  # blackboard keys this KS is responsible for
+    max_attempts: Optional[int] = None
 
     def can_contribute(self, blackboard: Blackboard) -> bool:
         """return True if any entry in KS partition not in good standing."""

@@ -21,7 +21,7 @@ class BlackboardController(BaseModel):
     blackboard: Blackboard = Field(default_factory=Blackboard)
     knowledge_sources: list[KnowledgeSource] = []
     predicate_registry: dict[str, Callable] = {}
-    max_cycles: int = 100
+    max_cycles: int = 100 
     cycle_count: int = 0
 
     model_config = {"arbitrary_types_allowed": True}
@@ -31,11 +31,6 @@ class BlackboardController(BaseModel):
 
     def add_ks(self, ks: KnowledgeSource) -> None:
         self.knowledge_sources.append(ks)
-    
-    def init_ks_history(self, ks_name: str, entry_key: str) -> None:
-        # for ks in self.knowledge_sources:
-        #     self.blackboard.entries[entry_key]
-        pass
 
     def _evaluate_entry(self, entry: BlackboardEntry) -> None:
         fn = self.predicate_registry.get(entry.predicate)
@@ -59,6 +54,15 @@ class BlackboardController(BaseModel):
                 break
             for ks in active:
                 print(f"Cycle {self.cycle_count}: running '{ks.name}'")
+                for key in ks.partition:
+                    entry = self.blackboard.entries.get(key)
+                    if entry is None or entry.good_standing:
+                        continue
+                    if ks.max_attempts is not None and entry.ks_history.get(ks.name, 0) >= ks.max_attempts:
+                        print(f"Cycle {self.cycle_count}: '{ks.name}' exceeded max attempts on '{key}' - escalating")
+                        self.blackboard.escalate[key] = self.blackboard.entries.pop(key)
+                    else:
+                        self.blackboard.add_ks_history(key, ks.name)
                 ks.execute(self.blackboard)
         return self.blackboard
 
@@ -67,3 +71,4 @@ class BlackboardController(BaseModel):
             "cycles_run": self.cycle_count,
             "entries": self.blackboard.get_all_entries()
         }
+    
