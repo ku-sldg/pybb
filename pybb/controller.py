@@ -31,6 +31,11 @@ class BlackboardController(BaseModel):
 
     def add_ks(self, ks: KnowledgeSource) -> None:
         self.knowledge_sources.append(ks)
+    
+    def init_ks_history(self, ks_name: str, entry_key: str) -> None:
+        # for ks in self.knowledge_sources:
+        #     self.blackboard.entries[entry_key]
+        pass
 
     def _evaluate_entry(self, entry: BlackboardEntry) -> None:
         fn = self.predicate_registry.get(entry.predicate)
