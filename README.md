@@ -21,6 +21,21 @@ Example of certify -> p1 -> p2 -> certify
 Example of certify -> p1 -> p2 -> loop? -> escalate
 Think about x -> x'  ; x' -> y satisfaction example
 
+## Example:
+predicate: is_clean_input (function to verify whether an input has no trailing whitespace and is all lowercased)
+measurement: str
+result: bool
+
+KS1: strips whitespace
+KS2: lowercases input
+
+pipeline:
+1. x = "  BOB  " --> fails is_clean_input
+2. x goes to KS1 and removes whitespace --> x' = "BOB"
+3. x' goes to controller, runs is_clean_input(x'), false--> still in bad standing
+  a. take note of intermediate state
+4. x' goes to KS2 --> x'' = "bob"
+5. controller verifies x'' --> true, good standing halts
 
 # simulation goal 1 (complete):
 Simulate moving to escalate partition
