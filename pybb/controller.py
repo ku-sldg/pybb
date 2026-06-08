@@ -53,6 +53,7 @@ class BlackboardController(BaseModel):
                 print(f"Cycle {self.cycle_count}: all entries in good standing - halting")
                 break
             for ks in active:
+                bad_keys = []
                 print(f"Cycle {self.cycle_count}: running '{ks.name}'")
                 for key in ks.partition:
                     entry = self.blackboard.entries.get(key)
@@ -63,7 +64,8 @@ class BlackboardController(BaseModel):
                         self.blackboard.escalate[key] = self.blackboard.entries.pop(key)
                     else:
                         self.blackboard.add_ks_history(key, ks.name)
-                ks.execute(self.blackboard)
+                        bad_keys.append(key)
+                ks.execute(self.blackboard, bad_keys)
         return self.blackboard
 
     def status(self) -> dict:

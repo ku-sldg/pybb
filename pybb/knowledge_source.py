@@ -20,6 +20,6 @@ class KnowledgeSource(ABC, BaseModel):
         return False
 
     @abstractmethod
-    def execute(self, blackboard: Blackboard) -> None:
+    def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         """write a repair suggestion to blackboard for entries not in good standing"""
         pass
