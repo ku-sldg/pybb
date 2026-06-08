@@ -16,6 +16,13 @@ Todo:
 - logging/history for entries to be used in escalate/other
 
 # Current simulation goal:
+Communication between knowledge sources
+Example of certify -> p1 -> p2 -> certify
+Example of certify -> p1 -> p2 -> loop? -> escalate
+Think about x -> x'  ; x' -> y satisfaction example
+
+
+# simulation goal 1 (complete):
 Simulate moving to escalate partition
 NumberChecker monitors lt_3, is_positive
 1. less_than_3 gets measurement 4
@@ -25,6 +32,8 @@ NumberChecker monitors lt_3, is_positive
 5. reach threshold for attempts
 6. move entry to escalate segment w/ history
   a. ensure that original measurement is on bb
+
+
 
 # Questions
 - what happens when KS has 2 bad standings to resolve?
