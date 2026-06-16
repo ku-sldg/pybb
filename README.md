@@ -6,22 +6,18 @@ Todo:
 - resolving conflicts between KSes
 - KS creating its own blackboard to break up smaller problem?
 
-# Current simulation goal:
+## Current simulation goal:
 Control flow
 Example of certify -> p1 -> certify -> p2 -> certify
 Example of certify -> p1 -> escalate -> p2 -> certify
-Think about resolving conflicts between 
 
-## Example:
-
-
-THINGS:
+## Things
 - (DONE?) have the can_contribute return the key so that the KS doesn't need to loop through its partition again. controller passes over key and into KS execute
   - but what if there are multiple keys? --> return list of keys?
     - for now: have controller maintain bad keys, KS receives bad keys into execute and only iterates through those
       - for future: could have specialized functions for different tasks that monitor unique keys/types of problems
 
-# simulation goal 1 (complete):
+## simulation goal 1 (complete):
 Simulate moving to escalate partition
 NumberChecker monitors lt_3, is_positive
 1. less_than_3 gets measurement 4
@@ -32,5 +28,5 @@ NumberChecker monitors lt_3, is_positive
 6. move entry to escalate segment w/ history
   a. ensure that original measurement is on bb
 
-# Questions
+## Questions
 - what happens when KS has 2 bad standings to resolve?

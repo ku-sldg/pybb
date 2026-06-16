@@ -15,10 +15,10 @@ class NumberChecker(KnowledgeSource):
     partition: list[str] = ["less_than_3", "is_positive"]
     max_attempts: int = 3
 
-    def execute(self, blackboard: Blackboard) -> None:
-        for key in self.partition:
+    def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
+        for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.good_standing:
+            if entry is None or entry.good_standing: # can remove this check later since only bad keys are in keys
                 continue
             repaired = entry.measurement - 1
             blackboard.write_entry(
