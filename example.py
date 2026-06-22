@@ -1,11 +1,12 @@
-from pybb import BlackboardController, NumberChecker, less_than_3, is_positive
+from pybb import BlackboardController, NumberSubtractor, NumberAdder, less_than_3, is_positive
 
 
 if __name__ == "__main__":
     controller = BlackboardController()
     controller.register_predicate("less_than_3", less_than_3)
     controller.register_predicate("is_positive", is_positive)
-    controller.add_ks(NumberChecker())
+    controller.add_ks(NumberSubtractor())
+    controller.add_ks(NumberAdder())
     # simulate receiving a measurement
     controller.blackboard.write_entry(
         key="less_than_3",

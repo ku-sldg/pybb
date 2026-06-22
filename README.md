@@ -7,9 +7,10 @@ Todo:
 - KS creating its own blackboard to break up smaller problem?
 
 ## Current simulation goal:
-Control flow
-Example of certify -> p1 -> certify -> p2 -> certify
-Example of certify -> p1 -> escalate -> p2 -> certify
+Control flow examples:
+c1 -> p1(c1) -> c1' ; c2 -> p2(c2) -> c2'
+c1 -> p1(c1) -> c1 (p1 fails) -> p2(c1) -> c1'
+
 
 ## Things
 - (DONE?) have the can_contribute return the key so that the KS doesn't need to loop through its partition again. controller passes over key and into KS execute
