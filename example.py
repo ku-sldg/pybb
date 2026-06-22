@@ -12,7 +12,6 @@ if __name__ == "__main__":
         key="less_than_3",
         predicate="less_than_3",
         measurement=5)
-    controller.run()
     controller.blackboard.write_entry(
         key="is_positive",
         predicate="is_positive",

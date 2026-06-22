@@ -29,7 +29,7 @@ class NumberSubtractor(KnowledgeSource):
 
 class NumberAdder(KnowledgeSource):
     name: str = "NumberAdder"
-    partition: list[str] = []
+    partition: list[str] = ["is_positive"]
     max_attempts: int = 3
 
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
