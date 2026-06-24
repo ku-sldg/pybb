@@ -1,22 +1,19 @@
-from pybb import BlackboardController, NumberSubtractor, NumberAdder, less_than_3, is_positive
+from pybb import BlackboardController, NumberSubtractor, NumberAdder, less_than_3
 
 
 if __name__ == "__main__":
     controller = BlackboardController()
     controller.register_predicate("less_than_3", less_than_3)
-    controller.register_predicate("is_positive", is_positive)
-    controller.add_ks(NumberSubtractor())
-    controller.add_ks(NumberAdder())
+    adder, subtractor = NumberAdder(), NumberSubtractor()
+    controller.add_ks(adder)
+    controller.add_ks(subtractor)
     # simulate receiving a measurement
     controller.blackboard.write_entry(
         key="less_than_3",
         predicate="less_than_3",
         measurement=5)
-    controller.blackboard.write_entry(
-        key="is_positive",
-        predicate="is_positive",
-        measurement=-1
-    )
+    # controller checks eligibility and order. places key in first KS partition
+    controller.route("less_than_3", [adder, subtractor])
     controller.run()
     print(controller.status())
     print()

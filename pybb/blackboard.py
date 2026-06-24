@@ -6,6 +6,7 @@ class BlackboardEntry(BaseModel):
     measurement: Any
     result: Any
     good_standing: bool = False
+    original_measurement: Any = None # initial measurement restored by controller on KS handoff
     ks_history: dict[str, int] = {} # str: name of KS, int: num of attempts
 
 class Blackboard(BaseModel):
@@ -19,6 +20,7 @@ class Blackboard(BaseModel):
             predicate=predicate,
             measurement=measurement,
             result=result,
+            original_measurement=existing.original_measurement if existing else measurement,
             ks_history=existing.ks_history if existing else {})
         if partition == "certify":
             self.entries[key] = entry
@@ -44,4 +46,9 @@ class Blackboard(BaseModel):
         entry = self.entries.get(key)
         if entry is not None:
             entry.ks_history[ks_name] = entry.ks_history.get(ks_name, 0) + 1 # initializes ks entry to 0 if doesn't exist, adds 1
+
+    def restore_original(self, key: str) -> None:
+        entry = self.entries.get(key)
+        if entry is not None:
+            entry.measurement = entry.original_measurement
         

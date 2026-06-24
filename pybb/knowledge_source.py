@@ -8,7 +8,7 @@ from .blackboard import Blackboard
 
 class KnowledgeSource(ABC, BaseModel):
     name: str
-    partition: list[str]  # blackboard keys this KS is responsible for
+    partition: list[str]  # blackboard keys this KS is responsible for. assigned by controller route()
     max_attempts: Optional[int] = None
 
     def can_contribute(self, blackboard: Blackboard) -> bool:

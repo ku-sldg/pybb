@@ -11,7 +11,7 @@ def is_positive(num: int) -> bool:
 
 class NumberSubtractor(KnowledgeSource):
     name: str = "NumberSubtractor"
-    partition: list[str] = ["less_than_3"]
+    partition: list[str] = [] # controller assigns keys w/ route()
     max_attempts: int = 3
 
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
@@ -29,7 +29,7 @@ class NumberSubtractor(KnowledgeSource):
 
 class NumberAdder(KnowledgeSource):
     name: str = "NumberAdder"
-    partition: list[str] = ["is_positive"]
+    partition: list[str] = []
     max_attempts: int = 3
 
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
