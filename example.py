@@ -12,8 +12,13 @@ if __name__ == "__main__":
         key="less_than_3",
         predicate="less_than_3",
         measurement=5)
+    controller.blackboard.write_entry(
+        key="is_positive",
+        predicate="is_positive",
+        measurement=-1)
     # controller checks eligibility and order. places key in first KS partition
     controller.route("less_than_3", [adder, subtractor])
+    controller.route("is_positive", [subtractor])
     controller.run()
     print(controller.status())
     print()
