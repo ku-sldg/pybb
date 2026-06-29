@@ -1,7 +1,7 @@
 # Mr. Pybb (Python Blackboard)
 ## Vocabulary
 * **partition:** collection of keys a knowledge source looks at
-* **segment:**
+* **segment:** broader regions of blackboard. currently: escalate (entries that require user intervention), certify (all other entries, entries with current work in progress, entries in good standing)
 ## Current Control Flow (missing a lot of detail)
 1. Receive measurement and write entry to the blackboard
 2. Controller establishes a "route" (list of knowledge sources that can execute on an entry) and places the entry in the first knowledge source's partition
