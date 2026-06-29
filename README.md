@@ -1,4 +1,7 @@
 # Mr. Pybb (Python Blackboard)
+## Vocabulary
+* **partition:** collection of keys a knowledge source looks at
+* **segment:**
 ## Current Control Flow (missing a lot of detail)
 1. Receive measurement and write entry to the blackboard
 2. Controller establishes a "route" (list of knowledge sources that can execute on an entry) and places the entry in the first knowledge source's partition
@@ -19,9 +22,29 @@
 * **can_contribute:** knowledge source iterates through its own partition to identify any blackboard entries that are not in good standing
 * **execute:** action knowledge source executes on a blackboard entry when entry is not in good standing
 
+## Blackboard Entry
+### Attributes
+* **predicate:** name of a function
+* **measurement:** value received as input
+* **result:** result of running predicate function with measurement as its argument --> predicate(measurement)
+* **good_standing:** boolean indicator of whether result of predicate(measurement) is in good standing (currently the same value as `result`)
+* **original_measurement:** initial measurement restored by controller during knowledge source handoff
+* **ks_history:** dictionary containing a mapping of the name of a knowledge source and how many attempts it has made on the current entry
+
 ## Blackboard
 ### Attributes
+* **entries:** dictionary mapping of entry IDs to the blackboard entry itself
+* **history:** list of blackboard entry mappings
+* **escalate:** separate dictionary mapping of netry IDs to blackboard entries that require user intervention (all knowledge sources failed repair)
+
 ### Methods
+* **write_entry:** write an entry to either the certify or escalate segments of the blackboard. all entries added to the "certify" segment by default.
+* **get_entry:** retrieves a blackboard entry at a given key
+* **get_all_entries:** returns all entries currently in certify segment of blackboard
+* **get_history:** returns all previous and current entries in certify segment of blackboard
+* **get_escalate:** returns current entries n escalate segment of blackboard
+* **add_ks_history:** increments number of attempts a knowledge source has made on a particular blackboard entry
+* **restore_original:** restores original measurement associated with a blackboard entry
 
 ## Controller
 ### Attributes
