@@ -30,6 +30,9 @@ if __name__ == "__main__":
     controller.run()
     print(controller.status())
     print()
-    bb_history = [print(entry) for entry in controller.blackboard.get_history()]
+    with open("history.txt", "w") as f:
+        for key, entry in controller.blackboard.get_history():
+            f.write(f"{(key, entry)}\n")
+    print("history written to history.txt")
     print("escalate")
     print(controller.blackboard.get_escalate())

@@ -2,7 +2,7 @@ from typing import Callable
 
 from pydantic import BaseModel, Field
 
-from .blackboard import Blackboard, BlackboardEntry
+from .blackboard import Blackboard
 from .knowledge_source import KnowledgeSource
 
 class BlackboardController(BaseModel):
@@ -60,17 +60,19 @@ class BlackboardController(BaseModel):
             self.blackboard.escalate[key] = self.blackboard.entries.pop(key)
             print(f"Cycle {self.cycle_count}: no eligible KS left for '{key}' - escalating with history")
 
-    def _evaluate_entry(self, entry: BlackboardEntry) -> None:
+    def _evaluate_entry(self, key: str) -> None:
+        entry = self.blackboard.entries.get(key)
+        if entry is None:
+            return
         fn = self.predicate_registry.get(entry.predicate)
         if fn is None:
             return
         result = fn(entry.measurement)
-        entry.result = result
-        entry.good_standing = bool(result)
+        self.blackboard.set_entry(key, entry.model_copy(update={"result": result, "good_standing": bool(result)}))
 
     def _evaluate_all(self) -> None:
-        for entry in self.blackboard.entries.values():
-            self._evaluate_entry(entry)
+        for key in list(self.blackboard.entries):
+            self._evaluate_entry(key)
 
     def run(self) -> Blackboard:
         for i in range(self.max_cycles):
