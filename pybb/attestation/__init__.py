@@ -1,4 +1,4 @@
-from .appraisal import ComponentResult, overall_verdict, parse_appraisal
+from .appraisal import ComponentResult, overall_verdict, parse_appraisal, parse_appsumm
 from .client import (
     AttestationClient,
     CvmConfig,
@@ -6,6 +6,7 @@ from .client import (
     CvmSubprocessClient,
     ProtocolDir,
 )
+from .rodeo import RodeoConfig, RodeoProtocol, RodeoSubprocessClient
 from .knowledge_sources import (
     AppraisalKS,
     AttestationKS,
@@ -21,6 +22,10 @@ __all__ = [
     "ComponentResult",
     "overall_verdict",
     "parse_appraisal",
+    "parse_appsumm",
+    "RodeoConfig",
+    "RodeoProtocol",
+    "RodeoSubprocessClient",
     "AttestationClient",
     "CvmConfig",
     "CvmError",

@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
 from .appraisal import component_key_id, overall_verdict, parse_appraisal
-from .client import AttestationClient, ProtocolDir
+from .client import AttestationClient
 from .copland import rewrite_filepaths
 
 REQUEST_PREFIX = "attestation.request/"
@@ -78,7 +78,7 @@ class AttestationKS(KnowledgeSource):
     name: str = "AttestationKS"
     priority: int = 20
     client: Any  # AttestationClient
-    protocols: Dict[str, ProtocolDir]
+    protocols: Dict[str, Any]  # protocol_id -> ProtocolDir | RodeoProtocol
 
     def can_contribute(self, blackboard: Blackboard) -> bool:
         return any(
@@ -120,7 +120,7 @@ class AppraisalKS(KnowledgeSource):
 
     name: str = "AppraisalKS"
     priority: int = 30
-    protocols: Dict[str, ProtocolDir] = {}
+    protocols: Dict[str, Any] = {}  # protocol_id -> ProtocolDir | RodeoProtocol
 
     def can_contribute(self, blackboard: Blackboard) -> bool:
         return bool(pending_evidence(blackboard))

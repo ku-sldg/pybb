@@ -103,14 +103,40 @@ def _describe(args: dict) -> str:
     return name
 
 
+def parse_appsumm(response: dict) -> List[ComponentResult]:
+    """
+    Extract results from a rodeo AppraisalSummaryResponse:
+    PAYLOAD = {asp_id: {targ_id: {meta, result}}}.
+    """
+    if not response.get("SUCCESS"):
+        return []
+    results = []
+    for asp_id, targets in (response.get("PAYLOAD") or {}).items():
+        for targ_id, report in targets.items():
+            results.append(
+                ComponentResult(
+                    appr_asp=asp_id,
+                    target_asp=asp_id.removesuffix("_appr"),
+                    targ_id=targ_id,
+                    passed=bool(report.get("result")),
+                    reason="" if report.get("result") else (report.get("meta") or "appraisal failed"),
+                    description=targ_id,
+                )
+            )
+    return results
+
+
 def parse_appraisal(
     response: dict, target_records: List[dict] | None = None
 ) -> List[ComponentResult]:
     """
-    Extract per-component appraisal results from a ProtocolRunResponse dict.
+    Extract per-component appraisal results from a ProtocolRunResponse dict
+    (CVM evidence walk) or an APPSUMM response (rodeo transport).
     Returns [] when the response has no appraisal evidence (including
     SUCCESS=false runs, which the caller must treat as failure).
     """
+    if response.get("ACTION") == "APPSUMM":
+        return parse_appsumm(response)
     if not response.get("SUCCESS"):
         return []
     payload = response.get("PAYLOAD")

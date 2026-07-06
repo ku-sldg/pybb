@@ -59,6 +59,21 @@ decision made out-of-band, and must never be reachable from the blackboard's
 failure-handling logic — auto-provisioning after a failed appraisal would
 launder tampered state into the new golden.
 
+## Rodeo transport (Phase 2 Track B)
+
+`RodeoSubprocessClient` + `RodeoProtocol` (rodeo.py) attest HAMR
+attestation-report projects (e.g. INSPECTA-models isolette) via
+rust-rodeo-client: the provisioned `hamr_maestro_term.json` drives the
+`hamr_readfile_range_many` ASP, which reads every contract slice named in
+the report and appraises the bundle against golden evidence. Results come
+back as an APPSUMM response, which `parse_appraisal` dispatches on — the
+knowledge sources are transport-agnostic.
+
+Dual transports coexist as two `AttestationKS` instances (each serves only
+protocols in its own registry) sharing one blackboard. Provisioning remains
+out-of-band: run rodeo's `--hamr-report-filepath ... -p` phase manually
+from a known-good tree (see rodeo.py docstring).
+
 ## Modules
 
 - `copland.py` — typed Pydantic models of the CVM wire format (adapted from
