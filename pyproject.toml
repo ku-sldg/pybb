@@ -19,4 +19,5 @@ include = ["pybb*"]
 [tool.pytest.ini_options]
 markers = [
     "cvm: end-to-end tests requiring the local CVM binary, asp-libs, and temp-control-jvm",
+    "sireum: multi-minute Sireum tipe/logika/test runs; also gated by RUN_SIREUM=1",
 ]

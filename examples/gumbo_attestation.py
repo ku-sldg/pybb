@@ -2,16 +2,22 @@
 Attestation-driven blackboard demo: GUMBO contract integrity for the
 temp-control-jvm HAMR project.
 
-Seeds a gumbo_l1 (whole-file hash) attestation request; if it fails, the
+Seeds a gumbo_l1 (whole-file hash) attestation request; if it fails, an
 EscalationKS posts gumbo_l2 (per-contract ranges) for attribution, and the
 TrustDecisionKS summarizes the outcome as the blackboard hypothesis.
 
 Usage:
-    python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper]
+    python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper] [--validate]
 
 --tamper copies the watched files to a temp tree, corrupts one GUMBO
 contract line, and attests the copy — the provisioned originals are never
 modified.
+
+--validate adds the third tier: on a gumbo_l2 failure, gumbo_validation
+runs the live Sireum tools (proyek tipe / logika / test — takes minutes)
+against the real project. In a --tamper run the tampering lives only in the
+temp copy, so validation passes and the hypothesis reads "modified yet
+system still verifies".
 """
 
 import argparse
@@ -61,11 +67,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
+    parser.add_argument("--validate", action="store_true")
     cli = parser.parse_args()
 
+    protocol_ids = ["gumbo_l1", "gumbo_l2"]
+    if cli.validate:
+        protocol_ids.append("gumbo_validation")
     protocols = {
         pid: ProtocolDir.load(str(Path(cli.protocols_root) / pid))
-        for pid in ("gumbo_l1", "gumbo_l2")
+        for pid in protocol_ids
     }
     path_map = make_tampered_copy(protocols) if cli.tamper else None
 
@@ -73,9 +83,21 @@ def main() -> None:
     controller.add_ks(AttestationKS(client=CvmSubprocessClient(), protocols=protocols))
     controller.add_ks(AppraisalKS(protocols=protocols))
     controller.add_ks(
-        EscalationKS(on_fail="gumbo_l1", escalate_to="gumbo_l2", path_map=path_map)
+        EscalationKS(
+            name="EscalationKS_l1_l2",
+            on_fail="gumbo_l1", escalate_to="gumbo_l2", path_map=path_map,
+        )
     )
-    controller.add_ks(TrustDecisionKS())
+    if cli.validate:
+        # semantic tier runs against the real project (no path_map): the
+        # watched-file copy is not a runnable Sireum project
+        controller.add_ks(
+            EscalationKS(
+                name="EscalationKS_l2_validation",
+                on_fail="gumbo_l2", escalate_to="gumbo_validation",
+            )
+        )
+    controller.add_ks(TrustDecisionKS(semantic=["gumbo_validation"]))
 
     request = {"protocol": "gumbo_l1"}
     if path_map:

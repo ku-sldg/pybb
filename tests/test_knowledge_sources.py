@@ -163,3 +163,70 @@ def test_history_is_audit_trail():
     ]
     sources = [e.source for e in bb.history]
     assert sources == ["seed", "AttestationKS", "AppraisalKS", "AppraisalKS", "TrustDecisionKS"]
+
+
+# ── three-tier ladder (Track A) ───────────────────────────────────────────────
+
+def _three_tier_controller(client, semantic=("val",)):
+    protocols = {"l1": _proto("l1"), "l2": _proto("l2"), "val": _proto("val")}
+    ctl = BlackboardController()
+    ctl.add_ks(AttestationKS(client=client, protocols=protocols))
+    ctl.add_ks(AppraisalKS(protocols=protocols))
+    ctl.add_ks(EscalationKS(name="EscalationKS_l1_l2", on_fail="l1", escalate_to="l2"))
+    ctl.add_ks(EscalationKS(name="EscalationKS_l2_val", on_fail="l2", escalate_to="val"))
+    ctl.add_ks(TrustDecisionKS(semantic=list(semantic)))
+    return ctl
+
+
+def test_three_tier_modified_but_verified():
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": False}),
+        "l2": _appr_response({"a.aadl:1-3": False}),
+        "val": _appr_response({"tipe": True, "logika": True, "test": True}),
+    })
+    ctl = _three_tier_controller(client)
+    _seed(ctl)
+    bb = ctl.run()
+
+    assert client.calls == ["l1", "l2", "val"]
+    assert bb.read(verdict_key("val"))["passed"] is True
+    assert "l2/a.aadl:1-3" in bb.hypothesis
+    assert "still verifies" in bb.hypothesis
+    assert bb.entries["attestation.hypothesis"].confidence == 0.0
+
+
+def test_three_tier_semantic_failure():
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": False}),
+        "l2": _appr_response({"a.aadl:1-3": False}),
+        "val": _appr_response({"tipe": True, "logika": False}),
+    })
+    ctl = _three_tier_controller(client)
+    _seed(ctl)
+    bb = ctl.run()
+
+    assert client.calls == ["l1", "l2", "val"]
+    assert "failed semantic verification" in bb.hypothesis
+    assert "val/logika" in bb.hypothesis
+    assert "l2/a.aadl:1-3" in bb.hypothesis
+
+
+def test_three_tier_ladder_stops_at_first_pass():
+    client = FakeClient({"l1": _appr_response({"a.aadl": True})})
+    ctl = _three_tier_controller(client)
+    _seed(ctl)
+    bb = ctl.run()
+
+    assert client.calls == ["l1"]
+    assert not bb.has(request_key("l2")) and not bb.has(request_key("val"))
+    assert bb.hypothesis.startswith("All attested components intact")
+
+
+def test_semantic_only_failure():
+    # validation requested directly (no ladder) and fails
+    client = FakeClient({"val": _appr_response({"logika": False})})
+    ctl = _three_tier_controller(client)
+    _seed(ctl, "val")
+    bb = ctl.run()
+
+    assert "failing verification: val/logika" in bb.hypothesis

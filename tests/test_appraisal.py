@@ -81,3 +81,34 @@ def test_non_appraiser_nodes_recursed_not_counted():
     )
     results = parse_appraisal(_response(et, [_b64("")]))
     assert len(results) == 1 and results[0].appr_asp == "hashfile_appr"
+
+
+def test_describe_exe_args_commands():
+    et = _split(
+        _asp_evt(
+            "run_command_hamr_appr",
+            {"exe_args": ["proyek", "tipe", "/x/slang"]},
+            sub=_asp_evt("run_command_hamr", {}),
+        ),
+        _split(
+            _asp_evt(
+                "run_command_hamr_appr",
+                {"exe_args": ["proyek", "logika", "--solver-valid", "z3",
+                              "/x/slang", "/x/slang/src/A_GumboX.scala"]},
+                sub=_asp_evt("run_command_hamr", {}),
+            ),
+            _asp_evt(
+                "run_command_hamr_appr",
+                {"exe_args": ["proyek", "test", "--classes",
+                              "tc.TempControl.A_GumboX_UnitTests", "/x/slang"]},
+                sub=_asp_evt("run_command_hamr", {}),
+            ),
+        ),
+    )
+    results = parse_appraisal(_response(et, [_b64(""), _b64(""), _b64("logika failed")]))
+    assert [r.description for r in results] == [
+        "proyek tipe slang",
+        "proyek logika A_GumboX.scala",
+        "proyek test A_GumboX_UnitTests",
+    ]
+    assert results[2].reason == "logika failed"

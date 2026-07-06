@@ -197,10 +197,19 @@ class EscalationKS(KnowledgeSource):
 
 
 class TrustDecisionKS(KnowledgeSource):
-    """Summarizes all verdicts into the blackboard hypothesis once idle."""
+    """
+    Summarizes all verdicts into the blackboard hypothesis once idle.
+
+    Verdict ids listed in `semantic` denote semantic-verification protocols
+    (e.g. Sireum tipe/logika/test runs): their passing means "the system
+    still verifies", which is weighed against integrity failures rather
+    than lumped in with them. This KS is deliberately the only place where
+    tier semantics exist in code.
+    """
 
     name: str = "TrustDecisionKS"
     priority: int = 5
+    semantic: List[str] = []
 
     def can_contribute(self, blackboard: Blackboard) -> bool:
         if blackboard.hypothesis is not None:
@@ -209,33 +218,69 @@ class TrustDecisionKS(KnowledgeSource):
             return False
         return bool(_ids_with_prefix(blackboard, VERDICT_PREFIX))
 
+    @staticmethod
+    def _failing(blackboard: Blackboard, rid: str) -> List[str]:
+        verdict = blackboard.read(verdict_key(rid)) or {}
+        failing = [
+            f"{rid}/{cid}"
+            for cid, ok in verdict.get("components", {}).items()
+            if not ok
+        ]
+        if not verdict.get("passed") and not verdict.get("components"):
+            failing.append(f"{rid} (no appraisal evidence)")
+        return failing
+
     def execute(self, blackboard: Blackboard) -> None:
         verdict_ids = _ids_with_prefix(blackboard, VERDICT_PREFIX)
-        failing: List[str] = []
-        for rid in verdict_ids:
-            verdict = blackboard.read(verdict_key(rid)) or {}
-            failing.extend(
-                f"{rid}/{cid}"
-                for cid, ok in verdict.get("components", {}).items()
-                if not ok
-            )
-            if not verdict.get("passed") and not verdict.get("components"):
-                failing.append(f"{rid} (no appraisal evidence)")
-        if failing:
-            hypothesis = (
-                "Attestation integrity violation; failing components: "
-                + ", ".join(sorted(failing))
-            )
-        else:
+        semantic_ids = sorted(r for r in verdict_ids if r in self.semantic)
+        integrity_ids = sorted(r for r in verdict_ids if r not in self.semantic)
+
+        integrity_fail: List[str] = []
+        for rid in integrity_ids:
+            integrity_fail.extend(self._failing(blackboard, rid))
+        semantic_fail: List[str] = []
+        for rid in semantic_ids:
+            semantic_fail.extend(self._failing(blackboard, rid))
+
+        if not integrity_fail and not semantic_fail:
             hypothesis = (
                 "All attested components intact ("
                 + ", ".join(sorted(verdict_ids)) + " passed)"
             )
+        elif semantic_fail:
+            parts = []
+            if integrity_fail:
+                parts.append(
+                    "failing components: " + ", ".join(sorted(integrity_fail))
+                )
+            parts.append(
+                "failing verification: " + ", ".join(sorted(semantic_fail))
+            )
+            hypothesis = (
+                "Attestation integrity violation with failed semantic "
+                "verification; " + "; ".join(parts)
+                if integrity_fail
+                else "Semantic verification failed; " + "; ".join(parts)
+            )
+        elif integrity_fail and semantic_ids:
+            hypothesis = (
+                "Attestation integrity violation; failing components: "
+                + ", ".join(sorted(integrity_fail))
+                + "; however semantic verification passed ("
+                + ", ".join(semantic_ids)
+                + ") — artifacts modified yet system still verifies"
+            )
+        else:
+            hypothesis = (
+                "Attestation integrity violation; failing components: "
+                + ", ".join(sorted(integrity_fail))
+            )
+        failing_any = bool(integrity_fail or semantic_fail)
         blackboard.hypothesis = hypothesis
         blackboard.write(
             key="attestation.hypothesis",
             value=hypothesis,
             source=self.name,
-            confidence=0.0 if failing else 1.0,
+            confidence=0.0 if failing_any else 1.0,
             tags=["attestation", "hypothesis"],
         )

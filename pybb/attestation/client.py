@@ -33,6 +33,14 @@ DEFAULT_ASP_BIN = os.environ.get(
     os.path.expanduser("~/Claude_workspace/asp-libs/target/release"),
 )
 
+# Prepended to PATH for the CVM and its forked ASPs. Command ASPs such as
+# run_command_hamr resolve tools (e.g. "sireum") by name from PATH, and on
+# macOS binaries under ~/Documents are TCC-restricted for child processes —
+# the workspace bin dir carries safe wrappers.
+DEFAULT_PATH_PREPEND = [
+    p for p in [os.path.expanduser("~/Claude_workspace/bin")] if os.path.isdir(p)
+]
+
 
 class CvmError(RuntimeError):
     """CVM invocation failed before producing a parseable response."""
@@ -43,6 +51,7 @@ class CvmConfig(BaseModel):
     asp_bin: str = DEFAULT_ASP_BIN
     log_level: str = "Info"
     timeout_s: int = 1200
+    path_prepend: List[str] = DEFAULT_PATH_PREPEND
 
 
 class ProtocolDir(BaseModel):
@@ -158,12 +167,19 @@ class CvmSubprocessClient(AttestationClient):
                 "--log_level", self.config.log_level,
                 "--cvm_binary", self.config.cvm_binary,
             ]
+            env = None
+            if self.config.path_prepend:
+                env = dict(os.environ)
+                env["PATH"] = ":".join(
+                    self.config.path_prepend + [env.get("PATH", "")]
+                )
             result = subprocess.run(
                 cmd,
                 stdin=subprocess.DEVNULL,
                 capture_output=True,
                 text=True,
                 timeout=self.config.timeout_s,
+                env=env,
             )
             stdout = result.stdout.strip()
             if not stdout:

@@ -57,7 +57,9 @@ def _find_target_asp_id(et_node, prefer_right: bool = False) -> str:
     return "unknown"
 
 
-_MATCH_KEYS = ("filepath", "start_index", "end_index", "begin_marker", "end_marker")
+_MATCH_KEYS = (
+    "filepath", "start_index", "end_index", "begin_marker", "end_marker", "exe_args",
+)
 
 
 def _match_targ_id(args: dict, target_records: List[dict]) -> Optional[str]:
@@ -70,7 +72,26 @@ def _match_targ_id(args: dict, target_records: List[dict]) -> Optional[str]:
     return None
 
 
+def _describe_exe_args(exe_args: list) -> str:
+    """
+    Label a command ASP by its subcommand plus the most specific argument:
+    a --classes value beats a file path beats the project directory.
+    """
+    label = " ".join(str(a) for a in exe_args[:2])
+    disc = None
+    for i, a in enumerate(exe_args):
+        if a == "--classes" and i + 1 < len(exe_args):
+            disc = str(exe_args[i + 1]).split(".")[-1]
+    if disc is None:
+        paths = [str(a) for a in exe_args if "/" in str(a)]
+        if paths:
+            disc = Path(paths[-1]).name
+    return f"{label} {disc}" if disc else label
+
+
 def _describe(args: dict) -> str:
+    if isinstance(args.get("exe_args"), list) and args["exe_args"]:
+        return _describe_exe_args(args["exe_args"])
     fp = args.get("filepath", "")
     if not fp:
         return ""
