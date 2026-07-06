@@ -26,6 +26,17 @@ protocol (gumbo_l1) fails, it posts a request for the per-contract protocol
 (gumbo_l2), whose component entries attribute the failure to a specific
 GUMBO contract range.
 
+## Provisioning is out of scope (deliberately)
+
+pybb consumes protocol directories that were already provisioned; it never
+writes golden values. Provisioning (measurement-only run → provision_bundle →
+extract_golden_slice → golden_b64 in asp_args.json) is owned by the cvm-mcp
+dashboard, keeping a single writer for golden state. This is also a trust
+boundary: declaring "the system is in a known-good state" is a human/policy
+decision made out-of-band, and must never be reachable from the blackboard's
+failure-handling logic — auto-provisioning after a failed appraisal would
+launder tampered state into the new golden.
+
 ## Modules
 
 - `copland.py` — typed Pydantic models of the CVM wire format (adapted from
