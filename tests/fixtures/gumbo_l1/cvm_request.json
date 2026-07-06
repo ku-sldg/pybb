@@ -1,0 +1,169 @@
+{
+  "TYPE": "REQUEST",
+  "ACTION": "RUN",
+  "REQ_PLC": "P0",
+  "TO_PLC": "P0",
+  "TERM": {
+    "TERM_CONSTRUCTOR": "lseq",
+    "TERM_BODY": [
+      {
+        "TERM_CONSTRUCTOR": "lseq",
+        "TERM_BODY": [
+          {
+            "TERM_CONSTRUCTOR": "bseq",
+            "TERM_BODY": [
+              "both_paths",
+              {
+                "TERM_CONSTRUCTOR": "bseq",
+                "TERM_BODY": [
+                  "both_paths",
+                  {
+                    "TERM_CONSTRUCTOR": "bseq",
+                    "TERM_BODY": [
+                      "both_paths",
+                      {
+                        "TERM_CONSTRUCTOR": "asp",
+                        "TERM_BODY": {
+                          "ASP_CONSTRUCTOR": "ASPC",
+                          "ASP_BODY": {
+                            "ASP_ID": "hashfile",
+                            "ASP_ARGS": {
+                              "filepath": "/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+                              "env_var": "",
+                              "golden_b64": "KJb+kA5IH/qWZWT0a5PXq52SVlGhl69qEbLIEpeoIBc=",
+                              "golden_ts": "2026-05-07 18:15:14",
+                              "filepath_golden": "",
+                              "env_var_golden": "",
+                              "asp_id_appr": "hashfile_appr"
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "TERM_CONSTRUCTOR": "asp",
+                        "TERM_BODY": {
+                          "ASP_CONSTRUCTOR": "ASPC",
+                          "ASP_BODY": {
+                            "ASP_ID": "hashfile",
+                            "ASP_ARGS": {
+                              "filepath": "/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempSensor.aadl",
+                              "env_var": "",
+                              "golden_b64": "vGHdyb7kH1uLR7Wzh8QP0J/QFGVl29g8OzdCc0o7X1I=",
+                              "golden_ts": "2026-05-07 18:15:14",
+                              "filepath_golden": "",
+                              "env_var_golden": "",
+                              "asp_id_appr": "hashfile_appr"
+                            }
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "TERM_CONSTRUCTOR": "asp",
+                    "TERM_BODY": {
+                      "ASP_CONSTRUCTOR": "ASPC",
+                      "ASP_BODY": {
+                        "ASP_ID": "hashfile",
+                        "ASP_ARGS": {
+                          "filepath": "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala",
+                          "env_var": "",
+                          "golden_b64": "REw8LkF3Jx9xjVABQKOem21V6I9GFPMKtzpNg+MEIOU=",
+                          "golden_ts": "2026-05-07 18:15:14",
+                          "filepath_golden": "",
+                          "env_var_golden": "",
+                          "asp_id_appr": "hashfile_appr"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "TERM_CONSTRUCTOR": "asp",
+                "TERM_BODY": {
+                  "ASP_CONSTRUCTOR": "ASPC",
+                  "ASP_BODY": {
+                    "ASP_ID": "hashfile",
+                    "ASP_ARGS": {
+                      "filepath": "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensorPeriodic_p_tcproc_tempSensor_GumboX.scala",
+                      "env_var": "",
+                      "golden_b64": "/tu3vzyk13T97JretrQXwn385Gr5siFb/orqDiA8zdU=",
+                      "golden_ts": "2026-05-07 18:15:14",
+                      "filepath_golden": "",
+                      "env_var_golden": "",
+                      "asp_id_appr": "hashfile_appr"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "TERM_CONSTRUCTOR": "asp",
+            "TERM_BODY": {
+              "ASP_CONSTRUCTOR": "SIG"
+            }
+          }
+        ]
+      },
+      {
+        "TERM_CONSTRUCTOR": "asp",
+        "TERM_BODY": {
+          "ASP_CONSTRUCTOR": "APPR"
+        }
+      }
+    ]
+  },
+  "EVIDENCE": [
+    {
+      "RawEv": []
+    },
+    {
+      "EvidenceT_CONSTRUCTOR": "mt_evt"
+    }
+  ],
+  "ATTESTATION_SESSION": {
+    "Session_Plc": "P0",
+    "Plc_Mapping": {},
+    "PubKey_Mapping": {},
+    "Session_Context": {
+      "ASP_Types": {
+        "hashfile": {
+          "FWD": {
+            "FWD": "EXTEND",
+            "_BODY": 1,
+            "EvInSig": "NONE"
+          },
+          "ATTRS": []
+        },
+        "sig": {
+          "FWD": {
+            "FWD": "EXTEND",
+            "_BODY": 1,
+            "EvInSig": "ALL"
+          },
+          "ATTRS": []
+        },
+        "sig_appr": {
+          "FWD": {
+            "FWD": "REPLACE",
+            "_BODY": 1
+          },
+          "ATTRS": []
+        },
+        "goldenbytes_appr": {
+          "FWD": {
+            "FWD": "REPLACE",
+            "_BODY": 1
+          },
+          "ATTRS": []
+        }
+      },
+      "ASP_Comps": {
+        "hashfile": "goldenbytes_appr",
+        "sig": "sig_appr"
+      }
+    }
+  }
+}

@@ -9,5 +9,14 @@ description = "Pydantic-based blackboard system"
 requires-python = ">=3.11"
 dependencies = ["pydantic>=2.0"]
 
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
 [tool.setuptools.packages.find]
 where = ["."]
+include = ["pybb*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "cvm: end-to-end tests requiring the local CVM binary, asp-libs, and temp-control-jvm",
+]

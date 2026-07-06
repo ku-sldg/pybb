@@ -1,0 +1,92 @@
+"""Round-trip and term-utility tests against the real gumbo protocol files."""
+
+import json
+
+from pybb.attestation.copland import (
+    ProtocolRunRequest,
+    inject_asp_args,
+    iter_aspc_bodies,
+    normalize_term,
+    rewrite_filepaths,
+)
+from pybb.attestation.client import ProtocolDir
+
+
+def test_gumbo_l1_request_round_trip(gumbo_l1_request):
+    model = ProtocolRunRequest.model_validate(gumbo_l1_request)
+    dumped = json.loads(model.model_dump_json(exclude_none=True))
+    assert dumped == gumbo_l1_request
+
+
+def test_iter_aspc_bodies_counts(gumbo_l1_dir, gumbo_l2_dir):
+    l1_term = json.loads((gumbo_l1_dir / "term.json").read_text())
+    l2_term = json.loads((gumbo_l2_dir / "term.json").read_text())
+    assert len(list(iter_aspc_bodies(l1_term))) == 4
+    assert len(list(iter_aspc_bodies(l2_term))) == 28
+
+
+def test_inject_asp_args_by_targ_id(gumbo_l2_dir):
+    term = json.loads((gumbo_l2_dir / "term.json").read_text())
+    asp_args = json.loads((gumbo_l2_dir / "asp_args.json").read_text())
+    injected = inject_asp_args(term, asp_args)
+    bodies = list(iter_aspc_bodies(injected))
+    assert all("golden_b64" in (b.get("ASP_ARGS") or {}) for b in bodies)
+    # original untouched
+    assert all("ASP_ARGS" not in b for b in iter_aspc_bodies(term))
+
+
+def test_inject_asp_args_legacy_filepath_match(gumbo_l1_dir):
+    term = json.loads((gumbo_l1_dir / "term.json").read_text())
+    asp_args = json.loads((gumbo_l1_dir / "asp_args.json").read_text())
+    injected = inject_asp_args(term, asp_args)
+    assert all(
+        "golden_b64" in (b.get("ASP_ARGS") or {}) for b in iter_aspc_bodies(injected)
+    )
+
+
+def test_normalize_term_strips_targ_ids(gumbo_l2_dir):
+    term = json.loads((gumbo_l2_dir / "term.json").read_text())
+    asp_args = json.loads((gumbo_l2_dir / "asp_args.json").read_text())
+    normalized = normalize_term(inject_asp_args(term, asp_args))
+    for body in iter_aspc_bodies(normalized):
+        assert set(body.keys()) <= {"ASP_ID", "ASP_ARGS"}
+
+
+def test_rewrite_filepaths_prefix_only():
+    obj = {
+        "a": "/old/root/f.aadl",
+        "b": "/old/rooted/f.aadl",
+        "c": ["/old/root/x", {"d": "/old/root"}],
+    }
+    out = rewrite_filepaths(obj, {"/old/root": "/new"})
+    assert out["a"] == "/new/f.aadl"
+    assert out["b"] == "/old/rooted/f.aadl"
+    assert out["c"] == ["/new/x", {"d": "/new"}]
+
+
+def test_protocol_dir_build_request_dynamic(gumbo_l2_dir):
+    proto = ProtocolDir.load(str(gumbo_l2_dir))
+    assert proto.prebuilt_request is None
+    request = proto.build_request()
+    assert request["TYPE"] == "REQUEST" and request["ACTION"] == "RUN"
+    # a dynamic request must validate against the typed model
+    ProtocolRunRequest.model_validate(request)
+    bodies = list(iter_aspc_bodies(request["TERM"]))
+    assert len(bodies) == 28
+    assert all("golden_b64" in b["ASP_ARGS"] for b in bodies)
+
+
+def test_protocol_dir_prebuilt_with_path_map(gumbo_l1_dir):
+    proto = ProtocolDir.load(str(gumbo_l1_dir))
+    request = proto.build_request(
+        path_map={"/Users/adampetz/Claude_workspace/temp-control-jvm": "/tmp/copy"}
+    )
+    fps = [
+        b["ASP_ARGS"]["filepath"] for b in iter_aspc_bodies(request["TERM"])
+    ]
+    assert all(fp.startswith("/tmp/copy/") for fp in fps)
+    # goldens must NOT be rewritten (they are values, not paths)
+    assert all(
+        b["ASP_ARGS"]["golden_b64"]
+        for b in iter_aspc_bodies(request["TERM"])
+    )
