@@ -6,6 +6,7 @@ from .client import (
     CvmSubprocessClient,
     ProtocolDir,
 )
+from .repair import GoldenRestoreRepairer, RepairAction, Repairer, RepairKS
 from .rodeo import RodeoConfig, RodeoProtocol, RodeoSubprocessClient
 from .knowledge_sources import (
     AppraisalKS,
@@ -26,6 +27,10 @@ __all__ = [
     "RodeoConfig",
     "RodeoProtocol",
     "RodeoSubprocessClient",
+    "GoldenRestoreRepairer",
+    "RepairAction",
+    "Repairer",
+    "RepairKS",
     "AttestationClient",
     "CvmConfig",
     "CvmError",

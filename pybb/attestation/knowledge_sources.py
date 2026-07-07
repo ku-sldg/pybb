@@ -28,6 +28,8 @@ REQUEST_PREFIX = "attestation.request/"
 EVIDENCE_PREFIX = "attestation.evidence/"
 VERDICT_PREFIX = "attestation.verdict/"
 COMPONENT_PREFIX = "attestation.component/"
+REPAIR_ATTEMPTS_PREFIX = "repair.attempts/"
+REPAIR_ACTION_PREFIX = "repair.action/"
 
 
 def request_key(rid: str) -> str:
@@ -242,11 +244,24 @@ class TrustDecisionKS(KnowledgeSource):
         for rid in semantic_ids:
             semantic_fail.extend(self._failing(blackboard, rid))
 
+        repair_attempts = sum(
+            blackboard.read(k) or 0
+            for k in blackboard.entries
+            if k.startswith(REPAIR_ATTEMPTS_PREFIX)
+        )
         if not integrity_fail and not semantic_fail:
-            hypothesis = (
-                "All attested components intact ("
-                + ", ".join(sorted(verdict_ids)) + " passed)"
-            )
+            if repair_attempts:
+                plural = "attempt" if repair_attempts == 1 else "attempts"
+                hypothesis = (
+                    "Integrity violation detected and repaired "
+                    f"({repair_attempts} {plural}); system re-attested clean ("
+                    + ", ".join(sorted(verdict_ids)) + " passed)"
+                )
+            else:
+                hypothesis = (
+                    "All attested components intact ("
+                    + ", ".join(sorted(verdict_ids)) + " passed)"
+                )
         elif semantic_fail:
             parts = []
             if integrity_fail:
@@ -276,6 +291,9 @@ class TrustDecisionKS(KnowledgeSource):
                 + ", ".join(sorted(integrity_fail))
             )
         failing_any = bool(integrity_fail or semantic_fail)
+        if failing_any and repair_attempts:
+            plural = "attempt" if repair_attempts == 1 else "attempts"
+            hypothesis += f" — repair attempted ({repair_attempts} {plural}) without success"
         blackboard.hypothesis = hypothesis
         blackboard.write(
             key="attestation.hypothesis",

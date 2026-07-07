@@ -54,6 +54,9 @@ class FakeClient(AttestationClient):
     def run_protocol(self, protocol: ProtocolDir, path_map=None) -> dict:
         self.calls.append(protocol.protocol_id)
         result = self.responses[protocol.protocol_id]
+        if isinstance(result, list):
+            # sequence of responses; the last one repeats
+            result = result.pop(0) if len(result) > 1 else result[0]
         if isinstance(result, Exception):
             raise result
         return result

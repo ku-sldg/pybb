@@ -21,7 +21,9 @@ from pybb.attestation import (
     AttestationKS,
     CvmSubprocessClient,
     EscalationKS,
+    GoldenRestoreRepairer,
     ProtocolDir,
+    RepairKS,
     TrustDecisionKS,
     request_key,
     verdict_key,
@@ -68,7 +70,7 @@ def target_copy(tmp_path):
     return root
 
 
-def _run(path_map):
+def _run(path_map, with_repair=False):
     protocols = {
         pid: ProtocolDir.load(str(FIXTURES / pid)) for pid in ("gumbo_l1", "gumbo_l2")
     }
@@ -78,6 +80,17 @@ def _run(path_map):
     ctl.add_ks(
         EscalationKS(on_fail="gumbo_l1", escalate_to="gumbo_l2", path_map=path_map)
     )
+    if with_repair:
+        ctl.add_ks(RepairKS(
+            repairers=[GoldenRestoreRepairer(protocols)],
+            watch=["gumbo_l2"],
+            reattest=["gumbo_l1", "gumbo_l2"],
+        ))
+        # semantic escalation present but expected to be preempted by repair
+        ctl.add_ks(EscalationKS(
+            name="EscalationKS_l2_validation",
+            on_fail="gumbo_l2", escalate_to="gumbo_validation",
+        ))
     ctl.add_ks(TrustDecisionKS())
     ctl.blackboard.write(
         key=request_key("gumbo_l1"),
@@ -96,6 +109,30 @@ def test_clean_run_passes_no_escalation(target_copy):
     assert len(verdict["components"]) == 5  # 4 hashfile_appr + sig_appr
     assert not bb.has(request_key("gumbo_l2"))
     assert bb.hypothesis.startswith("All attested components intact")
+
+
+def test_tampered_contract_repaired_and_reattested(target_copy):
+    """Tamper -> l2 attributes -> RepairKS restores from golden -> clean."""
+    aadl = target_copy / "aadl/packages/TempControlSystem.aadl"
+    original = (TC_ROOT / "aadl/packages/TempControlSystem.aadl").read_bytes()
+    lines = aadl.read_text().splitlines(keepends=True)
+    lines[305] = "-- TAMPERED: invariant weakened\n"
+    aadl.write_text("".join(lines))
+
+    bb = _run({str(TC_ROOT): str(target_copy)}, with_repair=True)
+
+    # repair restored the copy byte-exactly, so re-attestation passed
+    assert aadl.read_bytes() == original
+    assert bb.read(verdict_key("gumbo_l1"))["passed"] is True
+    assert bb.read(verdict_key("gumbo_l2"))["passed"] is True
+    assert bb.read("repair.attempts/gumbo_l2") == 1
+    assert "detected and repaired (1 attempt)" in bb.hypothesis
+    assert "re-attested clean" in bb.hypothesis
+    # repair preempted the semantic tier
+    assert not bb.has(request_key("gumbo_validation"))
+    # audit: history shows fail -> repair -> pass for the same verdict key
+    l2_verdicts = [e.value["passed"] for e in bb.history if e.key == verdict_key("gumbo_l2")]
+    assert l2_verdicts == [False, True]
 
 
 def test_tampered_contract_fails_l1_and_l2_attributes(target_copy):

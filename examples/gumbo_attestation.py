@@ -32,7 +32,9 @@ from pybb.attestation import (
     AttestationKS,
     CvmSubprocessClient,
     EscalationKS,
+    GoldenRestoreRepairer,
     ProtocolDir,
+    RepairKS,
     TrustDecisionKS,
     request_key,
 )
@@ -68,6 +70,7 @@ def main() -> None:
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
     parser.add_argument("--validate", action="store_true")
+    parser.add_argument("--repair", action="store_true")
     cli = parser.parse_args()
 
     protocol_ids = ["gumbo_l1", "gumbo_l2"]
@@ -97,6 +100,17 @@ def main() -> None:
                 on_fail="gumbo_l2", escalate_to="gumbo_validation",
             )
         )
+    if cli.repair:
+        # priority 12 > escalation 10: repair preempts the semantic tier and
+        # re-posts the listed protocols so the repaired state is re-verified
+        reattest = ["gumbo_l1", "gumbo_l2"]
+        if cli.validate:
+            reattest.append("gumbo_validation")
+        controller.add_ks(RepairKS(
+            repairers=[GoldenRestoreRepairer(protocols)],
+            watch=["gumbo_l2"],
+            reattest=reattest,
+        ))
     controller.add_ks(TrustDecisionKS(semantic=["gumbo_validation"]))
 
     request = {"protocol": "gumbo_l1"}

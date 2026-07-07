@@ -48,6 +48,42 @@ Command ASPs resolve their tool (e.g. `sireum`) by name from PATH;
 child processes see workspace-safe wrappers rather than TCC-restricted
 locations.
 
+## Repair loop (Phase 3)
+
+HEAL-demo's `orchestrate()` — attest, appraise, repair on failure, re-attest,
+bounded retries — re-expressed as blackboard dynamics:
+
+| HEAL-demo | pybb |
+|---|---|
+| `orchestrate()` while-loop | controller cycles + guards |
+| `repairer_map: {asp_id: fn}` | `RepairKS.repairers` registry (`Repairer` interface) |
+| `max_attempts` argument | `repair.attempts/<id>` blackboard counter |
+| appraisal summary check | `attestation.verdict/<id>` entries |
+| implicit retry | `RepairKS` re-posts `attestation.request/*` (same-id, timestamp guards re-run the pipeline) |
+| repair log (stdout) | `repair.action/<id>/<n>/<targ>` audit entries |
+
+`RepairKS` sits at priority 12 — above `EscalationKS` (10), below the
+attest/appraise pipeline (20/30). Consequences, all emergent from those two
+integers: repair preempts the expensive semantic tier and fires as soon as
+tier 2 attributes the failure; the pipeline re-verifies the repaired state
+before anything else runs; if repair fails, it retries up to `max_attempts`;
+when attempts exhaust (or nothing is repairable), its guard goes false and
+the starved escalation finally runs the semantic tier as a diagnosis.
+`reattest` lists the protocols to re-request after repairing (include the
+semantic tier so repaired code gets re-verified).
+
+`GoldenRestoreRepairer` restores failing `readfile_range` /
+`readfile_marker_range` components from their provisioned goldens. Those
+ASPs measure ranges flattened (newlines stripped), so restoration is
+line-wise: matching lines are consumed from both ends of the golden and the
+single differing line is rewritten — byte-exact for any within-line tamper,
+refused (file untouched) when the tamper spans lines or changed the line
+count. Repair writes only to the measured tree; goldens remain provisioning-
+owned. Hash-only components (gumbo_l1's whole files) are inherently
+unrepairable — content cannot be reconstructed from a hash — so such
+failures burn no attempts and fall through to diagnosis and a failing
+hypothesis.
+
 ## Provisioning is out of scope (deliberately)
 
 pybb consumes protocol directories that were already provisioned; it never

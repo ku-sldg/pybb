@@ -17,6 +17,10 @@
 #                                                  # gumbo_validation (Sireum
 #                                                  # tipe/logika/test, ~minutes)
 #
+#   ./examples/run_full_workflow.sh --repair       # with a tamper mode: RepairKS
+#                                                  # restores tampered ranges from
+#                                                  # provisioned goldens and
+#                                                  # re-attests (preempting tier 3)
 #   ./examples/run_full_workflow.sh --tamper-semantic
 #                                                  # (implies --three-tier) flip a
 #                                                  # GumboX oracle predicate in the
@@ -45,12 +49,14 @@ TAMPER=false
 REPROVISION=false
 THREE_TIER=false
 TAMPER_SEMANTIC=false
+REPAIR=false
 for arg in "$@"; do
   case "$arg" in
     --tamper)          TAMPER=true ;;
     --reprovision)     REPROVISION=true ;;
     --three-tier)      THREE_TIER=true ;;
     --tamper-semantic) TAMPER_SEMANTIC=true; THREE_TIER=true ;;
+    --repair)          REPAIR=true; THREE_TIER=true ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -137,6 +143,12 @@ fi
 # ── Step 3 (optional): three-tier escalation ladder on temp-control-jvm ──────
 if $THREE_TIER; then
   banner "Step 3: three-tier ladder (temp-control-jvm, CVM transport)"
+  REPAIR_ARG=""
+  if $REPAIR; then
+    REPAIR_ARG="--repair"
+    echo "  RepairKS enabled: failing measured ranges are restored from"
+    echo "  provisioned goldens, then re-attested (repair preempts tier 3)."
+  fi
   echo "  tier 1  gumbo_l1          whole-file hashes          ~1s"
   echo "  tier 2  gumbo_l2          per-contract slices        ~1s   (on l1 fail)"
   echo "  tier 3  gumbo_validation  sireum tipe/logika/test    ~min  (on l2 fail)"
@@ -169,7 +181,7 @@ assert expected in lines[118], f"line 119 changed upstream: {lines[118]!r}"
 lines[118] = lines[118].replace("FanCmd.Off", "FanCmd.On")
 open(p, "w").write("".join(lines))
 EOF
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate \
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate $REPAIR_ARG \
         2>/dev/null | sed 's/^/  /' ) || true
     echo
     echo "  Restoring the GumboX oracle from backup..."
@@ -180,12 +192,12 @@ EOF
     echo "  Tampering a temp copy of the watched files: the ladder should walk"
     echo "  all three tiers and conclude 'modified yet system still verifies'."
     echo
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --tamper --validate \
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --tamper --validate $REPAIR_ARG \
         2>/dev/null | sed 's/^/  /' )
   else
     echo "  Clean run: tier 1 passes, so tiers 2 and 3 never fire."
     echo
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate \
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate $REPAIR_ARG \
         2>/dev/null | sed 's/^/  /' )
   fi
 fi
