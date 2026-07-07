@@ -17,6 +17,14 @@
 #                                                  # gumbo_validation (Sireum
 #                                                  # tipe/logika/test, ~minutes)
 #
+#   ./examples/run_full_workflow.sh --tamper-semantic
+#                                                  # (implies --three-tier) flip a
+#                                                  # GumboX oracle predicate in the
+#                                                  # REAL project: all three tiers
+#                                                  # fail — integrity violation WITH
+#                                                  # failed semantic verification.
+#                                                  # File is backed up and restored.
+#
 # Flags compose: --three-tier --tamper tampers a temp copy so the ladder
 # escalates through all three tiers ("modified yet system still verifies").
 # All paths can be overridden via environment variables (see below).
@@ -36,14 +44,19 @@ PYTHON="$PYBB/.venv/bin/python"
 TAMPER=false
 REPROVISION=false
 THREE_TIER=false
+TAMPER_SEMANTIC=false
 for arg in "$@"; do
   case "$arg" in
-    --tamper)      TAMPER=true ;;
-    --reprovision) REPROVISION=true ;;
-    --three-tier)  THREE_TIER=true ;;
+    --tamper)          TAMPER=true ;;
+    --reprovision)     REPROVISION=true ;;
+    --three-tier)      THREE_TIER=true ;;
+    --tamper-semantic) TAMPER_SEMANTIC=true; THREE_TIER=true ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
+if $TAMPER && $TAMPER_SEMANTIC; then
+  echo "choose one of --tamper / --tamper-semantic" >&2; exit 2
+fi
 
 banner() {
   echo
@@ -133,7 +146,37 @@ if $THREE_TIER; then
       echo "  [MISSING] $f — skipping three-tier ladder"; exit 1
     fi
   done
-  if $TAMPER; then
+  if $TAMPER_SEMANTIC; then
+    GUMBOX="$WORKSPACE/temp-control-jvm/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala"
+    GUMBOX_BAK="$GUMBOX.pybb_backup"
+    restore_gumbox() {
+      [ -f "$GUMBOX_BAK" ] && mv -f "$GUMBOX_BAK" "$GUMBOX"
+    }
+    echo "  Semantic tamper: flipping FanCmd.Off -> FanCmd.On on line 119 of the"
+    echo "  TempControl GumboX oracle (inside measured range 113-120), in the"
+    echo "  REAL project. Text changes (tiers 1-2 fail) AND meaning changes"
+    echo "  (tier 3: GumboX unit tests refute the inverted oracle)."
+    echo "  Backing up the oracle; it will be restored on exit."
+    echo
+    cp "$GUMBOX" "$GUMBOX_BAK"
+    trap restore_gumbox EXIT
+    "$PYTHON" - "$GUMBOX" <<'EOF'
+import sys
+p = sys.argv[1]
+lines = open(p).read().splitlines(keepends=True)
+expected = "latestFanCmd == CoolingFan.FanCmd.Off &&"
+assert expected in lines[118], f"line 119 changed upstream: {lines[118]!r}"
+lines[118] = lines[118].replace("FanCmd.Off", "FanCmd.On")
+open(p, "w").write("".join(lines))
+EOF
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate \
+        2>/dev/null | sed 's/^/  /' ) || true
+    echo
+    echo "  Restoring the GumboX oracle from backup..."
+    restore_gumbox
+    trap - EXIT
+    echo "  [ok] oracle restored"
+  elif $TAMPER; then
     echo "  Tampering a temp copy of the watched files: the ladder should walk"
     echo "  all three tiers and conclude 'modified yet system still verifies'."
     echo
