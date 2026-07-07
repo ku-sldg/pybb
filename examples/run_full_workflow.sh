@@ -10,7 +10,15 @@
 #   ./examples/run_full_workflow.sh --reprovision  # force fresh golden evidence
 #                                                  # (a trust decision: declares the
 #                                                  #  CURRENT tree known-good)
+#   ./examples/run_full_workflow.sh --three-tier   # also run the temp-control-jvm
+#                                                  # escalation ladder: gumbo_l1
+#                                                  # (file hashes) -> gumbo_l2
+#                                                  # (contract slices) ->
+#                                                  # gumbo_validation (Sireum
+#                                                  # tipe/logika/test, ~minutes)
 #
+# Flags compose: --three-tier --tamper tampers a temp copy so the ladder
+# escalates through all three tiers ("modified yet system still verifies").
 # All paths can be overridden via environment variables (see below).
 
 set -euo pipefail
@@ -27,10 +35,12 @@ PYTHON="$PYBB/.venv/bin/python"
 
 TAMPER=false
 REPROVISION=false
+THREE_TIER=false
 for arg in "$@"; do
   case "$arg" in
     --tamper)      TAMPER=true ;;
     --reprovision) REPROVISION=true ;;
+    --three-tier)  THREE_TIER=true ;;
     *) echo "unknown option: $arg" >&2; exit 2 ;;
   esac
 done
@@ -111,7 +121,33 @@ fi
 
 ( cd "$PYBB" && "$PYTHON" examples/isolette_attestation.py 2>/dev/null | sed 's/^/  /' )
 
+# ── Step 3 (optional): three-tier escalation ladder on temp-control-jvm ──────
+if $THREE_TIER; then
+  banner "Step 3: three-tier ladder (temp-control-jvm, CVM transport)"
+  echo "  tier 1  gumbo_l1          whole-file hashes          ~1s"
+  echo "  tier 2  gumbo_l2          per-contract slices        ~1s   (on l1 fail)"
+  echo "  tier 3  gumbo_validation  sireum tipe/logika/test    ~min  (on l2 fail)"
+  echo
+  for f in "$WORKSPACE/temp-control-jvm" "$WORKSPACE/bin/sireum"; do
+    if [ ! -e "$f" ]; then
+      echo "  [MISSING] $f — skipping three-tier ladder"; exit 1
+    fi
+  done
+  if $TAMPER; then
+    echo "  Tampering a temp copy of the watched files: the ladder should walk"
+    echo "  all three tiers and conclude 'modified yet system still verifies'."
+    echo
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --tamper --validate \
+        2>/dev/null | sed 's/^/  /' )
+  else
+    echo "  Clean run: tier 1 passes, so tiers 2 and 3 never fire."
+    echo
+    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate \
+        2>/dev/null | sed 's/^/  /' )
+  fi
+fi
+
 banner "Done"
 echo "  The blackboard history above is the audit trail; the hypothesis is the"
-echo "  trust decision. See pybb/attestation/README.md for the gumbo (CVM"
-echo "  transport) demos and the test suite."
+echo "  trust decision. See pybb/attestation/README.md for details and the"
+echo "  test suite."
