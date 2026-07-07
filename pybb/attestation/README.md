@@ -110,6 +110,19 @@ protocols in its own registry) sharing one blackboard. Provisioning remains
 out-of-band: run rodeo's `--hamr-report-filepath ... -p` phase manually
 from a known-good tree (see rodeo.py docstring).
 
+## Report-guided protocol dirs (isolette_l1 / isolette_l2)
+
+Isolette is also attestable through the same provisioning workflow as
+temp-control: `cvm-mcp/hamr_report_protocols.py` derives standard protocol
+dirs from the HAMR attestation report (l1 = hashfile per report-named file,
+l2 = readfile_range per contract slice, target ids carrying
+component::contract metadata), and the existing dashboard flow provisions
+them. The report stays authoritative for *what* to measure — regenerate and
+re-provision whenever HAMR regenerates the report. Because these are
+ordinary CVM-transport protocols with content goldens, isolette gains the
+full ladder, `path_map` tamper demos, per-contract attribution, and
+`GoldenRestoreRepairer` support — parity with the gumbo demos.
+
 ## Modules
 
 - `copland.py` — typed Pydantic models of the CVM wire format (adapted from
