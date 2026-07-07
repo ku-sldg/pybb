@@ -31,6 +31,7 @@
 #
 # Flags compose: --three-tier --tamper tampers a temp copy so the ladder
 # escalates through all three tiers ("modified yet system still verifies").
+# The isolette ladder (Step 4) honors --tamper and --repair as well.
 # All paths can be overridden via environment variables (see below).
 
 set -euo pipefail
@@ -200,6 +201,32 @@ EOF
     ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate $REPAIR_ARG \
         2>/dev/null | sed 's/^/  /' )
   fi
+fi
+
+# ── Step 4: isolette ladder (report-guided cvm-mcp provisioning) ─────────────
+CVM_MCP="${CVM_MCP:-$WORKSPACE/cvm-mcp}"
+banner "Step 4: isolette ladder (report-guided provisioning, CVM transport)"
+if [ ! -f "$CVM_MCP/protocol_dirs/isolette_l2/asp_args.json" ]; then
+  echo "  [MISSING] $CVM_MCP/protocol_dirs/isolette_l2 — generate with"
+  echo "  cvm-mcp/hamr_report_protocols.py and provision via the dashboard."
+else
+  echo "  isolette_l1 (13 file hashes) -> isolette_l2 (85 contract slices)"
+  echo "  Protocol dirs generated from the HAMR attestation report;"
+  echo "  goldens provisioned by the cvm-mcp dashboard flow."
+  echo
+  ISO_ARGS=""
+  if $TAMPER || $TAMPER_SEMANTIC; then
+    ISO_ARGS="--tamper"
+    echo "  Tampering a temp copy of a measured guarantee clause."
+  fi
+  if $REPAIR; then
+    ISO_ARGS="$ISO_ARGS --repair"
+    echo "  RepairKS enabled: golden restore + re-attestation."
+  fi
+  echo
+  ( cd "$PYBB" && "$PYTHON" examples/isolette_ladder_attestation.py \
+      --protocols-root "$CVM_MCP/protocol_dirs" $ISO_ARGS \
+      2>/dev/null | sed 's/^/  /' )
 fi
 
 banner "Done"
