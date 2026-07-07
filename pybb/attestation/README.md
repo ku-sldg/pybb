@@ -144,12 +144,20 @@ Environment (defaults target `~/Claude_workspace`; override via env vars):
 - `CVM_BINARY` — Rocq CVM binary (`cvm/_build/default/theories/cvm`)
 - `ASP_BIN` — asp-libs release binaries (`asp-libs/target/release`)
 
-Demo against the provisioned temp-control-jvm GUMBO protocols:
+Independent workflow scripts (each: env check, then the full story with
+`--tamper` / `--repair` variants; see script headers for all flags):
 
 ```sh
-python examples/gumbo_attestation.py            # clean: L1 passes, no escalation
-python examples/gumbo_attestation.py --tamper   # corrupt a contract line in a
-                                                # temp copy: L1 fails, L2 attributes
+./examples/run_isolette_workflow.sh   # provision -> rodeo bundle -> l1/l2 ladder
+./examples/run_gumbo_workflow.sh      # temp-control three-tier ladder (+ Sireum)
+./examples/run_full_workflow.sh       # wrapper: isolette, plus gumbo with a ladder flag
+```
+
+Or the underlying Python examples directly, e.g.:
+
+```sh
+python examples/gumbo_attestation.py --tamper --validate --repair
+python examples/isolette_ladder_attestation.py --tamper --repair
 ```
 
 Tests:

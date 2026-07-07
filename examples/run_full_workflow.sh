@@ -1,50 +1,25 @@
 #!/usr/bin/env bash
 #
-# Full HAMR attestation workflow: environment check -> provisioning (only if
-# needed) -> blackboard attestation of the isolette contract slices via the
-# rodeo transport.
+# Full attestation tour: runs the isolette workflow, and — with a ladder
+# flag — the gumbo (temp-control-jvm) three-tier workflow as well.
 #
-# Usage:
-#   ./examples/run_full_workflow.sh                # provision if needed, clean run
-#   ./examples/run_full_workflow.sh --tamper       # + tamper/fail/restore demo
-#   ./examples/run_full_workflow.sh --reprovision  # force fresh golden evidence
-#                                                  # (a trust decision: declares the
-#                                                  #  CURRENT tree known-good)
-#   ./examples/run_full_workflow.sh --three-tier   # also run the temp-control-jvm
-#                                                  # escalation ladder: gumbo_l1
-#                                                  # (file hashes) -> gumbo_l2
-#                                                  # (contract slices) ->
-#                                                  # gumbo_validation (Sireum
-#                                                  # tipe/logika/test, ~minutes)
+# This is a thin wrapper; the independent workflows live in:
+#   ./examples/run_isolette_workflow.sh   (env check, provision, bundle, ladder)
+#   ./examples/run_gumbo_workflow.sh      (three-tier ladder + semantic tier)
 #
-#   ./examples/run_full_workflow.sh --repair       # with a tamper mode: RepairKS
-#                                                  # restores tampered ranges from
-#                                                  # provisioned goldens and
-#                                                  # re-attests (preempting tier 3)
-#   ./examples/run_full_workflow.sh --tamper-semantic
-#                                                  # (implies --three-tier) flip a
-#                                                  # GumboX oracle predicate in the
-#                                                  # REAL project: all three tiers
-#                                                  # fail — integrity violation WITH
-#                                                  # failed semantic verification.
-#                                                  # File is backed up and restored.
-#
-# Flags compose: --three-tier --tamper tampers a temp copy so the ladder
-# escalates through all three tiers ("modified yet system still verifies").
-# The isolette ladder (Step 4) honors --tamper and --repair as well.
-# All paths can be overridden via environment variables (see below).
+# Usage (flags map onto both workflows, preserving historic semantics):
+#   ./examples/run_full_workflow.sh                    # isolette only, clean
+#   ./examples/run_full_workflow.sh --three-tier       # + gumbo ladder, clean
+#   ./examples/run_full_workflow.sh --tamper           # tamper demos (both, if
+#                                                      # a ladder flag is set)
+#   ./examples/run_full_workflow.sh --repair           # implies --three-tier
+#   ./examples/run_full_workflow.sh --tamper-semantic  # implies --three-tier;
+#                                                      # gumbo only
+#   ./examples/run_full_workflow.sh --reprovision      # isolette golden refresh
 
 set -euo pipefail
 
-WORKSPACE="${WORKSPACE:-$HOME/Claude_workspace}"
-CVM_BINARY="${CVM_BINARY:-$WORKSPACE/cvm/_build/default/theories/cvm}"
-ASP_BIN="${ASP_BIN:-$WORKSPACE/asp-libs/target/release}"
-RUST_AM_CLIENTS="${RUST_AM_CLIENTS:-$WORKSPACE/rust-am-clients}"
-RODEO="$RUST_AM_CLIENTS/target/release/rust-rodeo-client"
-INSPECTA="${INSPECTA:-$WORKSPACE/INSPECTA-models}"
-ROOT="$INSPECTA/isolette/hamr/microkit/attestation"
-PYBB="${PYBB:-$WORKSPACE/pybb}"
-PYTHON="$PYBB/.venv/bin/python"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 
 TAMPER=false
 REPROVISION=false
@@ -65,171 +40,16 @@ if $TAMPER && $TAMPER_SEMANTIC; then
   echo "choose one of --tamper / --tamper-semantic" >&2; exit 2
 fi
 
-banner() {
-  echo
-  echo "==============================================================="
-  echo "  $1"
-  echo "==============================================================="
-}
+ISO_ARGS=()
+$TAMPER && ISO_ARGS+=(--tamper)
+$REPROVISION && ISO_ARGS+=(--reprovision)
+$REPAIR && ISO_ARGS+=(--repair)
+"$DIR/run_isolette_workflow.sh" "${ISO_ARGS[@]+"${ISO_ARGS[@]}"}"
 
-# ── Step 0: environment check ─────────────────────────────────────────────────
-banner "Step 0: environment check"
-ok=true
-for f in "$CVM_BINARY" "$RODEO" "$ASP_BIN/hamr_readfile_range_many" \
-         "$ROOT/aadl_attestation_report.json" "$PYTHON"; do
-  if [ -e "$f" ]; then
-    echo "  [ok]      $f"
-  else
-    echo "  [MISSING] $f"
-    ok=false
-  fi
-done
-$ok || { echo "Missing prerequisites — see pybb/attestation/README.md"; exit 1; }
-
-# ── Step 1: provisioning (out-of-band trust decision) ─────────────────────────
-banner "Step 1: provisioning"
-if [ -f "$ROOT/hamr_maestro_term.json" ] && \
-   [ -f "$ROOT/hamr_maestro_golden_evidence.json" ] && ! $REPROVISION; then
-  echo "  Already provisioned (term + golden evidence present) — skipping."
-  echo "  Use --reprovision to re-declare the current tree known-good."
-else
-  echo "  Generating term and golden evidence from the attestation report..."
-  ( cd "$RUST_AM_CLIENTS" && ASP_BIN="$ASP_BIN" "$RODEO" \
-      --cvm-filepath "$CVM_BINARY" \
-      --hamr-report-filepath "$ROOT/aadl_attestation_report.json" \
-      --manifest-filepath testing/manifests/Manifest_P0.json \
-      --session-filepath rodeo_configs/sessions/session_union.json \
-      --provisioned-evidence-filepath "$ROOT/hamr_maestro_golden_evidence.json" \
-      2>&1 | grep -v '^{' | sed 's/^/  /' ) || { echo "  provisioning FAILED"; exit 1; }
-fi
-echo "  Provisioned artifacts:"
-ls -la "$ROOT"/hamr_maestro_*.json | sed 's/^/    /'
-
-# ── Step 2: blackboard attestation (clean or tampered) ────────────────────────
-MONITOR="$INSPECTA/isolette/aadl/aadl/packages/Monitor.aadl"
-
-restore_monitor() {
-  git -C "$INSPECTA" checkout --quiet -- \
-    isolette/aadl/aadl/packages/Monitor.aadl 2>/dev/null || true
-}
-
-if $TAMPER; then
-  banner "Step 2a: TAMPERED attestation run (expect FAIL)"
-  trap restore_monitor EXIT
-  echo "  Corrupting line 192 of Monitor.aadl (inside a measured GUMBO slice)..."
-  "$PYTHON" - "$MONITOR" <<'EOF'
-import sys
-p = sys.argv[1]
-lines = open(p).read().splitlines(keepends=True)
-lines[191] = lines[191].rstrip("\n") + " -- TAMPERED\n"
-open(p, "w").write("".join(lines))
-EOF
-  if ( cd "$PYBB" && "$PYTHON" examples/isolette_attestation.py 2>/dev/null | sed 's/^/  /' ); then
-    echo "  NOTE: script exit reflects the demo run, not the verdict — read the hypothesis above."
-  fi
-  echo
-  echo "  Restoring Monitor.aadl from git..."
-  restore_monitor
-  trap - EXIT
-  git -C "$INSPECTA" diff --quiet -- isolette/aadl/aadl/packages/Monitor.aadl \
-    && echo "  [ok] tree restored"
-
-  banner "Step 2b: clean attestation run after restore (expect PASS)"
-else
-  banner "Step 2: blackboard attestation run (expect PASS)"
-fi
-
-( cd "$PYBB" && "$PYTHON" examples/isolette_attestation.py 2>/dev/null | sed 's/^/  /' )
-
-# ── Step 3 (optional): three-tier escalation ladder on temp-control-jvm ──────
 if $THREE_TIER; then
-  banner "Step 3: three-tier ladder (temp-control-jvm, CVM transport)"
-  REPAIR_ARG=""
-  if $REPAIR; then
-    REPAIR_ARG="--repair"
-    echo "  RepairKS enabled: failing measured ranges are restored from"
-    echo "  provisioned goldens, then re-attested (repair preempts tier 3)."
-  fi
-  echo "  tier 1  gumbo_l1          whole-file hashes          ~1s"
-  echo "  tier 2  gumbo_l2          per-contract slices        ~1s   (on l1 fail)"
-  echo "  tier 3  gumbo_validation  sireum tipe/logika/test    ~min  (on l2 fail)"
-  echo
-  for f in "$WORKSPACE/temp-control-jvm" "$WORKSPACE/bin/sireum"; do
-    if [ ! -e "$f" ]; then
-      echo "  [MISSING] $f — skipping three-tier ladder"; exit 1
-    fi
-  done
-  if $TAMPER_SEMANTIC; then
-    GUMBOX="$WORKSPACE/temp-control-jvm/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala"
-    GUMBOX_BAK="$GUMBOX.pybb_backup"
-    restore_gumbox() {
-      [ -f "$GUMBOX_BAK" ] && mv -f "$GUMBOX_BAK" "$GUMBOX"
-    }
-    echo "  Semantic tamper: flipping FanCmd.Off -> FanCmd.On on line 119 of the"
-    echo "  TempControl GumboX oracle (inside measured range 113-120), in the"
-    echo "  REAL project. Text changes (tiers 1-2 fail) AND meaning changes"
-    echo "  (tier 3: GumboX unit tests refute the inverted oracle)."
-    echo "  Backing up the oracle; it will be restored on exit."
-    echo
-    cp "$GUMBOX" "$GUMBOX_BAK"
-    trap restore_gumbox EXIT
-    "$PYTHON" - "$GUMBOX" <<'EOF'
-import sys
-p = sys.argv[1]
-lines = open(p).read().splitlines(keepends=True)
-expected = "latestFanCmd == CoolingFan.FanCmd.Off &&"
-assert expected in lines[118], f"line 119 changed upstream: {lines[118]!r}"
-lines[118] = lines[118].replace("FanCmd.Off", "FanCmd.On")
-open(p, "w").write("".join(lines))
-EOF
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate $REPAIR_ARG \
-        2>/dev/null | sed 's/^/  /' ) || true
-    echo
-    echo "  Restoring the GumboX oracle from backup..."
-    restore_gumbox
-    trap - EXIT
-    echo "  [ok] oracle restored"
-  elif $TAMPER; then
-    echo "  Tampering a temp copy of the watched files: the ladder should walk"
-    echo "  all three tiers and conclude 'modified yet system still verifies'."
-    echo
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --tamper --validate $REPAIR_ARG \
-        2>/dev/null | sed 's/^/  /' )
-  else
-    echo "  Clean run: tier 1 passes, so tiers 2 and 3 never fire."
-    echo
-    ( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py --validate $REPAIR_ARG \
-        2>/dev/null | sed 's/^/  /' )
-  fi
+  GUMBO_ARGS=()
+  $TAMPER && GUMBO_ARGS+=(--tamper)
+  $TAMPER_SEMANTIC && GUMBO_ARGS+=(--tamper-semantic)
+  $REPAIR && GUMBO_ARGS+=(--repair)
+  "$DIR/run_gumbo_workflow.sh" "${GUMBO_ARGS[@]+"${GUMBO_ARGS[@]}"}"
 fi
-
-# ── Step 4: isolette ladder (report-guided cvm-mcp provisioning) ─────────────
-CVM_MCP="${CVM_MCP:-$WORKSPACE/cvm-mcp}"
-banner "Step 4: isolette ladder (report-guided provisioning, CVM transport)"
-if [ ! -f "$CVM_MCP/protocol_dirs/isolette_l2/asp_args.json" ]; then
-  echo "  [MISSING] $CVM_MCP/protocol_dirs/isolette_l2 — generate with"
-  echo "  cvm-mcp/hamr_report_protocols.py and provision via the dashboard."
-else
-  echo "  isolette_l1 (13 file hashes) -> isolette_l2 (85 contract slices)"
-  echo "  Protocol dirs generated from the HAMR attestation report;"
-  echo "  goldens provisioned by the cvm-mcp dashboard flow."
-  echo
-  ISO_ARGS=""
-  if $TAMPER || $TAMPER_SEMANTIC; then
-    ISO_ARGS="--tamper"
-    echo "  Tampering a temp copy of a measured guarantee clause."
-  fi
-  if $REPAIR; then
-    ISO_ARGS="$ISO_ARGS --repair"
-    echo "  RepairKS enabled: golden restore + re-attestation."
-  fi
-  echo
-  ( cd "$PYBB" && "$PYTHON" examples/isolette_ladder_attestation.py \
-      --protocols-root "$CVM_MCP/protocol_dirs" $ISO_ARGS \
-      2>/dev/null | sed 's/^/  /' )
-fi
-
-banner "Done"
-echo "  The blackboard history above is the audit trail; the hypothesis is the"
-echo "  trust decision. See pybb/attestation/README.md for details and the"
-echo "  test suite."
