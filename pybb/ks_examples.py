@@ -64,4 +64,30 @@ class NumberNothinger(KnowledgeSource):
                 predicate=entry.predicate,
                 measurement=repaired,
                 result=None  # controller reeval in next cycle
-            )   
+            )
+
+"""COMPONENT (PAIR) EXAMPLE - each KS operates on one component of a dict measurement"""
+
+class ComponentSubtractor(KnowledgeSource):
+    partition: list[str] = [] # controller assigns keys w/ route()
+    max_attempts: int = 3
+
+    def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if entry is None or entry.component_good(self.component):
+                continue
+            repaired = entry.measurement[self.component] - 1
+            blackboard.write_component(key, self.component, repaired) # only touches own component
+
+class ComponentAdder(KnowledgeSource):
+    partition: list[str] = []
+    max_attempts: int = 3
+
+    def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if entry is None or entry.component_good(self.component):
+                continue
+            repaired = entry.measurement[self.component] + 1
+            blackboard.write_component(key, self.component, repaired) # only touches own component

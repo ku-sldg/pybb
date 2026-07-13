@@ -2,6 +2,7 @@
 ## Vocabulary
 * **partition:** collection of keys a knowledge source looks at
 * **segment:** broader regions of blackboard. currently: **escalate** (entries that require user intervention), **certify** (all other entries, entries with current work in progress, entries in good standing)
+* **component:** one named part of a dict measurement (e.g. `"x"` in `{"x": 5, "y": -2}`). Each component can have its own condition, and a knowledge source can be scoped to a single component
 ## Current Control Flow (missing a lot of detail)
 1. Receive measurement and write entry to the blackboard
 2. Controller establishes a "route" (list of knowledge sources that can execute on an entry) and places the entry in the first knowledge source's partition
@@ -10,24 +11,34 @@
 5. Knowledge source operates on blackboard entry and passes its result back to the Controller
 6. Controller reverifies the entry
 8. If the entry is still in bad standing after a knowledge source operated on it, send entry back to knowledge source for more attempts and controller reverifies after each attempt.
-9. If a knowledge source reaches max_attempts and blackboard entry is still not in good standing, Controller passes the original blackboard entry to the next knowledge source in the route.
+9. If a knowledge source reaches max_attempts and blackboard entry is still not in good standing, Controller passes the original blackboard entry to the next knowledge source in the route (failure handoff). For a component-scoped knowledge source, only its own component is restored so other components' fixes are preserved.
 10. If all knowledge sources in the route fail and there are no more available knowledge sources in the route, move the bad entry to the "escalate partition"
 11. The program will halt if all the entries are in good standing
+
+### Component-wise entries (success-driven handoff)
+An entry can instead hold a dict measurement (e.g. a pair `{"x": 5, "y": -2}`) with per-component `conditions` (e.g. `{"x": "less_than_3", "y": "is_positive"}`). The entry is in good standing only when every component's condition passes. Knowledge sources declare a `component` they may operate on and write repairs through `write_component`, so KS1 can only touch x and KS2 can only touch y. This enables a second advancement mode alongside failure handoff:
+* **success handoff:** when the current knowledge source's component passes its condition, the Controller advances the key to the next knowledge source in the route *without* restoring anything - the fix is preserved (e.g. KS1 fixes x, then KS2 works on y)
+* **failure handoff:** when the current knowledge source exhausts max_attempts, only its own component is restored to the original before handing off
+* **end of route:** if the current component passes (or all knowledge sources are exhausted) and no knowledge source remains but the entry is still not in good standing overall, the entry is escalated
+
+The overall pair is evaluated by the Controller at the start of every cycle, so once the last knowledge source fixes its component, the next cycle marks the whole entry in good standing and the program halts. See `example_pair.py`.
 ## Knowledge Source
 ### Attributes
 * **name:** name of knowledge source
 * **partition:** collection of keys a knowledge source looks at
 * **max_attempts:** maximum allowed attempts for a knowledge source to make on a single blackboard entry
+* **component:** optional. scopes the knowledge source to one component of a dict measurement. By convention a component-scoped knowledge source only writes through `write_component` with its own component
 ### Methods
-* **can_contribute:** knowledge source iterates through its own partition to identify any blackboard entries that are not in good standing
+* **can_contribute:** knowledge source iterates through its own partition to identify any blackboard entries that are not in good standing (for a component-scoped knowledge source: whose *component* is not in good standing)
 * **execute:** action knowledge source executes on a blackboard entry when entry is not in good standing
 
 ## Blackboard Entry
 ### Attributes
-* **predicate:** name of a function
-* **measurement:** value received as input
-* **result:** result of running predicate function with measurement as its argument --> predicate(measurement)
-* **good_standing:** boolean indicator of whether result of predicate(measurement) is in good standing (currently the same value as `result`)
+* **predicate:** name of a function (single-condition entries; optional if `conditions` is set)
+* **conditions:** optional mapping of component name to predicate name for dict measurements (e.g. `{"x": "less_than_3", "y": "is_positive"}`). An entry must have either `predicate` or `conditions`
+* **measurement:** value received as input (a plain value, or a dict of components when using `conditions`)
+* **result:** result of running predicate function with measurement as its argument --> predicate(measurement). For component-wise entries, a dict of component name to boolean
+* **good_standing:** boolean indicator of whether result of predicate(measurement) is in good standing (currently the same value as `result`; for component-wise entries, true only when all components pass)
 * **original_measurement:** initial measurement restored by controller during knowledge source handoff
 * **ks_history:** dictionary containing a mapping of the name of a knowledge source and how many attempts it has made on the current entry
 
@@ -45,6 +56,8 @@
 * **get_escalate:** returns current entries n escalate segment of blackboard
 * **add_ks_history:** increments number of attempts a knowledge source has made on a particular blackboard entry
 * **restore_original:** restores original measurement associated with a blackboard entry
+* **write_component:** write a repair for a single component of a dict measurement, leaving the other components untouched
+* **restore_component:** restores a single component of a dict measurement from the original, preserving fixes made to other components
 
 ## Controller
 ### Attributes
@@ -59,8 +72,9 @@
 * **add_ks:** add a knowledge source to the controller's list of knowledge sources
 * **route:** registers a route for a blackboard entry key and places the key in the first knowledge source's partition
   * example rationale: `route("less_than_3", [ks1, ks2])` ==> ks1 attempts on blackboard entry "less_than_3", if ks1 fails, ks2 attempts on the same blackboard entry. If all knowledge sources in the route fail, entry is moved to escalate
-* **_advance:** moves a blackboard entry key into the next eligible knowledge source after the current knowledge source reaches maximum attempts on a key (failure). Restores the original measurement or moves entry to escalate partition if no available knowledge source remains in the route.
-* **_evaluate_entry:** evaluates a predicate with a given measurement. calls the function from the predicate registry and uses the measurement as a parameter to the function. Update the standing of the entry according to the result of calling the predicate with the measurement.
+* **_advance:** moves a blackboard entry key into the next eligible knowledge source. On failure (current knowledge source reached maximum attempts) restores the measurement the knowledge source worked on - component-scoped for component knowledge sources, full otherwise. On success (`restore=False`, current knowledge source's component passed) preserves the fix. Moves entry to escalate partition if no available knowledge source remains in the route.
+* **_advance_ready:** success-driven handoff. Each cycle, after evaluation, advances any key whose current component-scoped knowledge source has satisfied its component's condition
+* **_evaluate_entry:** evaluates a predicate with a given measurement. calls the function from the predicate registry and uses the measurement as a parameter to the function. Update the standing of the entry according to the result of calling the predicate with the measurement. For component-wise entries, evaluates each component's predicate and sets good standing only if all pass.
 * **_evaluate_all:** calls `_evaluate_entry` on all the blackboard entries
 * **run:** main control loop. Determines which knowledge sources can contribute, routes knowledge sources using `_advance`, and calls knowledge source `execute`. Maintains a history of the blackboard that shows all changes.
 * **status:** prints the current number of cycles and all blackboard entries
