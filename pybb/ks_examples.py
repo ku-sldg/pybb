@@ -20,8 +20,6 @@ class NumberSubtractor(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.good_standing: # can remove this check later since only bad keys are in keys
-                continue
             repaired = entry.measurement - 1
             blackboard.write_entry(
                 key=key,
@@ -38,8 +36,6 @@ class NumberAdder(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.good_standing: # can remove this check later since only bad keys are in keys
-                continue
             repaired = entry.measurement + 1
             blackboard.write_entry(
                 key=key,
@@ -56,8 +52,6 @@ class NumberNothinger(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.good_standing: # can remove this check later since only bad keys are in keys
-                continue
             repaired = entry.measurement # does nothing
             blackboard.write_entry(
                 key=key,
@@ -75,8 +69,6 @@ class ComponentSubtractor(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.component_good(self.component):
-                continue
             repaired = entry.measurement[self.component] - 1
             blackboard.write_component(key, self.component, repaired) # only touches own component
 
@@ -87,7 +79,5 @@ class ComponentAdder(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if entry is None or entry.component_good(self.component):
-                continue
             repaired = entry.measurement[self.component] + 1
             blackboard.write_component(key, self.component, repaired) # only touches own component

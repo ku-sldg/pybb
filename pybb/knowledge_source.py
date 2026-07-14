@@ -28,5 +28,6 @@ class KnowledgeSource(ABC, BaseModel):
 
     @abstractmethod
     def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
-        """write a repair suggestion to blackboard for entries not in good standing"""
+        """write a repair suggestion to blackboard for entries not in good standing.
+        controller guarantees keys are existing entries that need work (_needs_work)"""
         pass
