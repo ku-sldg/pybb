@@ -1,28 +1,48 @@
-from typing import Callable
+from typing import Callable, Optional
 
 from pydantic import BaseModel, Field
 
 from .blackboard import Blackboard
 from .knowledge_source import KnowledgeSource
 
+class Route(BaseModel):
+    """Outcome-routed KS chains for one entry key.
+
+    on_fail: chain tried when the entry evaluates out of good standing (the
+             classic repair ladder; route(key, chain) is shorthand for this).
+    on_pass: confirmation chain tried once when the entry evaluates as
+             passing -- the pass is provisional until the chain's work
+             re-evaluates. Empty means a pass is final.
+    """
+    on_pass: list[KnowledgeSource] = []
+    on_fail: list[KnowledgeSource] = []
+
+    model_config = {"arbitrary_types_allowed": True}
+
 class BlackboardController(BaseModel):
     """
-    NEEDS UPDATE
     for each cycle:
       1. eval all entries
-        a. run predicate from registry
+        a. run predicate (or component conditions) from registry
         b. set good_standing based on result
-      2. ask each KS if can contribute
-        a. iterates through all its keys to check if good_standing
-      3. run all KS that can_contribute
-         a. currently partitions are considered to be unique (two KS don't look at same key)
+      2. dispatch each routed key onto a chain once its first result exists
+        a. failing entry -> its route's on_fail chain
+        b. passing entry with an on_pass chain -> that chain (standing cleared;
+           the pass is provisional until re-evaluation after the chain runs)
+        c. the chosen chain's first KS receives the key in its partition
+      3. success-driven handoff for component-scoped KSes (_advance_ready)
+      4. run all KS that can_contribute on their bad keys
+         a. a KS that exhausted max_attempts on a key hands it to the next KS
+            in the dispatched chain (measurement restored); when no KS remains
+            the entry moves to the escalate segment
     stop when no KS can contribute or max_cycles is reached.
     """
 
     blackboard: Blackboard = Field(default_factory=Blackboard)
     knowledge_sources: list[KnowledgeSource] = []
     predicate_registry: dict[str, Callable] = {}
-    routes: dict[str, list[KnowledgeSource]] = {} # entry key -> ordered eligible KS chain (controller-owned)
+    routes: dict[str, Route] = {} # entry key -> outcome-routed KS chains (controller-owned)
+    dispatched: dict[str, list[KnowledgeSource]] = {} # entry key -> chain chosen by first evaluated outcome
     max_cycles: int = 100
     cycle_count: int = 0
 
@@ -34,14 +54,45 @@ class BlackboardController(BaseModel):
     def add_ks(self, ks: KnowledgeSource) -> None:
         self.knowledge_sources.append(ks)
 
-    def route(self, key: str, ks_chain: list[KnowledgeSource]) -> None:
-        """find KS eligible for key. place key in first eligible KS partition. controller assigned"""
-        self.routes[key] = ks_chain
-        for ks in ks_chain:
+    def route(self, key: str, ks_chain: Optional[list[KnowledgeSource]] = None, *,
+              on_pass: Optional[list[KnowledgeSource]] = None,
+              on_fail: Optional[list[KnowledgeSource]] = None) -> None:
+        """register outcome-routed chains for key. route(key, chain) is shorthand for
+        route(key, on_fail=chain). placement onto a chain (_dispatch) happens after the
+        entry's first evaluation, since the branch depends on the outcome"""
+        if ks_chain is not None:
+            on_fail = ks_chain
+        route = Route(on_pass=list(on_pass or []), on_fail=list(on_fail or []))
+        self.routes[key] = route
+        self.dispatched.pop(key, None)
+        for ks in [*route.on_pass, *route.on_fail]:
             if key in ks.partition:
                 ks.partition.remove(key)
-        if ks_chain:
-            ks_chain[0].partition.append(key)
+
+    def _dispatch(self) -> None:
+        """place each routed key onto a chain once its first verdict exists: failing ->
+        on_fail; passing with a confirmation chain -> on_pass (standing cleared until the
+        chain's work re-evaluates). one dispatch per key; escalate when the chain is empty"""
+        for key in list(self.blackboard.entries):
+            entry = self.blackboard.entries[key]
+            route = self.routes.get(key)
+            if route is None or key in self.dispatched or entry.result is None:
+                continue
+            if entry.good_standing:
+                if not route.on_pass:
+                    continue # pass is final
+                chain = route.on_pass
+                self.blackboard.set_entry(key, entry.model_copy(update={"good_standing": False}))
+                print(f"Cycle {self.cycle_count}: '{key}' passed - dispatching to confirmation chain")
+            else:
+                chain = route.on_fail
+                print(f"Cycle {self.cycle_count}: '{key}' failed - dispatching to on_fail chain")
+            self.dispatched[key] = chain
+            if chain:
+                chain[0].partition.append(key)
+            else:
+                self.blackboard.escalate[key] = self.blackboard.entries.pop(key)
+                print(f"Cycle {self.cycle_count}: no eligible KS for '{key}' - escalating with history")
 
     def _advance(self, key: str, current: KnowledgeSource, restore: bool = True) -> None:
         """move key to next eligible KS. restore=True (failure: current KS exhausted max attempts) restores the
@@ -49,7 +100,7 @@ class BlackboardController(BaseModel):
         moves to escalate if no available KS remains"""
         if key in current.partition:
             current.partition.remove(key)
-        chain = self.routes.get(key, [])
+        chain = self.dispatched.get(key, [])
         names = [ks.name for ks in chain]
         idx = names.index(current.name) if current.name in names else -1
         nxt = chain[idx + 1] if 0 <= idx and idx + 1 < len(chain) else None
@@ -71,7 +122,7 @@ class BlackboardController(BaseModel):
 
     def _advance_ready(self) -> None:
         """success-driven handoff: advance keys whose current component-scoped KS has satisfied its component"""
-        for key, chain in list(self.routes.items()):
+        for key, chain in list(self.dispatched.items()):
             entry = self.blackboard.entries.get(key)
             if entry is None or entry.good_standing or entry.conditions is None: # None covers already-escalated keys
                 continue
@@ -109,6 +160,7 @@ class BlackboardController(BaseModel):
         for i in range(self.max_cycles):
             self.cycle_count = i + 1
             self._evaluate_all()
+            self._dispatch()
             self._advance_ready()
             active = [ks for ks in self.knowledge_sources if ks.can_contribute(self.blackboard)]
             if not active:

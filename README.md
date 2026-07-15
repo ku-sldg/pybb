@@ -5,7 +5,7 @@
 * **component:** one named part of a dict measurement (e.g. `"x"` in `{"x": 5, "y": -2}`). Each component can have its own condition, and a knowledge source can be scoped to a single component
 ## Current Control Flow (missing a lot of detail)
 1. Receive measurement and write entry to the blackboard
-2. Controller establishes a "route" (list of knowledge sources that can execute on an entry) and places the entry in the first knowledge source's partition
+2. Controller establishes a "route" (knowledge source chains that can execute on an entry). After the entry's first evaluation, the Controller dispatches it onto a chain based on the outcome (see "Outcome-routed dispatch") and places it in that chain's first knowledge source's partition
 3. Controller iterates through knowledge sources
 4. If a knowledge source can contribute, run its `execute` function on the blackboard entry in its partition that is not in good standing
 5. Knowledge source operates on blackboard entry and passes its result back to the Controller
@@ -22,6 +22,14 @@ An entry can instead hold a dict measurement (e.g. a pair `{"x": 5, "y": -2}`) w
 * **end of route:** if the current component passes (or all knowledge sources are exhausted) and no knowledge source remains but the entry is still not in good standing overall, the entry is escalated
 
 The overall pair is evaluated by the Controller at the start of every cycle, so once the last knowledge source fixes its component, the next cycle marks the whole entry in good standing and the program halts. See `example_pair.py`.
+
+### Outcome-routed dispatch (on_pass / on_fail)
+A route holds two chains, and the Controller chooses between them once the entry's first verdict exists:
+* **on_fail:** the classic repair ladder, tried when the entry evaluates out of good standing. `route(key, chain)` is shorthand for `route(key, on_fail=chain)`, so existing routes keep their meaning
+* **on_pass:** an optional confirmation chain, tried once when the entry evaluates as *passing*. The pass is provisional: the Controller clears the entry's standing, the chain's knowledge sources do their work, and re-evaluation decides. An empty on_pass chain means a pass is final
+* Dispatch happens once per key. Within the chosen chain, failure handoff, success handoff, and end-of-route escalation behave exactly as described above; an empty chosen chain escalates immediately (nothing can help)
+
+This lets a route encode a decision tree rather than a single ladder — e.g. remote attestation (`pybb/attestation`): a cheap integrity check that *fails* is attributed by a finer-grained tier on `on_fail`, while one that *passes* is semantically confirmed by an expensive verification tier on `on_pass`; either tier's failure escalates with that tier's report. See `pybb/attestation/README.md`.
 ## Knowledge Source
 ### Attributes
 * **name:** name of knowledge source
@@ -64,14 +72,17 @@ The overall pair is evaluated by the Controller at the start of every cycle, so 
 * **blackboard:** blackboard the contorller operates on
 * **knowledge_sources:** list of knowledge sources to be used
 * **predicate_registry:** temporary mapping of blackboard entry keys to callable functions
-* **routes:** mapping of a blackboard entry key to a knowledge source chain that can operate on that entry
+* **routes:** mapping of a blackboard entry key to its outcome-routed knowledge source chains (`on_pass` / `on_fail`)
+* **dispatched:** mapping of a blackboard entry key to the chain chosen by its first evaluated outcome
 * **max_cycles:** maximum cycles controller can perform if termination conditions are not met (don't think this is reachable at the moment due to escalate)
 * **cycle_count:** number tracking the amount of cycles the controller has run. 1 cycle=1 iteration through all knowledge sources
 ### Methods
 * **register_predicate:** create a mapping between a blackboard entry key and a callable
 * **add_ks:** add a knowledge source to the controller's list of knowledge sources
-* **route:** registers a route for a blackboard entry key and places the key in the first knowledge source's partition
+* **route:** registers outcome-routed chains for a blackboard entry key. Placement happens at dispatch time (after the entry's first evaluation), since the chain depends on the outcome
   * example rationale: `route("less_than_3", [ks1, ks2])` ==> ks1 attempts on blackboard entry "less_than_3", if ks1 fails, ks2 attempts on the same blackboard entry. If all knowledge sources in the route fail, entry is moved to escalate
+  * `route(key, on_pass=[ks3], on_fail=[ks1, ks2])` additionally sends a *passing* first verdict through ks3 for confirmation before the entry may rest in good standing
+* **_dispatch:** each cycle, places routed keys whose first verdict exists onto the matching chain (failing -> on_fail, passing with a confirmation chain -> on_pass)
 * **_advance:** moves a blackboard entry key into the next eligible knowledge source. On failure (current knowledge source reached maximum attempts) restores the measurement the knowledge source worked on - component-scoped for component knowledge sources, full otherwise. On success (`restore=False`, current knowledge source's component passed) preserves the fix. Moves entry to escalate partition if no available knowledge source remains in the route.
 * **_advance_ready:** success-driven handoff. Each cycle, after evaluation, advances any key whose current component-scoped knowledge source has satisfied its component's condition
 * **_evaluate_entry:** evaluates a predicate with a given measurement. calls the function from the predicate registry and uses the measurement as a parameter to the function. Update the standing of the entry according to the result of calling the predicate with the measurement. For component-wise entries, evaluates each component's predicate and sets good standing only if all pass.
