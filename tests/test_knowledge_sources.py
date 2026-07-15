@@ -1,20 +1,20 @@
-"""Knowledge-source behavior with a scripted fake client (no CVM needed)."""
+"""Attestation decision-tree behavior on the outcome-routed blackboard,
+driven by a scripted fake client (no CVM needed).
+
+The semantics under test:
+    l1 pass -> confirm at l3 (when routed);  l3 pass = done, l3 fail = escalate
+    l1 fail -> attribute at l2;              l2 pass = done, l2 fail = escalate
+"""
 
 import base64
 
-import pytest
-
 from pybb import BlackboardController
 from pybb.attestation import (
-    AppraisalKS,
-    AttestationKS,
-    EscalationKS,
     ProtocolDir,
-    TrustDecisionKS,
-    component_key,
-    evidence_key,
-    request_key,
-    verdict_key,
+    TierKS,
+    attestation_request,
+    make_attestation_predicate,
+    trust_summary,
 )
 from pybb.attestation.client import AttestationClient
 
@@ -50,13 +50,12 @@ class FakeClient(AttestationClient):
     def __init__(self, responses: dict):
         self.responses = responses
         self.calls: list[str] = []
+        self.path_maps: list[dict | None] = []
 
     def run_protocol(self, protocol: ProtocolDir, path_map=None) -> dict:
         self.calls.append(protocol.protocol_id)
+        self.path_maps.append(path_map)
         result = self.responses[protocol.protocol_id]
-        if isinstance(result, list):
-            # sequence of responses; the last one repeats
-            result = result.pop(0) if len(result) > 1 else result[0]
         if isinstance(result, Exception):
             raise result
         return result
@@ -69,167 +68,172 @@ def _proto(pid: str) -> ProtocolDir:
     )
 
 
-def _controller(client, protocols, with_escalation=True):
+PROTOS = {"l1": _proto("l1"), "l2": _proto("l2"), "l3": _proto("l3")}
+
+
+def _controller(client, on_pass=(), on_fail=(), key="sys", path_map=None):
+    """Entry attested at l1, with confirmation/attribution tiers per outcome chain."""
     ctl = BlackboardController()
-    ctl.add_ks(AttestationKS(client=client, protocols=protocols))
-    ctl.add_ks(AppraisalKS(protocols=protocols))
-    if with_escalation:
-        ctl.add_ks(EscalationKS(on_fail="l1", escalate_to="l2"))
-    ctl.add_ks(TrustDecisionKS())
+    ctl.register_predicate(
+        "attestation", make_attestation_predicate(client, PROTOS)
+    )
+    pass_rungs = [TierKS(protocol_id=p, carry_path_map=False) for p in on_pass]
+    fail_rungs = [TierKS(protocol_id=p) for p in on_fail]
+    for ks in [*pass_rungs, *fail_rungs]:
+        ctl.add_ks(ks)
+    ctl.blackboard.write_entry(
+        key=key, predicate="attestation",
+        measurement=attestation_request("l1", path_map=path_map),
+    )
+    ctl.route(key, on_pass=pass_rungs, on_fail=fail_rungs)
     return ctl
 
 
-PROTOS = {"l1": _proto("l1"), "l2": _proto("l2")}
+# ── l1 pass branch ────────────────────────────────────────────────────────────
 
-
-def _seed(ctl, pid="l1"):
-    ctl.blackboard.write(
-        key=request_key(pid), value={"protocol": pid}, source="seed",
-        tags=["attestation", "request"],
-    )
-
-
-def test_pass_path_no_escalation():
+def test_l1_pass_without_confirmation_chain_is_done():
     client = FakeClient({"l1": _appr_response({"a.aadl": True, "b.aadl": True})})
-    ctl = _controller(client, PROTOS)
-    _seed(ctl)
+    ctl = _controller(client, on_fail=("l2",))
     bb = ctl.run()
 
     assert client.calls == ["l1"]
-    assert bb.read(verdict_key("l1"))["passed"] is True
-    assert not bb.has(request_key("l2"))
-    assert bb.hypothesis.startswith("All attested components intact")
-    assert bb.entries[verdict_key("l1")].confidence == 1.0
+    entry = bb.get_entry("sys")
+    assert entry.good_standing and entry.result.protocol == "l1"
+    assert entry.ks_history == {}  # no rung ever fired
+    assert "all attested components intact (l1 passed)" in trust_summary(bb)
 
 
-def test_fail_escalates_and_attributes():
+def test_l1_pass_confirmed_by_l3():
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": True}),
+        "l3": _appr_response({"tipe": True, "logika": True}),
+    })
+    ctl = _controller(client, on_pass=("l3",), on_fail=("l2",))
+    bb = ctl.run()
+
+    assert client.calls == ["l1", "l3"]  # l2 never ran
+    entry = bb.get_entry("sys")
+    assert entry.good_standing and entry.result.protocol == "l3"
+    assert entry.ks_history == {"tier:l3": 1}
+    assert "l1 passed; confirmed by l3" in trust_summary(bb)
+
+
+def test_l1_pass_l3_refutes_escalates_with_l3_report():
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": True}),
+        "l3": _appr_response({"tipe": True, "logika": False}),
+    })
+    ctl = _controller(client, on_pass=("l3",), on_fail=("l2",))
+    bb = ctl.run()
+
+    assert client.calls == ["l1", "l3"]
+    assert "sys" in bb.escalate and "sys" not in bb.entries
+    escalated = bb.escalate["sys"]
+    assert escalated.result.protocol == "l3" and not escalated.result.passed
+    summary = trust_summary(bb)
+    assert "l1 passed but confirmation failed (l3)" in summary
+    assert "logika" in summary and "user intervention required" in summary
+
+
+# ── l1 fail branch ────────────────────────────────────────────────────────────
+
+def test_l1_fail_l2_pass_is_done():
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": False}),
+        "l2": _appr_response({"a.aadl:1-3": True, "a.aadl:5-9": True}),
+    })
+    ctl = _controller(client, on_pass=("l3",), on_fail=("l2",))
+    bb = ctl.run()
+
+    assert client.calls == ["l1", "l2"]  # l3 never ran
+    entry = bb.get_entry("sys")
+    assert entry.good_standing and entry.result.protocol == "l2"
+    assert entry.ks_history == {"tier:l2": 1}
+    assert "l2 passed after l1 failed" in trust_summary(bb)
+
+
+def test_l1_fail_l2_fail_escalates_with_l2_report():
     client = FakeClient({
         "l1": _appr_response({"a.aadl": False}),
         "l2": _appr_response({"a.aadl:1-3": True, "a.aadl:5-9": False}),
+        "l3": _appr_response({"logika": True}),
     })
-    ctl = _controller(client, PROTOS)
-    _seed(ctl)
+    ctl = _controller(client, on_pass=("l3",), on_fail=("l2",))
     bb = ctl.run()
 
+    # escalates directly off the l2 failure: l3 is NOT tried on this branch
     assert client.calls == ["l1", "l2"]
-    assert bb.read(verdict_key("l1"))["passed"] is False
-    l2 = bb.read(verdict_key("l2"))
-    assert l2["passed"] is False
-    assert l2["components"] == {"a.aadl:1-3": True, "a.aadl:5-9": False}
-    comp = bb.read(component_key("l2", "a.aadl:5-9"))
-    assert comp["passed"] is False and comp["reason"] == "mismatch"
-    assert "l2/a.aadl:5-9" in bb.hypothesis
-    assert "l2/a.aadl:1-3" not in bb.hypothesis
-    # escalation request carries provenance
-    assert bb.read(request_key("l2"))["triggered_by"] == "l1"
+    assert "sys" in bb.escalate and "sys" not in bb.entries
+    escalated = bb.escalate["sys"]
+    assert escalated.ks_history == {"tier:l2": 1}
+    assert escalated.result.protocol == "l2" and not escalated.result.passed
+    summary = trust_summary(bb)
+    assert "ladder exhausted (l1, l2 failed)" in summary
+    assert "a.aadl:5-9" in summary and "a.aadl:1-3" not in summary
+    assert "user intervention required" in summary
 
 
-def test_client_error_becomes_failed_verdict():
+def test_l1_fail_with_empty_on_fail_chain_escalates_immediately():
     client = FakeClient({"l1": RuntimeError("cvm exploded")})
-    ctl = _controller(client, PROTOS, with_escalation=False)
-    _seed(ctl)
+    ctl = _controller(client)  # no chains at all
     bb = ctl.run()
 
-    ev = bb.read(evidence_key("l1"))
-    assert ev["success"] is False and "cvm exploded" in ev["error"]
-    assert "error" in bb.entries[evidence_key("l1")].tags
-    assert bb.read(verdict_key("l1"))["passed"] is False
-    assert "no appraisal evidence" in bb.hypothesis
+    assert "sys" in bb.escalate and "sys" not in bb.entries
+    assert "cvm exploded" in bb.escalate["sys"].result.error
+    assert "cvm exploded" in trust_summary(bb)
 
 
-def test_reposted_request_reruns_pipeline():
+# ── plumbing ──────────────────────────────────────────────────────────────────
+
+def test_path_map_carried_on_fail_dropped_on_pass():
+    path_map = {"/real": "/copy"}
+
+    fail_client = FakeClient({
+        "l1": _appr_response({"a.aadl": False}),
+        "l2": _appr_response({"a.aadl:1-3": True}),
+    })
+    ctl = _controller(fail_client, on_fail=("l2",), path_map=path_map)
+    ctl.run()
+    assert dict(zip(fail_client.calls, fail_client.path_maps)) == {
+        "l1": path_map, "l2": path_map,  # attribution measures the same copy
+    }
+
+    pass_client = FakeClient({
+        "l1": _appr_response({"a.aadl": True}),
+        "l3": _appr_response({"logika": True}),
+    })
+    ctl = _controller(pass_client, on_pass=("l3",), path_map=path_map)
+    ctl.run()
+    assert dict(zip(pass_client.calls, pass_client.path_maps)) == {
+        "l1": path_map, "l3": None,  # semantic tier runs the real project
+    }
+
+
+def test_predicate_memoizes_until_nonce_bump():
     client = FakeClient({"l1": _appr_response({"a.aadl": True})})
-    ctl = _controller(client, PROTOS, with_escalation=False)
-    _seed(ctl)
-    ctl.run()
-    assert client.calls == ["l1"]
+    predicate = make_attestation_predicate(client, PROTOS)
 
-    # re-post the same request id: timestamp guards must re-run attest+appraise
-    _seed(ctl)
-    ctl.max_cycles = 110
-    ctl.run()
+    first = predicate(attestation_request("l1"))
+    again = predicate(attestation_request("l1"))
+    assert first is again and client.calls == ["l1"]
+
+    predicate(attestation_request("l1", nonce=1))
     assert client.calls == ["l1", "l1"]
 
 
 def test_history_is_audit_trail():
-    client = FakeClient({"l1": _appr_response({"a.aadl": True})})
-    ctl = _controller(client, PROTOS, with_escalation=False)
-    _seed(ctl)
+    client = FakeClient({
+        "l1": _appr_response({"a.aadl": False}),
+        "l2": _appr_response({"a.aadl:1-3": True}),
+    })
+    ctl = _controller(client, on_fail=("l2",))
     bb = ctl.run()
-    keys = [e.key for e in bb.history]
-    assert keys == [
-        request_key("l1"),
-        evidence_key("l1"),
-        component_key("l1", "a.aadl"),
-        verdict_key("l1"),
-        "attestation.hypothesis",
+
+    verdicts = [
+        (entry.result.protocol, entry.result.passed)
+        for key, entry in bb.get_history()
+        if key == "sys" and entry.result is not None
     ]
-    sources = [e.source for e in bb.history]
-    assert sources == ["seed", "AttestationKS", "AppraisalKS", "AppraisalKS", "TrustDecisionKS"]
-
-
-# ── three-tier ladder (Track A) ───────────────────────────────────────────────
-
-def _three_tier_controller(client, semantic=("val",)):
-    protocols = {"l1": _proto("l1"), "l2": _proto("l2"), "val": _proto("val")}
-    ctl = BlackboardController()
-    ctl.add_ks(AttestationKS(client=client, protocols=protocols))
-    ctl.add_ks(AppraisalKS(protocols=protocols))
-    ctl.add_ks(EscalationKS(name="EscalationKS_l1_l2", on_fail="l1", escalate_to="l2"))
-    ctl.add_ks(EscalationKS(name="EscalationKS_l2_val", on_fail="l2", escalate_to="val"))
-    ctl.add_ks(TrustDecisionKS(semantic=list(semantic)))
-    return ctl
-
-
-def test_three_tier_modified_but_verified():
-    client = FakeClient({
-        "l1": _appr_response({"a.aadl": False}),
-        "l2": _appr_response({"a.aadl:1-3": False}),
-        "val": _appr_response({"tipe": True, "logika": True, "test": True}),
-    })
-    ctl = _three_tier_controller(client)
-    _seed(ctl)
-    bb = ctl.run()
-
-    assert client.calls == ["l1", "l2", "val"]
-    assert bb.read(verdict_key("val"))["passed"] is True
-    assert "l2/a.aadl:1-3" in bb.hypothesis
-    assert "still verifies" in bb.hypothesis
-    assert bb.entries["attestation.hypothesis"].confidence == 0.0
-
-
-def test_three_tier_semantic_failure():
-    client = FakeClient({
-        "l1": _appr_response({"a.aadl": False}),
-        "l2": _appr_response({"a.aadl:1-3": False}),
-        "val": _appr_response({"tipe": True, "logika": False}),
-    })
-    ctl = _three_tier_controller(client)
-    _seed(ctl)
-    bb = ctl.run()
-
-    assert client.calls == ["l1", "l2", "val"]
-    assert "failed semantic verification" in bb.hypothesis
-    assert "val/logika" in bb.hypothesis
-    assert "l2/a.aadl:1-3" in bb.hypothesis
-
-
-def test_three_tier_ladder_stops_at_first_pass():
-    client = FakeClient({"l1": _appr_response({"a.aadl": True})})
-    ctl = _three_tier_controller(client)
-    _seed(ctl)
-    bb = ctl.run()
-
-    assert client.calls == ["l1"]
-    assert not bb.has(request_key("l2")) and not bb.has(request_key("val"))
-    assert bb.hypothesis.startswith("All attested components intact")
-
-
-def test_semantic_only_failure():
-    # validation requested directly (no ladder) and fails
-    client = FakeClient({"val": _appr_response({"logika": False})})
-    ctl = _three_tier_controller(client)
-    _seed(ctl, "val")
-    bb = ctl.run()
-
-    assert "failing verification: val/logika" in bb.hypothesis
+    # l1 failure recorded first, l2 pass last (bookkeeping may repeat states)
+    assert verdicts[0] == ("l1", False)
+    assert verdicts[-1] == ("l2", True)

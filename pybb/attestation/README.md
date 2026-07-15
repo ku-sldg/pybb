@@ -1,88 +1,69 @@
 # pybb.attestation
 
-Remote-attestation knowledge sources for the pybb blackboard, integrating the
-ku-sldg Copland stack (Rocq CVM + asp-libs ASPs) following the patterns of
-HEAL-demo and cvm-mcp.
+Remote attestation on the pybb blackboard, integrating the ku-sldg Copland
+stack (Rocq CVM + asp-libs ASPs) following the patterns of HEAL-demo and
+cvm-mcp.
 
 ## Architecture
 
-Attestation is expressed as blackboard dynamics, not a call chain. Knowledge
-sources coordinate through key conventions:
+Attestation maps onto the routed blackboard's own vocabulary — predicates,
+measurements, routes, and the escalate segment — rather than bringing its
+own coordination machinery:
 
-| key | written by | value |
-|---|---|---|
-| `attestation.request/<id>` | any domain KS | `{"protocol": id, "path_map"?: {...}}` |
-| `attestation.evidence/<id>` | `AttestationKS` | raw `ProtocolRunResponse` + success flag |
-| `attestation.verdict/<id>` | `AppraisalKS` | binary verdict + per-component summary |
-| `attestation.component/<id>/<cid>` | `AppraisalKS` | one entry per appraised target |
-| `attestation.hypothesis` | `TrustDecisionKS` | final trust summary (also sets `blackboard.hypothesis`) |
-
-Guards compare timestamps (evidence newer than request, verdict newer than
-evidence), so re-posting a request re-runs the pipeline. All KSs are
-stateless; `blackboard.history` is the audit trail.
-
-`EscalationKS` demonstrates blackboard control: when a cheap whole-file
-protocol (gumbo_l1) fails, it posts a request for the per-contract protocol
-(gumbo_l2), whose component entries attribute the failure to a specific
-GUMBO contract range.
-
-## Three-tier ladder (Phase 2 Track A)
-
-A second `EscalationKS` instance chains gumbo_l2 failures to
-`gumbo_validation`, which runs the live Sireum tools (`proyek tipe`,
-`proyek logika` over the GumboX predicates, randomized GumboX unit tests)
-via the `run_command_hamr` ASP — appraised by exit code, no goldens
-involved. The ladder is pure configuration; no KS class knows about tiers:
-
-    tier 1  gumbo_l1          whole-file hashes          ~1s
-    tier 2  gumbo_l2          per-contract ranges        ~1s   (on l1 fail)
-    tier 3  gumbo_validation  Sireum tipe/logika/test    ~min  (on l2 fail)
-
-`TrustDecisionKS(semantic=["gumbo_validation"])` is the only place tier
-semantics exist in code: integrity failures plus passing semantic
-verification yield "artifacts modified yet system still verifies", while a
-semantic failure yields a categorically worse hypothesis.
-
-Command ASPs resolve their tool (e.g. `sireum`) by name from PATH;
-`CvmConfig.path_prepend` (default: `~/Claude_workspace/bin`) ensures CVM
-child processes see workspace-safe wrappers rather than TCC-restricted
-locations.
-
-## Repair loop (Phase 3)
-
-HEAL-demo's `orchestrate()` — attest, appraise, repair on failure, re-attest,
-bounded retries — re-expressed as blackboard dynamics:
-
-| HEAL-demo | pybb |
+| blackboard concept | attestation meaning |
 |---|---|
-| `orchestrate()` while-loop | controller cycles + guards |
-| `repairer_map: {asp_id: fn}` | `RepairKS.repairers` registry (`Repairer` interface) |
-| `max_attempts` argument | `repair.attempts/<id>` blackboard counter |
-| appraisal summary check | `attestation.verdict/<id>` entries |
-| implicit retry | `RepairKS` re-posts `attestation.request/*` (same-id, timestamp guards re-run the pipeline) |
-| repair log (stdout) | `repair.action/<id>/<n>/<targ>` audit entries |
+| entry (one per attested system) | the trust question, e.g. `"gumbo"` |
+| measurement | request descriptor `{"protocol", "path_map"?, "nonce"}` |
+| predicate | runs the named protocol via the client and appraises the response into a `Verdict` |
+| `entry.result` | the `Verdict`: overall pass plus per-component results |
+| good standing | some tier rendered a conclusive passing verdict |
+| route (`on_pass` / `on_fail` chains) | the decision tree over tiers |
+| escalate segment | every responsible tier failed; `entry.result` is the failure report |
 
-`RepairKS` sits at priority 12 — above `EscalationKS` (10), below the
-attest/appraise pipeline (20/30). Consequences, all emergent from those two
-integers: repair preempts the expensive semantic tier and fires as soon as
-tier 2 attributes the failure; the pipeline re-verifies the repaired state
-before anything else runs; if repair fails, it retries up to `max_attempts`;
-when attempts exhaust (or nothing is repairable), its guard goes false and
-the starved escalation finally runs the semantic tier as a diagnosis.
-`reattest` lists the protocols to re-request after repairing (include the
-semantic tier so repaired code gets re-verified).
+The predicate (built by `make_attestation_predicate(client, protocols)`)
+IS the attestation: the controller's evaluation step runs the protocol
+named in the measurement and stores the appraised `Verdict` (truthy iff
+every component passed). Because the controller re-evaluates entries every
+cycle, the predicate memoizes on the measurement; a future repair KS forces
+re-attestation by bumping the request nonce.
 
-`GoldenRestoreRepairer` restores failing `readfile_range` /
-`readfile_marker_range` components from their provisioned goldens. Those
-ASPs measure ranges flattened (newlines stripped), so restoration is
-line-wise: matching lines are consumed from both ends of the golden and the
-single differing line is rewritten — byte-exact for any within-line tamper,
-refused (file untouched) when the tamper spans lines or changed the line
-count. Repair writes only to the measured tree; goldens remain provisioning-
-owned. Hash-only components (gumbo_l1's whole files) are inherently
-unrepairable — content cannot be reconstructed from a hash — so such
-failures burn no attempts and fall through to diagnosis and a failing
-hypothesis.
+Knowledge sources are tier rungs (`TierKS`): each one reacts to the entry
+by re-pointing its measurement at its own protocol, and the controller's
+next evaluation attests there. No KS runs protocols or parses evidence.
+
+## The decision tree (temp-control / GUMBO)
+
+```python
+controller.route("gumbo",
+    on_pass=[TierKS(protocol_id="gumbo_validation", carry_path_map=False)],
+    on_fail=[TierKS(protocol_id="gumbo_l2")])
+```
+
+    eval gumbo_l1 (whole-file hashes, ~1s)
+      pass -> gumbo_validation  sireum tipe/logika/test (~min)
+                pass = done     fail = escalate (validation report)
+      fail -> gumbo_l2          per-contract slices (~1s)
+                pass = done     fail = escalate (per-contract report)
+
+- A passing l1 with a configured `on_pass` chain is *provisional*: the
+  controller clears its standing and dispatches to the confirmation tier.
+  Without `--validate` there is no `on_pass` chain and an l1 pass is final.
+- A failing l1 dispatches to `on_fail`, where gumbo_l2's per-contract
+  ranges attribute the failure to specific GUMBO contracts. If the slices
+  all match (tamper outside measured content), the entry ends in good
+  standing at finer granularity.
+- Escalation is the controller's own end-of-chain behavior: the entry
+  moves to the escalate segment carrying the failing tier's `Verdict`
+  (failing components and reasons) and the `ks_history` of attempts.
+
+`trust_summary(blackboard, semantic=[...])` renders the final state as
+prose after `run()` — including the audit distinctions good standing alone
+doesn't show ("intact", "confirmed by validation", "clean at finer
+granularity", "passed but confirmation failed").
+
+`carry_path_map=False` on the confirmation rung reflects a real asymmetry:
+integrity tiers re-measure the attested file copy (`path_map` re-roots
+every filepath), while semantic validation runs the real, runnable project.
 
 ## Provisioning is out of scope (deliberately)
 
@@ -95,34 +76,6 @@ decision made out-of-band, and must never be reachable from the blackboard's
 failure-handling logic — auto-provisioning after a failed appraisal would
 launder tampered state into the new golden.
 
-## Rodeo transport (Phase 2 Track B)
-
-`RodeoSubprocessClient` + `RodeoProtocol` (rodeo.py) attest HAMR
-attestation-report projects (e.g. INSPECTA-models isolette) via
-rust-rodeo-client: the provisioned `hamr_maestro_term.json` drives the
-`hamr_readfile_range_many` ASP, which reads every contract slice named in
-the report and appraises the bundle against golden evidence. Results come
-back as an APPSUMM response, which `parse_appraisal` dispatches on — the
-knowledge sources are transport-agnostic.
-
-Dual transports coexist as two `AttestationKS` instances (each serves only
-protocols in its own registry) sharing one blackboard. Provisioning remains
-out-of-band: run rodeo's `--hamr-report-filepath ... -p` phase manually
-from a known-good tree (see rodeo.py docstring).
-
-## Report-guided protocol dirs (isolette_l1 / isolette_l2)
-
-Isolette is also attestable through the same provisioning workflow as
-temp-control: `cvm-mcp/hamr_report_protocols.py` derives standard protocol
-dirs from the HAMR attestation report (l1 = hashfile per report-named file,
-l2 = readfile_range per contract slice, target ids carrying
-component::contract metadata), and the existing dashboard flow provisions
-them. The report stays authoritative for *what* to measure — regenerate and
-re-provision whenever HAMR regenerates the report. Because these are
-ordinary CVM-transport protocols with content goldens, isolette gains the
-full ladder, `path_map` tamper demos, per-contract attribution, and
-`GoldenRestoreRepairer` support — parity with the gumbo demos.
-
 ## Modules
 
 - `copland.py` — typed Pydantic models of the CVM wire format (adapted from
@@ -131,11 +84,17 @@ full ladder, `path_map` tamper demos, per-contract attribution, and
 - `client.py` — `ProtocolDir` (loads cvm-mcp-style protocol directories,
   assembles run requests) and `CvmSubprocessClient` (invokes the CVM binary).
   Transports implement `AttestationClient`; a socket/AM client can slot in
-  without touching the knowledge sources.
+  without touching the rest.
 - `appraisal.py` — walks post-APPR evidence into `ComponentResult`s;
   binary `overall_verdict`.
-- `knowledge_sources.py` — `AttestationKS`, `AppraisalKS`, `EscalationKS`,
-  `TrustDecisionKS`.
+- `knowledge_sources.py` — the attestation predicate factory, `Verdict`,
+  and `TierKS`.
+- `summary.py` — `trust_summary`, the post-run trust narrative.
+
+Deferred to follow-up PRs (they live on the `attestation-integration`
+branch): the repair loop (`RepairKS`, `GoldenRestoreRepairer` — slots in by
+lengthening the `on_fail` chain) and the isolette examples (CVM ladder and
+rodeo transport).
 
 ## Running
 
@@ -144,20 +103,21 @@ Environment (defaults target `~/Claude_workspace`; override via env vars):
 - `CVM_BINARY` — Rocq CVM binary (`cvm/_build/default/theories/cvm`)
 - `ASP_BIN` — asp-libs release binaries (`asp-libs/target/release`)
 
-Independent workflow scripts (each: env check, then the full story with
-`--tamper` / `--repair` variants; see script headers for all flags):
+Command ASPs resolve their tool (e.g. `sireum`) by name from PATH;
+`CvmConfig.path_prepend` (default: `~/Claude_workspace/bin`) ensures CVM
+child processes see workspace-safe wrappers rather than TCC-restricted
+locations.
 
 ```sh
-./examples/run_isolette_workflow.sh   # provision -> rodeo bundle -> l1/l2 ladder
-./examples/run_gumbo_workflow.sh      # temp-control three-tier ladder (+ Sireum)
-./examples/run_full_workflow.sh       # wrapper: isolette, plus gumbo with a ladder flag
+./examples/run_gumbo_workflow.sh             # clean run (~1s)
+./examples/run_gumbo_workflow.sh --tamper    # l1 fail -> l2 report -> escalate
+./examples/run_gumbo_workflow.sh --validate  # clean + sireum confirmation (~min)
 ```
 
-Or the underlying Python examples directly, e.g.:
+Or the Python example directly:
 
 ```sh
-python examples/gumbo_attestation.py --tamper --validate --repair
-python examples/isolette_ladder_attestation.py --tamper --repair
+python examples/gumbo_attestation.py --tamper [--validate]
 ```
 
 Tests:
@@ -165,5 +125,5 @@ Tests:
 ```sh
 pytest -m "not cvm"       # unit tests only (no external binaries)
 pytest                    # includes end-to-end CVM runs (auto-skip if unavailable)
-RUN_SIREUM=1 pytest       # also the multi-minute Sireum validation run
+RUN_SIREUM=1 pytest       # also the multi-minute Sireum validation runs
 ```

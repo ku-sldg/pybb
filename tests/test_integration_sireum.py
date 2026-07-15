@@ -1,10 +1,14 @@
 """
-End-to-end gumbo_validation run: the CVM forks run_command_hamr five times
+End-to-end gumbo_validation runs: the CVM forks run_command_hamr five times
 (sireum proyek tipe, logika x2, test x2 against temp-control-jvm/slang),
 appraised by exit code.
 
-Takes minutes. Gated behind RUN_SIREUM=1 in addition to the cvm marker so a
-plain `pytest` stays fast.
+Covers both ways validation participates: requested directly as a
+single-tier entry, and as the on_pass confirmation chain after a passing
+gumbo_l1 (the "L1 succeeds, try L3" edge of the decision tree).
+
+Takes minutes per run. Gated behind RUN_SIREUM=1 in addition to the cvm
+marker so a plain `pytest` stays fast.
 """
 
 import os
@@ -14,13 +18,12 @@ import pytest
 
 from pybb import BlackboardController
 from pybb.attestation import (
-    AppraisalKS,
-    AttestationKS,
     CvmSubprocessClient,
     ProtocolDir,
-    TrustDecisionKS,
-    request_key,
-    verdict_key,
+    TierKS,
+    attestation_request,
+    make_attestation_predicate,
+    trust_summary,
 )
 from pybb.attestation.client import DEFAULT_CVM_BINARY, DEFAULT_PATH_PREPEND
 
@@ -46,23 +49,55 @@ def test_gumbo_validation_clean_pass():
         "gumbo_validation": ProtocolDir.load(str(FIXTURES / "gumbo_validation"))
     }
     ctl = BlackboardController()
-    ctl.add_ks(AttestationKS(client=CvmSubprocessClient(), protocols=protocols))
-    ctl.add_ks(AppraisalKS(protocols=protocols))
-    ctl.add_ks(TrustDecisionKS(semantic=["gumbo_validation"]))
-    ctl.blackboard.write(
-        key=request_key("gumbo_validation"),
-        value={"protocol": "gumbo_validation"},
-        source="test",
-        tags=["attestation", "request"],
+    ctl.register_predicate(
+        "attestation",
+        make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
-    bb = ctl.run()
+    ctl.blackboard.write_entry(
+        key="gumbo_validation", predicate="attestation",
+        measurement=attestation_request("gumbo_validation"),
+    )
+    ctl.run()
+    bb = ctl.blackboard
 
-    verdict = bb.read(verdict_key("gumbo_validation"))
-    assert verdict is not None and verdict["passed"] is True, verdict
-    assert len(verdict["components"]) == 5
-    assert any("proyek logika" in cid for cid in verdict["components"])
-    assert any("proyek test" in cid for cid in verdict["components"])
-    assert bb.hypothesis.startswith("All attested components intact")
+    entry = bb.get_entry("gumbo_validation")
+    assert entry is not None and entry.good_standing, entry
+    verdict = entry.result
+    assert len(verdict.components) == 5
+    descriptions = [c.targ_id or c.description for c in verdict.components]
+    assert any("proyek logika" in cid for cid in descriptions)
+    assert any("proyek test" in cid for cid in descriptions)
+    assert "all attested components intact" in trust_summary(bb)
 
     # environment check: CVM children saw the workspace PATH prepend
     assert DEFAULT_PATH_PREPEND, "workspace bin dir missing from PATH prepend"
+
+
+def test_l1_pass_confirmed_by_validation():
+    """Clean tree: l1 passes provisionally, the on_pass chain confirms at l3."""
+    protocols = {
+        pid: ProtocolDir.load(str(FIXTURES / pid))
+        for pid in ("gumbo_l1", "gumbo_l2", "gumbo_validation")
+    }
+    ctl = BlackboardController()
+    ctl.register_predicate(
+        "attestation",
+        make_attestation_predicate(CvmSubprocessClient(), protocols),
+    )
+    confirm = TierKS(protocol_id="gumbo_validation", carry_path_map=False)
+    attribute = TierKS(protocol_id="gumbo_l2")
+    for ks in (confirm, attribute):
+        ctl.add_ks(ks)
+    ctl.blackboard.write_entry(
+        key="gumbo", predicate="attestation",
+        measurement=attestation_request("gumbo_l1"),
+    )
+    ctl.route("gumbo", on_pass=[confirm], on_fail=[attribute])
+    ctl.run()
+    bb = ctl.blackboard
+
+    entry = bb.get_entry("gumbo")
+    assert entry is not None and entry.good_standing, entry
+    assert entry.result.protocol == "gumbo_validation"
+    assert entry.ks_history == {"tier:gumbo_validation": 1}  # l2 never fired
+    assert "gumbo_l1 passed; confirmed by gumbo_validation" in trust_summary(bb)

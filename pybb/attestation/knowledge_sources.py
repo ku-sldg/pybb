@@ -1,304 +1,153 @@
 """
-Attestation knowledge sources for the pybb blackboard.
+Attestation on the routed blackboard.
 
-Key conventions (the integration surface between KSs):
+The predicate IS the attestation: an entry's measurement is a request
+descriptor
 
-    attestation.request/<id>    {"protocol": <id>, "path_map": {...}?}
-    attestation.evidence/<id>   {"protocol", "success", "response" | "error"}
-    attestation.verdict/<id>    {"protocol", "passed", "components": {cid: bool}}
-    attestation.component/<id>/<cid>   ComponentResult dump
+    {"protocol": <protocol_id>, "path_map": {...}?, "nonce": <int>}
 
-All coordination state lives on the blackboard; the KSs themselves are
-stateless. Guards compare timestamps (evidence newer than request, verdict
-newer than evidence) rather than bare key existence so that re-posting a
-request naturally re-runs the pipeline.
+and the registered predicate (built by `make_attestation_predicate`) runs
+that protocol via the client, appraises the response, and returns a
+`Verdict` — truthy iff every appraised component passed — which the
+controller stores as the entry's result / good_standing.
+
+Knowledge sources are tier rungs: a `TierKS` responds to the entry by
+re-pointing its measurement at this rung's protocol, so the controller's
+next evaluation attests at the new tier. The decision tree is encoded in
+the route's outcome chains:
+
+    route("gumbo",
+          on_pass=[TierKS(protocol_id="gumbo_validation", carry_path_map=False)],
+          on_fail=[TierKS(protocol_id="gumbo_l2")])
+
+reads: a passing l1 verdict is provisional until semantic validation
+confirms it; a failing l1 verdict is attributed per-contract at l2. Either
+chosen tier's pass ends the episode in good standing; its failure exhausts
+the chain and the controller moves the entry to the escalate segment
+carrying that tier's failing Verdict as the report.
+
+The controller re-evaluates every entry each cycle, so the predicate
+memoizes on the measurement: unchanged request descriptors reuse the last
+Verdict instead of re-running the (possibly minutes-long) protocol. A
+future repair KS forces fresh attestation by bumping the nonce.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import json
+from typing import Any, Callable, Dict, List, Optional
+
+from pydantic import BaseModel
 
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
-from .appraisal import component_key_id, overall_verdict, parse_appraisal
-from .client import AttestationClient
+from .appraisal import ComponentResult, overall_verdict, parse_appraisal
 from .copland import rewrite_filepaths
 
-REQUEST_PREFIX = "attestation.request/"
-EVIDENCE_PREFIX = "attestation.evidence/"
-VERDICT_PREFIX = "attestation.verdict/"
-COMPONENT_PREFIX = "attestation.component/"
-REPAIR_ATTEMPTS_PREFIX = "repair.attempts/"
-REPAIR_ACTION_PREFIX = "repair.action/"
+
+def attestation_request(
+    protocol_id: str, path_map: Optional[Dict[str, str]] = None, nonce: int = 0
+) -> dict:
+    """Measurement descriptor for an attestation entry."""
+    request: dict = {"protocol": protocol_id, "nonce": nonce}
+    if path_map:
+        request["path_map"] = path_map
+    return request
 
 
-def request_key(rid: str) -> str:
-    return REQUEST_PREFIX + rid
-
-
-def evidence_key(rid: str) -> str:
-    return EVIDENCE_PREFIX + rid
-
-
-def verdict_key(rid: str) -> str:
-    return VERDICT_PREFIX + rid
-
-
-def component_key(rid: str, cid: str) -> str:
-    return f"{COMPONENT_PREFIX}{rid}/{cid}"
-
-
-def _ids_with_prefix(bb: Blackboard, prefix: str) -> List[str]:
-    return [k[len(prefix):] for k in bb.entries if k.startswith(prefix)]
-
-
-def _newer(bb: Blackboard, key_a: str, key_b: str) -> bool:
-    """True if entry key_a exists and is at least as new as entry key_b."""
-    a, b = bb.entries.get(key_a), bb.entries.get(key_b)
-    return a is not None and (b is None or a.timestamp >= b.timestamp)
-
-
-def pending_requests(bb: Blackboard) -> List[str]:
-    """Request ids with no evidence at least as new as the request."""
-    return [
-        rid for rid in _ids_with_prefix(bb, REQUEST_PREFIX)
-        if not _newer(bb, evidence_key(rid), request_key(rid))
-    ]
-
-
-def pending_evidence(bb: Blackboard) -> List[str]:
-    """Evidence ids with no verdict at least as new as the evidence."""
-    return [
-        rid for rid in _ids_with_prefix(bb, EVIDENCE_PREFIX)
-        if not _newer(bb, verdict_key(rid), evidence_key(rid))
-    ]
-
-
-class AttestationKS(KnowledgeSource):
-    """Serves attestation requests by running the protocol via the client."""
-
-    name: str = "AttestationKS"
-    priority: int = 20
-    client: Any  # AttestationClient
-    protocols: Dict[str, Any]  # protocol_id -> ProtocolDir | RodeoProtocol
-
-    def can_contribute(self, blackboard: Blackboard) -> bool:
-        return any(
-            (blackboard.read(request_key(rid)) or {}).get("protocol") in self.protocols
-            for rid in pending_requests(blackboard)
-        )
-
-    def execute(self, blackboard: Blackboard) -> None:
-        served = [
-            rid for rid in pending_requests(blackboard)
-            if (blackboard.read(request_key(rid)) or {}).get("protocol") in self.protocols
-        ]
-        rid = min(served, key=lambda r: blackboard.entries[request_key(r)].timestamp)
-        req = blackboard.read(request_key(rid))
-        protocol = self.protocols[req["protocol"]]
-        try:
-            response = self.client.run_protocol(protocol, path_map=req.get("path_map"))
-            value = {
-                "protocol": protocol.protocol_id,
-                "success": bool(response.get("SUCCESS")),
-                "response": response,
-                "path_map": req.get("path_map"),
-            }
-            tags = ["attestation", "evidence"]
-        except Exception as e:
-            value = {"protocol": protocol.protocol_id, "success": False, "error": str(e)}
-            tags = ["attestation", "evidence", "error"]
-        blackboard.write(
-            key=evidence_key(rid),
-            value=value,
-            source=self.name,
-            confidence=1.0 if value["success"] else 0.0,
-            tags=tags,
-        )
-
-
-class AppraisalKS(KnowledgeSource):
-    """Turns raw CVM evidence into a verdict and per-component entries."""
-
-    name: str = "AppraisalKS"
-    priority: int = 30
-    protocols: Dict[str, Any] = {}  # protocol_id -> ProtocolDir | RodeoProtocol
-
-    def can_contribute(self, blackboard: Blackboard) -> bool:
-        return bool(pending_evidence(blackboard))
-
-    def execute(self, blackboard: Blackboard) -> None:
-        pending = pending_evidence(blackboard)
-        rid = min(pending, key=lambda r: blackboard.entries[evidence_key(r)].timestamp)
-        ev = blackboard.read(evidence_key(rid)) or {}
-        protocol = self.protocols.get(ev.get("protocol"))
-        records = protocol.target_records() if protocol else []
-        if ev.get("path_map"):
-            # evidence args carry re-rooted filepaths; align records to match
-            records = rewrite_filepaths(records, ev["path_map"])
-
-        components = []
-        if ev.get("success") and "response" in ev:
-            components = parse_appraisal(ev["response"], records)
-        passed = overall_verdict(components)
-
-        seen: Dict[str, int] = {}
-        summary: Dict[str, bool] = {}
-        for c in components:
-            cid = component_key_id(c, seen)
-            summary[cid] = c.passed
-            blackboard.write(
-                key=component_key(rid, cid),
-                value=c.model_dump(),
-                source=self.name,
-                confidence=1.0 if c.passed else 0.0,
-                tags=["attestation", "component", ev.get("protocol", "")],
-            )
-        blackboard.write(
-            key=verdict_key(rid),
-            value={
-                "protocol": ev.get("protocol"),
-                "passed": passed,
-                "components": summary,
-                "error": ev.get("error"),
-            },
-            source=self.name,
-            confidence=1.0 if passed else 0.0,
-            tags=["attestation", "verdict"],
-        )
-
-
-class EscalationKS(KnowledgeSource):
-    """On a failed verdict, posts a follow-up attestation request."""
-
-    name: str = "EscalationKS"
-    priority: int = 10
-    on_fail: str
-    escalate_to: str
-    path_map: Optional[Dict[str, str]] = None
-
-    def can_contribute(self, blackboard: Blackboard) -> bool:
-        verdict = blackboard.read(verdict_key(self.on_fail))
-        if verdict is None or verdict.get("passed"):
-            return False
-        return not _newer(blackboard, request_key(self.escalate_to), verdict_key(self.on_fail))
-
-    def execute(self, blackboard: Blackboard) -> None:
-        value: Dict[str, Any] = {
-            "protocol": self.escalate_to,
-            "triggered_by": self.on_fail,
-        }
-        if self.path_map:
-            value["path_map"] = self.path_map
-        blackboard.write(
-            key=request_key(self.escalate_to),
-            value=value,
-            source=self.name,
-            tags=["attestation", "request", "escalation"],
-        )
-
-
-class TrustDecisionKS(KnowledgeSource):
+class Verdict(BaseModel):
     """
-    Summarizes all verdicts into the blackboard hypothesis once idle.
+    Appraised outcome of one protocol run; an attestation entry's result.
 
-    Verdict ids listed in `semantic` denote semantic-verification protocols
-    (e.g. Sireum tipe/logika/test runs): their passing means "the system
-    still verifies", which is weighed against integrity failures rather
-    than lumped in with them. This KS is deliberately the only place where
-    tier semantics exist in code.
+    Truthiness is the overall verdict, so the controller's
+    `good_standing = bool(result)` needs no special casing, while the
+    per-component results remain available for attribution.
     """
 
-    name: str = "TrustDecisionKS"
-    priority: int = 5
-    semantic: List[str] = []
+    protocol: str
+    passed: bool
+    components: List[ComponentResult] = []
+    error: str = ""
 
-    def can_contribute(self, blackboard: Blackboard) -> bool:
-        if blackboard.hypothesis is not None:
-            return False
-        if pending_requests(blackboard) or pending_evidence(blackboard):
-            return False
-        return bool(_ids_with_prefix(blackboard, VERDICT_PREFIX))
+    def __bool__(self) -> bool:
+        return self.passed
 
-    @staticmethod
-    def _failing(blackboard: Blackboard, rid: str) -> List[str]:
-        verdict = blackboard.read(verdict_key(rid)) or {}
-        failing = [
-            f"{rid}/{cid}"
-            for cid, ok in verdict.get("components", {}).items()
-            if not ok
-        ]
-        if not verdict.get("passed") and not verdict.get("components"):
-            failing.append(f"{rid} (no appraisal evidence)")
-        return failing
+    def failing(self) -> List[ComponentResult]:
+        return [c for c in self.components if not c.passed]
 
-    def execute(self, blackboard: Blackboard) -> None:
-        verdict_ids = _ids_with_prefix(blackboard, VERDICT_PREFIX)
-        semantic_ids = sorted(r for r in verdict_ids if r in self.semantic)
-        integrity_ids = sorted(r for r in verdict_ids if r not in self.semantic)
 
-        integrity_fail: List[str] = []
-        for rid in integrity_ids:
-            integrity_fail.extend(self._failing(blackboard, rid))
-        semantic_fail: List[str] = []
-        for rid in semantic_ids:
-            semantic_fail.extend(self._failing(blackboard, rid))
+def make_attestation_predicate(
+    client: Any, protocols: Dict[str, Any]
+) -> Callable[[dict], Verdict]:
+    """
+    Predicate over attestation-request measurements: run the named protocol
+    (ProtocolDir | RodeoProtocol) via the client and appraise the response.
+    Memoized on the measurement so per-cycle re-evaluation of unchanged
+    entries does not re-run protocols.
+    """
+    cache: Dict[str, Verdict] = {}
 
-        repair_attempts = sum(
-            blackboard.read(k) or 0
-            for k in blackboard.entries
-            if k.startswith(REPAIR_ATTEMPTS_PREFIX)
-        )
-        if not integrity_fail and not semantic_fail:
-            if repair_attempts:
-                plural = "attempt" if repair_attempts == 1 else "attempts"
-                hypothesis = (
-                    "Integrity violation detected and repaired "
-                    f"({repair_attempts} {plural}); system re-attested clean ("
-                    + ", ".join(sorted(verdict_ids)) + " passed)"
-                )
-            else:
-                hypothesis = (
-                    "All attested components intact ("
-                    + ", ".join(sorted(verdict_ids)) + " passed)"
-                )
-        elif semantic_fail:
-            parts = []
-            if integrity_fail:
-                parts.append(
-                    "failing components: " + ", ".join(sorted(integrity_fail))
-                )
-            parts.append(
-                "failing verification: " + ", ".join(sorted(semantic_fail))
+    def predicate(measurement: dict) -> Verdict:
+        key = json.dumps(measurement, sort_keys=True)
+        if key not in cache:
+            cache[key] = _attest(client, protocols, measurement)
+        return cache[key]
+
+    return predicate
+
+
+def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdict:
+    protocol_id = measurement.get("protocol", "")
+    protocol = protocols.get(protocol_id)
+    if protocol is None:
+        return Verdict(protocol=protocol_id, passed=False,
+                       error=f"unknown protocol '{protocol_id}'")
+    path_map = measurement.get("path_map")
+    try:
+        response = client.run_protocol(protocol, path_map=path_map)
+    except Exception as e:
+        return Verdict(protocol=protocol_id, passed=False, error=str(e))
+    records = protocol.target_records()
+    if path_map:
+        # evidence args carry re-rooted filepaths; align records to match
+        records = rewrite_filepaths(records, path_map)
+    components = parse_appraisal(response, records)
+    return Verdict(
+        protocol=protocol_id,
+        passed=overall_verdict(components),
+        components=components,
+    )
+
+
+class TierKS(KnowledgeSource):
+    """
+    One tier rung: re-point the entry's measurement at this rung's protocol
+    so the next evaluation attests there. `carry_path_map=False` drops the
+    request's path_map — semantic tiers (e.g. Sireum validation) run against
+    the real project, not the attested file copy.
+    """
+
+    name: str = ""
+    partition: List[str] = []
+    max_attempts: int = 1
+    protocol_id: str
+    carry_path_map: bool = True
+
+    def model_post_init(self, __context) -> None:
+        if not self.name:
+            self.name = f"tier:{self.protocol_id}"
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            measurement = attestation_request(
+                self.protocol_id,
+                path_map=entry.measurement.get("path_map") if self.carry_path_map else None,
+                nonce=entry.measurement.get("nonce", 0),
             )
-            hypothesis = (
-                "Attestation integrity violation with failed semantic "
-                "verification; " + "; ".join(parts)
-                if integrity_fail
-                else "Semantic verification failed; " + "; ".join(parts)
+            blackboard.write_entry(
+                key=key,
+                predicate=entry.predicate,
+                measurement=measurement,
+                result=None,  # controller re-evaluates (attests) next cycle
             )
-        elif integrity_fail and semantic_ids:
-            hypothesis = (
-                "Attestation integrity violation; failing components: "
-                + ", ".join(sorted(integrity_fail))
-                + "; however semantic verification passed ("
-                + ", ".join(semantic_ids)
-                + ") — artifacts modified yet system still verifies"
-            )
-        else:
-            hypothesis = (
-                "Attestation integrity violation; failing components: "
-                + ", ".join(sorted(integrity_fail))
-            )
-        failing_any = bool(integrity_fail or semantic_fail)
-        if failing_any and repair_attempts:
-            plural = "attempt" if repair_attempts == 1 else "attempts"
-            hypothesis += f" — repair attempted ({repair_attempts} {plural}) without success"
-        blackboard.hypothesis = hypothesis
-        blackboard.write(
-            key="attestation.hypothesis",
-            value=hypothesis,
-            source=self.name,
-            confidence=0.0 if failing_any else 1.0,
-            tags=["attestation", "hypothesis"],
-        )

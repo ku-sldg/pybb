@@ -1,42 +1,46 @@
 """
 Attestation-driven blackboard demo: GUMBO contract integrity for the
-temp-control-jvm HAMR project.
+temp-control-jvm HAMR project, on the outcome-routed blackboard.
 
-Seeds a gumbo_l1 (whole-file hash) attestation request; if it fails, an
-EscalationKS posts gumbo_l2 (per-contract ranges) for attribution, and the
-TrustDecisionKS summarizes the outcome as the blackboard hypothesis.
+One entry ("gumbo") whose predicate attests the protocol named in its
+measurement; the route encodes the decision tree:
+
+    eval gumbo_l1 (whole-file hashes, ~1s)
+      pass -> on_pass:  gumbo_validation (sireum tipe/logika/test, ~min,
+              with --validate) confirms the passing hashes semantically;
+              without --validate a pass is final
+      fail -> on_fail:  gumbo_l2 (per-contract slices, ~1s) attributes
+              the failure to specific GUMBO contracts
+
+    the chosen tier's pass ends the run in good standing; its failure
+    moves the entry to the escalate segment carrying that tier's verdict
+    (the failure report) and the attempt history.
 
 Usage:
     python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper] [--validate]
 
 --tamper copies the watched files to a temp tree, corrupts one GUMBO
 contract line, and attests the copy — the provisioned originals are never
-modified.
+modified. The tampered run walks l1 -> l2 -> escalate.
 
---validate adds the third tier: on a gumbo_l2 failure, gumbo_validation
-runs the live Sireum tools (proyek tipe / logika / test — takes minutes)
-against the real project. In a --tamper run the tampering lives only in the
-temp copy, so validation passes and the hypothesis reads "modified yet
-system still verifies".
+--validate adds the confirmation tier on the pass branch. It runs the live
+Sireum tools against the real project (takes minutes), so a clean run is
+no longer instant: a passing l1 is provisional until validation concurs.
 """
 
 import argparse
-import json
 import shutil
 import tempfile
 from pathlib import Path
 
 from pybb import BlackboardController
 from pybb.attestation import (
-    AppraisalKS,
-    AttestationKS,
     CvmSubprocessClient,
-    EscalationKS,
-    GoldenRestoreRepairer,
     ProtocolDir,
-    RepairKS,
-    TrustDecisionKS,
-    request_key,
+    TierKS,
+    attestation_request,
+    make_attestation_predicate,
+    trust_summary,
 )
 
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
@@ -65,12 +69,34 @@ def make_tampered_copy(protocols: dict) -> dict:
     return {str(TC_ROOT): str(root)}
 
 
+def print_report(controller: BlackboardController, semantic: list[str]) -> None:
+    blackboard = controller.blackboard
+    print("\n=== blackboard history (audit trail) ===")
+    seen = set()
+    for key, entry in blackboard.get_history():
+        if entry.result is None:
+            continue
+        line = (f"  {key}: {entry.measurement.get('protocol')} "
+                f"passed={bool(entry.result)}")
+        if line not in seen:  # bookkeeping snapshots repeat states
+            seen.add(line)
+            print(line)
+
+    if blackboard.get_escalate():
+        print("\n=== escalate segment (user intervention required) ===")
+        for key, entry in blackboard.get_escalate().items():
+            print(f"  {key}: attempts={entry.ks_history}")
+
+    print("\n=== trust summary ===\n  "
+          + trust_summary(blackboard, semantic=semantic).replace("\n", "\n  "))
+    print(f"\n(cycles: {controller.cycle_count})")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
     parser.add_argument("--validate", action="store_true")
-    parser.add_argument("--repair", action="store_true")
     cli = parser.parse_args()
 
     protocol_ids = ["gumbo_l1", "gumbo_l2"]
@@ -83,58 +109,27 @@ def main() -> None:
     path_map = make_tampered_copy(protocols) if cli.tamper else None
 
     controller = BlackboardController()
-    controller.add_ks(AttestationKS(client=CvmSubprocessClient(), protocols=protocols))
-    controller.add_ks(AppraisalKS(protocols=protocols))
-    controller.add_ks(
-        EscalationKS(
-            name="EscalationKS_l1_l2",
-            on_fail="gumbo_l1", escalate_to="gumbo_l2", path_map=path_map,
-        )
+    controller.register_predicate(
+        "attestation",
+        make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
+    on_fail = [TierKS(protocol_id="gumbo_l2")]
+    on_pass = []
     if cli.validate:
-        # semantic tier runs against the real project (no path_map): the
+        # confirmation runs against the real project (no path_map): the
         # watched-file copy is not a runnable Sireum project
-        controller.add_ks(
-            EscalationKS(
-                name="EscalationKS_l2_validation",
-                on_fail="gumbo_l2", escalate_to="gumbo_validation",
-            )
-        )
-    if cli.repair:
-        # priority 12 > escalation 10: repair preempts the semantic tier and
-        # re-posts the listed protocols so the repaired state is re-verified
-        reattest = ["gumbo_l1", "gumbo_l2"]
-        if cli.validate:
-            reattest.append("gumbo_validation")
-        controller.add_ks(RepairKS(
-            repairers=[GoldenRestoreRepairer(protocols)],
-            watch=["gumbo_l2"],
-            reattest=reattest,
-        ))
-    controller.add_ks(TrustDecisionKS(semantic=["gumbo_validation"]))
+        on_pass = [TierKS(protocol_id="gumbo_validation", carry_path_map=False)]
+    for ks in [*on_pass, *on_fail]:
+        controller.add_ks(ks)
 
-    request = {"protocol": "gumbo_l1"}
-    if path_map:
-        request["path_map"] = path_map
-    controller.blackboard.write(
-        key=request_key("gumbo_l1"), value=request, source="main",
-        tags=["attestation", "request"],
+    controller.blackboard.write_entry(
+        key="gumbo", predicate="attestation",
+        measurement=attestation_request("gumbo_l1", path_map=path_map),
     )
+    controller.route("gumbo", on_pass=on_pass, on_fail=on_fail)
+    controller.run()
 
-    blackboard = controller.run()
-
-    print("\n=== blackboard history (audit trail) ===")
-    for entry in blackboard.history:
-        stamp = entry.timestamp.strftime("%H:%M:%S")
-        print(f"  {stamp}  conf={entry.confidence:>3.1f}  {entry.source:<16} {entry.key}")
-
-    print("\n=== verdicts ===")
-    for key in sorted(blackboard.keys()):
-        if key.startswith("attestation.verdict/"):
-            print(f"  {key}: {json.dumps(blackboard.read(key), indent=2)}")
-
-    print(f"\n=== hypothesis ===\n  {blackboard.hypothesis}")
-    print(f"\n(cycles: {controller.cycle_count})")
+    print_report(controller, semantic=["gumbo_validation"])
 
 
 if __name__ == "__main__":
