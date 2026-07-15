@@ -43,9 +43,10 @@ class BlackboardController(BaseModel):
         if ks_chain:
             ks_chain[0].partition.append(key)
 
-    def _advance(self, key: str, current: KnowledgeSource) -> None:
-        """move key to next eligible KS after current KS reaches max attempts on key. restores original measurement or moves to escalate
-        if no available KS remains"""
+    def _advance(self, key: str, current: KnowledgeSource, restore: bool = True) -> None:
+        """move key to next eligible KS. restore=True (failure: current KS exhausted max attempts) restores the
+        measurement current KS worked on; restore=False (success: current KS's component passed) preserves its work.
+        moves to escalate if no available KS remains"""
         if key in current.partition:
             current.partition.remove(key)
         chain = self.routes.get(key, [])
@@ -53,22 +54,52 @@ class BlackboardController(BaseModel):
         idx = names.index(current.name) if current.name in names else -1
         nxt = chain[idx + 1] if 0 <= idx and idx + 1 < len(chain) else None
         if nxt is not None:
-            self.blackboard.restore_original(key)
+            if restore:
+                entry = self.blackboard.entries.get(key)
+                if current.component is not None and entry is not None and isinstance(entry.measurement, dict):
+                    self.blackboard.restore_component(key, current.component) # scoped restore keeps other components' fixes
+                    print(f"Cycle {self.cycle_count}: '{current.name}' exhausted on '{key}' - restoring component '{current.component}', handing to '{nxt.name}'")
+                else:
+                    self.blackboard.restore_original(key)
+                    print(f"Cycle {self.cycle_count}: '{current.name}' exhausted on '{key}' - restoring original measurement, handing to '{nxt.name}'")
+            else:
+                print(f"Cycle {self.cycle_count}: '{current.name}' satisfied component '{current.component}' on '{key}' - handing to '{nxt.name}'")
             nxt.partition.append(key)
-            print(f"Cycle {self.cycle_count}: '{current.name}' exhausted on '{key}' - restoring original measurement, handing to '{nxt.name}'")
         else:
             self.blackboard.escalate[key] = self.blackboard.entries.pop(key)
             print(f"Cycle {self.cycle_count}: no eligible KS left for '{key}' - escalating with history")
+
+    def _advance_ready(self) -> None:
+        """success-driven handoff: advance keys whose current component-scoped KS has satisfied its component"""
+        for key, chain in list(self.routes.items()):
+            entry = self.blackboard.entries.get(key)
+            if entry is None or entry.good_standing or entry.conditions is None: # None covers already-escalated keys
+                continue
+            owner = next((ks for ks in chain if key in ks.partition), None)
+            if owner is None or owner.component is None:
+                continue
+            if entry.component_good(owner.component):
+                self._advance(key, owner, restore=False) # preserve the fix; escalates if no next KS
 
     def _evaluate_entry(self, key: str) -> None:
         entry = self.blackboard.entries.get(key)
         if entry is None:
             return
-        fn = self.predicate_registry.get(entry.predicate)
-        if fn is None:
-            return
-        result = fn(entry.measurement)
-        self.blackboard.set_entry(key, entry.model_copy(update={"result": result, "good_standing": bool(result)}))
+        if entry.conditions is not None:
+            fns = {c: self.predicate_registry.get(p) for c, p in entry.conditions.items()}
+            if any(fn is None for fn in fns.values()):
+                return
+            result = {c: bool(fn(entry.measurement.get(c))) for c, fn in fns.items()}
+            good = all(result.values())
+        else:
+            if entry.predicate is None:
+                return
+            fn = self.predicate_registry.get(entry.predicate)
+            if fn is None:
+                return
+            result = fn(entry.measurement)
+            good = bool(result)
+        self.blackboard.set_entry(key, entry.model_copy(update={"result": result, "good_standing": good}))
 
     def _evaluate_all(self) -> None:
         for key in list(self.blackboard.entries):
@@ -78,6 +109,7 @@ class BlackboardController(BaseModel):
         for i in range(self.max_cycles):
             self.cycle_count = i + 1
             self._evaluate_all()
+            self._advance_ready()
             active = [ks for ks in self.knowledge_sources if ks.can_contribute(self.blackboard)]
             if not active:
                 print(f"Cycle {self.cycle_count}: all entries in good standing - halting")
@@ -87,7 +119,7 @@ class BlackboardController(BaseModel):
                 print(f"Cycle {self.cycle_count}: running '{ks.name}'")
                 for key in list(ks.partition): # snapshot of partition. _advance changes partitions
                     entry = self.blackboard.entries.get(key)
-                    if entry is None or entry.good_standing:
+                    if entry is None or not ks._needs_work(entry):
                         continue
                     if ks.max_attempts is not None and entry.ks_history.get(ks.name, 0) >= ks.max_attempts:
                         self._advance(key, ks)
