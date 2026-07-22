@@ -50,11 +50,9 @@ class FakeClient(AttestationClient):
     def __init__(self, responses: dict):
         self.responses = responses
         self.calls: list[str] = []
-        self.path_maps: list[dict | None] = []
 
-    def run_protocol(self, protocol: ProtocolDir, path_map=None) -> dict:
+    def run_protocol(self, protocol: ProtocolDir) -> dict:
         self.calls.append(protocol.protocol_id)
-        self.path_maps.append(path_map)
         result = self.responses[protocol.protocol_id]
         if isinstance(result, Exception):
             raise result
@@ -71,19 +69,19 @@ def _proto(pid: str) -> ProtocolDir:
 PROTOS = {"l1": _proto("l1"), "l2": _proto("l2"), "l3": _proto("l3")}
 
 
-def _controller(client, on_pass=(), on_fail=(), key="sys", path_map=None):
+def _controller(client, on_pass=(), on_fail=(), key="sys"):
     """Entry attested at l1, with confirmation/attribution tiers per outcome chain."""
     ctl = BlackboardController()
     ctl.register_predicate(
         "attestation", make_attestation_predicate(client, PROTOS)
     )
-    pass_rungs = [TierKS(protocol_id=p, carry_path_map=False) for p in on_pass]
+    pass_rungs = [TierKS(protocol_id=p) for p in on_pass]
     fail_rungs = [TierKS(protocol_id=p) for p in on_fail]
     for ks in [*pass_rungs, *fail_rungs]:
         ctl.add_ks(ks)
     ctl.blackboard.write_entry(
         key=key, predicate="attestation",
-        measurement=attestation_request("l1", path_map=path_map),
+        measurement=attestation_request("l1"),
     )
     ctl.route(key, on_pass=pass_rungs, on_fail=fail_rungs)
     return ctl
@@ -184,30 +182,6 @@ def test_l1_fail_with_empty_on_fail_chain_escalates_immediately():
 
 
 # ── plumbing ──────────────────────────────────────────────────────────────────
-
-def test_path_map_carried_on_fail_dropped_on_pass():
-    path_map = {"/real": "/copy"}
-
-    fail_client = FakeClient({
-        "l1": _appr_response({"a.aadl": False}),
-        "l2": _appr_response({"a.aadl:1-3": True}),
-    })
-    ctl = _controller(fail_client, on_fail=("l2",), path_map=path_map)
-    ctl.run()
-    assert dict(zip(fail_client.calls, fail_client.path_maps)) == {
-        "l1": path_map, "l2": path_map,  # attribution measures the same copy
-    }
-
-    pass_client = FakeClient({
-        "l1": _appr_response({"a.aadl": True}),
-        "l3": _appr_response({"logika": True}),
-    })
-    ctl = _controller(pass_client, on_pass=("l3",), path_map=path_map)
-    ctl.run()
-    assert dict(zip(pass_client.calls, pass_client.path_maps)) == {
-        "l1": path_map, "l3": None,  # semantic tier runs the real project
-    }
-
 
 def test_predicate_memoizes_until_nonce_bump():
     client = FakeClient({"l1": _appr_response({"a.aadl": True})})

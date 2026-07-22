@@ -84,7 +84,7 @@ def test_l1_pass_confirmed_by_validation():
         "attestation",
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
-    confirm = TierKS(protocol_id="gumbo_validation", carry_path_map=False)
+    confirm = TierKS(protocol_id="gumbo_validation")
     attribute = TierKS(protocol_id="gumbo_l2")
     for ks in (confirm, attribute):
         ctl.add_ks(ks)

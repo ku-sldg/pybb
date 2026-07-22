@@ -4,12 +4,14 @@ Attestation on the routed blackboard.
 The predicate IS the attestation: an entry's measurement is a request
 descriptor
 
-    {"protocol": <protocol_id>, "path_map": {...}?, "nonce": <int>}
+    {"protocol": <protocol_id>, "nonce": <int>}
 
 and the registered predicate (built by `make_attestation_predicate`) runs
 that protocol via the client, appraises the response, and returns a
 `Verdict` — truthy iff every appraised component passed — which the
-controller stores as the entry's result / good_standing.
+controller stores as the entry's result / good_standing. Protocols measure
+the live target tree they were provisioned against; the clean copy for
+repair / re-runs is a `TargetSnapshot`, outside the measurement path.
 
 Knowledge sources are tier rungs: a `TierKS` responds to the entry by
 re-pointing its measurement at this rung's protocol, so the controller's
@@ -17,7 +19,7 @@ next evaluation attests at the new tier. The decision tree is encoded in
 the route's outcome chains:
 
     route("gumbo",
-          on_pass=[TierKS(protocol_id="gumbo_validation", carry_path_map=False)],
+          on_pass=[TierKS(protocol_id="gumbo_validation")],
           on_fail=[TierKS(protocol_id="gumbo_l2")])
 
 reads: a passing l1 verdict is provisional until semantic validation
@@ -35,24 +37,18 @@ future repair KS forces fresh attestation by bumping the nonce.
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 from pydantic import BaseModel
 
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
 from .appraisal import ComponentResult, overall_verdict, parse_appraisal
-from .copland import rewrite_filepaths
 
 
-def attestation_request(
-    protocol_id: str, path_map: Optional[Dict[str, str]] = None, nonce: int = 0
-) -> dict:
+def attestation_request(protocol_id: str, nonce: int = 0) -> dict:
     """Measurement descriptor for an attestation entry."""
-    request: dict = {"protocol": protocol_id, "nonce": nonce}
-    if path_map:
-        request["path_map"] = path_map
-    return request
+    return {"protocol": protocol_id, "nonce": nonce}
 
 
 class Verdict(BaseModel):
@@ -102,16 +98,11 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdic
     if protocol is None:
         return Verdict(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
-    path_map = measurement.get("path_map")
     try:
-        response = client.run_protocol(protocol, path_map=path_map)
+        response = client.run_protocol(protocol)
     except Exception as e:
         return Verdict(protocol=protocol_id, passed=False, error=str(e))
-    records = protocol.target_records()
-    if path_map:
-        # evidence args carry re-rooted filepaths; align records to match
-        records = rewrite_filepaths(records, path_map)
-    components = parse_appraisal(response, records)
+    components = parse_appraisal(response, protocol.target_records())
     return Verdict(
         protocol=protocol_id,
         passed=overall_verdict(components),
@@ -122,16 +113,13 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdic
 class TierKS(KnowledgeSource):
     """
     One tier rung: re-point the entry's measurement at this rung's protocol
-    so the next evaluation attests there. `carry_path_map=False` drops the
-    request's path_map — semantic tiers (e.g. Sireum validation) run against
-    the real project, not the attested file copy.
+    so the next evaluation attests there.
     """
 
     name: str = ""
     partition: List[str] = []
     max_attempts: int = 1
     protocol_id: str
-    carry_path_map: bool = True
 
     def model_post_init(self, __context) -> None:
         if not self.name:
@@ -142,7 +130,6 @@ class TierKS(KnowledgeSource):
             entry = blackboard.get_entry(key)
             measurement = attestation_request(
                 self.protocol_id,
-                path_map=entry.measurement.get("path_map") if self.carry_path_map else None,
                 nonce=entry.measurement.get("nonce", 0),
             )
             blackboard.write_entry(

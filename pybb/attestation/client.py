@@ -22,7 +22,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel
 
-from .copland import empty_evidence, inject_asp_args, normalize_term, rewrite_filepaths
+from .copland import empty_evidence, inject_asp_args, normalize_term
 
 DEFAULT_CVM_BINARY = os.environ.get(
     "CVM_BINARY",
@@ -87,32 +87,26 @@ class ProtocolDir(BaseModel):
             prebuilt_request=_read("cvm_request.json", required=False),
         )
 
-    def build_request(self, path_map: Dict[str, str] | None = None) -> dict:
+    def build_request(self) -> dict:
         """
         Assemble the ProtocolRunRequest dict for this protocol.
 
         Uses the prebuilt cvm_request.json when present, otherwise splices
-        asp_args into the term and wraps it with the session. path_map
-        re-roots every matching filepath (in term args and session alike),
-        allowing runs against a copied target tree.
+        asp_args into the term and wraps it with the session.
         """
         if self.prebuilt_request is not None:
-            request = self.prebuilt_request
-        else:
-            term = normalize_term(inject_asp_args(self.term, self.asp_args))
-            plc = self.session.get("Session_Plc", "P0")
-            request = {
-                "TYPE": "REQUEST",
-                "ACTION": "RUN",
-                "REQ_PLC": plc,
-                "TO_PLC": plc,
-                "TERM": term,
-                "EVIDENCE": empty_evidence(),
-                "ATTESTATION_SESSION": self.session,
-            }
-        if path_map:
-            request = rewrite_filepaths(request, path_map)
-        return request
+            return self.prebuilt_request
+        term = normalize_term(inject_asp_args(self.term, self.asp_args))
+        plc = self.session.get("Session_Plc", "P0")
+        return {
+            "TYPE": "REQUEST",
+            "ACTION": "RUN",
+            "REQ_PLC": plc,
+            "TO_PLC": plc,
+            "TERM": term,
+            "EVIDENCE": empty_evidence(),
+            "ATTESTATION_SESSION": self.session,
+        }
 
     def target_records(self) -> List[dict]:
         """
@@ -131,9 +125,7 @@ class AttestationClient(ABC):
     """Transport-agnostic interface the knowledge sources depend on."""
 
     @abstractmethod
-    def run_protocol(
-        self, protocol: ProtocolDir, path_map: Dict[str, str] | None = None
-    ) -> dict:
+    def run_protocol(self, protocol: ProtocolDir) -> dict:
         """Execute the protocol and return the parsed ProtocolRunResponse dict."""
 
 
@@ -143,10 +135,8 @@ class CvmSubprocessClient(AttestationClient):
     def __init__(self, config: CvmConfig | None = None):
         self.config = config or CvmConfig()
 
-    def run_protocol(
-        self, protocol: ProtocolDir, path_map: Dict[str, str] | None = None
-    ) -> dict:
-        request = protocol.build_request(path_map=path_map)
+    def run_protocol(self, protocol: ProtocolDir) -> dict:
+        request = protocol.build_request()
         return self._run_cvm(protocol.manifest, request)
 
     def _write_temp(self, data: Any, suffix: str) -> str:

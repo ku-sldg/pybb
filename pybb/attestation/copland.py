@@ -13,9 +13,9 @@ the current CVM JSON schema:
   stripped by normalize_term before execution
 - session ASP_Types entries use the {"FWD": {...}, "ATTRS": [...]} shape
 
-The dict-level term utilities (inject_asp_args, normalize_term,
-rewrite_filepaths) operate on plain parsed JSON, since protocol assembly is
-defined over authored files whose shape may drift ahead of the typed models.
+The dict-level term utilities (inject_asp_args, normalize_term) operate on
+plain parsed JSON, since protocol assembly is defined over authored files
+whose shape may drift ahead of the typed models.
 inject_asp_args and normalize_term are adapted from cvm-mcp's
 protocol_loader.py, the reference integration for this CVM build.
 """
@@ -270,22 +270,3 @@ def normalize_term(term: dict) -> dict:
             if key not in _ASPC_BODY_KEYS:
                 del asp_body[key]
     return term
-
-
-def rewrite_filepaths(obj, path_map: Dict[str, str]):
-    """
-    Return a deep copy of obj (any JSON value) with every string value that
-    starts with a path_map key rewritten to the corresponding new prefix.
-    Used to re-root a protocol onto a copied target tree without touching
-    the provisioned original.
-    """
-    if isinstance(obj, str):
-        for old, new in path_map.items():
-            if obj == old or obj.startswith(old.rstrip("/") + "/"):
-                return new.rstrip("/") + obj[len(old.rstrip("/")):]
-        return obj
-    if isinstance(obj, list):
-        return [rewrite_filepaths(v, path_map) for v in obj]
-    if isinstance(obj, dict):
-        return {k: rewrite_filepaths(v, path_map) for k, v in obj.items()}
-    return obj

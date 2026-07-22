@@ -13,7 +13,7 @@ own coordination machinery:
 | blackboard concept | attestation meaning |
 |---|---|
 | entry (one per attested system) | the trust question, e.g. `"gumbo"` |
-| measurement | request descriptor `{"protocol", "path_map"?, "nonce"}` |
+| measurement | request descriptor `{"protocol", "nonce"}` |
 | predicate | runs the named protocol via the client and appraises the response into a `Verdict` |
 | `entry.result` | the `Verdict`: overall pass plus per-component results |
 | good standing | some tier rendered a conclusive passing verdict |
@@ -35,7 +35,7 @@ next evaluation attests there. No KS runs protocols or parses evidence.
 
 ```python
 controller.route("gumbo",
-    on_pass=[TierKS(protocol_id="gumbo_validation", carry_path_map=False)],
+    on_pass=[TierKS(protocol_id="gumbo_validation")],
     on_fail=[TierKS(protocol_id="gumbo_l2")])
 ```
 
@@ -61,9 +61,24 @@ prose after `run()` — including the audit distinctions good standing alone
 doesn't show ("intact", "confirmed by validation", "clean at finer
 granularity", "passed but confirmation failed").
 
-`carry_path_map=False` on the confirmation rung reflects a real asymmetry:
-integrity tiers re-measure the attested file copy (`path_map` re-roots
-every filepath), while semantic validation runs the real, runnable project.
+## Live targets and the golden directory
+
+Every tier measures the live target tree the protocols were provisioned
+against. `golden/` (top of the repo) holds the clean copies of the watched
+files (those named by the protocols' `asp_args`) — the same files the
+protocols' golden values were provisioned from — mirrored by absolute
+path. `examples/capture_golden.py` provisions it: the deliberate,
+out-of-band act of declaring the live targets known-good, run only when
+the tree is verified clean and in step with the protocol fixtures.
+
+At run time `TargetSnapshot.load(protocols, GOLDEN_ROOT)` opens the golden
+directory and `restore()` reverts changed live targets to it. Nothing in
+the attestation flow calls `capture()` or `restore()` — declaring and
+reverting are repair / new-run decisions made outside the measurement
+path, so a failed appraisal can neither overwrite its own evidence nor
+launder tampered files into gold. The `--tamper` demo and the tampered
+integration test corrupt the live tree and rely on the golden copies to
+put it back afterward.
 
 ## Provisioning is out of scope (deliberately)
 
@@ -80,7 +95,7 @@ launder tampered state into the new golden.
 
 - `copland.py` — typed Pydantic models of the CVM wire format (adapted from
   HEAL-demo's `cvm_headers.py`) plus dict-level term utilities
-  (`inject_asp_args`, `normalize_term`, `rewrite_filepaths`).
+  (`inject_asp_args`, `normalize_term`).
 - `client.py` — `ProtocolDir` (loads cvm-mcp-style protocol directories,
   assembles run requests) and `CvmSubprocessClient` (invokes the CVM binary).
   Transports implement `AttestationClient`; a socket/AM client can slot in
@@ -89,6 +104,9 @@ launder tampered state into the new golden.
   binary `overall_verdict`.
 - `knowledge_sources.py` — the attestation predicate factory, `Verdict`,
   and `TierKS`.
+- `snapshot.py` — `watched_files` and `TargetSnapshot`, the clean copies
+  of the live targets: captured into / loaded from the golden directory,
+  restored during repair or fresh runs.
 - `summary.py` — `trust_summary`, the post-run trust narrative.
 
 Deferred to follow-up PRs (they live on the `attestation-integration`

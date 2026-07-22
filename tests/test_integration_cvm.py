@@ -7,15 +7,14 @@ Decision tree under test: l1 pass = done (no confirmation tier configured
 here — see test_integration_sireum for that); l1 fail -> l2 attribution;
 l2 fail -> escalate with the l2 report.
 
-Never mutates the provisioned setup: all runs (clean and tampered) execute
-against a temporary copy of the watched files via path_map re-rooting.
+Protocols measure the live temp-control-jvm tree. The tampered test corrupts
+a live file; the provisioned golden directory (<repo>/golden) reverts the
+tree on teardown, so the setup ends every test run intact.
 
 Auto-skipped unless the CVM binary, ASP binaries, and temp-control-jvm tree
 are present. Deselect explicitly with: pytest -m "not cvm".
 """
 
-import json
-import shutil
 from pathlib import Path
 
 import pytest
@@ -24,6 +23,7 @@ from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
+    TargetSnapshot,
     TierKS,
     attestation_request,
     make_attestation_predicate,
@@ -32,6 +32,7 @@ from pybb.attestation import (
 from pybb.attestation.client import DEFAULT_ASP_BIN, DEFAULT_CVM_BINARY
 
 FIXTURES = Path(__file__).parent / "fixtures"
+GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
 
 pytestmark = [
@@ -47,34 +48,24 @@ pytestmark = [
 ]
 
 
-def _watched_files() -> set[Path]:
-    """Every file referenced by gumbo_l1/gumbo_l2 asp_args."""
-    files = set()
-    for pid in ("gumbo_l1", "gumbo_l2"):
-        asp_args = json.loads((FIXTURES / pid / "asp_args.json").read_text())
-        for targets in asp_args.values():
-            for args in targets.values():
-                fp = args.get("filepath")
-                if fp:
-                    files.add(Path(fp))
-    return files
+def _protocols() -> dict:
+    return {
+        pid: ProtocolDir.load(str(FIXTURES / pid)) for pid in ("gumbo_l1", "gumbo_l2")
+    }
 
 
 @pytest.fixture
-def target_copy(tmp_path):
-    """Copy of the watched temp-control-jvm files under a temp root."""
-    root = tmp_path / "temp-control-jvm"
-    for f in _watched_files():
-        dest = root / f.relative_to(TC_ROOT)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(f, dest)
-    return root
+def live_snapshot():
+    """Golden copies of the live targets; teardown reverts any tampering."""
+    snapshot = TargetSnapshot.load(_protocols(), GOLDEN_ROOT)
+    try:
+        yield snapshot
+    finally:
+        snapshot.restore()
 
 
-def _run(path_map):
-    protocols = {
-        pid: ProtocolDir.load(str(FIXTURES / pid)) for pid in ("gumbo_l1", "gumbo_l2")
-    }
+def _run():
+    protocols = _protocols()
     ctl = BlackboardController()
     ctl.register_predicate(
         "attestation",
@@ -85,15 +76,15 @@ def _run(path_map):
         ctl.add_ks(ks)
     ctl.blackboard.write_entry(
         key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1", path_map=path_map),
+        measurement=attestation_request("gumbo_l1"),
     )
     ctl.route("gumbo", on_fail=rungs)
     ctl.run()
     return ctl.blackboard
 
 
-def test_clean_run_passes_no_escalation(target_copy):
-    bb = _run({str(TC_ROOT): str(target_copy)})
+def test_clean_run_passes_no_escalation():
+    bb = _run()
 
     entry = bb.get_entry("gumbo")
     assert entry is not None and entry.good_standing
@@ -103,15 +94,17 @@ def test_clean_run_passes_no_escalation(target_copy):
     assert "all attested components intact" in trust_summary(bb)
 
 
-def test_tampered_contract_fails_l1_and_l2_attributes(target_copy):
+def test_tampered_contract_fails_l1_and_l2_attributes(live_snapshot):
     # corrupt one line inside the provisioned GUMBO contract range 305-308
-    # of TempControlSystem.aadl (target tc_sys_aadl_305_308_targ)
-    aadl = target_copy / "aadl/packages/TempControlSystem.aadl"
+    # of TempControlSystem.aadl (target tc_sys_aadl_305_308_targ); the
+    # live_snapshot fixture reverts the live file on teardown
+    aadl = TC_ROOT / "aadl/packages/TempControlSystem.aadl"
     lines = aadl.read_text().splitlines(keepends=True)
     lines[305] = "-- TAMPERED: invariant weakened\n"
     aadl.write_text("".join(lines))
+    assert live_snapshot.dirty() == [aadl]
 
-    bb = _run({str(TC_ROOT): str(target_copy)})
+    bb = _run()
 
     # both tiers failed and no rung remains: escalate segment, with history
     assert "gumbo" not in bb.entries and "gumbo" in bb.escalate

@@ -19,9 +19,10 @@ measurement; the route encodes the decision tree:
 Usage:
     python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper] [--validate]
 
---tamper copies the watched files to a temp tree, corrupts one GUMBO
-contract line, and attests the copy — the provisioned originals are never
-modified. The tampered run walks l1 -> l2 -> escalate.
+--tamper corrupts one GUMBO contract line in the live tree. The golden
+directory (provisioned out-of-band by examples/capture_golden.py) restores
+the live targets after the run, so the tree ends every run intact. The
+tampered run walks l1 -> l2 -> escalate.
 
 --validate adds the confirmation tier on the pass branch. It runs the live
 Sireum tools against the real project (takes minutes), so a clean run is
@@ -29,14 +30,13 @@ no longer instant: a passing l1 is provisional until validation concurs.
 """
 
 import argparse
-import shutil
-import tempfile
 from pathlib import Path
 
 from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
+    TargetSnapshot,
     TierKS,
     attestation_request,
     make_attestation_predicate,
@@ -45,28 +45,16 @@ from pybb.attestation import (
 
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
 DEFAULT_PROTOCOLS_ROOT = Path(__file__).parent.parent / "tests" / "fixtures"
+GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 
 
-def make_tampered_copy(protocols: dict) -> dict:
-    """Copy watched files to a temp root, corrupt one contract line."""
-    root = Path(tempfile.mkdtemp(prefix="pybb_tamper_")) / TC_ROOT.name
-    files = {
-        Path(args["filepath"])
-        for proto in protocols.values()
-        for targets in proto.asp_args.values()
-        for args in targets.values()
-        if args.get("filepath")
-    }
-    for f in files:
-        dest = root / f.relative_to(TC_ROOT)
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(f, dest)
-    aadl = root / "aadl/packages/TempControlSystem.aadl"
+def tamper_live() -> None:
+    """Corrupt one GUMBO contract line in the live tree."""
+    aadl = TC_ROOT / "aadl/packages/TempControlSystem.aadl"
     lines = aadl.read_text().splitlines(keepends=True)
     lines[305] = "-- TAMPERED: invariant weakened\n"
     aadl.write_text("".join(lines))
-    print(f"Tampered copy at {root} (line 306 of TempControlSystem.aadl)")
-    return {str(TC_ROOT): str(root)}
+    print(f"Tampered live file: {aadl} (line 306)")
 
 
 def print_report(controller: BlackboardController, semantic: list[str]) -> None:
@@ -106,7 +94,17 @@ def main() -> None:
         pid: ProtocolDir.load(str(Path(cli.protocols_root) / pid))
         for pid in protocol_ids
     }
-    path_map = make_tampered_copy(protocols) if cli.tamper else None
+    # golden copies of the live targets, provisioned out-of-band; the
+    # finally below reverts the live tree to them
+    try:
+        golden = TargetSnapshot.load(protocols, GOLDEN_ROOT)
+    except FileNotFoundError as e:
+        raise SystemExit(
+            f"{e}\nProvision it with: python examples/capture_golden.py"
+        )
+    print(f"Golden targets: {len(golden.files)} files under {golden.root}")
+    if cli.tamper:
+        tamper_live()
 
     controller = BlackboardController()
     controller.register_predicate(
@@ -114,22 +112,22 @@ def main() -> None:
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
     on_fail = [TierKS(protocol_id="gumbo_l2")]
-    on_pass = []
-    if cli.validate:
-        # confirmation runs against the real project (no path_map): the
-        # watched-file copy is not a runnable Sireum project
-        on_pass = [TierKS(protocol_id="gumbo_validation", carry_path_map=False)]
+    on_pass = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
     for ks in [*on_pass, *on_fail]:
         controller.add_ks(ks)
 
     controller.blackboard.write_entry(
         key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1", path_map=path_map),
+        measurement=attestation_request("gumbo_l1"),
     )
     controller.route("gumbo", on_pass=on_pass, on_fail=on_fail)
-    controller.run()
-
-    print_report(controller, semantic=["gumbo_validation"])
+    try:
+        controller.run()
+        print_report(controller, semantic=["gumbo_validation"])
+    finally:
+        restored = golden.restore()
+        if restored:
+            print(f"\nRestored {len(restored)} live target(s) from golden")
 
 
 if __name__ == "__main__":

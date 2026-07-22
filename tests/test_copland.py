@@ -7,7 +7,6 @@ from pybb.attestation.copland import (
     inject_asp_args,
     iter_aspc_bodies,
     normalize_term,
-    rewrite_filepaths,
 )
 from pybb.attestation.client import ProtocolDir
 
@@ -52,18 +51,6 @@ def test_normalize_term_strips_targ_ids(gumbo_l2_dir):
         assert set(body.keys()) <= {"ASP_ID", "ASP_ARGS"}
 
 
-def test_rewrite_filepaths_prefix_only():
-    obj = {
-        "a": "/old/root/f.aadl",
-        "b": "/old/rooted/f.aadl",
-        "c": ["/old/root/x", {"d": "/old/root"}],
-    }
-    out = rewrite_filepaths(obj, {"/old/root": "/new"})
-    assert out["a"] == "/new/f.aadl"
-    assert out["b"] == "/old/rooted/f.aadl"
-    assert out["c"] == ["/new/x", {"d": "/new"}]
-
-
 def test_protocol_dir_build_request_dynamic(gumbo_l2_dir):
     proto = ProtocolDir.load(str(gumbo_l2_dir))
     assert proto.prebuilt_request is None
@@ -76,17 +63,7 @@ def test_protocol_dir_build_request_dynamic(gumbo_l2_dir):
     assert all("golden_b64" in b["ASP_ARGS"] for b in bodies)
 
 
-def test_protocol_dir_prebuilt_with_path_map(gumbo_l1_dir):
+def test_protocol_dir_prebuilt_request_used_verbatim(gumbo_l1_dir, gumbo_l1_request):
     proto = ProtocolDir.load(str(gumbo_l1_dir))
-    request = proto.build_request(
-        path_map={"/Users/adampetz/Claude_workspace/temp-control-jvm": "/tmp/copy"}
-    )
-    fps = [
-        b["ASP_ARGS"]["filepath"] for b in iter_aspc_bodies(request["TERM"])
-    ]
-    assert all(fp.startswith("/tmp/copy/") for fp in fps)
-    # goldens must NOT be rewritten (they are values, not paths)
-    assert all(
-        b["ASP_ARGS"]["golden_b64"]
-        for b in iter_aspc_bodies(request["TERM"])
-    )
+    assert proto.prebuilt_request is not None
+    assert proto.build_request() == gumbo_l1_request

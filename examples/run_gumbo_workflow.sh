@@ -16,9 +16,10 @@
 #   ./examples/run_gumbo_workflow.sh              # clean: l1 passes, done (~1s)
 #   ./examples/run_gumbo_workflow.sh --validate   # clean: l1 pass is provisional,
 #                                                 # sireum confirmation (~min)
-#   ./examples/run_gumbo_workflow.sh --tamper     # temp-copy tamper: l1 fails,
+#   ./examples/run_gumbo_workflow.sh --tamper     # live-tree tamper: l1 fails,
 #                                                 # l2 attributes the contract,
-#                                                 # entry escalates with report
+#                                                 # entry escalates with report;
+#                                                 # snapshot restores the tree
 #
 # Paths overridable via env vars (WORKSPACE, PYBB).
 
@@ -72,8 +73,8 @@ if $VALIDATE; then
 fi
 if $TAMPER; then
   ARGS="$ARGS --tamper"
-  echo "  Tampering a temp copy of the watched files: l1 fails, l2 attributes"
-  echo "  the contract, and the entry escalates with the l2 report."
+  echo "  Tampering the live tree (clean snapshot restores it after): l1 fails,"
+  echo "  l2 attributes the contract, and the entry escalates with the l2 report."
 else
   echo "  Clean run against the provisioned tree."
 fi
