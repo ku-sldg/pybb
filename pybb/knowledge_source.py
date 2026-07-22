@@ -1,30 +1,33 @@
-from __future__ import annotations
-
-from abc import abstractmethod
+from abc import ABC, abstractmethod
+from typing import Optional
 
 from pydantic import BaseModel
 
-from .blackboard import Blackboard
+from .blackboard import Blackboard, BlackboardEntry
 
 
-class KnowledgeSource(BaseModel):
-    """
-    Abstract base for all knowledge sources (experts/agents).
-
-    Subclass this and implement `can_contribute` and `execute`.
-    """
-
+class KnowledgeSource(ABC, BaseModel):
     name: str
-    priority: int = 0
+    partition: list[str]  # blackboard keys this KS is responsible for. assigned by controller route()
+    max_attempts: Optional[int] = None
+    component: Optional[str] = None # scopes this KS to one component of a dict measurement
 
-    model_config = {"arbitrary_types_allowed": True}
+    def _needs_work(self, entry: BlackboardEntry) -> bool:
+        """component-scoped KS only cares about its own component's standing"""
+        if self.component is not None and entry.conditions is not None:
+            return not entry.component_good(self.component)
+        return not entry.good_standing
 
-    @abstractmethod
     def can_contribute(self, blackboard: Blackboard) -> bool:
-        """Return True if this KS has something to add given current blackboard state."""
-        ...
+        """return True if any entry in KS partition not in good standing."""
+        for key in self.partition:
+            entry = blackboard.get_entry(key)
+            if entry is not None and self._needs_work(entry):
+                return True
+        return False
 
     @abstractmethod
-    def execute(self, blackboard: Blackboard) -> None:
-        """Read from and write to the blackboard."""
-        ...
+    def execute(self, blackboard: Blackboard, keys: list[str]) -> None:
+        """write a repair suggestion to blackboard for entries not in good standing.
+        controller guarantees keys are existing entries that need work (_needs_work)"""
+        pass

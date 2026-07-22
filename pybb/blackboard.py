@@ -1,59 +1,96 @@
-from __future__ import annotations
-
-import uuid
-from datetime import datetime
+from pydantic import BaseModel, model_validator
 from typing import Any, Optional
 
-from pydantic import BaseModel, Field
-
-
 class BlackboardEntry(BaseModel):
-    """A single typed, timestamped entry on the blackboard."""
+    predicate: Optional[str] = None # single-predicate entries
+    conditions: Optional[dict[str, str]] = None # component-wise entries. component name -> predicate name
+    measurement: Any = None
+    result: Any = None
+    good_standing: bool = False
+    original_measurement: Any = None # initial measurement restored by controller on KS handoff
+    ks_history: dict[str, int] = {} # str: name of KS, int: num of attempts
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    key: str
-    value: Any
-    source: str
-    confidence: float = 1.0
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
-    tags: list[str] = []
+    model_config = {"frozen": True} # immutable entry. change to entry creates a new versioned entry
 
+    @model_validator(mode="after")
+    def _predicate_or_conditions(self):
+        if self.predicate is None and self.conditions is None:
+            raise ValueError("entry needs a predicate or conditions, otherwise it is never evaluated")
+        return self
+
+    def component_good(self, component: str) -> bool:
+        """standing of a single component. falls back to overall standing for single-predicate entries"""
+        if isinstance(self.result, dict):
+            return bool(self.result.get(component))
+        return self.good_standing
 
 class Blackboard(BaseModel):
-    """The shared data structure read and written by all knowledge sources."""
+    entries: dict[str, BlackboardEntry] = {} # key: id of entry, value: entry itself
+    history: list[tuple[str, BlackboardEntry]] = []
+    escalate: dict[str, BlackboardEntry] = {} # escalate segment of blackboard
 
-    entries: dict[str, BlackboardEntry] = {}
-    history: list[BlackboardEntry] = []
-    hypothesis: Optional[str] = None
-
-    def write(
-        self,
-        key: str,
-        value: Any,
-        source: str,
-        confidence: float = 1.0,
-        tags: list[str] | None = None,
-    ) -> BlackboardEntry:
-        entry = BlackboardEntry(
-            key=key,
-            value=value,
-            source=source,
-            confidence=confidence,
-            tags=tags or [],
-        )
+    def set_entry(self, key: str, entry: BlackboardEntry) -> None:
+        """reassign the certify slot and add snapshot to history. skip pre eval (result=None) intermediate states"""
         self.entries[key] = entry
-        self.history.append(entry)
+        if entry.result is not None:
+            self.history.append((key, entry.model_copy(deep=True)))
+
+    def write_entry(self, key: str, predicate: Optional[str] = None, measurement: Any = None, result: Any = None, partition: str = "certify", conditions: Optional[dict[str, str]] = None) -> BlackboardEntry: # partition should be specified as "certify" or escalate
+        existing = self.entries.get(key) if partition == "certify" else self.escalate.get(key)
+        entry = BlackboardEntry(
+            predicate=predicate,
+            conditions=conditions if conditions is not None else (existing.conditions if existing else None),
+            measurement=measurement,
+            result=result,
+            original_measurement=existing.original_measurement if existing else (dict(measurement) if isinstance(measurement, dict) else measurement), # copy dicts so component writes never alias the original
+            ks_history=dict(existing.ks_history) if existing else {}) # copy so versions don't share the dict
+        if partition == "certify":
+            self.set_entry(key, entry)
+        elif partition == "escalate":
+            self.escalate[key] = entry
         return entry
 
-    def read(self, key: str) -> Optional[Any]:
+    def write_component(self, key: str, component: str, value: Any) -> BlackboardEntry:
+        """write a repair for a single component of a dict measurement, leaving other components untouched"""
         entry = self.entries.get(key)
-        return entry.value if entry else None
+        if entry is None or not isinstance(entry.measurement, dict):
+            return entry
+        new_measurement = dict(entry.measurement)
+        new_measurement[component] = value
+        updated = entry.model_copy(update={"measurement": new_measurement, "result": None, "good_standing": False}) # result=None: controller reeval in next cycle
+        self.set_entry(key, updated)
+        return updated
 
-    def has(self, key: str) -> bool:
-        return key in self.entries
+    def get_entry(self, key: str) -> BlackboardEntry:
+        entry = self.entries.get(key)
+        return entry if entry else None
 
-    def keys(self) -> list[str]:
-        return list(self.entries.keys())
+    def get_all_entries(self) -> dict:
+        return self.entries
 
-    def snapshot(self) -> dict:
-        return self.model_dump()
+    def get_history(self) -> list:
+        return self.history
+
+    def get_escalate(self) -> dict:
+        return self.escalate
+
+    def add_ks_history(self, key: str, ks_name: str ) -> None:
+        entry = self.entries.get(key)
+        if entry is not None:
+            new_hist = dict(entry.ks_history)
+            new_hist[ks_name] = new_hist.get(ks_name, 0) + 1 # initializes ks entry to 0 if doesn't exist, adds 1
+            self.set_entry(key, entry.model_copy(update={"ks_history": new_hist}))
+
+    def restore_original(self, key: str) -> None:
+        entry = self.entries.get(key)
+        if entry is not None:
+            self.set_entry(key, entry.model_copy(update={"measurement": entry.original_measurement}))
+
+    def restore_component(self, key: str, component: str) -> None:
+        """restore a single component of a dict measurement from the original, preserving other components' fixes"""
+        entry = self.entries.get(key)
+        if entry is None or not isinstance(entry.measurement, dict) or not isinstance(entry.original_measurement, dict):
+            return
+        new_measurement = dict(entry.measurement)
+        new_measurement[component] = entry.original_measurement.get(component)
+        self.set_entry(key, entry.model_copy(update={"measurement": new_measurement}))

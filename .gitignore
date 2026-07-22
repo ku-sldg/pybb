@@ -15,3 +15,6 @@ build/
 
 # OS
 .DS_Store
+
+# Generated artifacts
+history.txt
