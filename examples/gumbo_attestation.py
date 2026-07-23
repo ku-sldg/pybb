@@ -27,7 +27,13 @@ attestation runs (--misconfigure demonstrates this).
 
 Usage:
     python examples/gumbo_attestation.py [--protocols-root DIR]
-        [--tamper] [--tamper-block] [--validate] [--misconfigure]
+        [--tamper] [--tamper-block] [--repair] [--validate] [--misconfigure]
+
+--repair appends the repair rungs (whole-file restore after l2 refinement
+on gumbo:files; block splice on gumbo:contracts) and runs a SECOND
+episode: repair cannot mint trust, so episode 1 ends "repaired from
+golden — verification pending", and episode 2 (fresh predicates, fresh
+measurements) provides the verifying evidence.
 
 --tamper corrupts one GUMBO contract line in a live AADL model: the
 gumbo:files tree walks l1a -> l2 -> escalate with per-contract
@@ -52,9 +58,11 @@ from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
+    SliceRestoreKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
+    WholeFileRestoreKS,
     make_attestation_predicate,
     make_readiness_predicate,
     readiness_request,
@@ -111,11 +119,54 @@ def print_report(controller: BlackboardController, semantic: list[str]) -> None:
     print(f"\n(cycles: {controller.cycle_count})")
 
 
+def build_controller(protocols: dict, cli) -> BlackboardController:
+    """One episode's controller: fresh predicates, fresh memo caches."""
+    controller = BlackboardController()
+    controller.register_predicate(
+        "attestation",
+        make_attestation_predicate(CvmSubprocessClient(), protocols),
+    )
+    controller.register_predicate(
+        "protocol_check", make_readiness_predicate(protocols)
+    )
+
+    # the two decision trees, pre-registered (their entries are written by
+    # the readiness chain's starter rung)
+    files_fail = [TierKS(protocol_id="gumbo_l2")]
+    contracts_fail = []
+    if cli.repair:
+        files_fail.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT))
+        contracts_fail.append(SliceRestoreKS(golden_root=GOLDEN_ROOT))
+    confirm = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
+    starter = StartAttestationKS(episodes={
+        "gumbo:files": "gumbo_l1a",
+        "gumbo:contracts": "gumbo_l1b",
+    })
+    for ks in [*confirm, *files_fail, *contracts_fail, starter]:
+        controller.add_ks(ks)
+    controller.route("gumbo:files", on_pass=confirm, on_fail=files_fail)
+    controller.route("gumbo:contracts", on_pass=confirm, on_fail=contracts_fail)
+
+    # the first verdict: does every protocol in both trees exist and run?
+    checked = list(protocols)
+    if cli.misconfigure:
+        checked.append("gumbo_l9")
+    controller.blackboard.write_entry(
+        key="gumbo:ready", predicate="protocol_check",
+        measurement=readiness_request(checked),
+    )
+    controller.route("gumbo:ready", on_pass=[starter], on_fail=[])
+    return controller
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
     parser.add_argument("--tamper-block", action="store_true")
+    parser.add_argument("--repair", action="store_true",
+                        help="append repair rungs and run a verifying "
+                             "second episode")
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--misconfigure", action="store_true",
                         help="check a nonexistent protocol id: readiness "
@@ -130,7 +181,7 @@ def main() -> None:
         for pid in protocol_ids
     }
     # golden copies of the live targets, provisioned out-of-band; the
-    # finally below reverts the live tree to them
+    # finally below reverts any tampering repair did not already revert
     try:
         golden = TargetSnapshot.load(protocols, GOLDEN_ROOT)
     except FileNotFoundError as e:
@@ -143,40 +194,16 @@ def main() -> None:
     if cli.tamper_block:
         tamper_block()
 
-    controller = BlackboardController()
-    controller.register_predicate(
-        "attestation",
-        make_attestation_predicate(CvmSubprocessClient(), protocols),
-    )
-    controller.register_predicate(
-        "protocol_check", make_readiness_predicate(protocols)
-    )
-
-    # the two decision trees, pre-registered (their entries are written by
-    # the readiness chain's starter rung)
-    refine = TierKS(protocol_id="gumbo_l2")
-    confirm = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
-    starter = StartAttestationKS(episodes={
-        "gumbo:files": "gumbo_l1a",
-        "gumbo:contracts": "gumbo_l1b",
-    })
-    for ks in [*confirm, refine, starter]:
-        controller.add_ks(ks)
-    controller.route("gumbo:files", on_pass=confirm, on_fail=[refine])
-    controller.route("gumbo:contracts", on_pass=confirm, on_fail=[])
-
-    # the first verdict: does every protocol in both trees exist and run?
-    checked = list(protocols)
-    if cli.misconfigure:
-        checked.append("gumbo_l9")
-    controller.blackboard.write_entry(
-        key="gumbo:ready", predicate="protocol_check",
-        measurement=readiness_request(checked),
-    )
-    controller.route("gumbo:ready", on_pass=[starter], on_fail=[])
     try:
+        controller = build_controller(protocols, cli)
         controller.run()
         print_report(controller, semantic=["gumbo_validation"])
+
+        if cli.repair:
+            print("\n=== episode 2: verification (fresh run, fresh caches) ===")
+            episode2 = build_controller(protocols, cli)
+            episode2.run()
+            print_report(episode2, semantic=["gumbo_validation"])
     finally:
         restored = golden.restore()
         if restored:

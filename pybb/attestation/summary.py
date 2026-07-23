@@ -54,16 +54,24 @@ def _summarize_key(
     passed = [v.protocol for v in trail if v.passed]
     failed = [v.protocol for v in trail if not v.passed]
     if escalated:
+        entry = blackboard.get_escalate().get(key)
+        repaired = entry is not None and any(
+            ks.startswith("repair:") for ks in entry.ks_history
+        )
+        terminal = (
+            "repaired from golden — verification pending next episode "
+            "(re-run the workflow)"
+            if repaired else "user intervention required"
+        )
         if passed:
             return (
                 f"{key}: {', '.join(passed)} passed but confirmation failed "
-                f"({', '.join(failed)}); {_attribution(trail)}; "
-                f"user intervention required"
+                f"({', '.join(failed)}); {_attribution(trail)}; {terminal}"
             )
         tiers = ", ".join(failed) or "no tier produced evidence"
         return (
             f"{key}: integrity violation — ladder exhausted ({tiers} failed); "
-            f"{_attribution(trail)}; user intervention required"
+            f"{_attribution(trail)}; {terminal}"
         )
     final = trail[-1] if trail else None
     if final is None or not final.passed:

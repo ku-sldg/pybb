@@ -44,52 +44,84 @@ present — deeper checks via CVM tooling are the documented extension
 point) and spends its dispatch on that verdict:
 
 ```python
-controller.route("gumbo", on_pass=[...], on_fail=[...])   # pre-registered (entry not yet written)
+controller.route("gumbo:files", on_pass=[...], on_fail=[...])   # pre-registered
+controller.route("gumbo:contracts", on_fail=[...])              # (entries not yet written)
 controller.route("gumbo:ready",
-    on_pass=[StartAttestationKS(key="gumbo", start="gumbo_l1")],
+    on_pass=[StartAttestationKS(episodes={"gumbo:files": "gumbo_l1a",
+                                          "gumbo:contracts": "gumbo_l1b"})],
     on_fail=[])                                           # config failure -> escalate
 blackboard.write_entry(key="gumbo:ready", predicate="protocol_check",
-    measurement=readiness_request(["gumbo_l1", "gumbo_l2", "gumbo_validation"]))
+    measurement=readiness_request(["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]))
 ```
 
-A passing check's on_pass rung writes the attestation entry seeded at the
-starting tier (idempotently — a live episode is never clobbered); a
-failing check escalates with a `ReadinessReport` that is unmistakably a
-*configuration* failure, and attestation never starts. The two-entry
-pattern is deliberate: dispatch is once per key, so each entry owns
-exactly one branch point — readiness owns "configured vs not", the
-attestation entry owns "intact vs violated". Deeper decision trees chain
-further entries the same way.
+A passing check's on_pass starter writes every attestation entry seeded at
+its starting tier (one rung starts them all — chains are failure ladders,
+so two starter rungs in one chain would never both run; idempotent, a live
+episode is never clobbered). A failing check escalates with a
+`ReadinessReport` that is unmistakably a *configuration* failure, and
+attestation never starts. The pattern is deliberate: dispatch is once per
+key, so each entry owns exactly one branch point — readiness owns
+"configured vs not", each attestation entry owns its own question. Deeper
+decision trees chain further entries the same way.
 
-## The decision tree (temp-control / GUMBO)
+## The layers and their roles (temp-control / GUMBO)
+
+| tier | question | measures | granularity | runs | repair unit |
+|---|---|---|---|---|---|
+| `gumbo_l1a` | baseline drifted? | whole-file hashes: 2 AADL models + 2 GumboX oracles | file | always | whole file |
+| `gumbo_l1b` | contract blocks intact? | 6 codegen-managed BEGIN/END blocks in the developer-owned component files | block | always | block splice |
+| `gumbo_l2` | *where* in the l1a files — invariant content or benign? | 22 contract-range slices, all inside l1a files | contract clause | on l1a failure | (guides l1a repair) |
+| `gumbo_validation` | does it still *verify*? | tool exit codes: tipe / logika / GumboX tests | semantic | on pass, `--validate` | none |
+
+The split follows the HAMR paradigm: GumboX oracles are generated
+("do not edit"), AADL models are baseline-immutable by policy, and
+component files are "safe to edit" *except* their codegen-managed contract
+blocks — which is why whole-file hashing cannot watch them and `gumbo_l1b`
+exists as an always-run sentinel at terminal granularity.
 
 ```python
-controller.route("gumbo",
+controller.route("gumbo:files",                        # the baseline question
+    on_pass=[TierKS(protocol_id="gumbo_validation")],  # --validate
+    on_fail=[TierKS(protocol_id="gumbo_l2"),
+             WholeFileRestoreKS(golden_root=GOLDEN_ROOT)])
+controller.route("gumbo:contracts",                    # the living-code question
     on_pass=[TierKS(protocol_id="gumbo_validation")],
-    on_fail=[TierKS(protocol_id="gumbo_l2")])
+    on_fail=[SliceRestoreKS(golden_root=GOLDEN_ROOT)])
 ```
 
-    eval gumbo_l1 (whole-file hashes, ~1s)
-      pass -> gumbo_validation  sireum tipe/logika/test (~min)
-                pass = done     fail = escalate (validation report)
-      fail -> gumbo_l2          per-contract slices (~1s)
-                pass = done     fail = escalate (per-contract report)
+    gumbo:files   eval gumbo_l1a (whole-file hashes, ~1s)
+      pass -> gumbo_validation (~min): pass = confirmed, fail = escalate
+      fail -> gumbo_l2 (contract slices, ~1s)
+                pass = benign drift, tolerated (re-provision to bless it)
+                fail -> WholeFileRestoreKS restores the files gumbo_l2
+                        confirmed violated -> repaired, pending
 
-- A passing l1 with a configured `on_pass` chain is *provisional*: the
-  controller clears its standing and dispatches to the confirmation tier.
-  Without `--validate` there is no `on_pass` chain and an l1 pass is final.
-- A failing l1 dispatches to `on_fail`, where gumbo_l2's per-contract
-  ranges attribute the failure to specific GUMBO contracts. If the slices
-  all match (tamper outside measured content), the entry ends in good
-  standing at finer granularity.
-- Escalation is the controller's own end-of-chain behavior: the entry
-  moves to the escalate segment carrying the failing tier's `Verdict`
-  (failing components and reasons) and the `ks_history` of attempts.
+    gumbo:contracts   eval gumbo_l1b (contract blocks, ~1s)
+      pass -> done (or gumbo_validation with --validate)
+      fail -> SliceRestoreKS splices the violated blocks from golden,
+              touching nothing else -> repaired, pending
 
-`trust_summary(blackboard, semantic=[...])` renders the final state as
-prose after `run()` — including the audit distinctions good standing alone
-doesn't show ("intact", "confirmed by validation", "clean at finer
-granularity", "passed but confirmation failed").
+`trust_summary(blackboard, semantic=[...])` renders the final states as
+prose — "intact", "confirmed by validation", "clean at finer granularity",
+"passed but confirmation failed", and the repair terminal below.
+
+## Repair: converge live to gold, never mint trust
+
+Repair unit = measurement unit: whole-file restore is the only repair that
+can return a whole-file hash to its golden value; block splice is the only
+repair permitted inside a safe-to-edit file. Scope discipline: whole-file
+repair restores only files the refinement tier confirmed violated — benign
+drift is never repaired (legitimate edits are blessed by re-provisioning,
+not laundered by repair). Repair reads gold and writes live, the one
+permitted direction.
+
+A repair rung acts, exhausts its single attempt, and the entry escalates
+carrying the repair in `ks_history` — the escalate segment means "terminal
+for this episode; external action required", and after a repair that
+action is simply the next episode: fresh predicates re-measure everything,
+converting "repaired" into "verified" (or not). `trust_summary` renders
+this terminal as "repaired from golden — verification pending next
+episode". The `--repair` demo runs both episodes.
 
 ## Live targets and the golden directory
 
@@ -122,7 +154,7 @@ updates files in `golden/` and writes a request into the blackboard's
 ```python
 controller.register_predicate("provision",
     make_provision_predicate(client, protocols, GOLDEN_ROOT))
-request_provision(blackboard, "gumbo_l1")          # key "provision:gumbo_l1"
+request_provision(blackboard, "gumbo_l1a")         # key "provision:gumbo_l1a"
 ```
 
 The `"provision"` predicate IS the provisioning, mirroring the attestation
@@ -163,6 +195,8 @@ point is who may write the golden directory.
   `TierKS`, and `StartAttestationKS` (the readiness→attestation link).
 - `readiness.py` — the protocol-readiness predicate factory and
   `ReadinessReport`.
+- `repair.py` — `WholeFileRestoreKS` and `SliceRestoreKS`, the repair
+  rungs (repair unit = measurement unit; gold -> live only).
 - `snapshot.py` — `watched_files` and `TargetSnapshot`, the clean copies
   of the live targets: captured into / loaded from the golden directory,
   restored during repair or fresh runs.

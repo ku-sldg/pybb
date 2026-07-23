@@ -18,6 +18,7 @@ from .readiness import (
     make_readiness_predicate,
     readiness_request,
 )
+from .repair import SliceRestoreKS, WholeFileRestoreKS
 from .provision import (
     ProvisionOutcome,
     make_provision_predicate,
@@ -45,6 +46,8 @@ __all__ = [
     "ReadinessReport",
     "make_readiness_predicate",
     "readiness_request",
+    "SliceRestoreKS",
+    "WholeFileRestoreKS",
     "ProvisionOutcome",
     "make_provision_predicate",
     "provision_request",
