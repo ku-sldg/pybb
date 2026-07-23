@@ -4,7 +4,7 @@ Attestation on the routed blackboard.
 The predicate IS the attestation: an entry's measurement is a request
 descriptor
 
-    {"protocol": <protocol_id>, "nonce": <int>}
+    {"protocol": <protocol_id>}
 
 and the registered predicate (built by `make_attestation_predicate`) runs
 that protocol via the client, appraises the response, and returns a
@@ -29,9 +29,11 @@ the chain and the controller moves the entry to the escalate segment
 carrying that tier's failing Verdict as the report.
 
 The controller re-evaluates every entry each cycle, so the predicate
-memoizes on the measurement: unchanged request descriptors reuse the last
-Verdict instead of re-running the (possibly minutes-long) protocol. A
-future repair KS forces fresh attestation by bumping the nonce.
+memoizes on the measurement: each protocol attests at most once per
+predicate lifetime, and a fresh workflow run (fresh predicates, fresh
+caches) re-attests everything. In-session re-attestation — e.g. verifying
+a repair — is deliberately unsupported for now; it will arrive as an
+explicit restart-episode primitive, not as a field on the measurement.
 """
 
 from __future__ import annotations
@@ -46,9 +48,9 @@ from ..knowledge_source import KnowledgeSource
 from .appraisal import ComponentResult, overall_verdict, parse_appraisal
 
 
-def attestation_request(protocol_id: str, nonce: int = 0) -> dict:
+def attestation_request(protocol_id: str) -> dict:
     """Measurement descriptor for an attestation entry."""
-    return {"protocol": protocol_id, "nonce": nonce}
+    return {"protocol": protocol_id}
 
 
 class Verdict(BaseModel):
@@ -125,7 +127,6 @@ class StartAttestationKS(KnowledgeSource):
     key: str
     start: str  # starting tier's protocol id
     predicate_name: str = "attestation"
-    nonce: int = 0
 
     def model_post_init(self, __context) -> None:
         if not self.name:
@@ -137,7 +138,7 @@ class StartAttestationKS(KnowledgeSource):
         blackboard.write_entry(
             key=self.key,
             predicate=self.predicate_name,
-            measurement=attestation_request(self.start, nonce=self.nonce),
+            measurement=attestation_request(self.start),
         )
 
 
@@ -159,13 +160,9 @@ class TierKS(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            measurement = attestation_request(
-                self.protocol_id,
-                nonce=entry.measurement.get("nonce", 0),
-            )
             blackboard.write_entry(
                 key=key,
                 predicate=entry.predicate,
-                measurement=measurement,
+                measurement=attestation_request(self.protocol_id),
                 result=None,  # controller re-evaluates (attests) next cycle
             )

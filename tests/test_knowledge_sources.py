@@ -183,7 +183,7 @@ def test_l1_fail_with_empty_on_fail_chain_escalates_immediately():
 
 # ── plumbing ──────────────────────────────────────────────────────────────────
 
-def test_predicate_memoizes_until_nonce_bump():
+def test_predicate_memoizes_per_lifetime():
     client = FakeClient({"l1": _appr_response({"a.aadl": True})})
     predicate = make_attestation_predicate(client, PROTOS)
 
@@ -191,7 +191,9 @@ def test_predicate_memoizes_until_nonce_bump():
     again = predicate(attestation_request("l1"))
     assert first is again and client.calls == ["l1"]
 
-    predicate(attestation_request("l1", nonce=1))
+    # a fresh predicate (fresh workflow run) re-attests
+    fresh = make_attestation_predicate(client, PROTOS)
+    fresh(attestation_request("l1"))
     assert client.calls == ["l1", "l1"]
 
 

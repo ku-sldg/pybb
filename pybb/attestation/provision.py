@@ -6,7 +6,7 @@ A provisioning request lives in the blackboard's provision partition
 (written by `request_provision` following an external event that adds
 files to the golden directory) and names a protocol:
 
-    {"protocol": <protocol_id>, "nonce": <int>}
+    {"protocol": <protocol_id>}
 
 The registered predicate (built by `make_provision_predicate`) IS the
 provisioning, mirroring the attestation predicate: it runs the protocol's
@@ -51,24 +51,24 @@ _NULL_ASP = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "NULL"}
 _BOOKKEEPING_KEYS = ("golden_b64", "golden_ts", "filepath_golden", "env_var_golden")
 
 
-def provision_request(protocol_id: str, nonce: int = 0) -> dict:
+def provision_request(protocol_id: str) -> dict:
     """Measurement descriptor for a provisioning request."""
-    return {"protocol": protocol_id, "nonce": nonce}
+    return {"protocol": protocol_id}
 
 
 def request_provision(
-    blackboard: Blackboard, protocol_id: str, nonce: int = 0,
-    predicate: str = "provision",
+    blackboard: Blackboard, protocol_id: str, predicate: str = "provision"
 ) -> BlackboardEntry:
     """
     External-event API: write a provisioning request for one protocol into
     the blackboard's provision partition. Re-provisioning after further
-    golden-directory changes is the same call with a bumped nonce.
+    golden-directory changes happens in a fresh workflow run (fresh
+    predicate caches).
     """
     return blackboard.write_entry(
         key=f"provision:{protocol_id}",
         predicate=predicate,
-        measurement=provision_request(protocol_id, nonce=nonce),
+        measurement=provision_request(protocol_id),
         partition="provision",
     )
 
@@ -152,8 +152,8 @@ def make_provision_predicate(
     Predicate over provisioning-request measurements: run the named
     protocol's measurement-only term against the golden copies and install
     the extracted goldens. Memoized on the measurement so per-cycle
-    re-evaluation is at-most-once per request descriptor; a new external
-    event re-provisions via a bumped nonce.
+    re-evaluation is at-most-once per request descriptor per predicate
+    lifetime; a later external event re-provisions in a fresh workflow run.
     """
     cache: Dict[str, ProvisionOutcome] = {}
 

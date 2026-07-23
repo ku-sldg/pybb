@@ -5,7 +5,7 @@ A readiness entry asks "do these protocols exist and can they run?" before
 any attestation happens. Its measurement names every protocol the episode
 might touch:
 
-    {"protocols": [<protocol_id>, ...], "nonce": <int>}
+    {"protocols": [<protocol_id>, ...]}
 
 and the registered predicate (built by `make_readiness_predicate`) checks
 each one: the id resolves, the protocol config is complete, goldenbytes
@@ -39,9 +39,9 @@ from pydantic import BaseModel
 from .client import CvmConfig
 
 
-def readiness_request(protocol_ids: List[str], nonce: int = 0) -> dict:
+def readiness_request(protocol_ids: List[str]) -> dict:
     """Measurement descriptor for a protocol-readiness entry."""
-    return {"protocols": list(protocol_ids), "nonce": nonce}
+    return {"protocols": list(protocol_ids)}
 
 
 class ReadinessReport(BaseModel):
@@ -63,7 +63,7 @@ def make_readiness_predicate(
     """
     Predicate over readiness measurements: check every named protocol
     against the protocol map and the CVM environment. Memoized on the
-    measurement; re-check via a bumped nonce.
+    measurement (per predicate lifetime; a fresh run re-checks).
     """
     config = config or CvmConfig()
     cache: Dict[str, ReadinessReport] = {}

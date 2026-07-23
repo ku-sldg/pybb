@@ -13,7 +13,7 @@ own coordination machinery:
 | blackboard concept | attestation meaning |
 |---|---|
 | entry (one per attested system) | the trust question, e.g. `"gumbo"` |
-| measurement | request descriptor `{"protocol", "nonce"}` |
+| measurement | request descriptor `{"protocol"}` |
 | predicate | runs the named protocol via the client and appraises the response into a `Verdict` |
 | `entry.result` | the `Verdict`: overall pass plus per-component results |
 | good standing | some tier rendered a conclusive passing verdict |
@@ -25,8 +25,10 @@ The predicate (built by `make_attestation_predicate(client, protocols)`)
 IS the attestation: the controller's evaluation step runs the protocol
 named in the measurement and stores the appraised `Verdict` (truthy iff
 every component passed). Because the controller re-evaluates entries every
-cycle, the predicate memoizes on the measurement; a future repair KS forces
-re-attestation by bumping the request nonce.
+cycle, the predicate memoizes on the measurement: each protocol attests at
+most once per predicate lifetime, and a fresh workflow run re-attests
+everything. In-session re-attestation (e.g. verifying a repair) is a
+future restart-episode primitive, deliberately not a measurement field.
 
 Knowledge sources are tier rungs (`TierKS`): each one reacts to the entry
 by re-pointing its measurement at its own protocol, and the controller's
@@ -131,8 +133,8 @@ target's golden slice with asp-libs' `extract_golden_slice`, and installs
 the fresh `golden_b64` values into the protocol's `asp_args` — in memory
 (the shared `ProtocolDir`, so attestation in the same run uses them) and on
 disk (invalidating any prebuilt `cvm_request.json`, which bakes in old
-goldens). Memoized on the request descriptor; re-provisioning after the
-next event is the same request with a bumped nonce.
+goldens). Memoized on the request descriptor per predicate lifetime;
+re-provisioning after a later event happens in a fresh workflow run.
 
 The partition's lifecycle is simpler than certify's: the controller
 evaluates provision requests **before** certify entries each cycle (so

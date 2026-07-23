@@ -78,12 +78,10 @@ def test_missing_cvm_binary_is_a_problem(tmp_path):
     assert not report and any("CVM binary" in p for p in report.problems)
 
 
-def test_memoized_until_nonce_bump(tmp_path):
-    calls = []
+def test_memoized_per_lifetime(tmp_path):
     predicate = make_readiness_predicate({"l1": _protocol()}, _config(tmp_path))
     first = predicate(readiness_request(["l1"]))
     assert predicate(readiness_request(["l1"])) is first
-    assert predicate(readiness_request(["l1"], nonce=1)) is not first
 
 
 # ── the two-entry flow ────────────────────────────────────────────────────────
@@ -164,7 +162,7 @@ def test_readiness_failure_escalates_and_never_starts_attestation(tmp_path):
 def test_starter_never_clobbers_live_episode(tmp_path):
     ctl = _flow_controller(tmp_path, ["l1", "l2"])
     ctl.blackboard.write_entry(key="sys", predicate="attestation",
-                               measurement={"protocol": "l2", "nonce": 7})
+                               measurement={"protocol": "l2"})
     ctl.run()
     # pre-existing entry untouched by the starter
-    assert ctl.blackboard.entries["sys"].measurement == {"protocol": "l2", "nonce": 7}
+    assert ctl.blackboard.entries["sys"].measurement == {"protocol": "l2"}

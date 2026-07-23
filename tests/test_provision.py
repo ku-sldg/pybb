@@ -157,13 +157,11 @@ def test_unknown_protocol_fails_cleanly(tmp_path):
     assert not outcome and "unknown protocol" in outcome.error
 
 
-def test_memoized_until_nonce_bump(tmp_path):
+def test_memoized_per_lifetime(tmp_path):
     predicate, client, *_ = _setup(tmp_path)
     first = predicate(provision_request("p1"))
     again = predicate(provision_request("p1"))
     assert first is again and len(client.requests) == 1
-    predicate(provision_request("p1", nonce=1))
-    assert len(client.requests) == 2
 
 
 def test_full_blackboard_flow_success_and_failure(tmp_path):
