@@ -20,12 +20,14 @@ report, before any attestation runs — instead of surfacing mid-episode
 disguised as an integrity failure. Wiring (each entry spends its one
 dispatch on its own branch point):
 
-    controller.route("gumbo", on_pass=[...], on_fail=[...])   # pre-registered
+    controller.route("gumbo:files", on_pass=[...], on_fail=[...])      # pre-registered
+    controller.route("gumbo:contracts", on_fail=[...])
     controller.route("gumbo:ready",
-        on_pass=[StartAttestationKS(key="gumbo", start="gumbo_l1")],
+        on_pass=[StartAttestationKS(episodes={"gumbo:files": "gumbo_l1a",
+                                              "gumbo:contracts": "gumbo_l1b"})],
         on_fail=[])                                           # config failure -> escalate
     blackboard.write_entry(key="gumbo:ready", predicate="protocol_check",
-        measurement=readiness_request(["gumbo_l1", "gumbo_l2", "gumbo_validation"]))
+        measurement=readiness_request(["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]))
 """
 
 from __future__ import annotations

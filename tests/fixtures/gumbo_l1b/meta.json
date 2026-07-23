@@ -1,0 +1,6 @@
+{
+  "name": "GUMBO Component Contract Blocks (Level 1b)",
+  "description": "Measure the codegen-managed BEGIN/END contract blocks inside the developer-owned component files (safe-to-edit files; only the blocks are invariant). Always-run sentinel at terminal granularity: a failing block needs no deeper attribution.",
+  "copland": "lseq( lseq( bseq_chain( readfile_marker_range\u00d76 ), SIG ), APPR )",
+  "dynamic": true
+}

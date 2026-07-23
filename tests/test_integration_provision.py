@@ -2,7 +2,7 @@
 End-to-end blackboard provisioning against the real CVM, asp-libs
 extract_golden_slice, and the golden directory.
 
-Provision requests for gumbo_l1/gumbo_l2 (in the provision partition) run
+Provision requests for gumbo_l1a/gumbo_l2 (in the provision partition) run
 measurement-only terms over tmp copies of golden/, install fresh goldens
 into tmp copies of the protocol dirs, and — in the same controller run —
 the certify-partition attestation entry attests the live tree against the
@@ -36,7 +36,7 @@ from pybb.attestation.client import DEFAULT_ASP_BIN, DEFAULT_CVM_BINARY
 FIXTURES = Path(__file__).parent / "fixtures"
 GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
-PROTOCOL_IDS = ("gumbo_l1", "gumbo_l2")
+PROTOCOL_IDS = ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
 
 pytestmark = [
     pytest.mark.cvm,
@@ -81,7 +81,7 @@ def test_provision_from_golden_then_attest_live(tmp_path):
         request_provision(ctl.blackboard, pid)
     ctl.blackboard.write_entry(
         key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1"),
+        measurement=attestation_request("gumbo_l1a"),
     )
     rungs = [TierKS(protocol_id="gumbo_l2")]
     for ks in rungs:
@@ -90,12 +90,15 @@ def test_provision_from_golden_then_attest_live(tmp_path):
 
     bb = ctl.run()
 
-    # provision records: both requests fulfilled, in good standing
-    l1 = bb.provision["provision:gumbo_l1"].result
-    l2 = bb.provision["provision:gumbo_l2"].result
-    assert bb.provision["provision:gumbo_l1"].good_standing, l1
-    assert bb.provision["provision:gumbo_l2"].good_standing, l2
-    assert len(l1.provisioned) == 4 and len(l2.provisioned) == 28
+    # provision records: all requests fulfilled, in good standing
+    outcomes = {}
+    for pid in PROTOCOL_IDS:
+        entry = bb.provision[f"provision:{pid}"]
+        assert entry.good_standing, entry.result
+        outcomes[pid] = entry.result
+    assert len(outcomes["gumbo_l1a"].provisioned) == 4
+    assert len(outcomes["gumbo_l1b"].provisioned) == 6
+    assert len(outcomes["gumbo_l2"].provisioned) == 22
 
     # freshly extracted goldens equal the committed fixture values
     for pid in PROTOCOL_IDS:
@@ -106,12 +109,12 @@ def test_provision_from_golden_then_attest_live(tmp_path):
                 )
 
     # provisioning artifacts: bundle written, stale prebuilt gone
-    assert (golden_tmp / "_bundles" / "gumbo_l1" / "provision_bundle.json").is_file()
-    assert not (tmp_path / "gumbo_l1" / "cvm_request.json").exists()
-    assert protocols["gumbo_l1"].prebuilt_request is None
+    assert (golden_tmp / "_bundles" / "gumbo_l1a" / "provision_bundle.json").is_file()
+    assert not (tmp_path / "gumbo_l1a" / "cvm_request.json").exists()
+    assert protocols["gumbo_l1a"].prebuilt_request is None
 
     # attestation (same run, certify partition) attested the live tree
     # clean against the freshly provisioned goldens, without tier hops
     gumbo = bb.entries["gumbo"]
-    assert gumbo.good_standing and gumbo.result.protocol == "gumbo_l1"
+    assert gumbo.good_standing and gumbo.result.protocol == "gumbo_l1a"
     assert gumbo.ks_history == {}

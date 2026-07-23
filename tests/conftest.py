@@ -7,8 +7,13 @@ FIXTURES = Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
-def gumbo_l1_dir() -> Path:
-    return FIXTURES / "gumbo_l1"
+def gumbo_l1a_dir() -> Path:
+    return FIXTURES / "gumbo_l1a"
+
+
+@pytest.fixture
+def gumbo_l1b_dir() -> Path:
+    return FIXTURES / "gumbo_l1b"
 
 
 @pytest.fixture
@@ -17,5 +22,5 @@ def gumbo_l2_dir() -> Path:
 
 
 @pytest.fixture
-def gumbo_l1_request(gumbo_l1_dir) -> dict:
-    return json.loads((gumbo_l1_dir / "cvm_request.json").read_text())
+def gumbo_l1a_request(gumbo_l1a_dir) -> dict:
+    return json.loads((gumbo_l1a_dir / "cvm_request.json").read_text())

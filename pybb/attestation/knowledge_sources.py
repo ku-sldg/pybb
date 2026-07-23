@@ -114,32 +114,34 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdic
 
 class StartAttestationKS(KnowledgeSource):
     """
-    Links a readiness entry to its attestation episode: on the readiness
-    entry's on_pass chain, writes the attestation entry seeded at the
-    starting tier. Idempotent — an existing entry under `key` is never
-    clobbered. Writes nothing back to the readiness entry; its memoized
-    check re-passes on the next evaluation and standing recovers by itself.
+    Links a readiness entry to its attestation episodes: on the readiness
+    entry's on_pass chain, writes each attestation entry seeded at its
+    starting tier. A single rung starts every episode — chains are failure
+    ladders, so two starter rungs in one chain would never both run.
+    Idempotent — existing entries are never clobbered. Writes nothing back
+    to the readiness entry; its memoized check re-passes on the next
+    evaluation and standing recovers by itself.
     """
 
     name: str = ""
     partition: List[str] = []
     max_attempts: int = 1
-    key: str
-    start: str  # starting tier's protocol id
+    episodes: Dict[str, str]  # entry key -> starting tier's protocol id
     predicate_name: str = "attestation"
 
     def model_post_init(self, __context) -> None:
         if not self.name:
-            self.name = f"start:{self.key}@{self.start}"
+            self.name = "start:" + ",".join(self.episodes)
 
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
-        if blackboard.get_entry(self.key) is not None:
-            return  # live episode; never clobber
-        blackboard.write_entry(
-            key=self.key,
-            predicate=self.predicate_name,
-            measurement=attestation_request(self.start),
-        )
+        for key, start in self.episodes.items():
+            if blackboard.get_entry(key) is not None:
+                continue  # live episode; never clobber
+            blackboard.write_entry(
+                key=key,
+                predicate=self.predicate_name,
+                measurement=attestation_request(start),
+            )
 
 
 class TierKS(KnowledgeSource):

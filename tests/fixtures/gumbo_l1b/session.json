@@ -4,7 +4,7 @@
   "PubKey_Mapping": {},
   "Session_Context": {
     "ASP_Types": {
-      "readfile_range": {
+      "readfile_marker_range": {
         "FWD": {
           "FWD": "EXTEND",
           "_BODY": 1,
@@ -36,7 +36,7 @@
       }
     },
     "ASP_Comps": {
-      "readfile_range": "goldenbytes_appr",
+      "readfile_marker_range": "goldenbytes_appr",
       "sig": "sig_appr"
     }
   }

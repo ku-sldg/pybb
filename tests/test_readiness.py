@@ -115,7 +115,7 @@ def _flow_controller(tmp_path, checked, l1_ok=True):
                            make_readiness_predicate(protocols, _config(tmp_path)))
     ctl.register_predicate("attestation",
                            make_attestation_predicate(Client(), protocols))
-    starter = StartAttestationKS(key="sys", start="l1")
+    starter = StartAttestationKS(episodes={"sys": "l1"})
     attribute = TierKS(protocol_id="l2")
     for ks in (starter, attribute):
         ctl.add_ks(ks)
@@ -131,7 +131,7 @@ def test_readiness_pass_starts_attestation_with_full_tree(tmp_path):
     bb = ctl.run()
 
     ready = bb.entries["sys:ready"]
-    assert ready.good_standing and ready.ks_history == {"start:sys@l1": 1}
+    assert ready.good_standing and ready.ks_history == {"start:sys": 1}
     sys_entry = bb.entries["sys"]
     assert sys_entry.good_standing and sys_entry.result.protocol == "l1"
     assert "sys:ready: protocols validated (l1, l2)" in trust_summary(bb)

@@ -2,39 +2,47 @@
 Attestation-driven blackboard demo: GUMBO contract integrity for the
 temp-control-jvm HAMR project, on the outcome-routed blackboard.
 
-One entry ("gumbo") whose predicate attests the protocol named in its
-measurement; the route encodes the decision tree:
+Two always-run trust questions, each entry spending its one dispatch on
+its own branch point:
 
-    eval gumbo_l1 (whole-file hashes, ~1s)
-      pass -> on_pass:  gumbo_validation (sireum tipe/logika/test, ~min,
-              with --validate) confirms the passing hashes semantically;
-              without --validate a pass is final
-      fail -> on_fail:  gumbo_l2 (per-contract slices, ~1s) attributes
-              the failure to specific GUMBO contracts
+    gumbo:files      starts at gumbo_l1a — whole-file hashes of the
+                     baseline-immutable artifacts (AADL models + GumboX
+                     oracles, ~1s)
+                       pass -> on_pass: gumbo_validation (--validate)
+                       fail -> on_fail: gumbo_l2 (22 contract-range
+                               slices) refines the drift — pass = benign
+                               drift (tolerated; re-provision to bless),
+                               fail = contract violation -> escalate
 
-    the chosen tier's pass ends the run in good standing; its failure
-    moves the entry to the escalate segment carrying that tier's verdict
-    (the failure report) and the attempt history.
+    gumbo:contracts  starts at gumbo_l1b — the codegen-managed BEGIN/END
+                     contract blocks inside the developer-owned component
+                     files (~1s). Already block-granular: no deeper dive;
+                     a failure escalates with the violated blocks.
 
-The episode starts with a protocol-readiness verdict: a "gumbo:ready"
-entry checks that every protocol in the decision tree exists and can run
-(ids resolve, goldens provisioned, CVM and ASP binaries present) before
-any attestation happens. Its on_pass chain writes the "gumbo" attestation
-entry seeded at l1; a readiness failure escalates as a configuration
-failure and attestation never starts (--misconfigure demonstrates this).
+The episode opens with a protocol-readiness verdict: "gumbo:ready" checks
+every protocol in both trees (ids resolve, goldens provisioned, CVM and
+ASP binaries present); its on_pass starter writes both attestation
+entries. A readiness failure escalates as a configuration failure and no
+attestation runs (--misconfigure demonstrates this).
 
 Usage:
-    python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper]
-                                         [--validate] [--misconfigure]
+    python examples/gumbo_attestation.py [--protocols-root DIR]
+        [--tamper] [--tamper-block] [--validate] [--misconfigure]
 
---tamper corrupts one GUMBO contract line in the live tree. The golden
-directory (provisioned out-of-band by examples/capture_golden.py) restores
-the live targets after the run, so the tree ends every run intact. The
-tampered run walks l1 -> l2 -> escalate.
+--tamper corrupts one GUMBO contract line in a live AADL model: the
+gumbo:files tree walks l1a -> l2 -> escalate with per-contract
+attribution, while gumbo:contracts stays clean.
 
---validate adds the confirmation tier on the pass branch. It runs the live
-Sireum tools against the real project (takes minutes), so a clean run is
-no longer instant: a passing l1 is provisional until validation concurs.
+--tamper-block corrupts a line inside a component file's contract block —
+undetectable by the old single-tree design (whole-file hashing cannot
+watch safe-to-edit files): gumbo:files passes while gumbo:contracts
+escalates with the violated block.
+
+Either way the golden directory (provisioned out-of-band by
+examples/capture_golden.py) restores the live targets after the run.
+
+--validate adds the semantic confirmation tier to BOTH entries' pass
+branches (one shared Sireum run, ~min: memoized across the entries).
 """
 
 import argparse
@@ -59,12 +67,24 @@ GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 
 
 def tamper_live() -> None:
-    """Corrupt one GUMBO contract line in the live tree."""
+    """Corrupt one GUMBO contract line in a live AADL model."""
     aadl = TC_ROOT / "aadl/packages/TempControlSystem.aadl"
     lines = aadl.read_text().splitlines(keepends=True)
     lines[305] = "-- TAMPERED: invariant weakened\n"
     aadl.write_text("".join(lines))
     print(f"Tampered live file: {aadl} (line 306)")
+
+
+def tamper_block() -> None:
+    """Corrupt a line inside a component file's contract block."""
+    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSoftwareSystem"
+                     / "TempControlPeriodic_p_tcproc_tempControl.scala")
+    lines = comp.read_text().splitlines(keepends=True)
+    begin = next(i for i, l in enumerate(lines)
+                 if "BEGIN COMPUTE ENSURES timeTriggered" in l)
+    lines[begin + 1] = "        // TAMPERED: ensures clause weakened\n"
+    comp.write_text("".join(lines))
+    print(f"Tampered live contract block: {comp.name} (line {begin + 2})")
 
 
 def print_report(controller: BlackboardController, semantic: list[str]) -> None:
@@ -82,7 +102,7 @@ def print_report(controller: BlackboardController, semantic: list[str]) -> None:
             print(line)
 
     if blackboard.get_escalate():
-        print("\n=== escalate segment (user intervention required) ===")
+        print("\n=== escalate segment ===")
         for key, entry in blackboard.get_escalate().items():
             print(f"  {key}: attempts={entry.ks_history}")
 
@@ -95,13 +115,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
+    parser.add_argument("--tamper-block", action="store_true")
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--misconfigure", action="store_true",
                         help="check a nonexistent protocol id: readiness "
                              "escalates, attestation never starts")
     cli = parser.parse_args()
 
-    protocol_ids = ["gumbo_l1", "gumbo_l2"]
+    protocol_ids = ["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]
     if cli.validate:
         protocol_ids.append("gumbo_validation")
     protocols = {
@@ -119,6 +140,8 @@ def main() -> None:
     print(f"Golden targets: {len(golden.files)} files under {golden.root}")
     if cli.tamper:
         tamper_live()
+    if cli.tamper_block:
+        tamper_block()
 
     controller = BlackboardController()
     controller.register_predicate(
@@ -129,16 +152,20 @@ def main() -> None:
         "protocol_check", make_readiness_predicate(protocols)
     )
 
-    # the attestation decision tree, pre-registered (the entry itself is
-    # written by the readiness chain's starter rung)
-    on_fail = [TierKS(protocol_id="gumbo_l2")]
-    on_pass = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
-    starter = StartAttestationKS(key="gumbo", start="gumbo_l1")
-    for ks in [*on_pass, *on_fail, starter]:
+    # the two decision trees, pre-registered (their entries are written by
+    # the readiness chain's starter rung)
+    refine = TierKS(protocol_id="gumbo_l2")
+    confirm = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
+    starter = StartAttestationKS(episodes={
+        "gumbo:files": "gumbo_l1a",
+        "gumbo:contracts": "gumbo_l1b",
+    })
+    for ks in [*confirm, refine, starter]:
         controller.add_ks(ks)
-    controller.route("gumbo", on_pass=on_pass, on_fail=on_fail)
+    controller.route("gumbo:files", on_pass=confirm, on_fail=[refine])
+    controller.route("gumbo:contracts", on_pass=confirm, on_fail=[])
 
-    # the first verdict: does every protocol in the tree exist and run?
+    # the first verdict: does every protocol in both trees exist and run?
     checked = list(protocols)
     if cli.misconfigure:
         checked.append("gumbo_l9")

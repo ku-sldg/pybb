@@ -41,7 +41,7 @@ from pybb.attestation.snapshot import mirror_path
 FIXTURES = Path(__file__).parent.parent / "tests" / "fixtures"
 GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
-PROTOCOL_IDS = ("gumbo_l1", "gumbo_l2")
+PROTOCOL_IDS = ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
 
 
 def tamper_golden(golden_root: Path) -> None:
@@ -88,7 +88,7 @@ def main() -> None:
         controller.add_ks(ks)
     controller.blackboard.write_entry(
         key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1"),
+        measurement=attestation_request("gumbo_l1a"),
     )
     controller.route("gumbo", on_fail=on_fail)
     controller.run()

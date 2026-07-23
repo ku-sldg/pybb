@@ -3,7 +3,7 @@
 # Gumbo (temp-control-jvm) attestation workflow: the outcome-routed decision
 # tree on the blackboard.
 #
-#   eval    gumbo_l1          whole-file hashes          ~1s
+#   eval    gumbo_l1a+l1b     hashes + contract blocks          ~1s
 #   on pass gumbo_validation  sireum tipe/logika/test    ~min  (--validate)
 #   on fail gumbo_l2          per-contract slices        ~1s
 #

@@ -1,6 +1,6 @@
 {
-  "name": "GUMBO File Integrity (Level 1)",
-  "description": "Hash AADL model files and GumboX oracle files as a whole. Fast check: detects any change to \"do not edit\" contract artifacts. Run Level 2 on failure for per-contract attribution.",
+  "name": "GUMBO Baseline Integrity (Level 1a)",
+  "description": "Hash the baseline-immutable files whole: AADL models and GumboX oracles. Fast screen: detects any drift from the provisioned baseline. On failure, gumbo_l2 attributes the drift to declared-invariant content (or clears it as benign).",
   "copland": "lseq( lseq( bseq_chain( hashfile\u00d74 ), SIG ), APPR )",
   "flow": [
     {
