@@ -7,10 +7,16 @@ from .client import (
     ProtocolDir,
 )
 from .knowledge_sources import (
+    StartAttestationKS,
     TierKS,
     Verdict,
     attestation_request,
     make_attestation_predicate,
+)
+from .readiness import (
+    ReadinessReport,
+    make_readiness_predicate,
+    readiness_request,
 )
 from .provision import (
     ProvisionOutcome,
@@ -31,10 +37,14 @@ __all__ = [
     "CvmError",
     "CvmSubprocessClient",
     "ProtocolDir",
+    "StartAttestationKS",
     "TierKS",
     "Verdict",
     "attestation_request",
     "make_attestation_predicate",
+    "ReadinessReport",
+    "make_readiness_predicate",
+    "readiness_request",
     "ProvisionOutcome",
     "make_provision_predicate",
     "provision_request",

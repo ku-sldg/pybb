@@ -32,6 +32,33 @@ Knowledge sources are tier rungs (`TierKS`): each one reacts to the entry
 by re-pointing its measurement at its own protocol, and the controller's
 next evaluation attests there. No KS runs protocols or parses evidence.
 
+## Protocol readiness: the first verdict
+
+Every episode opens with a configuration question, asked on the blackboard
+itself: *do the protocols in this decision tree exist and can they run?*
+A readiness entry checks the **whole protocol set** (ids resolve, protocol
+config complete, goldens provisioned, CVM and manifest-listed ASP binaries
+present — deeper checks via CVM tooling are the documented extension
+point) and spends its dispatch on that verdict:
+
+```python
+controller.route("gumbo", on_pass=[...], on_fail=[...])   # pre-registered (entry not yet written)
+controller.route("gumbo:ready",
+    on_pass=[StartAttestationKS(key="gumbo", start="gumbo_l1")],
+    on_fail=[])                                           # config failure -> escalate
+blackboard.write_entry(key="gumbo:ready", predicate="protocol_check",
+    measurement=readiness_request(["gumbo_l1", "gumbo_l2", "gumbo_validation"]))
+```
+
+A passing check's on_pass rung writes the attestation entry seeded at the
+starting tier (idempotently — a live episode is never clobbered); a
+failing check escalates with a `ReadinessReport` that is unmistakably a
+*configuration* failure, and attestation never starts. The two-entry
+pattern is deliberate: dispatch is once per key, so each entry owns
+exactly one branch point — readiness owns "configured vs not", the
+attestation entry owns "intact vs violated". Deeper decision trees chain
+further entries the same way.
+
 ## The decision tree (temp-control / GUMBO)
 
 ```python
@@ -131,7 +158,9 @@ point is who may write the golden directory.
 - `appraisal.py` — walks post-APPR evidence into `ComponentResult`s;
   binary `overall_verdict`.
 - `knowledge_sources.py` — the attestation predicate factory, `Verdict`,
-  and `TierKS`.
+  `TierKS`, and `StartAttestationKS` (the readiness→attestation link).
+- `readiness.py` — the protocol-readiness predicate factory and
+  `ReadinessReport`.
 - `snapshot.py` — `watched_files` and `TargetSnapshot`, the clean copies
   of the live targets: captured into / loaded from the golden directory,
   restored during repair or fresh runs.

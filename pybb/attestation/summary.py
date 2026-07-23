@@ -16,6 +16,7 @@ from typing import Iterable, List, Tuple
 
 from ..blackboard import Blackboard
 from .knowledge_sources import Verdict
+from .readiness import ReadinessReport
 
 
 def _tier_trail(blackboard: Blackboard, key: str) -> List[Verdict]:
@@ -89,6 +90,11 @@ def _summarize_key(
 def trust_summary(blackboard: Blackboard, semantic: Iterable[str] = ()) -> str:
     """One line per attestation entry, certify segment then escalate."""
     lines = [
+        f"{key}: protocols validated ({', '.join(entry.result.checked)})"
+        for key, entry in blackboard.get_all_entries().items()
+        if isinstance(entry.result, ReadinessReport) and entry.good_standing
+    ]
+    lines += [
         _summarize_key(blackboard, key, escalated=False, semantic=semantic)
         for key, entry in blackboard.get_all_entries().items()
         if isinstance(entry.result, Verdict)
@@ -97,5 +103,11 @@ def trust_summary(blackboard: Blackboard, semantic: Iterable[str] = ()) -> str:
         _summarize_key(blackboard, key, escalated=True, semantic=semantic)
         for key, entry in blackboard.get_escalate().items()
         if isinstance(entry.result, Verdict)
+    ]
+    lines += [
+        f"{key}: protocol readiness failed — {'; '.join(entry.result.problems)}; "
+        f"attestation never started; user intervention required"
+        for key, entry in blackboard.get_escalate().items()
+        if isinstance(entry.result, ReadinessReport)
     ]
     return "\n".join(lines) if lines else "no attestation entries on the blackboard"

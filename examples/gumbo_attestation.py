@@ -16,8 +16,16 @@ measurement; the route encodes the decision tree:
     moves the entry to the escalate segment carrying that tier's verdict
     (the failure report) and the attempt history.
 
+The episode starts with a protocol-readiness verdict: a "gumbo:ready"
+entry checks that every protocol in the decision tree exists and can run
+(ids resolve, goldens provisioned, CVM and ASP binaries present) before
+any attestation happens. Its on_pass chain writes the "gumbo" attestation
+entry seeded at l1; a readiness failure escalates as a configuration
+failure and attestation never starts (--misconfigure demonstrates this).
+
 Usage:
-    python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper] [--validate]
+    python examples/gumbo_attestation.py [--protocols-root DIR] [--tamper]
+                                         [--validate] [--misconfigure]
 
 --tamper corrupts one GUMBO contract line in the live tree. The golden
 directory (provisioned out-of-band by examples/capture_golden.py) restores
@@ -36,10 +44,12 @@ from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
+    StartAttestationKS,
     TargetSnapshot,
     TierKS,
-    attestation_request,
     make_attestation_predicate,
+    make_readiness_predicate,
+    readiness_request,
     trust_summary,
 )
 
@@ -64,8 +74,9 @@ def print_report(controller: BlackboardController, semantic: list[str]) -> None:
     for key, entry in blackboard.get_history():
         if entry.result is None:
             continue
-        line = (f"  {key}: {entry.measurement.get('protocol')} "
-                f"passed={bool(entry.result)}")
+        subject = (entry.measurement.get("protocol")
+                   or "+".join(entry.measurement.get("protocols", [])))
+        line = f"  {key}: {subject} passed={bool(entry.result)}"
         if line not in seen:  # bookkeeping snapshots repeat states
             seen.add(line)
             print(line)
@@ -85,6 +96,9 @@ def main() -> None:
     parser.add_argument("--protocols-root", default=str(DEFAULT_PROTOCOLS_ROOT))
     parser.add_argument("--tamper", action="store_true")
     parser.add_argument("--validate", action="store_true")
+    parser.add_argument("--misconfigure", action="store_true",
+                        help="check a nonexistent protocol id: readiness "
+                             "escalates, attestation never starts")
     cli = parser.parse_args()
 
     protocol_ids = ["gumbo_l1", "gumbo_l2"]
@@ -111,16 +125,28 @@ def main() -> None:
         "attestation",
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
+    controller.register_predicate(
+        "protocol_check", make_readiness_predicate(protocols)
+    )
+
+    # the attestation decision tree, pre-registered (the entry itself is
+    # written by the readiness chain's starter rung)
     on_fail = [TierKS(protocol_id="gumbo_l2")]
     on_pass = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
-    for ks in [*on_pass, *on_fail]:
+    starter = StartAttestationKS(key="gumbo", start="gumbo_l1")
+    for ks in [*on_pass, *on_fail, starter]:
         controller.add_ks(ks)
-
-    controller.blackboard.write_entry(
-        key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1"),
-    )
     controller.route("gumbo", on_pass=on_pass, on_fail=on_fail)
+
+    # the first verdict: does every protocol in the tree exist and run?
+    checked = list(protocols)
+    if cli.misconfigure:
+        checked.append("gumbo_l9")
+    controller.blackboard.write_entry(
+        key="gumbo:ready", predicate="protocol_check",
+        measurement=readiness_request(checked),
+    )
+    controller.route("gumbo:ready", on_pass=[starter], on_fail=[])
     try:
         controller.run()
         print_report(controller, semantic=["gumbo_validation"])

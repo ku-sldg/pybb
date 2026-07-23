@@ -110,6 +110,37 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdic
     )
 
 
+class StartAttestationKS(KnowledgeSource):
+    """
+    Links a readiness entry to its attestation episode: on the readiness
+    entry's on_pass chain, writes the attestation entry seeded at the
+    starting tier. Idempotent — an existing entry under `key` is never
+    clobbered. Writes nothing back to the readiness entry; its memoized
+    check re-passes on the next evaluation and standing recovers by itself.
+    """
+
+    name: str = ""
+    partition: List[str] = []
+    max_attempts: int = 1
+    key: str
+    start: str  # starting tier's protocol id
+    predicate_name: str = "attestation"
+    nonce: int = 0
+
+    def model_post_init(self, __context) -> None:
+        if not self.name:
+            self.name = f"start:{self.key}@{self.start}"
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        if blackboard.get_entry(self.key) is not None:
+            return  # live episode; never clobber
+        blackboard.write_entry(
+            key=self.key,
+            predicate=self.predicate_name,
+            measurement=attestation_request(self.start, nonce=self.nonce),
+        )
+
+
 class TierKS(KnowledgeSource):
     """
     One tier rung: re-point the entry's measurement at this rung's protocol
