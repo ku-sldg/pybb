@@ -22,9 +22,12 @@ class Route(BaseModel):
 class BlackboardController(BaseModel):
     """
     for each cycle:
-      1. eval all entries
+      1. eval all entries: provision partition FIRST, then certify
         a. run predicate (or component conditions) from registry
         b. set good_standing based on result
+        c. a provision request that evaluated and failed moves straight to
+           the escalate segment (no KS chains for the provision partition);
+           a passing one stays as the record of provisioned state
       2. dispatch each routed key onto a chain once its first result exists
         a. failing entry -> its route's on_fail chain
         b. passing entry with an on_pass chain -> that chain (standing cleared;
@@ -132,8 +135,9 @@ class BlackboardController(BaseModel):
             if entry.component_good(owner.component):
                 self._advance(key, owner, restore=False) # preserve the fix; escalates if no next KS
 
-    def _evaluate_entry(self, key: str) -> None:
-        entry = self.blackboard.entries.get(key)
+    def _evaluate_entry(self, key: str, partition: str = "certify") -> None:
+        segment = self.blackboard.provision if partition == "provision" else self.blackboard.entries
+        entry = segment.get(key)
         if entry is None:
             return
         if entry.conditions is not None:
@@ -150,16 +154,29 @@ class BlackboardController(BaseModel):
                 return
             result = fn(entry.measurement)
             good = bool(result)
-        self.blackboard.set_entry(key, entry.model_copy(update={"result": result, "good_standing": good}))
+        self.blackboard.set_entry(key, entry.model_copy(update={"result": result, "good_standing": good}), partition=partition)
 
     def _evaluate_all(self) -> None:
+        # provision requests evaluate before certify entries, so attestation
+        # in the same cycle always sees freshly provisioned state
+        for key in list(self.blackboard.provision):
+            self._evaluate_entry(key, partition="provision")
         for key in list(self.blackboard.entries):
             self._evaluate_entry(key)
+
+    def _escalate_failed_provision(self) -> None:
+        """provision requests have no KS chains: first failure escalates with the outcome as report"""
+        for key in list(self.blackboard.provision):
+            entry = self.blackboard.provision[key]
+            if entry.result is not None and not entry.good_standing:
+                self.blackboard.escalate[key] = self.blackboard.provision.pop(key)
+                print(f"Cycle {self.cycle_count}: provisioning request '{key}' failed - escalating")
 
     def run(self) -> Blackboard:
         for i in range(self.max_cycles):
             self.cycle_count = i + 1
             self._evaluate_all()
+            self._escalate_failed_provision()
             self._dispatch()
             self._advance_ready()
             active = [ks for ks in self.knowledge_sources if ks.can_contribute(self.blackboard)]

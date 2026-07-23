@@ -18,7 +18,8 @@ own coordination machinery:
 | `entry.result` | the `Verdict`: overall pass plus per-component results |
 | good standing | some tier rendered a conclusive passing verdict |
 | route (`on_pass` / `on_fail` chains) | the decision tree over tiers |
-| escalate segment | every responsible tier failed; `entry.result` is the failure report |
+| provision partition | requests to (re-)provision golden evidence from the golden directory, written by external events |
+| escalate segment | every responsible tier failed (or a provisioning request failed); `entry.result` is the failure report |
 
 The predicate (built by `make_attestation_predicate(client, protocols)`)
 IS the attestation: the controller's evaluation step runs the protocol
@@ -80,16 +81,43 @@ launder tampered files into gold. The `--tamper` demo and the tampered
 integration test corrupt the live tree and rely on the golden copies to
 put it back afterward.
 
-## Provisioning is out of scope (deliberately)
+## Provisioning on the blackboard (the provision partition)
 
-pybb consumes protocol directories that were already provisioned; it never
-writes golden values. Provisioning (measurement-only run → provision_bundle →
-extract_golden_slice → golden_b64 in asp_args.json) is owned by the cvm-mcp
-dashboard, keeping a single writer for golden state. This is also a trust
-boundary: declaring "the system is in a known-good state" is a human/policy
-decision made out-of-band, and must never be reachable from the blackboard's
-failure-handling logic — auto-provisioning after a failed appraisal would
-launder tampered state into the new golden.
+Provisioning is a first-class blackboard activity, but one that sources
+**exclusively from the golden directory** — never from the live tree.
+
+An external event (a new verified release, a policy decision) adds or
+updates files in `golden/` and writes a request into the blackboard's
+**provision partition**:
+
+```python
+controller.register_predicate("provision",
+    make_provision_predicate(client, protocols, GOLDEN_ROOT))
+request_provision(blackboard, "gumbo_l1")          # key "provision:gumbo_l1"
+```
+
+The `"provision"` predicate IS the provisioning, mirroring the attestation
+predicate: it runs the protocol's measurement-only term (APPR stripped, the
+same flow as cvm-mcp's provision mode) against the golden copies, writes
+the evidence bundle under `golden/_bundles/<protocol_id>/`, extracts each
+target's golden slice with asp-libs' `extract_golden_slice`, and installs
+the fresh `golden_b64` values into the protocol's `asp_args` — in memory
+(the shared `ProtocolDir`, so attestation in the same run uses them) and on
+disk (invalidating any prebuilt `cvm_request.json`, which bakes in old
+goldens). Memoized on the request descriptor; re-provisioning after the
+next event is the same request with a bumped nonce.
+
+The partition's lifecycle is simpler than certify's: the controller
+evaluates provision requests **before** certify entries each cycle (so
+attestation never races ahead of pending provisioning), a failing request
+escalates immediately (no KS chains), and a fulfilled one stays in the
+partition as the durable record of provisioned state.
+
+The trust boundary this preserves: golden values can only ever be derived
+from `golden/`, and files land there only by deliberate out-of-band acts
+(`capture_golden.py`, a release pipeline). Blackboard failure handling can
+never launder tampered live state into golden values — the human control
+point is who may write the golden directory.
 
 ## Modules
 
@@ -107,6 +135,9 @@ launder tampered state into the new golden.
 - `snapshot.py` — `watched_files` and `TargetSnapshot`, the clean copies
   of the live targets: captured into / loaded from the golden directory,
   restored during repair or fresh runs.
+- `provision.py` — the provisioning predicate factory, `ProvisionOutcome`,
+  and `request_provision`, the external-event API for the provision
+  partition.
 - `summary.py` — `trust_summary`, the post-run trust narrative.
 
 Deferred to follow-up PRs (they live on the `attestation-integration`

@@ -20,6 +20,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
 
+def mirror_path(root: Path, live: Path) -> Path:
+    """Where a live absolute path is mirrored under a snapshot/golden root."""
+    return Path(root) / live.relative_to(live.anchor)
+
+
 def watched_files(protocols: Dict[str, Any]) -> Set[Path]:
     """Every filepath referenced by the protocols' asp_args."""
     return {
@@ -51,7 +56,7 @@ class TargetSnapshot:
         root = Path(dest) if dest else Path(tempfile.mkdtemp(prefix="pybb_snapshot_"))
         files = {}
         for live in sorted(watched_files(protocols)):
-            copy = root / live.relative_to(live.anchor)
+            copy = mirror_path(root, live)
             copy.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(live, copy)
             files[live] = copy
@@ -65,7 +70,7 @@ class TargetSnapshot:
         """
         root = Path(root)
         files = {
-            live: root / live.relative_to(live.anchor)
+            live: mirror_path(root, live)
             for live in sorted(watched_files(protocols))
         }
         missing = [str(live) for live, copy in files.items() if not copy.is_file()]

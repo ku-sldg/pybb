@@ -12,6 +12,12 @@ from .knowledge_sources import (
     attestation_request,
     make_attestation_predicate,
 )
+from .provision import (
+    ProvisionOutcome,
+    make_provision_predicate,
+    provision_request,
+    request_provision,
+)
 from .snapshot import TargetSnapshot, watched_files
 from .summary import trust_summary
 
@@ -29,6 +35,10 @@ __all__ = [
     "Verdict",
     "attestation_request",
     "make_attestation_predicate",
+    "ProvisionOutcome",
+    "make_provision_predicate",
+    "provision_request",
+    "request_provision",
     "TargetSnapshot",
     "watched_files",
     "trust_summary",

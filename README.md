@@ -1,7 +1,7 @@
 # Mr. Pybb (Python Blackboard)
 ## Vocabulary
 * **partition:** collection of keys a knowledge source looks at
-* **segment:** broader regions of blackboard. currently: **escalate** (entries that require user intervention), **certify** (all other entries, entries with current work in progress, entries in good standing)
+* **segment:** broader regions of blackboard. currently: **provision** (requests written by external events, e.g. to provision golden evidence; evaluated before certify each cycle, no knowledge-source chains — a failing request escalates immediately, a passing one remains as the record of provisioned state), **certify** (all other entries, entries with current work in progress, entries in good standing), **escalate** (entries that require user intervention)
 * **component:** one named part of a dict measurement (e.g. `"x"` in `{"x": 5, "y": -2}`). Each component can have its own condition, and a knowledge source can be scoped to a single component
 ## Current Control Flow (missing a lot of detail)
 1. Receive measurement and write entry to the blackboard
@@ -53,15 +53,17 @@ This lets a route encode a decision tree rather than a single ladder — e.g. re
 ## Blackboard
 ### Attributes
 * **entries:** dictionary mapping of entry IDs to a blackboard entry (at the moment, the entry ID is the same as the predicate name for the blackboard entry)
-* **history:** list history of changes made to blackboard entries
-* **escalate:** separate dictionary mapping of netry IDs to blackboard entries that require user intervention (all knowledge sources failed repair)
+* **provision:** dictionary mapping of request IDs to provisioning-request entries (the provision segment). Evaluated before certify each cycle; never enters the knowledge-source machinery
+* **history:** list history of changes made to blackboard entries (all segments share it)
+* **escalate:** separate dictionary mapping of netry IDs to blackboard entries that require user intervention (all knowledge sources failed repair, or a provisioning request failed)
 
 ### Methods
-* **write_entry:** write an entry to either the certify or escalate segments of the blackboard. all entries added to the "certify" segment by default.
+* **write_entry:** write an entry to the certify, provision, or escalate segments of the blackboard. all entries added to the "certify" segment by default.
 * **get_entry:** retrieves a blackboard entry at a given key
 * **get_all_entries:** returns all entries currently in certify segment of blackboard
 * **get_history:** returns all previous and current entries in certify segment of blackboard
 * **get_escalate:** returns current entries n escalate segment of blackboard
+* **get_provision:** returns current entries in provision segment of blackboard
 * **add_ks_history:** increments number of attempts a knowledge source has made on a particular blackboard entry
 * **restore_original:** restores original measurement associated with a blackboard entry
 * **write_component:** write a repair for a single component of a dict measurement, leaving the other components untouched
@@ -86,6 +88,7 @@ This lets a route encode a decision tree rather than a single ladder — e.g. re
 * **_advance:** moves a blackboard entry key into the next eligible knowledge source. On failure (current knowledge source reached maximum attempts) restores the measurement the knowledge source worked on - component-scoped for component knowledge sources, full otherwise. On success (`restore=False`, current knowledge source's component passed) preserves the fix. Moves entry to escalate partition if no available knowledge source remains in the route.
 * **_advance_ready:** success-driven handoff. Each cycle, after evaluation, advances any key whose current component-scoped knowledge source has satisfied its component's condition
 * **_evaluate_entry:** evaluates a predicate with a given measurement. calls the function from the predicate registry and uses the measurement as a parameter to the function. Update the standing of the entry according to the result of calling the predicate with the measurement. For component-wise entries, evaluates each component's predicate and sets good standing only if all pass.
-* **_evaluate_all:** calls `_evaluate_entry` on all the blackboard entries
+* **_evaluate_all:** calls `_evaluate_entry` on all the blackboard entries — the provision segment first, then certify, so certify entries in the same cycle always see freshly provisioned state
+* **_escalate_failed_provision:** moves provisioning requests that evaluated and failed straight to the escalate segment (the provision segment has no knowledge-source chains)
 * **run:** main control loop. Determines which knowledge sources can contribute, routes knowledge sources using `_advance`, and calls knowledge source `execute`. Maintains a history of the blackboard that shows all changes.
 * **status:** prints the current number of cycles and all blackboard entries

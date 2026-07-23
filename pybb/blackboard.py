@@ -25,18 +25,25 @@ class BlackboardEntry(BaseModel):
         return self.good_standing
 
 class Blackboard(BaseModel):
-    entries: dict[str, BlackboardEntry] = {} # key: id of entry, value: entry itself
+    entries: dict[str, BlackboardEntry] = {} # certify segment: trust questions under active judgment
+    provision: dict[str, BlackboardEntry] = {} # provisioning requests, written by external events; evaluated before certify, no KS chains
     history: list[tuple[str, BlackboardEntry]] = []
     escalate: dict[str, BlackboardEntry] = {} # escalate segment of blackboard
 
-    def set_entry(self, key: str, entry: BlackboardEntry) -> None:
-        """reassign the certify slot and add snapshot to history. skip pre eval (result=None) intermediate states"""
-        self.entries[key] = entry
+    def _segment(self, partition: str) -> dict[str, BlackboardEntry]:
+        segments = {"certify": self.entries, "provision": self.provision, "escalate": self.escalate}
+        if partition not in segments:
+            raise ValueError(f"unknown partition '{partition}'")
+        return segments[partition]
+
+    def set_entry(self, key: str, entry: BlackboardEntry, partition: str = "certify") -> None:
+        """reassign the segment slot and add snapshot to history. skip pre eval (result=None) intermediate states"""
+        self._segment(partition)[key] = entry
         if entry.result is not None:
             self.history.append((key, entry.model_copy(deep=True)))
 
-    def write_entry(self, key: str, predicate: Optional[str] = None, measurement: Any = None, result: Any = None, partition: str = "certify", conditions: Optional[dict[str, str]] = None) -> BlackboardEntry: # partition should be specified as "certify" or escalate
-        existing = self.entries.get(key) if partition == "certify" else self.escalate.get(key)
+    def write_entry(self, key: str, predicate: Optional[str] = None, measurement: Any = None, result: Any = None, partition: str = "certify", conditions: Optional[dict[str, str]] = None) -> BlackboardEntry: # partition: "certify", "provision", or "escalate"
+        existing = self._segment(partition).get(key)
         entry = BlackboardEntry(
             predicate=predicate,
             conditions=conditions if conditions is not None else (existing.conditions if existing else None),
@@ -44,10 +51,10 @@ class Blackboard(BaseModel):
             result=result,
             original_measurement=existing.original_measurement if existing else (dict(measurement) if isinstance(measurement, dict) else measurement), # copy dicts so component writes never alias the original
             ks_history=dict(existing.ks_history) if existing else {}) # copy so versions don't share the dict
-        if partition == "certify":
-            self.set_entry(key, entry)
-        elif partition == "escalate":
+        if partition == "escalate":
             self.escalate[key] = entry
+        else:
+            self.set_entry(key, entry, partition=partition)
         return entry
 
     def write_component(self, key: str, component: str, value: Any) -> BlackboardEntry:
@@ -67,6 +74,9 @@ class Blackboard(BaseModel):
 
     def get_all_entries(self) -> dict:
         return self.entries
+
+    def get_provision(self) -> dict:
+        return self.provision
 
     def get_history(self) -> list:
         return self.history
