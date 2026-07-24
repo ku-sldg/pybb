@@ -19,6 +19,12 @@ from .readiness import (
     readiness_request,
 )
 from .repair import SliceRestoreKS, WholeFileRestoreKS
+from .promotion import (
+    PromotionOutcome,
+    make_promotion_predicate,
+    promotion_request,
+    request_promotion,
+)
 from .provision import (
     ProvisionOutcome,
     make_provision_predicate,
@@ -52,6 +58,10 @@ __all__ = [
     "make_provision_predicate",
     "provision_request",
     "request_provision",
+    "PromotionOutcome",
+    "make_promotion_predicate",
+    "promotion_request",
+    "request_promotion",
     "TargetSnapshot",
     "watched_files",
     "trust_summary",

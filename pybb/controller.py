@@ -158,7 +158,9 @@ class BlackboardController(BaseModel):
 
     def _evaluate_all(self) -> None:
         # provision requests evaluate before certify entries, so attestation
-        # in the same cycle always sees freshly provisioned state
+        # in the same cycle always sees freshly provisioned state; within
+        # the partition, requests evaluate in write order (promotion before
+        # the provisioning it enables — see request_promotion)
         for key in list(self.blackboard.provision):
             self._evaluate_entry(key, partition="provision")
         for key in list(self.blackboard.entries):

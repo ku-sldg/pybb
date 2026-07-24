@@ -123,6 +123,40 @@ converting "repaired" into "verified" (or not). `trust_summary` renders
 this terminal as "repaired from golden — verification pending next
 episode". The `--repair` demo runs both episodes.
 
+## Promotion: sanctioned model changes become the new baseline
+
+An out-of-band **attestation manager** (`examples/attestation_manager.py`)
+is the sanctioned actor of model evolution: it re-measures the AADL models
+on demand (polling or user prompt) and compares contract content against
+the last-provisioned golden slices, position-independently — a moved
+contract is not a changed one. When contracts changed, HAMR codegen is
+needed and the manager writes a **promotion request** into the provision
+partition, followed by the per-protocol provision requests
+(`request_promotion`; the partition evaluates in write order):
+
+```python
+request_promotion(blackboard, "gumbo", ["gumbo_l1a", "gumbo_l1b", "gumbo_l2"])
+```
+
+The `"promotion"` predicate IS the pipeline: re-run HAMR codegen on the
+sanctioned model (pluggable `codegen_fn`; configure the real
+`sireum hamr phantom` + `codegen` invocation per deployment) → optional
+semantic validation gate (opt-in: gold may not move unless the
+regenerated project verifies) → **regenerate the target maps from the new
+content** (`targetmap.py` syntax scan: GUMBO clause spans, `@strictpure`
+spans, marker blocks — a model edit shifts line numbers, so target
+*definitions*, not just golden values, must be re-derived; deriving from
+the HAMR attestation report is the planned alternative backend) → capture
+the watched files into `golden/` (gold moves). The provision requests
+behind it extract fresh goldens against the new targets, and the next
+attestation episode measures the live tree against the new baseline.
+
+Trust note: promotion is reachable only from the attestation manager —
+the authorization point for sanctioned AADL changes — never from the
+blackboard's failure handling. Derived target maps are complete over
+their syntax and may be supersets of a historically hand-curated map;
+after promotion, the derived map is the baseline.
+
 ## Live targets and the golden directory
 
 Every tier measures the live target tree the protocols were provisioned
@@ -197,6 +231,10 @@ point is who may write the golden directory.
   `ReadinessReport`.
 - `repair.py` — `WholeFileRestoreKS` and `SliceRestoreKS`, the repair
   rungs (repair unit = measurement unit; gold -> live only).
+- `targetmap.py` — target-map derivation by syntax scan (GUMBO clauses,
+  GumboX predicates, marker blocks) and term construction.
+- `promotion.py` — the promotion predicate factory, `PromotionOutcome`,
+  and `request_promotion`, the attestation-manager API.
 - `snapshot.py` — `watched_files` and `TargetSnapshot`, the clean copies
   of the live targets: captured into / loaded from the golden directory,
   restored during repair or fresh runs.
