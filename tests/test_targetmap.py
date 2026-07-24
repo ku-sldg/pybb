@@ -116,6 +116,60 @@ def test_built_term_matches_target_count_and_structure():
     assert term["TERM_BODY"][1]["TERM_BODY"]["ASP_CONSTRUCTOR"] == "APPR"
 
 
+# ── report-driven backend, validated against the real isolette report ────────
+
+ISOLETTE_REPORT = Path(
+    "/Users/adampetz/Claude_workspace/INSPECTA-models/isolette/hamr/microkit"
+    "/attestation/aadl_attestation_report.json")
+CVM_MCP_ISOLETTE = Path("/Users/adampetz/Claude_workspace/cvm-mcp/protocol_dirs")
+
+needs_isolette = pytest.mark.skipif(not ISOLETTE_REPORT.is_file(),
+                                    reason="requires isolette attestation report")
+
+
+@needs_isolette
+def test_report_backend_matches_reference_generation():
+    from pybb.attestation.targetmap import derive_targets_from_report
+
+    derived = derive_targets_from_report(ISOLETTE_REPORT, prefix="isolette")
+
+    # cross-validate against cvm-mcp's hamr_report_protocols output, the
+    # reference consumer of the same report
+    ref_l2 = json.loads(
+        (CVM_MCP_ISOLETTE / "isolette_l2" / "asp_args.json").read_text())
+    ref_ranges = {
+        (a["filepath"], a["start_index"], a["end_index"])
+        for a in ref_l2["readfile_range"].values()
+    }
+    our_ranges = {
+        (a["filepath"], a["start_index"], a["end_index"])
+        for a in derived["isolette_l2"]["readfile_range"].values()
+    }
+    assert our_ranges == ref_ranges
+
+    ref_l1 = json.loads(
+        (CVM_MCP_ISOLETTE / "isolette_l1" / "asp_args.json").read_text())
+    ref_files = {a["filepath"] for a in ref_l1["hashfile"].values()}
+    our_files = {a["filepath"] for a in derived["isolette_l1a"]["hashfile"].values()}
+    assert our_files == ref_files
+
+
+@needs_isolette
+def test_report_slices_resolve_to_real_files_of_both_kinds():
+    from pybb.attestation.targetmap import report_slices
+
+    slices = report_slices(ISOLETTE_REPORT)
+    # 67 unique (file, begin, end) — the reference's 85 targets include
+    # ranges cited by multiple contracts; report_slices dedupes them
+    assert len(slices) >= 60
+    kinds = {s["kind"] for s in slices}
+    assert "Model" in kinds and "Verus" in kinds  # model AND generated artifacts
+    for s in slices:
+        assert Path(s["filepath"]).is_file(), s["filepath"]
+        assert 0 < s["begin"] <= s["end"]
+        assert "::" in s["metadata"]
+
+
 def test_install_targets_writes_through_and_drops_prebuilt(tmp_path):
     from pybb.attestation import ProtocolDir
 

@@ -171,6 +171,101 @@ def derive_targets(spec: dict) -> Dict[str, Dict[str, dict]]:
     }
 
 
+# ── report-driven backend ─────────────────────────────────────────────────────
+
+def _stem_slug(filepath: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", Path(filepath).stem.lower()).strip("_")
+
+
+def report_slices(report_path: Path) -> List[dict]:
+    """
+    Flatten a HAMR attestation report (emitted by Microkit codegen —
+    aadl_attestation_report.json / sysml_attestation_report.json) into
+    [{filepath, begin, end, kind, metadata}, ...], slice uris resolved
+    relative to the report's directory, deduplicated.
+    """
+    import json as _json
+
+    report_path = Path(report_path)
+    base = report_path.parent
+    report = _json.loads(report_path.read_text())
+    out: List[dict] = []
+    seen = set()
+
+    def walk(node, component: str, contract: str):
+        if isinstance(node, dict):
+            ntype = node.get("type")
+            if ntype == "ComponentReport":
+                component = "_".join(node.get("idPath", [])) or component
+            elif ntype and ntype.endswith("ContractReport"):
+                contract = node.get("id", contract)
+            elif ntype == "Slice":
+                pos = node["pos"]
+                filepath = str((base / pos["uri"]).resolve())
+                key = (filepath, pos["beginLine"], pos["endLine"])
+                if key not in seen:
+                    seen.add(key)
+                    out.append({
+                        "filepath": filepath,
+                        "begin": pos["beginLine"],
+                        "end": pos["endLine"],
+                        "kind": node.get("kind", ""),
+                        "metadata": f"{component}::{contract}",
+                    })
+                return
+            for v in node.values():
+                walk(v, component, contract)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v, component, contract)
+
+    walk(report, "", "")
+    return out
+
+
+def derive_targets_from_report(report_path: Path, prefix: str = "gumbo") -> Dict[str, Dict[str, dict]]:
+    """
+    Report-driven alternative to `derive_targets`: target maps from the
+    HAMR attestation report, the authoritative statement of which contract
+    slices matter (model positions AND their generated Verus/Rust
+    realizations). Same output shape as the syntax scan:
+
+        {"<prefix>_l1a": {"hashfile": ...},     # every unique file the report names
+         "<prefix>_l2":  {"readfile_range": ...}}  # every report slice
+
+    (No marker-block protocol: Microkit/Rust codegen expresses generated
+    regions as report slices, not BEGIN/END markers.)
+    """
+    slices = report_slices(report_path)
+
+    l1a: Dict[str, dict] = {}
+    for filepath in sorted({s["filepath"] for s in slices}):
+        targ, n = f"{prefix}_{_stem_slug(filepath)}_targ", 1
+        while targ in l1a:
+            n += 1
+            targ = f"{prefix}_{_stem_slug(filepath)}_{n}_targ"
+        l1a[targ] = {"filepath": filepath, "env_var": ""}
+
+    l2: Dict[str, dict] = {}
+    for s in slices:
+        base_id = f"{prefix}_{_stem_slug(s['filepath'])}_{s['begin']}_{s['end']}"
+        targ, n = f"{base_id}_targ", 1
+        while targ in l2:
+            n += 1
+            targ = f"{base_id}_{n}_targ"
+        l2[targ] = {
+            "filepath": s["filepath"],
+            "start_index": s["begin"],
+            "end_index": s["end"],
+            "metadata": s["metadata"],
+        }
+
+    return {
+        f"{prefix}_l1a": {"hashfile": l1a},
+        f"{prefix}_l2": {"readfile_range": l2},
+    }
+
+
 # ── term construction (the shape the provisioned protocols use) ──────────────
 
 _SIG = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}
