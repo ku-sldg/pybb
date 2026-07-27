@@ -179,6 +179,9 @@ public
       compute  
         modifies (latestFanCmd); 
 
+          assume validSetPoint "set point range is well-formed":
+            setPoint.low.degrees < setPoint.high.degrees;
+
           guarantee altCurrentTempLTSetPoint "If current temperature is less than
                                              |the current low set point, then the fan state shall be Off" : 
             (currentTemp.degrees < setPoint.low.degrees) ->:  

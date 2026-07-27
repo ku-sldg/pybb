@@ -877,10 +877,10 @@
                               },
                               "beginLine" : 21,
                               "beginColumn" : 5,
-                              "endLine" : 31,
+                              "endLine" : 35,
                               "endColumn" : 5,
                               "offset" : 364,
-                              "length" : 375
+                              "length" : 511
                             }
                           ],
                           [
@@ -891,11 +891,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs"
                               },
-                              "beginLine" : 33,
+                              "beginLine" : 37,
                               "beginColumn" : 5,
-                              "endLine" : 42,
+                              "endLine" : 46,
                               "endColumn" : 5,
-                              "offset" : 746,
+                              "offset" : 882,
                               "length" : 321
                             }
                           ]
@@ -1807,10 +1807,10 @@
                               },
                               "beginLine" : 25,
                               "beginColumn" : 5,
-                              "endLine" : 39,
+                              "endLine" : 41,
                               "endColumn" : 5,
                               "offset" : 516,
-                              "length" : 535
+                              "length" : 633
                             }
                           ],
                           [
@@ -1821,12 +1821,12 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
                               },
-                              "beginLine" : 41,
+                              "beginLine" : 43,
                               "beginColumn" : 5,
-                              "endLine" : 71,
+                              "endLine" : 88,
                               "endColumn" : 5,
-                              "offset" : 1058,
-                              "length" : 1557
+                              "offset" : 1156,
+                              "length" : 2139
                             }
                           ]
                         ]
@@ -1961,8 +1961,24 @@
                           "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboComputeReport",
                           "assumesReport" : {
                             "type" : "HashSMap",
-                            "size" : 0,
+                            "size" : 1,
                             "entries" : [
+                              [
+                                "validSetPoint",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                                  },
+                                  "beginLine" : 48,
+                                  "beginColumn" : 11,
+                                  "endLine" : 50,
+                                  "endColumn" : 70,
+                                  "offset" : 1380,
+                                  "length" : 115
+                                }
+                              ]
                             ]
                           },
                           "guaranteesReport" : {
@@ -1977,11 +1993,11 @@
                                     "type" : "Some",
                                     "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
                                   },
-                                  "beginLine" : 48,
+                                  "beginLine" : 54,
                                   "beginColumn" : 11,
-                                  "endLine" : 53,
+                                  "endLine" : 59,
                                   "endColumn" : 51,
-                                  "offset" : 1363,
+                                  "offset" : 1649,
                                   "length" : 298
                                 }
                               ],
@@ -1993,11 +2009,11 @@
                                     "type" : "Some",
                                     "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
                                   },
-                                  "beginLine" : 54,
+                                  "beginLine" : 60,
                                   "beginColumn" : 11,
-                                  "endLine" : 59,
+                                  "endLine" : 65,
                                   "endColumn" : 51,
-                                  "offset" : 1708,
+                                  "offset" : 1994,
                                   "length" : 302
                                 }
                               ],
@@ -2009,11 +2025,11 @@
                                     "type" : "Some",
                                     "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
                                   },
-                                  "beginLine" : 60,
+                                  "beginLine" : 66,
                                   "beginColumn" : 11,
-                                  "endLine" : 67,
+                                  "endLine" : 73,
                                   "endColumn" : 46,
-                                  "offset" : 2054,
+                                  "offset" : 2340,
                                   "length" : 457
                                 }
                               ]
@@ -2041,7 +2057,7 @@
                       "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboXReport",
                       "gumboxMethods" : {
                         "type" : "HashSMap",
-                        "size" : 11,
+                        "size" : 13,
                         "entries" : [
                           [
                             "I_Assm_currentTemp",
@@ -2124,6 +2140,38 @@
                             }
                           ],
                           [
+                            "compute_spec_validSetPoint_assume",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 80,
+                              "beginColumn" : 1,
+                              "endLine" : 83,
+                              "endColumn" : 1,
+                              "offset" : 1861,
+                              "length" : 151
+                            }
+                          ],
+                          [
+                            "compute_CEP_T_Assm",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 89,
+                              "beginColumn" : 1,
+                              "endLine" : 94,
+                              "endColumn" : 1,
+                              "offset" : 2147,
+                              "length" : 161
+                            }
+                          ],
+                          [
                             "compute_CEP_Pre",
                             {
                               "type" : "Position",
@@ -2131,12 +2179,12 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 81,
+                              "beginLine" : 103,
                               "beginColumn" : 1,
-                              "endLine" : 91,
+                              "endLine" : 116,
                               "endColumn" : 1,
-                              "offset" : 1967,
-                              "length" : 344
+                              "offset" : 2564,
+                              "length" : 468
                             }
                           ],
                           [
@@ -2147,11 +2195,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 103,
+                              "beginLine" : 128,
                               "beginColumn" : 1,
-                              "endLine" : 113,
+                              "endLine" : 138,
                               "endColumn" : 1,
-                              "offset" : 2681,
+                              "offset" : 3402,
                               "length" : 396
                             }
                           ],
@@ -2163,11 +2211,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 125,
+                              "beginLine" : 150,
                               "beginColumn" : 1,
-                              "endLine" : 135,
+                              "endLine" : 160,
                               "endColumn" : 1,
-                              "offset" : 3450,
+                              "offset" : 4171,
                               "length" : 394
                             }
                           ],
@@ -2179,11 +2227,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 149,
+                              "beginLine" : 174,
                               "beginColumn" : 1,
-                              "endLine" : 161,
+                              "endLine" : 186,
                               "endColumn" : 1,
-                              "offset" : 4349,
+                              "offset" : 5070,
                               "length" : 475
                             }
                           ],
@@ -2195,11 +2243,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 171,
+                              "beginLine" : 196,
                               "beginColumn" : 1,
-                              "endLine" : 183,
+                              "endLine" : 208,
                               "endColumn" : 1,
-                              "offset" : 5151,
+                              "offset" : 5872,
                               "length" : 648
                             }
                           ],
@@ -2211,11 +2259,11 @@
                                 "type" : "Some",
                                 "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
                               },
-                              "beginLine" : 194,
+                              "beginLine" : 219,
                               "beginColumn" : 1,
-                              "endLine" : 206,
+                              "endLine" : 231,
                               "endColumn" : 1,
-                              "offset" : 6148,
+                              "offset" : 6869,
                               "length" : 465
                             }
                           ]
@@ -2291,11 +2339,11 @@
                               "type" : "Some",
                               "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
                             },
-                            "beginLine" : 269,
+                            "beginLine" : 272,
                             "beginColumn" : 3,
-                            "endLine" : 269,
+                            "endLine" : 272,
                             "endColumn" : 55,
-                            "offset" : 12561,
+                            "offset" : 12685,
                             "length" : 52
                           },
                           "languageRealizations" : [
@@ -2454,11 +2502,11 @@
                               "type" : "Some",
                               "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
                             },
-                            "beginLine" : 271,
+                            "beginLine" : 274,
                             "beginColumn" : 3,
-                            "endLine" : 271,
+                            "endLine" : 274,
                             "endColumn" : 38,
-                            "offset" : 12696,
+                            "offset" : 12820,
                             "length" : 35
                           },
                           "languageRealizations" : [

@@ -167,6 +167,46 @@
         },
         {
           "type": "ComponentContractReport",
+          "id": "validSetPoint",
+          "kind": "Assume",
+          "meta": "General assume contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO general assumes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 182,
+                  "beginCol": 11,
+                  "endLine": 183,
+                  "endCol": 58,
+                  "offset": 7010,
+                  "length": 112
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO general assumes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 48,
+                  "beginCol": 11,
+                  "endLine": 50,
+                  "endCol": 70,
+                  "offset": 1380,
+                  "length": 115
+                }
+            }
+          ]
+        },
+        {
+          "type": "ComponentContractReport",
           "id": "altCurrentTempLTSetPoint",
           "kind": "Guarantee",
           "meta": "General guarantee contract for TempControlSystem::TempControl.i",
@@ -179,11 +219,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
-                  "beginLine": 182,
+                  "beginLine": 185,
                   "beginCol": 11,
-                  "endLine": 185,
+                  "endLine": 188,
                   "endCol": 97,
-                  "offset": 7010,
+                  "offset": 7134,
                   "length": 340
                 }
             },
@@ -211,11 +251,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
-                  "beginLine": 48,
+                  "beginLine": 54,
                   "beginCol": 11,
-                  "endLine": 53,
+                  "endLine": 59,
                   "endCol": 51,
-                  "offset": 1363,
+                  "offset": 1649,
                   "length": 298
                 }
             },
@@ -251,11 +291,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
-                  "beginLine": 187,
+                  "beginLine": 190,
                   "beginCol": 11,
-                  "endLine": 190,
+                  "endLine": 193,
                   "endCol": 94,
-                  "offset": 7362,
+                  "offset": 7486,
                   "length": 338
                 }
             },
@@ -283,11 +323,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
-                  "beginLine": 54,
+                  "beginLine": 60,
                   "beginCol": 11,
-                  "endLine": 59,
+                  "endLine": 65,
                   "endCol": 51,
-                  "offset": 1708,
+                  "offset": 1994,
                   "length": 302
                 }
             },
@@ -323,11 +363,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
-                  "beginLine": 192,
+                  "beginLine": 195,
                   "beginCol": 11,
-                  "endLine": 196,
+                  "endLine": 199,
                   "endCol": 79,
-                  "offset": 7712,
+                  "offset": 7836,
                   "length": 489
                 }
             },
@@ -355,11 +395,11 @@
                 {
                   "type": "Position",
                   "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
-                  "beginLine": 60,
+                  "beginLine": 66,
                   "beginCol": 11,
-                  "endLine": 67,
+                  "endLine": 73,
                   "endCol": 46,
-                  "offset": 2054,
+                  "offset": 2340,
                   "length": 457
                 }
             },

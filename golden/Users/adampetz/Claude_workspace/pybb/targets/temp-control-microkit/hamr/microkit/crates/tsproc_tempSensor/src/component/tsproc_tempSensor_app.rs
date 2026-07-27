@@ -28,6 +28,10 @@ verus! {
         // END MARKER INITIALIZATION ENSURES
     {
       log_info("initialize entrypoint invoked");
+      api.put_currentTemp(TempSensor::Temperature_i {
+        degrees: 72i32,
+        unit: TempSensor::TempUnit::Fahrenheit,
+      });
     }
 
     pub fn timeTriggered<API: tsproc_tempSensor_Full_Api> (

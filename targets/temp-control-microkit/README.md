@@ -30,7 +30,13 @@ Regenerate with the standalone Sireum toolchain (see
     sireum hamr codegen -p Microkit --workspace-root-dir aadl \
         --output-dir hamr air.json
 
+Semantic tier: `tcmk_verus` (cargo-verus verify of both crates; the
+behavior bodies are implemented and fully prove — 10 verified, 0 errors
+each). The model carries a `validSetPoint` compute assume standing in for
+the SetPoint data invariant, which Microkit codegen does not yet realize.
+
 Known coverage boundaries (documented findings): the report covers only
 rusty+GUMBO components' contract slices — data invariants and the
 microkit platform layer (`microkit.system`, generated C queues,
-non-contracted crates) are not in the report and not yet measured.
+non-contracted crates, GUMBOX.rs test oracles) are not in the report and
+not yet measured.

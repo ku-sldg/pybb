@@ -174,6 +174,18 @@ repair class throughout. `examples/microkit_attestation.py` drives
 provisioning, attestation, Verus-slice tamper/repair, and the full
 `--promote` lifecycle.
 
+The pipeline has a **semantic tier**: `tcmk_verus` runs `cargo-verus
+verify` over both contract-bearing crates (run_command_cargo_verus ASP,
+appraised on the JSON error count) as the on_pass confirmation of
+`tcmk:files` (`--validate`). Text attestation says the contracts are the
+provisioned ones; Verus says the implementation PROVES them — it catches
+the one scenario integrity measurement cannot: a behavior change
+laundered through re-provisioning. Getting the proof to close required a
+sanctioned model change (a `validSetPoint` compute assume standing in for
+the data invariant Microkit codegen does not yet realize), promoted
+through the full pipeline: codegen regenerated the Rust requires AND the
+report gained the assume's slices (14 -> 16 targets).
+
 ## Live targets and the golden directory
 
 Every tier measures the live target tree the protocols were provisioned

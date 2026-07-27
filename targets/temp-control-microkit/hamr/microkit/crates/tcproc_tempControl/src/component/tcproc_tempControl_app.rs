@@ -36,13 +36,19 @@ verus! {
         // END MARKER INITIALIZATION ENSURES
     {
       log_info("initialize entrypoint invoked");
+      self.latestFanCmd = CoolingFan::FanCmd::Off;
+      api.put_fanCmd(CoolingFan::FanCmd::Off);
     }
 
     pub fn timeTriggered<API: tcproc_tempControl_Full_Api> (
       &mut self,
       api: &mut tcproc_tempControl_Application_Api<API>)
       requires
-        // PLACEHOLDER MARKER TIME TRIGGERED REQUIRES
+        // BEGIN MARKER TIME TRIGGERED REQUIRES
+        // assume validSetPoint
+        //   set point range is well-formed
+        old(api).setPoint.low.degrees < old(api).setPoint.high.degrees,
+        // END MARKER TIME TRIGGERED REQUIRES
       ensures
         // BEGIN MARKER TIME TRIGGERED ENSURES
         // guarantee altCurrentTempLTSetPoint
@@ -68,6 +74,17 @@ verus! {
         // END MARKER TIME TRIGGERED ENSURES
     {
       log_info("compute entrypoint invoked");
+      let currentTemp = api.get_currentTemp();
+      let setPoint = api.get_setPoint();
+      let newCmd = if currentTemp.degrees < setPoint.low.degrees {
+        CoolingFan::FanCmd::Off
+      } else if currentTemp.degrees > setPoint.high.degrees {
+        CoolingFan::FanCmd::On
+      } else {
+        self.latestFanCmd
+      };
+      self.latestFanCmd = newCmd;
+      api.put_fanCmd(newCmd);
     }
 
     pub fn notify(

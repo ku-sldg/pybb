@@ -24,7 +24,12 @@ whole-file-immutable):
 
 Usage:
     python examples/microkit_attestation.py [--provision] [--promote]
-        [--tamper-verus] [--repair]
+        [--tamper-verus] [--repair] [--validate]
+
+--validate   semantic tier: a passing tcmk_l1a is provisional until
+             tcmk_verus confirms — cargo-verus verify must PROVE the
+             generated Verus contracts against the implemented behavior
+             of both crates (requires the Verus toolchain and rust)
 
 --provision  (re)generate the tcmk protocol dirs from the attestation
              report, capture golden, and provision via the blackboard
@@ -175,7 +180,8 @@ def tamper_verus(protocols: dict) -> None:
     print(f"Tampered Verus slice: {rs.name} line {args['start_index']} ({targ})")
 
 
-def attest_episode(protocols: dict, repair: bool) -> BlackboardController:
+def attest_episode(protocols: dict, repair: bool,
+                   validate: bool = False) -> BlackboardController:
     controller = BlackboardController()
     controller.register_predicate(
         "attestation", make_attestation_predicate(CvmSubprocessClient(), protocols))
@@ -185,16 +191,18 @@ def attest_episode(protocols: dict, repair: bool) -> BlackboardController:
     if repair:
         fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
                                              refined_by="tcmk_l2"))
+    confirm = [TierKS(protocol_id="tcmk_verus")] if validate else []
     starter = StartAttestationKS(episodes={"tcmk:files": "tcmk_l1a"})
-    for ks in (*fail_chain, starter):
+    for ks in (*confirm, *fail_chain, starter):
         controller.add_ks(ks)
-    controller.route("tcmk:files", on_fail=fail_chain)
+    controller.route("tcmk:files", on_pass=confirm, on_fail=fail_chain)
+    checked = list(PROTOCOL_IDS) + (["tcmk_verus"] if validate else [])
     controller.blackboard.write_entry(
         key="tcmk:ready", predicate="protocol_check",
-        measurement=readiness_request(list(PROTOCOL_IDS)))
+        measurement=readiness_request(checked))
     controller.route("tcmk:ready", on_pass=[starter], on_fail=[])
     controller.run()
-    print(trust_summary(controller.blackboard))
+    print(trust_summary(controller.blackboard, semantic=["tcmk_verus"]))
     return controller
 
 
@@ -204,6 +212,7 @@ def main() -> None:
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--validate", action="store_true")
     cli = parser.parse_args()
 
     if cli.provision:
@@ -211,6 +220,8 @@ def main() -> None:
         provision_flow(protocols)
         return
     protocols = load_protocols()
+    if cli.validate:
+        protocols["tcmk_verus"] = ProtocolDir.load(str(FIXTURES / "tcmk_verus"))
     if cli.promote:
         promote_flow(protocols)
         print("\n=== verification episode (new baseline) ===")
@@ -221,10 +232,10 @@ def main() -> None:
     if cli.tamper_verus:
         tamper_verus(protocols)
     try:
-        attest_episode(protocols, repair=cli.repair)
+        attest_episode(protocols, repair=cli.repair, validate=cli.validate)
         if cli.repair:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
-            attest_episode(protocols, repair=cli.repair)
+            attest_episode(protocols, repair=cli.repair, validate=cli.validate)
     finally:
         restored = golden.restore()
         if restored:

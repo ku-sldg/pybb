@@ -71,6 +71,28 @@ pub fn initialize_IEP_Post(
   initialize_IEP_Guar(latestFanCmd, api_fanCmd)
 }
 
+/** Compute Entrypoint Contract
+  *
+  * assumes validSetPoint
+  *   set point range is well-formed
+  * @param api_setPoint incoming data port
+  */
+pub fn compute_spec_validSetPoint_assume(api_setPoint: TempControlSystem::SetPoint_i) -> bool
+{
+  api_setPoint.low.degrees < api_setPoint.high.degrees
+}
+
+/** CEP-T-Assm: Top-level assume contracts for tempControl's compute entrypoint
+  *
+  * @param api_setPoint incoming data port
+  */
+pub fn compute_CEP_T_Assm(api_setPoint: TempControlSystem::SetPoint_i) -> bool
+{
+  let r0: bool = compute_spec_validSetPoint_assume(api_setPoint);
+
+  return r0;
+}
+
 /** CEP-Pre: Compute Entrypoint Pre-Condition for tempControl
   *
   * @param In_latestFanCmd pre-state state variable
@@ -87,7 +109,10 @@ pub fn compute_CEP_Pre(
   // I-Assm-Guard: Integration constraints for tempControl's incoming ports
   let r0: bool = I_Assm_currentTemp(api_currentTemp);
 
-  return r0;
+  // CEP-Assm: assume clauses of tempControl's compute entrypoint
+  let r1: bool = compute_CEP_T_Assm(api_setPoint);
+
+  return r0 && r1;
 }
 
 /** Compute Entrypoint Contract

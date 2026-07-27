@@ -1,0 +1,34 @@
+{
+  "run_command_cargo_verus": {
+    "tc_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+    },
+    "ts_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+    }
+  }
+}

@@ -48,40 +48,52 @@
       "end_index": 35,
       "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initFanCmd"
     },
-    "tcmk_tempcontrolsystem_182_185_targ": {
+    "tcmk_tempcontrolsystem_182_183_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
       "start_index": 182,
-      "end_index": 185,
-      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint"
+      "end_index": 183,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::validSetPoint"
     },
-    "tcmk_tcproc_tempcontrol_app_48_53_targ": {
+    "tcmk_tcproc_tempcontrol_app_48_50_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
       "start_index": 48,
-      "end_index": 53,
-      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint"
+      "end_index": 50,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::validSetPoint"
     },
-    "tcmk_tempcontrolsystem_187_190_targ": {
+    "tcmk_tempcontrolsystem_185_188_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
-      "start_index": 187,
-      "end_index": 190,
-      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempGTSetPoint"
+      "start_index": 185,
+      "end_index": 188,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint"
     },
     "tcmk_tcproc_tempcontrol_app_54_59_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
       "start_index": 54,
       "end_index": 59,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint"
+    },
+    "tcmk_tempcontrolsystem_190_193_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 190,
+      "end_index": 193,
       "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempGTSetPoint"
     },
-    "tcmk_tempcontrolsystem_192_196_targ": {
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
-      "start_index": 192,
-      "end_index": 196,
-      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempInRange"
-    },
-    "tcmk_tcproc_tempcontrol_app_60_67_targ": {
+    "tcmk_tcproc_tempcontrol_app_60_65_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
       "start_index": 60,
-      "end_index": 67,
+      "end_index": 65,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempGTSetPoint"
+    },
+    "tcmk_tempcontrolsystem_195_199_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 195,
+      "end_index": 199,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempInRange"
+    },
+    "tcmk_tcproc_tempcontrol_app_66_73_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 66,
+      "end_index": 73,
       "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempInRange"
     }
   }

@@ -1,0 +1,67 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "bseq",
+      "TERM_BODY": [
+        "both_paths",
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {
+              "ASP_ID": "run_command_cargo_verus",
+              "ASP_TARG_ID": "tc_verus_targ",
+              "ASP_ARGS": {
+                "exe_args": [
+                  "verify",
+                  "-Z",
+                  "build-std=core,alloc,compiler_builtins",
+                  "-Z",
+                  "build-std-features=compiler-builtins-mem",
+                  "--target",
+                  "aarch64-unknown-none",
+                  "--",
+                  "--output-json",
+                  "--time"
+                ],
+                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+              }
+            }
+          }
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {
+              "ASP_ID": "run_command_cargo_verus",
+              "ASP_TARG_ID": "ts_verus_targ",
+              "ASP_ARGS": {
+                "exe_args": [
+                  "verify",
+                  "-Z",
+                  "build-std=core,alloc,compiler_builtins",
+                  "-Z",
+                  "build-std-features=compiler-builtins-mem",
+                  "--target",
+                  "aarch64-unknown-none",
+                  "--",
+                  "--output-json",
+                  "--time"
+                ],
+                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

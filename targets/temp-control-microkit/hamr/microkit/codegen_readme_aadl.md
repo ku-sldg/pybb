@@ -11,12 +11,12 @@
 
 |Thread: TempControlSystem::TempControl.i |
 |:--|
-|Type: [TempControl](../../aadl/packages/TempControlSystem.aadl#L138)<br>Implementation: [TempControl.i](../../aadl/packages/TempControlSystem.aadl#L250)<br>GUMBO: [Subclause](../../aadl/packages/TempControlSystem.aadl#L163)|
+|Type: [TempControl](../../aadl/packages/TempControlSystem.aadl#L138)<br>Implementation: [TempControl.i](../../aadl/packages/TempControlSystem.aadl#L253)<br>GUMBO: [Subclause](../../aadl/packages/TempControlSystem.aadl#L163)|
 |Periodic |
 
 |Thread: TempControlSystem::OperatorInterface.i |
 |:--|
-|Type: [OperatorInterface](../../aadl/packages/TempControlSystem.aadl#L265)<br>Implementation: [OperatorInterface.i](../../aadl/packages/TempControlSystem.aadl#L296)|
+|Type: [OperatorInterface](../../aadl/packages/TempControlSystem.aadl#L268)<br>Implementation: [OperatorInterface.i](../../aadl/packages/TempControlSystem.aadl#L299)|
 |Periodic |
 
 |Thread: CoolingFan::Fan.i |
@@ -36,7 +36,7 @@
 
     Initialize: [Rust](crates/tsproc_tempSensor/src/component/tsproc_tempSensor_app.rs#L21)
 
-    TimeTriggered: [Rust](crates/tsproc_tempSensor/src/component/tsproc_tempSensor_app.rs#L33)
+    TimeTriggered: [Rust](crates/tsproc_tempSensor/src/component/tsproc_tempSensor_app.rs#L37)
 
 
 - **APIs**
@@ -72,7 +72,7 @@
 
     Initialize: [Rust](crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L25)
 
-    TimeTriggered: [Rust](crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L41)
+    TimeTriggered: [Rust](crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L43)
 
 
 - **APIs**
@@ -120,20 +120,25 @@
     </tr></table>
     <table>
     <tr><th colspan=4>Compute</th></tr>
-    <tr><td>guarantee altCurrentTempLTSetPoint</td>
+    <tr><td>assume validSetPoint</td>
     <td><a href=../../aadl/packages/TempControlSystem.aadl#L182>GUMBO</a></td>
     <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L48>Verus</a></td>
-    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L103>GUMBOX</a></td>
+    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L80>GUMBOX</a></td>
+    </tr>
+    <tr><td>guarantee altCurrentTempLTSetPoint</td>
+    <td><a href=../../aadl/packages/TempControlSystem.aadl#L185>GUMBO</a></td>
+    <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L54>Verus</a></td>
+    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L128>GUMBOX</a></td>
     </tr>
     <tr><td>guarantee altCurrentTempGTSetPoint</td>
-    <td><a href=../../aadl/packages/TempControlSystem.aadl#L187>GUMBO</a></td>
-    <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L54>Verus</a></td>
-    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L125>GUMBOX</a></td>
+    <td><a href=../../aadl/packages/TempControlSystem.aadl#L190>GUMBO</a></td>
+    <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L60>Verus</a></td>
+    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L150>GUMBOX</a></td>
     </tr>
     <tr><td>guarantee altCurrentTempInRange</td>
-    <td><a href=../../aadl/packages/TempControlSystem.aadl#L192>GUMBO</a></td>
-    <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L60>Verus</a></td>
-    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L149>GUMBOX</a></td>
+    <td><a href=../../aadl/packages/TempControlSystem.aadl#L195>GUMBO</a></td>
+    <td><a href=crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs#L66>Verus</a></td>
+    <td><a href=crates/tcproc_tempControl/src/bridge/tcproc_tempControl_GUMBOX.rs#L174>GUMBOX</a></td>
     </tr></table>
 
 
@@ -151,10 +156,10 @@
 
     <table>
     <tr><th>Port Name</th><th>Direction</th><th>Kind</th><th>Payload</th><th>Realizations</th></tr>
-    <tr><td><a title='Model' href='../../aadl/packages/TempControlSystem.aadl#L269'>currentTemp</a></td>
+    <tr><td><a title='Model' href='../../aadl/packages/TempControlSystem.aadl#L272'>currentTemp</a></td>
         <td>In</td><td>Data</td>
         <td>TempSensor::Temperature.i</td><td><a title='Memory Map: Lines 62-66' href='microkit.system#L62'>Memory Map</a> → <a title='C Shared Memory Variable: Line 9' href='components/oiproc_operatorInterface/src/oiproc_operatorInterface.c#L9'>C var_addr</a> → <a title='C Interface: Lines 17-26' href='components/oiproc_operatorInterface/src/oiproc_operatorInterface.c#L17'>C Interface</a> → <a title='C Extern: Line 14' href='crates/oiproc_operatorInterface/src/bridge/extern_c_api.rs#L14'>C Extern</a> → <a title='Rust/C Interface: Lines 18-25' href='crates/oiproc_operatorInterface/src/bridge/extern_c_api.rs#L18'>Rust/C Interface</a> → <a title='Unverified Rust Interface: Lines 23-30' href='crates/oiproc_operatorInterface/src/bridge/oiproc_operatorInterface_api.rs#L23'>Unverified Rust Interface</a> → <a title='Rust/Verus API: Lines 56-63' href='crates/oiproc_operatorInterface/src/bridge/oiproc_operatorInterface_api.rs#L56'>Rust/Verus API</a></td></tr>
-    <tr><td><a title='Model' href='../../aadl/packages/TempControlSystem.aadl#L271'>setPoint</a></td>
+    <tr><td><a title='Model' href='../../aadl/packages/TempControlSystem.aadl#L274'>setPoint</a></td>
         <td>Out</td><td>Data</td>
         <td>TempControlSystem::SetPoint.i</td><td><a title='Rust/Verus API: Lines 43-52' href='crates/oiproc_operatorInterface/src/bridge/oiproc_operatorInterface_api.rs#L43'>Rust/Verus API</a> → <a title='Unverified Rust Interface: Lines 13-18' href='crates/oiproc_operatorInterface/src/bridge/oiproc_operatorInterface_api.rs#L13'>Unverified Rust Interface</a> → <a title='Rust/C Interface: Lines 27-32' href='crates/oiproc_operatorInterface/src/bridge/extern_c_api.rs#L27'>Rust/C Interface</a> → <a title='C Extern: Line 15' href='crates/oiproc_operatorInterface/src/bridge/extern_c_api.rs#L15'>C Extern</a> → <a title='C Interface: Lines 28-32' href='components/oiproc_operatorInterface/src/oiproc_operatorInterface.c#L28'>C Interface</a> → <a title='C Shared Memory Variable: Line 11' href='components/oiproc_operatorInterface/src/oiproc_operatorInterface.c#L11'>C var_addr</a> → <a title='Memory Map: Lines 67-71' href='microkit.system#L67'>Memory Map</a></td></tr>
     </table>

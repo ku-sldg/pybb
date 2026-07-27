@@ -58,7 +58,8 @@ def _find_target_asp_id(et_node, prefer_right: bool = False) -> str:
 
 
 _MATCH_KEYS = (
-    "filepath", "start_index", "end_index", "begin_marker", "end_marker", "exe_args",
+    "filepath", "start_index", "end_index", "begin_marker", "end_marker",
+    "exe_args", "cwd",
 )
 
 

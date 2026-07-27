@@ -1,0 +1,5 @@
+{
+  "name": "Verus Verification (semantic tier)",
+  "description": "Runs cargo-verus verify over the contract-bearing Microkit crates: the generated Verus contracts must PROVE against the implemented behavior. Pass means both crates verify with zero errors.",
+  "copland": "lseq( bseq( run_command_hamr\u00d72 ), APPR )"
+}
