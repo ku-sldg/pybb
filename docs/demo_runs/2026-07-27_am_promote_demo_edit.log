@@ -1,0 +1,58 @@
+CompileCommand: exclude org/eclipse/jdt/internal/core/dom/rewrite/ASTRewriteAnalyzer.getExtendedRange bool exclude = true
+SLF4J(W): No SLF4J providers were found.
+SLF4J(W): Defaulting to no-operation (NOP) logger implementation
+SLF4J(W): See https://www.slf4j.org/codes.html#noProviders for further details.
+____________________________
+Welcome to Apache Felix Gogo
+
+g! !SESSION 2026-07-27 11:25:26.616 -----------------------------------------------
+eclipse.buildId=unknown
+java.version=21.0.8
+java.vendor=Eclipse Adoptium
+BootLoader constants: OS=macosx, ARCH=aarch64, WS=cocoa, NL=en_US
+Framework arguments:  -application org.sireum.aadl.osate.cli hamr phantom --mode json --output-file /private/var/folders/53/2nfydrns5hg6c8lbzjzqgjc00000gn/T/pybb_air_i5wfl7m8/TempControlSystem_i.json /Users/adampetz/Claude_workspace/temp-control-jvm/aadl
+Command-line arguments:  -os macosx -ws cocoa -arch aarch64 -console -consoleLog -data @user.home/.sireum -application org.sireum.aadl.osate.cli hamr phantom --mode json --output-file /private/var/folders/53/2nfydrns5hg6c8lbzjzqgjc00000gn/T/pybb_air_i5wfl7m8/TempControlSystem_i.json /Users/adampetz/Claude_workspace/temp-control-jvm/aadl
+
+!ENTRY org.eclipse.core.resources 2 10035 2026-07-27 11:25:33.856
+!MESSAGE The workspace exited with unsaved changes in the previous session; refreshing workspace to recover changes.
+Sireum Version: 4.20260720.6a05e505 located at /Users/adampetz/Applications/Sireum/bin/sireum.jar
+log4j:WARN No appenders could be found for logger (org.eclipse.xtext.parser.antlr.AbstractInternalAntlrParser).
+log4j:WARN Please initialize the log4j system properly.
+log4j:WARN See http://logging.apache.org/log4j/1.2/faq.html#noconfig for more info.
+* platform:/resource/temp-control-jvm/packages/TempControlSystem.aadl#TempControlSystem_public
+  - [26, 19] defs in 'with' clause of public package section is not used.
+Processing: TempControlSystem.i
+Wrote: /private/var/folders/53/2nfydrns5hg6c8lbzjzqgjc00000gn/T/pybb_air_i5wfl7m8/TempControlSystem_i.json
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/JSON.scala
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/MsgPack.scala
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/SlangCheckRandom.scala
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/SlangCheckConfig.scala
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/SlangCheckGenerator.scala
+Wrote /Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/util/tc/SlangCheckDataTypeId.scala
+
+Slang Instructions:
+-------------------
+  Slang-Embedded Project Directory: /Users/adampetz/Claude_workspace/temp-control-jvm/slang
+
+    Refer to the comments in bin/project.cmd for instructions on how to open the
+    project in Sireum IVE and how to run the system/unit-tests from IVE or the command line.
+
+Sanctioned edit applied: TempControlSystem.aadl SetPoint bound 110.0 -> 112.0
+Scratch working set at /var/folders/53/2nfydrns5hg6c8lbzjzqgjc00000gn/T/pybb_am_unsy79ij
+Cycle 1: all entries in good standing - halting
+
+=== promotion episode (provision partition) ===
+  promote:gumbo: codegen=ran: sireum hamr phantom + codegen -p JVM (live slang regenerated); targets regenerated={'gumbo_l1a': 4, 'gumbo_l1b': 6, 'gumbo_l2': 33}; 6 files -> golden
+  provision:gumbo_l1a: 4 goldens provisioned
+  provision:gumbo_l1b: 6 goldens provisioned
+  provision:gumbo_l2: 33 goldens provisioned
+
+=== verification episode (new baseline) ===
+Cycle 1: 'gumbo:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:gumbo:files,gumbo:contracts'
+Cycle 2: all entries in good standing - halting
+  gumbo:ready: protocols validated (gumbo_l1a, gumbo_l1b, gumbo_l2)
+  gumbo:files: all attested components intact (gumbo_l1a passed)
+  gumbo:contracts: all attested components intact (gumbo_l1b passed)
+
+Demo cleanup: restored 1 live target(s) to the original baseline

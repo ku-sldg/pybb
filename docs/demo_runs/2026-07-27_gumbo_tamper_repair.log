@@ -1,0 +1,46 @@
+Golden targets: 6 files under /Users/adampetz/Claude_workspace/pybb/golden
+Tampered live file: /Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl (line 306)
+Cycle 1: 'gumbo:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:gumbo:files,gumbo:contracts'
+Cycle 2: 'gumbo:files' failed - dispatching to on_fail chain
+Cycle 2: running 'tier:gumbo_l2'
+Cycle 3: running 'tier:gumbo_l2'
+Cycle 3: 'tier:gumbo_l2' exhausted on 'gumbo:files' - restoring original measurement, handing to 'repair:whole-file'
+Cycle 4: running 'repair:whole-file'
+  repair:whole-file: restored 1 file(s) from golden
+Cycle 5: running 'repair:whole-file'
+Cycle 5: no eligible KS left for 'gumbo:files' - escalating with history
+Cycle 6: all entries in good standing - halting
+
+=== blackboard history (audit trail) ===
+  gumbo:ready: gumbo_l1a+gumbo_l1b+gumbo_l2 passed=True
+  gumbo:files: gumbo_l1a passed=False
+  gumbo:contracts: gumbo_l1b passed=True
+  gumbo:files: gumbo_l2 passed=False
+
+=== escalate segment ===
+  gumbo:files: attempts={'tier:gumbo_l2': 1, 'repair:whole-file': 1}
+
+=== trust summary ===
+  gumbo:ready: protocols validated (gumbo_l1a, gumbo_l1b, gumbo_l2)
+  gumbo:contracts: all attested components intact (gumbo_l1b passed)
+  gumbo:files: integrity violation — ladder exhausted (gumbo_l1a, gumbo_l2 failed); failing components (gumbo_l2): tc_sys_aadl_305_308_targ; repaired from golden — verification pending next episode (re-run the workflow)
+
+(cycles: 6)
+
+=== episode 2: verification (fresh run, fresh caches) ===
+Cycle 1: 'gumbo:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:gumbo:files,gumbo:contracts'
+Cycle 2: all entries in good standing - halting
+
+=== blackboard history (audit trail) ===
+  gumbo:ready: gumbo_l1a+gumbo_l1b+gumbo_l2 passed=True
+  gumbo:files: gumbo_l1a passed=True
+  gumbo:contracts: gumbo_l1b passed=True
+
+=== trust summary ===
+  gumbo:ready: protocols validated (gumbo_l1a, gumbo_l1b, gumbo_l2)
+  gumbo:files: all attested components intact (gumbo_l1a passed)
+  gumbo:contracts: all attested components intact (gumbo_l1b passed)
+
+(cycles: 2)

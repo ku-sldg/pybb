@@ -1,10 +1,13 @@
 # Claude session — pybb blackboard attestation (dev branch)
 
-Exported 2026-07-24. Topics: dev branch setup; live-target attestation and
-removal of path_map; golden directory (capture/restore); vendoring the
-temp-control-jvm HAMR example; provisioning partition + predicate;
-protocol readiness; tier decomposition (l1a/l1b/l2); repair layer;
-design walkthroughs of predicates, partitions, routes, and dispatch.
+Exported 2026-07-24, extended 2026-07-27. Topics: dev branch setup;
+live-target attestation (path_map removal); golden directory; vendored
+temp-control-jvm; provisioning partition + predicate; protocol readiness;
+tier decomposition (l1a/l1b/l2); repair layer; promotion pipeline +
+attestation manager; targetmap (syntax scan + HAMR attestation report);
+Microkit/Rust codegen experiment (OSATE install, model port, report
+provisioning); JVM baseline migration to current HAMR; real HAMR codegen
+inside blackboard provisioning; end-to-end demo runs.
 
 ---
 
@@ -2662,3 +2665,1167 @@ I'll locate this session's transcript and convert it to markdown. The workspace 
 > `[Write]` /private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/scratchpad/export_session.py
 
 > `[Bash]` Run export and verify output
+
+> `[Bash]` Run export from pybb venv and verify
+
+> `[Bash]` Spot-check exported markdown
+
+Exported successfully. The session is at [claude_sessions/session_2026-07-24_pybb_blackboard_attestation.md](../claude_sessions/session_2026-07-24_pybb_blackboard_attestation.md) — 229 KB, covering all 52 of your turns and my responses.
+
+Format choices, in case you want it different:
+
+- **Full prose preserved** for both sides — every question, design walkthrough, plan, and summary verbatim, with markdown formatting (tables, code blocks) intact.
+- **Tool activity compacted** to one-liners like `> [Bash] Run CVM integration tests` — the actions are traceable without hundreds of KB of raw command output drowning the design discussion. (The raw transcript with complete tool inputs/outputs remains available in `~/.claude/projects/.../e6b8cfa3-....jsonl` if you ever need forensic detail.)
+- A short topic index at the top: dev branch setup → path_map removal → golden directory → vendored temp-control-jvm → provisioning partition → readiness → l1a/l1b/l2 decomposition → repair layer, plus the design walkthroughs in between.
+
+The converter script survives in my scratchpad for this session; if you'd like a variant — full tool outputs included, split by chapter, or exported into the pybb repo's `docs/` instead — say the word.
+
+## User
+
+exported to pybb repos' docs/
+
+## Assistant
+
+> `[Bash]` Copy session export into pybb docs, commit, push
+
+> `[Bash]` Create docs dir, add session export, commit, push
+
+> `[Bash]` Add session export to pybb docs, commit, push
+
+Done — the session export now lives at [docs/session_2026-07-24_pybb_blackboard_attestation.md](pybb/docs/session_2026-07-24_pybb_blackboard_attestation.md) in the pybb repo, committed as `9124b71` on `dev` and pushed to GitHub. (I also removed a stray `docs/` directory that a working-directory reset briefly created in `~/Claude_workspace` — nothing was lost.)
+
+The `dev` branch now carries seven commits telling the whole story: live-target attestation + golden restore, the vendored HAMR example, the provision partition, protocol readiness, the nonce removal, the l1a/l1b/l2 decomposition, the repair layer — and now the design transcript that explains why each of those looks the way it does.
+
+## User
+
+I'd like to consider a new type of Knowledge source that polls for source file changes and adds predicates accordingly.  For example, one that looks for meaningful changes to AADL models, then kicks off new HAMR codegen and evidence provisioning.  Is this something well suited for our current notion of Knowledge source?
+
+## Assistant
+
+Short answer: **as literally described — a KS that polls the world and registers predicates — no, it fights three load-bearing properties of our KS notion.** But decomposed, two of its three ingredients fit beautifully, and the third belongs outside by design. Let me take it apart.
+
+## Why the literal form doesn't fit
+
+1. **Trigger direction is inverted.** Our KSs are *demand-driven from the blackboard*: `can_contribute` fires only when an entry in the KS's partition is out of good standing — i.e., a predicate has already judged something wrong. A file-watcher triggers on *world* state when nothing on the board is failing. You could fake it with a perpetually-failing sentinel entry, but then `run()` **never halts** — the controller's termination condition is "no KS can contribute," and a poller that must always be ready to contribute destroys the episode's convergence guarantee.
+
+2. **Polling implies residency; our model is episodic.** Everything we've committed to — memoization per predicate lifetime, verification-by-next-episode, no nonce — assumes `run()` terminates. A polling loop is the resident mode we've deliberately deferred.
+
+3. **KSs can't "add predicates."** Deliberately: `execute(blackboard, keys)` gets the blackboard, not the controller, so no KS can reach `register_predicate` or `route`. `StartAttestationKS` shows the sanctioned pattern — KSs may write *entries* that name **pre-registered** predicates; the predicate vocabulary is fixed at episode setup.
+
+Worth noting for honesty: classic blackboard systems (Hearsay-II lineage) *did* have condition-triggered KSs watching for arbitrary events, so your instinct has good pedigree. Our notion is narrower on purpose — and the halting guarantee is what the narrowing buys.
+
+## The decomposition that does fit
+
+**Sensing "meaningful change" is a predicate — and we already own the perfect one.** "Meaningful change to an AADL model" is *exactly* what the measurement stack computes: l1a detects any drift, l2 adjudicates whether it touched declared-invariant content. Point that machinery at the **authoring/staging tree** instead of the live tree, and a failing verdict means "staged changes are meaningful → promotion pipeline needed":
+
+```python
+# staging entry: attest the authoring workspace against CURRENT gold
+bb.write_entry(key="staging:files", predicate="attestation",     # staging-rooted protocols
+               measurement=attestation_request("staging_l1a"))
+controller.route("staging:files",
+    on_fail=[TierKS("staging_l2"),          # meaningful vs benign — same adjudication
+             HamrCodegenKS(...),            # regenerate oracles/blocks in staging
+             PromoteKS(...)])               # sync staging -> golden/, then
+                                            # request_provision(...) per protocol
+```
+
+**Acting is a KS — precedented.** `HamrCodegenKS` (runs `sireum hamr codegen` on staging; long-running is fine — the validation tier already takes minutes in-cycle) and `PromoteKS` (copies regenerated artifacts into `golden/` and writes provision-partition requests — KSs writing entries is exactly the `StartAttestationKS` pattern; `request_provision` needs only the blackboard). No new KS *type* — just new rungs on a chain whose entry asks a new question.
+
+**Polling stays outside, and should.** "Poll every N minutes" = *run an episode every N minutes* — a cron job, a dashboard button, a git hook. Each episode's staging-entry evaluation *is* one poll. The outer scheduler is ten lines of non-blackboard code, and the episodic model survives intact.
+
+## The trust-boundary crux (this is the part to get right)
+
+Everything above is safe **only if the watched tree is the designated authoring workspace, never the live tree.** A watcher that auto-detects "meaningful" changes on the *live* system and kicks off codegen + re-provisioning is an automated laundering machine: a tampered invariant *is* a meaningful change, and the pipeline would promote the attack into the new baseline. The measurement can't distinguish intent; only *provenance* can — which is why writing to the staging tree must itself be the human act of authorization (it's the gold-first principle from our promotion discussion, mechanized). On the live tree, meaningful change remains what it is today: a violation, to be repaired toward gold, never absorbed into it.
+
+## Verdict
+
+Well-suited: **yes, once reframed** — detection as a staging-rooted deployment of the existing attestation predicates, action as ordinary chain rungs, polling as an external episode scheduler. Not suited: a world-watching, predicate-registering KS inside the controller loop — it would cost halting, episodic semantics, and the layering that keeps gold-writing out of blackboard control flow. The one prerequisite this surfaces again, unavoidably, is the **target-map regeneration** capability (an AADL edit shifts every l2 line range), which we've now identified as the keystone from two independent directions.
+
+Want me to plan the staging-entry + pipeline-rung design (with an out-of-band scheduler script) as the next build step?
+
+## User
+
+Let's keep planning, but with some new assumptions.  Let's assume we have an out of band attestation manager that either polls or reacts to a user prompt to re-measure AADL model files.  This attestation manager (or its administrator) could trigger a measurement on the AADL files specifically on a SANCTIONED change (we won't assume it's possible to maliciously update AADL files at this level).  This out of band measurement should first check the contents of the AADL files to determine if HAMR codegen will need re-run (do existing contracts from last provisioning change?).  If so, place a predicate on the blackboard to kick off a new HAMR run on the new model, and new provisioning of golden values.
+
+## Assistant
+
+The new assumptions change the trust calculus in exactly the right place — the AM *is* the sanctioned external actor our architecture has always assumed ("the external event"), now given a concrete identity, and the sanction assumption on AADL edits dissolves the laundering objection *for this level*. Here's the plan, with the design reasoning and the decisions I need from you.
+
+## The shape: AM outside, pipeline-as-predicate inside
+
+One idiom clarification up front: in our architecture the AM doesn't literally "place a predicate" — predicates are registered at episode setup; the AM **writes request entries that name them** (the `request_provision` pattern). Same intent, preserved layering.
+
+```
+Attestation Manager (out-of-band, sanctioned; polls or user-prompted)
+  1. re-measure AADL files vs last-provisioned goldens
+  2. contracts changed?  ──no──> at most a value re-provision; done
+         │ yes
+  3. write to the provision partition, in order:
+       promote:gumbo      (predicate "promotion")   <- evaluated first
+       provision:gumbo_*  (predicate "provision")   <- then, against NEW gold
+  4. run the episode(s)
+```
+
+The **promotion predicate** follows the established "the predicate IS the stage" idiom: it runs HAMR codegen on the sanctioned model, gates on validation, syncs the regenerated watched artifacts into `golden/`, and — the keystone — **regenerates the target maps** (new l2 ranges, l1b markers) into the shared `ProtocolDir`s and protocol dirs on disk. The provision requests behind it then extract fresh goldens against the new targets. The provision partition's evaluate-first ordering (and within it, write order) means a subsequent attestation episode sees the fully promoted world.
+
+## The pieces
+
+**1. Contract-change detection (in the AM, out-of-band).** "Did contracts from last provisioning change?" answered **position-independently**: decode each provisioned AADL contract slice (`golden_b64` of the l2 AADL targets = the flattened contract text) and check the *new* AADL content still contains it (whitespace-normalized). This survives line shifts — a moved-but-identical contract correctly reads "unchanged" (no codegen needed, though ranges still need refresh), while an edited invariant reads "changed → codegen." I recommend this over CVM-measured slice appraisal for the *detection* step: detection is sanctioned reconnaissance; evidence-grade measurement happens at provisioning anyway.
+
+**2. `pybb/attestation/targetmap.py` — the keystone gap, finally built.** Derives target definitions from artifact content: AADL GUMBO clause spans (syntax scan for `assume`/`guarantee`/`inv` blocks), GumboX `@strictpure` predicate spans, component `BEGIN/END` markers (trivial). This is the piece that turns "AADL lines shifted" from a broken baseline into a regenerated one. *Alternative:* derive from the HAMR attestation report as cvm-mcp's `hamr_report_protocols.py` does for isolette — more robust, but couples us to the report format and to whether temp-control's codegen emits one. Needs a quick investigation; syntax-scan is the self-contained v1.
+
+**3. `pybb/attestation/promotion.py`** — `promotion_request`, `PromotionOutcome`, `make_promotion_predicate(client, protocols, golden_root, model_root, ...)`: HAMR codegen (`sireum` via the workspace wrapper) → optional validation gate (tipe/logika/test on the regenerated project — L3 in its promotion-gate role) → capture watched files to `golden/` (the existing `capture_golden` flow *is* the sync step) → target-map regeneration written through to the shared `ProtocolDir`s. Failure at any stage → falsy outcome → escalates from the provision partition as a config-style failure, nothing promoted.
+
+**4. `examples/attestation_manager.py`** — the AM itself: `check` (detect and report: "contracts changed: SetPoint_Data_Invariant; codegen required"), `promote` (write requests, run the promotion episode, then a verification episode), `--watch N` (poll loop = run `check` every N seconds; the episodic model makes polling trivial and external, as designed).
+
+**5. Demo + tests.** Sanctioned edit to a real invariant bound (e.g. `high.degrees <= 110.0` → `112.0`) → AM detects the changed contract → promotion regenerates and re-provisions → attestation episode passes against the *new* baseline; and the benign path (comment edit → "no codegen needed"). When the model workspace is the live tree (temp-control's reality), post-promotion attestation passes immediately; when it's a separate staging tree, the existing repair-as-deployment path carries live forward — both get stated in the README.
+
+## Decisions before I build
+
+1. **Target-map regeneration source**: syntax-scan v1 (self-contained, recommended to start) vs. HAMR-report-driven (I'd time-box an investigation of whether temp-control codegen emits a usable report — this also matters for your longer-term pipeline)?
+2. **Promote request placement**: reuse the provision partition with the new `"promotion"` predicate and documented write-order evaluation (my recommendation — it *is* provisioning lifecycle), vs. a fourth partition?
+3. **Validation gate in promotion**: on by default (minutes per promotion) or opt-in flag like `--validate`?
+4. **Codegen workspace**: in-place on the live tree for the temp-control demo (simplest, matches the sanction assumption), with staging-tree support as a parameter?
+
+Phasing if you approve: (1) AM + detection, (2) targetmap, (3) promotion predicate + partition ordering, (4) demo/tests/README — each independently testable, committed separately.
+
+## User
+
+1:  syntax scan fine for now, may change to use attestation report (or have that as a parameter) later, 2:  "promotion" predicate fine in provision partition, 3: have validation at promotion be an opt-in (not default), 4:  live tree is the default
+
+## Assistant
+
+All four locked. Starting with the keystone (targetmap), since promotion depends on it. First I need the exact syntactic shapes the scanner must recognize — the AADL GUMBO clauses and the GumboX spans behind the existing provisioned ranges:
+
+> `[Bash]` Inspect GUMBO clause and GumboX span syntax at provisioned ranges
+
+> `[Bash]` Probe scanner rules against provisioned ranges
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/targetmap.py
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/tests/test_targetmap.py
+
+> `[Bash]` Run targetmap tests
+
+All 7 pass. Before writing the promotion predicate's codegen stage, check what HAMR tooling is actually invocable here:
+
+> `[Bash]` Check sireum hamr codegen and phantom availability
+
+> `[Bash]` Check GumboX for SetPoint invariant bounds
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/promotion.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/__init__.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/__init__.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/controller.py
+
+Now the attestation manager:
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/examples/attestation_manager.py
+
+Now the promotion unit tests:
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/tests/test_promotion.py
+
+> `[Bash]` Run promotion tests then full unit suite
+
+Now the end-to-end integration test — a sanctioned live edit promoted to the new baseline via the real CVM:
+
+> `[Write]` /Users/adampetz/Claude_workspace/pybb/tests/test_integration_promotion.py
+
+> `[Bash]` Run promotion integration test, verify live tree restored
+
+> `[Bash]` Run AM check (clean) and full demo promotion
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/README.md
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/README.md
+
+> `[Bash]` Full suite, commit promotion pipeline, push
+
+> `[Edit]` /Users/adampetz/.claude/projects/-Users-adampetz-Claude-workspace/memory/project_pybb_attestation.md
+
+Done — committed as `51e87c6` and pushed. The full suite stands at **82 passed, 2 skipped**. What landed:
+
+## The pieces
+
+- **[targetmap.py](pybb/pybb/attestation/targetmap.py)** — the keystone we'd identified from three directions: target *definitions* derived from artifact content by syntax scan (GUMBO clause spans inside `annex GUMBO` blocks, `@strictpure def` spans, `BEGIN/END` marker blocks), plus term construction and write-through installation. The coverage test proves every historically provisioned range, marker, and target name is derivable; derived maps are complete supersets of the hand-curated originals (l2 grows 22 → 37 targets after promotion, which becomes the new baseline by design).
+- **[promotion.py](pybb/pybb/attestation/promotion.py)** — the `"promotion"` predicate in the provision partition, evaluated in write order ahead of the provision requests it enables: pluggable `codegen_fn` → **opt-in** validation gate (gold cannot move unless the regenerated project verifies) → target-map regeneration into the shared `ProtocolDir`s → golden capture. Any stage failing → falsy outcome → escalates; gold never moves partially.
+- **[attestation_manager.py](pybb/examples/attestation_manager.py)** — the sanctioned out-of-band actor: `check` (position-independent contract comparison against provisioned goldens — a *moved* contract correctly reads unchanged), `promote` (promotion episode + verification episode), `watch` (poll loop, external to the blackboard as designed). Scratch mode by default; `--in-place` for real; `--codegen-cmd` for the real `phantom`+`codegen` invocation; live tree is the default model workspace per your decision.
+
+## Verified end to end (real CVM)
+
+The demo runs the whole story: sanctioned SetPoint bound edit (110.0 → 112.0) → `check` names `tc_sys_aadl_305_308_targ` as changed → promotion regenerates all three target maps and moves gold → 4+6+37 fresh goldens provisioned → verification episode attests the **live, edited** tree clean against the new baseline → demo cleanup restores the original. The integration test additionally proves `check` reports clean *after* promotion — the loop closes.
+
+One honest caveat on record: the demo's codegen stage is a labeled no-op (this particular edit alters no watched generated artifact, and a real `phantom` run needs OSATE setup) — the pipeline structure is real and tested, and the codegen command is deployment configuration, ready for the report-driven targetmap backend when you want it.
+
+## User
+
+expand on the caveat.  Does the promotion predicate trigger a real HAMR codegen invocation?
+
+## Assistant
+
+No — and it's worth being fully precise about what is and isn't real here, because the gap has three layers.
+
+## What the code actually does
+
+The promotion predicate itself **never invokes HAMR**. It calls whatever `codegen_fn: Callable[[], str]` it was constructed with — step 1 of the pipeline is `codegen = codegen_fn()`, full stop. The two implementations that exist:
+
+- **The AM with `--codegen-cmd '<shell command>'`**: runs your command via `subprocess.run(..., shell=True, check=True, cwd=TC_ROOT)`. So the *plumbing* for a real invocation exists — failure propagates correctly (non-zero exit → `codegen failed` outcome → promotion escalates, gold never moves) — but the command itself is user-supplied and nothing HAMR-specific is wired.
+- **The default (no `--codegen-cmd`)**: a lambda returning the string `"skipped (no --codegen-cmd): this change alters no watched generated artifact"`. It touches nothing. Every demo and test run you've seen used this.
+
+So the honest status: **the pipeline's codegen *stage* is real (ordering, failure handling, gating); the codegen *action* has never been real.**
+
+## Why I didn't wire the real thing
+
+1. **AADL codegen is a two-stage toolchain with a heavy dependency.** `sireum hamr codegen` consumes AIR (AADL Intermediate Representation), not AADL — the AADL→AIR step is `sireum hamr phantom`, a *headless OSATE* wrapper. I verified both CLIs exist and print help in your Sireum install, but not that OSATE is installed/configured for phantom (its `--update` mode exists precisely to download it, potentially a large one-time install).
+2. **The canonical command for this project isn't recorded anywhere.** The tree has proyek helper scripts (`slang/bin/*.cmd`) but no codegen invocation — the exact phantom flags (project/system selection) and codegen flags (platform, package, output dir) for temp-control would need to be determined and tested.
+3. **A real run mutates the live tree broadly and unpredictably-to-us.** Codegen rewrites the generated Slang surface (bridges, oracles, data types) and re-splices component blocks. If the installed HAMR version differs from whatever generated the checked-in code (see `versions.properties` pinning old artifacts), the regenerated output could differ *gratuitously* from the current baseline — not wrong, but a large diff I wasn't going to trigger unattended on your live tree mid-session.
+
+## The layer under the caveat: what the no-op means semantically
+
+For the demo's specific edit, the no-op is defensible but with a sub-caveat I should state exactly: I verified the SetPoint bound does not appear in the **watched** GumboX oracle files, so the *measured* baseline stays derivation-consistent. But that bound plausibly does appear in **unwatched** generated code (e.g., the `SetPoint_i` datatype's invariant checking) — a real codegen run would update files our measurement set never sees. That's invisible to attestation, but it means the demo's promoted baseline is only consistent *over the watched set*. More generally: with a no-op codegen, any AADL edit that *does* affect a watched oracle would produce a genuinely inconsistent baseline — AADL gold says one thing, oracle gold says another — and nothing currently catches that. This is exactly the **derivation-consistency check** (`golden GumboX == HAMR(golden AADL)`) we flagged in the promotion planning and deferred; it's the guard whose absence the no-op exposes.
+
+## Path to making it real
+
+1. Determine and record the canonical invocation for temp-control (phantom project/flags → AIR → codegen flags), with the one-time OSATE setup — I could time-box an investigation with the `sireum` tooling available here, running against a **staging copy**, never live, on the first attempt.
+2. Bake the verified command as promotion's default `codegen_fn` (env-overridable), keeping the pluggable parameter.
+3. Build the derivation-consistency check into promotion (or readiness) so a skipped/failed/partial codegen can't silently produce an inconsistent baseline — arguably worth doing *before* real codegen, since it also guards the current no-op mode.
+
+Want me to take a run at (1) — establishing whether a real phantom+codegen invocation works on a staging copy of temp-control — or start with (3), the consistency guard?
+
+## User
+
+I'd like to invoke real HAMR codegen, and use the attestation report mechanism if available.  investigate this.
+
+## Assistant
+
+Investigation time. Let me start with the full codegen option surface (looking for the attestation-report flag), the report consumer in cvm-mcp, and any existing report artifacts from the isolette work:
+
+> `[Bash]` Full sireum hamr codegen help
+
+> `[Bash]` Check hamr subcommands, isolette report files, report reader
+
+> `[Bash]` Codegen help tail, hamr modes, report JSON shape
+
+> `[Bash]` Find the command that generated the isolette attestation report
+
+> `[Bash]` Read the attestation report generation commands
+
+The `.cmd` is the rodeo flow, not the generator. Search the Sireum sources for the report emitter and its flag:
+
+> `[Bash]` Find attestation report emitter in Sireum sources
+
+The reporter is a **microkit** plugin — critical question: does it fire for JVM-platform codegen? Reading the plugin:
+
+> `[Bash]` Check when the attestation reporter plugin runs
+
+> `[Bash]` Read the reporter plugin's gate condition
+
+> `[Bash]` Full phantom help and OSATE install check
+
+> `[Bash]` Check temp-control AADL project files for phantom
+
+Investigation complete. Here are the findings — one good surprise, one hard blocker, and a clear path.
+
+## Finding 1: The attestation report mechanism exists and is exactly what we want — but it's Microkit-only
+
+The report (`aadl_attestation_report.json`) is emitted by HAMR codegen itself, via `AttestationReporterPlugin` in your local Sireum sources. Its shape is ideal for our purposes — per-component `ContractReport`s with typed `Slice` entries carrying `uri`, `beginLine`/`endLine`, and kind (model contract vs. generated artifact) — and cvm-mcp's `hamr_report_protocols.py` already consumes it (that's how isolette's protocols were generated).
+
+The blocker is one line in the plugin's gate ([AttestationReporterPlugin.scala:35](../../Sireum-dev/hamr/codegen/jvm/src/main/scala/org/sireum/hamr/codegen/microkit/plugins/attestation/AttestationReporterPlugin.scala)):
+
+```scala
+options.platform == HamrCli.CodegenHamrPlatform.Microkit && ...
+```
+
+**The reporter only fires for the Microkit platform.** Temp-control is a JVM project, so with the current HAMR build, JVM codegen cannot emit the report — no flag changes that; the plugin is registered only in `MicrokitPlugins`. Three ways forward:
+
+- **(a) Extend HAMR**: a JVM-platform reporter plugin (or relaxing the gate + teaching it JVM artifact mapping). The plugin architecture is right there in your Sireum-dev checkout, and given the KU↔SAnToS collaboration this looks like a legitimate upstream ask/contribution — but it's Scala work in HAMR, not a pybb change.
+- **(b) Parallel Microkit codegen just for the report**: the *model* slices (AADL GUMBO contracts) would be valid, but the *codegen* slices would point at Microkit artifacts, not our JVM Slang tree — half a report, plus Microkit codegen prerequisites. Not worth it.
+- **(c) Keep the syntax-scan backend** (validated complete against every provisioned temp-control target) until (a) exists — with one constructive step available *now*: I can build targetmap's **report-driven backend today, tested against the real isolette report** we have on disk, so the moment JVM reports exist it's a config switch, exactly as you anticipated ("may change to use attestation report... as a parameter").
+
+## Finding 2: Real JVM codegen is invocable — after a one-time OSATE install
+
+The pipeline is `sireum hamr phantom` (AADL → AIR via headless OSATE) then `sireum hamr codegen -p JVM --slang-output-dir ... -n tc <air.json>`. Current state of the prerequisites:
+
+- Both CLIs work in your Sireum install.
+- **OSATE is not installed** (`~/.sireum` is empty) — phantom needs a one-time `--update` install of OSATE 2.17, an Eclipse-based download realistically in the hundreds of MB, taking minutes to tens of minutes.
+- The temp-control `aadl/` directory has **no `.project` file**, so phantom needs either a minimal Eclipse `.project` boilerplate added (trivial XML) or the explicit `--projects/--main-package/--sys-impl TempControlSystem.i` route.
+- Once AIR exists, codegen will rewrite the generated Slang surface — first run belongs on a **staging copy**, and if the installed HAMR is newer than what generated the checked-in code (`versions.properties` pins old artifacts), expect a possibly-large but legitimate diff, which promotion would then declare as the new baseline.
+
+## Recommended plan
+
+1. **Now**: install OSATE via `phantom --update` (one-time, big download), add the minimal `.project`, run phantom + JVM codegen against a staging copy of temp-control, and — if the round trip works — wire the verified command as promotion's default `codegen_fn` (env-overridable, per the existing pluggable design).
+2. **Now, cheaply**: build the report-driven targetmap backend against the isolette report as its test fixture — ready for the day the gate opens.
+3. **Upstream thread for you**: raise the JVM attestation-reporter gap with the SAnToS/HAMR folks (or we prototype the plugin in Sireum-dev ourselves in a later session).
+
+Shall I proceed with step 1 (the OSATE install is the long pole — I'd kick it off and verify the full phantom → AIR → codegen round trip on staging), and step 2 alongside?
+
+## User
+
+I'm ultimately interested in the microkit/rust HAMR codegen pipeline.  Does the attestation report mechanism work for all projects generated this way?
+
+## Assistant
+
+This reframes everything — the Microkit gate isn't the blocker, it's your target. Let me pin down exactly what conditions the reporter needs and what it covers, from the plugin source and the real isolette report:
+
+> `[Bash]` Read what the reporter plugin emits and requires
+
+> `[Bash]` Isolette report slice inventory, reporter conditions, emitted files
+
+> `[Bash]` Reporter output files and MicrokitReporterPlugin gate
+
+> `[Bash]` MicrokitReporterPlugin gate and isolette's codegen invocation
+
+> `[Bash]` Find isolette's actual codegen invocation with flags
+
+> `[Bash]` Read isolette's run-hamr wrapper for microkit flags
+
+> `[Bash]` Full isolette codegen invocation
+
+Complete picture assembled. The answer: **yes for the intended class of projects — but "all" carries four precise conditions, two of which fail *silently*.** Here's exactly what the source says.
+
+## When the report is emitted at all
+
+For any Microkit codegen run, the chain is: `MicrokitReporterPlugin` (fires unconditionally for Microkit when codegen succeeds) → `AttestationReporterPlugin`. The reporter then requires:
+
+1. **`--workspace-root-dir` must be passed** — without it, the plugin prints "Cannot generate attestation artifacts" and **skips silently**; codegen still succeeds. Isolette's `run-hamr.cmd` passes it always. Any pipeline you build should treat its absence as an error, not a warning.
+2. **No codegen errors** — standard.
+
+Both frontends produce it: AADL (via the OSATE/FMIDE CLI app, as isolette's `run-hamr.cmd` shows) and **SysMLv2 (`sireum hamr sysml codegen`, no OSATE dependency at all** — worth knowing, since the SysML path sidesteps the entire OSATE-install problem we hit on the JVM investigation). Isolette has both `aadl_` and `sysml_attestation_report.json` to prove it.
+
+## What "all projects" really means: the per-component coverage rule
+
+The source is explicit — *"just handle rusty, gumboy components for now"*: a component appears in the report **iff it is Rust-generated AND carries a GUMBO subclause**. Two consequences:
+
+- **C-generated components and contract-less components are silently absent.** For a pure Rust+GUMBO system (the INSPECTA direction, your stated interest) the report is complete. For a mixed C/Rust system, or one with uncontracted components, the report is a *partial* measurement map with no indication of what it omitted — structurally the same trap as our l2 coverage gap, and something a pybb readiness check should surface (compare report components against the model's component list).
+- **Verus realization is effectively mandatory**: when the reporter walks a GUMBO constraint whose Verus output is missing, it **`halt`s — crashing codegen** ("Didn't find verus report for integration constraint..."). So the report mechanism presupposes the complete GUMBO→Verus translation pipeline; you can't get a report for a rust+GUMBO system that skips Verus.
+
+## What you get when the conditions hold
+
+The isolette report demonstrates the payoff: 7 components, 85 slices in three kinds — **Model** (57, `.aadl` contract positions), **Verus** (23, positions of the generated Verus realizations in `.rs`), **Rust** (5, generated Rust regions). Every contract is mapped to *both* its model position and its generated-artifact realization — which is not just our target map generated authoritatively (no syntax scan, no curation), it's the **model↔artifact derivation link** we identified as the missing consistency check in the promotion design. The report is written to `<sel4-output>/attestation/{aadl|sysml}_attestation_report.json`, and cvm-mcp's `hamr_report_protocols.py` already turns it into provisionable l1/l2 protocol dirs (that's how `isolette_l1`/`isolette_l2` were built).
+
+## What this means for our architecture
+
+Your ultimate pipeline lands on the *good* side of every boundary we've built: report-driven target maps (replacing the syntax scan), a machine-stated invariant surface, and per-contract Verus slices whose repair class is "generated content" (whole-region restore, like our GumboX class). The temp-control/JVM work remains the right development sandbox — same blackboard machinery, syntax-scan backend — while the microkit path needs from us: (1) the **report-driven targetmap backend**, buildable and testable *today* against the real isolette report on disk; (2) a readiness/promotion check for **report coverage** (which components the report silently omitted); (3) eventually pointing promotion's `codegen_fn` at the microkit invocation with `--workspace-root-dir` enforced.
+
+Recommended next step: build (1) now — `targetmap` gains a `from_attestation_report(report_path)` backend producing the same `{protocol: asp_args}` shape as the scan, tested against `aadl_attestation_report.json`, making the backend switch you anticipated ("have that as a parameter") real. Want me to proceed?
+
+## User
+
+Proceed.  After this change I'd like to test the temp-control example (same AADL model) but with the Rust/Verus codegen provisioning.
+
+## Assistant
+
+Two phases: the report backend (commit), then the temp-control microkit experiment. Starting with the backend — and there's a perfect cross-validation available: cvm-mcp's generated `isolette_l2` protocol came from this same report, so our derivation must agree with it:
+
+> `[Bash]` Inspect cvm-mcp's report-generated isolette protocols for cross-validation
+
+Naming mirrors cvm-mcp's scheme — let me check its slug logic to stay compatible:
+
+> `[Bash]` Read cvm-mcp slug/naming logic
+
+> `[Bash]` Read stem and slice collection logic
+
+The pattern's clear. Writing the report backend into `targetmap.py`:
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/targetmap.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/tests/test_targetmap.py
+
+> `[Bash]` Run targetmap tests including report backend
+
+> `[Bash]` See which assertion failed
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/tests/test_targetmap.py
+
+> `[Bash]` Run tests, commit report backend, push
+
+> `[Bash]` Check FMIDE and isolette project file shapes
+
+> `[Bash]` Inventory Sireum bin for FMIDE/OSATE installers
+
+> `[Bash]` Install OSATE + Sireum plugins via phantom (large download)
+
+While that downloads, stage the temp-control model with the project files phantom/OSATE needs:
+
+> `[Bash]` Stage temp-control AADL with OSATE project files
+
+> `[Bash]` Check OSATE install progress
+
+> `[ToolSearch]`
+
+> `[Read]` /private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/balpj5opx.output
+
+Install output still buffering (download phase). Let me pre-write the codegen driver so it's ready the moment OSATE lands:
+
+> `[Write]` /private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/scratchpad/run_tc_microkit.sh
+
+The driver is staged. The OSATE install (`balpj5opx`) is a large one-time download — I'll proceed the moment its completion notification arrives: run phantom → AIR → Microkit codegen on the staged temp-control model, and if the report emerges, feed it straight through the new `derive_targets_from_report` backend into provisioning.
+
+## User
+
+continue once the OSATE install finishes
+
+## Assistant
+
+> `[Bash]` Check OSATE install progress
+
+The install is still running (3 active phantom/OSATE processes; the download stages elsewhere before landing in `~/.sireum`). I'll continue automatically when the background task's completion notification arrives — next steps are already staged: phantom → AIR → Microkit/Rust codegen on the scratchpad copy of temp-control, then the attestation report through `derive_targets_from_report` into blackboard provisioning.
+
+## User
+
+check the install status
+
+## Assistant
+
+> `[Bash]` Detailed install status: output size, processes, open download files
+
+> `[Bash]` Check what the phantom process is downloading/writing
+
+> `[Bash]` Identify java process activity and network connections
+
+> `[Bash]` Inspect the phantom java process connections and files
+
+> `[Bash]` Check download size and growth
+
+Status: **alive and healthy, but the download is slow.** Full picture:
+
+- The phantom process (34 minutes elapsed) is actively downloading **OSATE 2.17.0** from CMU SEI's build server (`osate-build.sei.cmu.edu`, connection ESTABLISHED) into `~/Downloads/sireum/osate2-2.17.0-vfinal-macosx.cocoa.aarch64.tar.gz`.
+- **256 MB received so far** at roughly 140 KB/s — the SEI server is the bottleneck. OSATE archives run ~400–500 MB, so we're likely past halfway on the download, with extraction plus the Sireum-plugin feature installation still to follow (that second phase pulls Sireum's OSATE plugins and takes additional minutes).
+- The 0-byte log file is an artifact of my own invocation (piped through `tail`, which buffers until exit) — the `lsof` evidence above is the real progress signal.
+
+Nothing is stuck and nothing needs intervention. The background task will fire its completion notification when phantom exits, and I'll immediately run the staged pipeline: phantom AIR generation on the scratchpad temp-control model → Microkit/Rust codegen with `--workspace-root-dir` → check for `aadl_attestation_report.json` → feed it through `derive_targets_from_report` into provisioning.
+
+## User
+
+<task-notification>
+<task-id>balpj5opx</task-id>
+<tool-use-id>toolu_01QNWNMV3ifasjY8D5Dcju7s</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/balpj5opx.output</output-file>
+<status>completed</status>
+<summary>Background command "Install OSATE + Sireum plugins via phantom (large download)" completed (exit code 0)</summary>
+</task-notification>
+
+## Assistant
+
+OSATE install completed (exit 0). Verifying and running the staged pipeline:
+
+> `[Bash]` Check install result and OSATE location
+
+> `[Bash]` Run temp-control AADL to Microkit/Rust codegen pipeline
+
+The pipeline is running (task `bkb3m06y1`): phantom will drive headless OSATE over the staged temp-control AADL to produce AIR, then `hamr codegen -p Microkit --workspace-root-dir ...` generates the Rust/Verus project — and, per the plugin conditions we verified, should emit `attestation/aadl_attestation_report.json` alongside. When the completion notification lands I'll check for the report, run it through `derive_targets_from_report`, and wire up provisioning against the generated Rust tree.
+
+## User
+
+<task-notification>
+<task-id>bkb3m06y1</task-id>
+<tool-use-id>toolu_013kKAFa3s3wk8brFpuTbkBM</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bkb3m06y1.output</output-file>
+<status>failed</status>
+<summary>Background command "Run temp-control AADL to Microkit/Rust codegen pipeline" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Read pipeline failure output
+
+> `[Bash]` Find the actual error in pipeline output
+
+> `[Bash]` Check Sireum-dev for the missing AIR class and repo state
+
+> `[Bash]` Sireum-dev commit date and remote
+
+Here's the blocker, decoded — and per your standing preference I'm surfacing it rather than working around it, because every fix touches your dev toolchain.
+
+## What happened
+
+Phantom launched OSATE fine, but AIR generation died on:
+
+```
+NoClassDefFoundError: org.sireum.hamr.ir.GclSchemaElement
+  ... cannot be found by org.sireum.aadl.osate.gumbo2air_1.2026.6240925...
+```
+
+This is a **version skew between the just-installed OSATE plugins and your Sireum checkout**:
+
+- `phantom -u` installed the *latest* GUMBO/AIR plugins from the Sireum update sites (build `2026.624...`, June 24).
+- The plugins resolve Sireum classes from `-Dorg.sireum.home=/Users/adampetz/Sireum-dev` — your kekinian checkout, which sits at `4c90597 "update hamr codegen"` from **April 8, 2026** (clean tree).
+- `GclSchemaElement` was added to the AIR schema somewhere in those 2.5 months: it exists in neither your `Sireum-dev` sources nor `bin/sireum.jar`. June plugins, April runtime → class not found.
+
+## The options (all touch your environment, so your call)
+
+**A. Update Sireum-dev** — `git pull` + rebuild (`bin/build.cmd`). Pros: everything current, including a possibly-improved `AttestationReporterPlugin` (our source reading was on the April checkout). Cons: this is your daily toolchain — the `sireum` wrapper feeds the CVM validation tier, Logika, and your other HAMR/CVM work; a full kekinian rebuild is long (30+ min), and a toolchain bump could shift `gumbo_validation` behavior/timing.
+
+**B. Parallel fresh Sireum install** (recommended) — install the current kekinian *release* to a separate location (e.g. `~/Applications/Sireum`), then run phantom with `--sireum-home` pointed there and use *that* sireum for the Microkit codegen step too (AIR schema and codegen stay version-matched). Pros: zero risk to `Sireum-dev` and everything built on it; the CVM/ASP attestation stack is unaffected either way. Cons: another ~1 GB download and a second Sireum to keep track of.
+
+**C. Pin older OSATE plugins** matching the April checkout via `phantom --features` version selection. Brittle, poorly documented, and leaves you on old plugins — not recommended.
+
+One more consideration for A-vs-B: your ultimate target is the Microkit/Rust/Verus pipeline, which is under *active* development in HAMR — staying near HEAD (option A) may be where you end up eventually regardless; B gets today's experiment done without disturbing anything.
+
+Which way do you want to go?
+
+## User
+
+Option B, keep Sireum-dev untouched, can we do this in the background so I can keep working here?
+
+## Assistant
+
+Launching Option B fully in the background — one script that installs a standalone current Sireum release (clone + prebuilt-binary init, no build) to `~/Applications/Sireum`, re-points the OSATE plugins' Sireum home at it (leaving `Sireum-dev` and its baked-in reference the only thing changed *inside* `~/.sireum`, which we own), then reruns the whole temp-control pipeline:
+
+> `[Write]` /private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/scratchpad/install_and_run_microkit.sh
+
+> `[Bash]` Install standalone Sireum and run Microkit pipeline (background)
+
+Running in the background as task `b7n80fkfj` — five stages: standalone Sireum install (clone + prebuilt binaries, the long pole at ~1 GB of downloads), re-pointing the OSATE plugins' Sireum home via `phantom -u --sireum-home`, then phantom → AIR → Microkit/Rust codegen on the staged model. `Sireum-dev` is not touched at any point.
+
+I'll pick it up automatically when the completion notification arrives — expected outcome is `$STAGE/hamr/microkit/attestation/aadl_attestation_report.json` plus the generated Rust tree, which then flows into `derive_targets_from_report` → protocol dirs → blackboard provisioning.
+
+Meanwhile I'm free — feel free to keep working on anything else here.
+
+## User
+
+compare the attestation report to currently provisioned files in our temp control example
+
+## Assistant
+
+The temp-control report is being generated by the background pipeline — let me check whether it's arrived yet:
+
+> `[Bash]` Check pipeline progress and report existence
+
+The pipeline is still in stage 1 (standalone Sireum: `sireum.jar` done, JDK 25 at ~40%, more components queued) — so the temp-control report doesn't exist yet. I'll do the real slice-by-slice diff the moment it lands. What I can give you now is the comparison *structure*: our currently provisioned inventory on one side, and — from the plugin semantics and the isolette exemplar — exactly what the report will put on the other side.
+
+## Currently provisioned (JVM/Slang pipeline, our fixtures)
+
+| protocol | targets | files |
+|---|---|---|
+| `gumbo_l1a` | 4 whole-file hashes | 2 AADL models + 2 **GumboX `.scala` oracles** |
+| `gumbo_l1b` | 6 marker blocks | 2 **Slang component files** (`BEGIN/END` blocks) |
+| `gumbo_l2` | 22 ranges (37 post-promotion scan) | 9–10 AADL clause ranges + GumboX `.scala` predicate ranges |
+| `gumbo_validation` | 5 commands | Sireum tipe/logika/test over the **Slang project** |
+
+## What the microkit report will contain (predicted from source + isolette)
+
+- **Model slices** — AADL GUMBO contract positions in `TempControlSystem.aadl` / `TempSensor.aadl`.
+- **Verus slices** — positions of the generated Verus contract realizations in `.rs` files under the new microkit tree.
+- **Rust slices** — a small number of generated Rust regions (isolette had 5).
+- File universe for the hash tier: the AADL models + the generated `.rs` files.
+
+## The expected diff, category by category
+
+1. **AADL model targets: the shared root — should agree almost exactly.** Same files, same GUMBO contracts. The interesting check when the report arrives: do the report's Model-slice line ranges match our provisioned/scanned clause ranges? (The reporter uses parser positions — `beginLine/endLine` from the GUMBO AST — while our scan uses clause-keyword-to-semicolon; the demo edit is on the staged copy, which is identical to live, so ranges are directly comparable.) Where ranges coincide, the **golden content is byte-identical by construction** — this is the one place the two pipelines' provisioned baselines literally overlap.
+2. **GumboX `.scala` targets: no counterpart — replaced wholesale.** The report will never mention our oracle files; their role (generated contract realizations) is taken by the **Verus slices in `.rs`**. Same contracts, different generated artifact. Our whole-file-immutable repair class transfers cleanly (Verus regions are generated content).
+3. **Component marker blocks (`gumbo_l1b`): no direct analog.** The report expresses generated-code regions as *slices*, not `BEGIN/END` markers — so the l1b mechanism (marker-range measurement, block-splice repair) doesn't port; its role folds into the Rust slices. Whether the rust component files have a "safe to edit" developer region at all is one of the things the generated tree will tell us.
+4. **`gumbo_validation`: outside the report entirely.** Its microkit analog would be Verus verification / a Rust build check — a future semantic tier, not something the report provides.
+5. **Silent-coverage check to run on arrival**: which temp-control components appear in the report at all (the "rusty + gumboy only" rule) — temp-control has four components (tempControl, tempSensor, fan, operatorInterface), and only those with GUMBO subclauses will be covered; `fan` and `operatorInterface` have little or no GUMBO, so expect exactly the same two-component coverage our JVM protocols have — worth confirming rather than assuming.
+
+When the notification fires I'll produce the concrete version of this table: report slices vs. provisioned ranges file-by-file, range agreement on the AADL side, the Verus/Rust file inventory, and the component-coverage audit.
+
+## User
+
+<task-notification>
+<task-id>b7n80fkfj</task-id>
+<tool-use-id>toolu_01PDFGKQXMXYjPnth9Bbtq4e</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/b7n80fkfj.output</output-file>
+<status>failed</status>
+<summary>Background command "Install standalone Sireum and run Microkit pipeline (background)" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose which pipeline stage failed
+
+> `[Bash]` Confirm Sireum cache env var
+
+> `[Bash]` Relaunch pipeline stages 2-5 with workspace Sireum cache
+
+Relaunched as task `bfqr3niqz` with `SIREUM_CACHE` in `~/Claude_workspace/.sireum_cache` (unrestricted for child processes, matching your established TCC workaround pattern). The standalone Sireum install from the previous run is intact, so this picks up at stage 2: re-point OSATE plugins → phantom AIR → Microkit codegen → report check.
+
+When it completes I'll run the comparison you asked for — report slices vs. currently provisioned targets, the AADL range-agreement check, the Verus/Rust inventory, and the component-coverage audit.
+
+## User
+
+Does the attestation report mechanism work for ANY HAMR pipeline from AADL to microkit/rust?
+
+## Assistant
+
+One more source check before answering definitively — the biggest "ANY" qualifier is whether microkit codegen makes components Rust by default or per-config (C components are invisible to the reporter):
+
+> `[Bash]` Find rust-vs-C component selection logic in microkit codegen
+
+> `[Bash]` Locate isRusty definition
+
+Confirmed the decisive fact. Answer: **no — "ANY" fails on one condition most models won't meet by default, plus three we already knew.** The new one:
+
+## Rust is per-thread opt-in — and the default is C
+
+`MicrokitUtil.isRusty` (just read from source): a thread is Rust-generated **only if** its AADL declares `HAMR::Implementation_Language => Rust` or `HAMR::Microkit_Language => Rust`; anything else → `F` → C. Combined with the reporter's "rusty + gumboy components only" rule, this means:
+
+> A perfectly valid AADL→Microkit codegen run on a model *without* Rust annotations produces **C components and therefore an empty attestation report** — no error, no warning. "The microkit pipeline" is not enough; the *model itself* must opt each thread into Rust.
+
+So the complete condition set for the report to exist *and* cover a component:
+
+| # | condition | failure mode |
+|---|---|---|
+| 1 | platform = Microkit | (definitional for this pipeline) |
+| 2 | `--workspace-root-dir` passed | **silent skip** of the entire report |
+| 3 | thread has `HAMR::…Language => Rust` property | **silently absent** from report (C component) |
+| 4 | thread has a GUMBO subclause | silently absent (nothing to attest — defensible) |
+| 5 | every walked GUMBO construct has a Verus realization | **codegen halts** — ties reports to the GUMBO-feature coverage of the Rust/Verus backend, which is younger than the Slang one |
+| 6 | codegen succeeds overall (types, model features) | ordinary failure |
+
+Rows 2 and 3 are the dangerous ones — both are *silent*, and row 3 means the answer to your question is really: **the mechanism works for any AADL→Microkit pipeline whose model is annotated for Rust and contracted with GUMBO, and only over exactly that subset of components.** A pybb readiness check comparing report coverage against the model's thread list remains the right guard.
+
+## Immediate consequence for our running experiment
+
+Temp-control's AADL is the *JVM* tutorial — it certainly has no `HAMR::Microkit_Language` properties. So the pipeline currently running in the background, even if codegen succeeds, will most likely generate **C** components and an empty-or-absent report — which is now an *expected and diagnostic* outcome, not a failure: it will demonstrate row 3 empirically. The fix is a small, sanctioned model edit on the staged copy: add `HAMR::Microkit_Language => Rust;` to the `tempControl` and `tempSensor` thread declarations (the two GUMBO-contracted components), plus the `HAMR` property-set import if absent — then rerun codegen. Pleasingly, that edit is itself an instance of our promotion story: a model change flowing through the sanctioned pipeline.
+
+I'll let the current run finish as the control case, then apply the Rust annotations to the staged model and rerun — unless you'd rather I kill it and go straight to the annotated version.
+
+## User
+
+<task-notification>
+<task-id>bfqr3niqz</task-id>
+<tool-use-id>toolu_01Wqax7UF9LuFGLQJFtPyS9G</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bfqr3niqz.output</output-file>
+<status>failed</status>
+<summary>Background command "Relaunch pipeline stages 2-5 with workspace Sireum cache" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose stage 2 relaunch failure
+
+> `[Bash]` Check stage 2 output and osate.ini sireum.home setting
+
+> `[Bash]` Fix osate.ini sireum home, rerun AIR generation and codegen
+
+`osate.ini` now points at `~/Applications/Sireum` (verified before launch), and stages 3–5 are rerunning as task `bq9t52e45`. This run is the **control case** — the un-annotated model should produce C components and demonstrate the empty/absent-report behavior from condition 3. When it lands, I'll apply the `HAMR::Microkit_Language => Rust` annotations to the staged model's two contracted threads and rerun for the real result, then do the report-vs-provisioned comparison.
+
+## User
+
+<task-notification>
+<task-id>bq9t52e45</task-id>
+<tool-use-id>toolu_01NDkfE1QE31WVv4bayMuGEw</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bq9t52e45.output</output-file>
+<status>failed</status>
+<summary>Background command "Fix osate.ini sireum home, rerun AIR generation and codegen" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose stage 3 rerun failure
+
+> `[Bash]` Find isolette's processor binding pattern
+
+> `[Bash]` Isolette processor declarations and temp-control system impl
+
+The pattern's clear. Checking how isolette applies the Rust property and whether temp-control imports the HAMR property set:
+
+> `[Bash]` Isolette Rust property usage and temp-control package structure
+
+> `[Bash]` Property placement pattern and temp-control thread declarations
+
+Now applying the microkit-porting edits to the staged model. Viewing the precise edit sites:
+
+> `[Bash]` View exact edit locations in staged AADL
+
+> `[Bash]` TempSensor properties block and package with-clauses
+
+> `[Bash]` Apply microkit-port edits: Rust properties, processor, binding
+
+> `[Bash]` Apply microkit-port edits and rerun pipeline (background)
+
+The microkit-port edits are applied to the staged model and the pipeline is rerunning as task `blmt21td2`. What changed in the staged AADL (a textbook sanctioned model change, incidentally):
+
+- `HAMR::Microkit_Language => Rust;` on all four thread types (TempControl, OperatorInterface, TempSensor, Fan) — satisfying the "rusty" condition for the reporter;
+- a `TC_Processor` (Frame_Period 1000ms / Clock_Period 1ms, isolette's pattern) as a system subcomponent with `Actual_Processor_Binding` to `tcproc` — satisfying the bound-processor requirement that killed the control run;
+- `with HAMR;` imports in the three packages.
+
+If this run gets through codegen, we should finally see the Rust/Verus tree plus `attestation/aadl_attestation_report.json` — and then I'll run the report-vs-provisioned comparison. One thing I'm watching for: `Fan` is a *Sporadic* thread, and Microkit codegen may object to non-periodic dispatch — if so, that's the next model adaptation (or we leave Fan as C, since it has no GUMBO and would never appear in the report anyway).
+
+## User
+
+<task-notification>
+<task-id>blmt21td2</task-id>
+<tool-use-id>toolu_01KsisoqCxdf9o3LjaBtbZ7s</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/blmt21td2.output</output-file>
+<status>failed</status>
+<summary>Background command "Apply microkit-port edits and rerun pipeline (background)" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose annotated-model pipeline failure
+
+> `[Bash]` View process structure, connections, and isolette domain pattern
+
+> `[Bash]` Port categories of all threads and isolette domain assignments
+
+> `[Bash]` TempControl and OperatorInterface port declarations
+
+> `[Bash]` Find the domain property codegen reads
+
+> `[Bash]` Read getDomain property resolution
+
+> `[Bash]` Apply process-per-thread restructure and rerun pipeline
+
+Model surgery applied and the pipeline is rerunning (task `bgvi2pdl1`). The staged model is now a genuine **temp-control-microkit variant**: four single-thread processes with pass-through ports (`CASE_Scheduling::Domain` 2–5), inter-process connections at system level, uniform data ports (Fan converted from event-data/Sporadic to data/Periodic — no GUMBO on Fan, so nothing attestation-relevant changes), processor binding for all four processes, and Rust annotations throughout.
+
+Worth noting for the eventual writeup: "same AADL model" turned out to mean *same contracts and components* — the GUMBO contracts are untouched — but Microkit's seL4 semantics forced structural changes (process-per-thread, domains, port-category uniformity) exactly as isolette's microkit variant differs from a naive model. When this run lands I'll check for the report and run the comparison.
+
+## User
+
+<task-notification>
+<task-id>bgvi2pdl1</task-id>
+<tool-use-id>toolu_01GZMAifPaWQHAzB6hngMG6p</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bgvi2pdl1.output</output-file>
+<status>failed</status>
+<summary>Background command "Apply process-per-thread restructure and rerun pipeline" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose restructured-model pipeline failure
+
+> `[Bash]` Find temperature type definitions and float usage
+
+> `[Bash]` Convert model to integer temperatures, rerun pipeline
+
+Integer conversion applied (all four packages touched, no leftover `f32` literals) and the pipeline is rerunning as `bufdf8fiu`. This is the third and deepest layer of the porting story: Rust annotations + processor (platform config) → process-per-thread + port uniformity (seL4 structure) → **integer contracts (Verus's no-floats constraint)**. The GUMBO contract *logic* is preserved exactly — same invariants, same bounds — just over `Integer_32` degrees, matching how isolette was designed integer-first for this pipeline.
+
+If codegen clears this hurdle, we should finally have the Rust/Verus tree and the attestation report, and I'll run the comparison against our provisioned JVM targets.
+
+## User
+
+<task-notification>
+<task-id>bufdf8fiu</task-id>
+<tool-use-id>toolu_01QPRuNkLYpK6SAsHxyCuFcz</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bufdf8fiu.output</output-file>
+<status>failed</status>
+<summary>Background command "Convert model to integer temperatures, rerun pipeline" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose integer-model pipeline failure
+
+One missed literal — the GUMBO `def` body uses `-459.67f` (f-suffix form), distinct from the agree copy I converted. Fixing:
+
+> `[Bash]` Fix remaining float literal in defs.aadl GUMBO def
+
+The literal is `f32"-459.67"` — my integral-only regex deliberately skipped it. Converting and rerunning properly:
+
+> `[Bash]` Convert final float literal in GUMBO def
+
+> `[Bash]` Rerun pipeline with fully integer model
+
+Last float literal converted — zero `f32` remaining anywhere in the staged model — and the pipeline is rerunning as `btt66ap6t`. Will pick it up on notification.
+
+## User
+
+<task-notification>
+<task-id>btt66ap6t</task-id>
+<tool-use-id>toolu_01Lk3qKbRHH1eyufEFb2SU5x</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/btt66ap6t.output</output-file>
+<status>failed</status>
+<summary>Background command "Rerun pipeline with fully integer model" failed with exit code 1</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Diagnose latest pipeline failure
+
+Now an integer-typing mismatch: bare `-460` types as `Z` (unbounded) vs `S32`. Check how isolette handles integer contract literals:
+
+> `[Bash]` Check isolette's integer type choice
+
+> `[Bash]` Locate all bare integer GUMBO literals
+
+Six GUMBO literals to convert (the `.0` ones are in agree annexes, which codegen ignores):
+
+> `[Bash]` Convert GUMBO literals to s32 syntax, rerun pipeline
+
+All six GUMBO literals converted to isolette-style `s32"N"` syntax and the pipeline is rerunning as `bgvmv6g3j`. The typed-literal requirement is the last of the Verus-integer conversion; if the GUMBO→Verus translator accepts the contracts now, codegen should complete through to the Rust tree and the attestation report.
+
+## User
+
+<task-notification>
+<task-id>bgvmv6g3j</task-id>
+<tool-use-id>toolu_01KLHDSwVqMVNU5v36CmM1o8</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/bgvmv6g3j.output</output-file>
+<status>completed</status>
+<summary>Background command "Convert GUMBO literals to s32 syntax, rerun pipeline" completed (exit code 0)</summary>
+</task-notification>
+
+## Assistant
+
+Exit 0 — checking the results:
+
+> `[Bash]` Check pipeline final results
+
+> `[Bash]` Inventory the temp-control attestation report
+
+> `[Bash]` Provision and attest the Rust/Verus targets via blackboard + real CVM
+
+The complete arc works — provisioned and attested clean in one cycle. One last proof point: tamper a Verus contract line in the generated Rust and confirm detection:
+
+> `[Bash]` Tamper a Verus slice, verify detection, restore
+
+> `[Edit]` /Users/adampetz/.claude/projects/-Users-adampetz-Claude-workspace/memory/project_pybb_attestation.md
+
+# The full arc works: temp-control on Microkit/Rust, provisioned and attested via the blackboard
+
+**Pipeline proven end to end**: ported AADL model → phantom/OSATE → AIR → Microkit codegen → **attestation report + Rust crates** → `derive_targets_from_report` → protocol dirs → golden capture → **real-CVM blackboard provisioning (4 + 14 goldens) → attestation clean in 1 cycle** → and a tampered Verus contract slice in the generated `tcproc_tempControl_app.rs` is **detected by the hash tier and attributed to the exact slice** by the range tier. No changes to pybb were needed — the report backend, provisioning partition, and attestation machinery consumed the Rust artifacts as-is.
+
+## The comparison you asked for: report vs. currently provisioned
+
+| | JVM (provisioned fixtures) | Microkit (report-derived) |
+|---|---|---|
+| components covered | tempControl, tempSensor | **identical** — the "rusty+gumboy" rule lands on the same two |
+| hash tier | 4 files: 2 AADL + 2 `GumboX.scala` | 4 files: 2 AADL + 2 generated `app.rs` |
+| range tier | 22 slices (37 post-scan) | 14 slices: 7 Model (.aadl) + 6 Verus + 1 Rust (.rs) |
+| contract blocks (l1b) | 6 marker blocks in editable files | **no analog** — generated regions are report slices |
+| semantic tier | tipe/logika/GumboX tests | not in report (future: Verus verification/cargo) |
+
+**The significant discovery**: the report's model-side coverage is a *subset* of ours. It contains the initialize/compute entry-point contracts (`initLatestFanCmd`, `initFanCmd`, the three `alt*` guarantees, `currentTempInitialVal`) — but **not the `SetPoint_Data_Invariant`** (our demo's star target) and not the standalone integration range constraints. The reporter walks entry-point contracts and what they reference; data invariants don't appear. Also notable: the Verus slices point into `app.rs` (contracts embedded in component code), while the generated `*_GUMBOX.rs` oracle files exist but aren't in the report at all. **Conclusion: the production targetmap should be the *union* of report-derived and syntax-scan targets** — report for authoritative generated-artifact mapping, scan for complete model coverage — precisely the hybrid backend design we parameterized for.
+
+## The porting ledger ("same AADL model" in practice)
+
+Same contracts, same components — but five forced adaptations, each a general lesson for your microkit direction: Rust is **per-thread opt-in** (`HAMR::Microkit_Language => Rust`; the default silently yields C and an empty report); a bound processor with frame/clock periods; **process-per-thread** with `CASE_Scheduling::Domain` per process; uniform port categories (Fan's event-data/Sporadic → data/Periodic); and — the deep one — **Verus has no floating point**, so all contracts went `Integer_32` with `s32"N"` literals. That last constraint is surely why isolette is integer-first, and it's a real design input for any model headed to this pipeline.
+
+Environment notes on record: standalone Sireum at `~/Applications/Sireum` (Sireum-dev untouched), OSATE 2.17 under `~/.sireum` with its ini hand-pointed at the new Sireum, `SIREUM_CACHE` relocated to dodge TCC. Everything from today's experiment lives in the session scratchpad; nothing landed in the pybb repo yet — natural next steps when you want them: productize the `tcmk` protocol generation as an example/test, the hybrid targetmap backend, and the ported model as a `targets/temp-control-microkit` vendored variant.
+
+## User
+
+is microkit being measured in the new rust pipeline?
+
+## Assistant
+
+Sharp question — let me answer from the actual generated tree rather than assumption:
+
+> `[Bash]` Inventory the generated microkit tree beyond the crates
+
+> `[Bash]` Check whether the codegen report enumerates all generated artifacts
+
+**No — and the unmeasured remainder is the most security-critical part of the tree.** Here's the precise ledger:
+
+## What the new pipeline measures vs. generates
+
+**Measured** (report-derived targets): 2 AADL models + 2 contract-bearing Rust files (`tcproc_tempControl_app.rs`, `tsproc_tempSensor_app.rs`) hashed whole, plus 14 contract slices. That's it.
+
+**Generated but unmeasured** — the entire Microkit platform layer:
+
+| artifact | role | why it matters |
+|---|---|---|
+| **`microkit.system`** | the seL4 system description: protection domains, memory regions, channels | **This is the isolation architecture.** Add a channel or map shared memory between PDs here and every Verus-verified contract is undermined without touching a single measured file |
+| `microkit.schedule.xml` | the domain schedule | timing/partitioning integrity |
+| `types/` (`sb_queue_*.c/h`) | generated C shared-memory queues | the inter-PD communication substrate — the code that *carries* every value the contracts constrain |
+| `components/`, `util/`, Makefiles | C harness/pacer, build orchestration | execution scaffolding + supply chain |
+| `fanproc_fan`, `oiproc_operatorInterface`, `data`, `defs` crates | Rust code of the *non-contracted* components and shared types | rusty but not gumboy → wholly absent from the report, including `data`/`defs` which define the very types the contracts range over |
+
+## Why this happened, structurally
+
+The attestation report's scope is **contracts** — "rusty, gumboy components" and their realizations — by explicit design. Our report-driven targets faithfully inherit that scope. So the measurement boundary silently became "what the reporter chose to talk about," which is the *third* instance of the same pattern this project keeps surfacing: l2-only component blocks (invisible to the l1 screen), data invariants (absent from the report), and now the platform layer. Each time, the lesson is the same — **a target map's silence is not evidence of coverage**, and something must audit the map against the artifact universe.
+
+(I also checked whether `codegen_report_aadl.json` could serve as the authoritative all-generated-files list — it doesn't enumerate file URIs in a usable way, so a platform tier's file list would come from a filesystem manifest of the codegen output tree, which is deterministic per codegen run.)
+
+## What closing it would look like
+
+A **`tcmk_platform` tier** in the established idiom: whole-file hashes of every generated artifact *not* already covered — `microkit.system`, the schedule, `types/` C, harness components, Makefiles, and the non-contracted crates. Class-wise it's all generated content, so whole-file measurement and whole-file restore are both correct (our l1a repair class), and the file list regenerates at promotion time from the codegen output manifest — slotting into the promotion pipeline exactly where `derive_targets` runs today. Beyond statics, the further horizon is build/boot: the compiled PD ELFs, loader image, and the seL4 kernel itself — that's measured-boot / binary-attestation territory (where the CVM story ultimately wants to go), not a gap in the static baseline.
+
+Want me to add the platform tier to the scratchpad experiment (a `tcmk_platform` protocol derived from the codegen tree manifest, provisioned and attested alongside the other two), or park this as a documented finding for the productization pass?
+
+## User
+
+Don't worry about mikrokit for now.  Is the temp-control example working from AADL to Rust on the blackboard workflow?
+
+## Assistant
+
+**Partially — the measurement half is proven on the blackboard; the workflow half isn't wired up yet.** Precise status:
+
+## What's working (demonstrated live today, real CVM)
+
+| stage | status |
+|---|---|
+| AADL → AIR → Microkit/Rust codegen + attestation report | ✅ works (ported model, real OSATE/phantom + `sireum hamr codegen`) |
+| report → target maps (`derive_targets_from_report`) | ✅ works, committed to pybb, cross-validated |
+| protocol dirs for the Rust targets (`tcmk_l1a`, `tcmk_l2`) | ✅ built (from gumbo session/manifest templates) |
+| **blackboard provisioning** — provision partition, golden capture, real CVM slice extraction | ✅ 4 + 14 goldens, both requests in good standing |
+| **blackboard attestation** of the Rust/AADL artifacts | ✅ both entries intact, 1 cycle |
+| tamper detection + attribution on a Verus slice | ✅ hash tier flags the file, range tier names the slice |
+
+## What's *not* yet on the blackboard for the Rust path
+
+- **Codegen ran from my shell scripts, not the promotion predicate.** The promotion pipeline (`request_promotion` → `codegen_fn` → target regen → provision) exists and is tested for the JVM example; the microkit run never went through it. Wiring is mechanical — `codegen_fn` becomes the verified phantom+codegen invocation — but it hasn't been done.
+- **No readiness entry, no starter KS, no repair rungs** in the microkit episodes — I wrote attestation entries directly. All of that machinery is generic and should just work (whole-file restore is the right repair class for generated Rust), but "should" isn't "demonstrated."
+- **Nothing is productized.** The ported model, protocol dirs, golden set, and generated tree all live in this session's scratchpad with ephemeral absolute paths. There's no `examples/` script, no test, no committed artifact — if the scratchpad is cleaned, the experiment is reproducible only from the transcript.
+
+## What "yes, fully" would take
+
+1. Vendor the ported model into the repo (`targets/temp-control-microkit/` — it's a legitimate sibling of the JVM variant, and the porting ledger becomes its README).
+2. A `tcmk` example mirroring `gumbo_attestation.py`: readiness → starter → both entries → repair rungs, plus the protocol-dir generation from the report.
+3. Wire promotion's `codegen_fn` to the real pipeline command (gated on `~/Applications/Sireum` + OSATE presence, like the CVM test gates).
+4. Tests: unit (report backend already covered) + integration gated on the toolchain, so CI-without-OSATE still passes.
+
+That's roughly one focused session. Want me to start the productization, or leave today's result as a documented scratchpad proof and stop here?
+
+## User
+
+Before we do this, let's keep working on the JVM example.  I'd like to have a HAMR run be part of provisioning on the blackboard.  What's the status there?
+
+## Assistant
+
+Good pivot — and the status is favorable: **the blackboard slot for a HAMR run already exists and is tested; what's missing is the real invocation filling it, which today's toolchain work just unblocked.** Precise picture:
+
+## What's already in place (committed, tested)
+
+- **The codegen stage is step 1 of the promotion predicate**, which lives *in the provision partition* — so a HAMR run is already "part of provisioning on the blackboard" architecturally: `promote:gumbo` evaluates before the `provision:*` requests (write-order guarantee), and its pipeline is `codegen_fn()` → opt-in validation gate → target-map regeneration (syntax scan) → golden capture → then provisioning refills goldens. Failure at any stage escalates and gold never moves.
+- The attestation manager drives it (`check` / `promote` / `watch`), with `--codegen-cmd` plumbing an arbitrary shell command into `codegen_fn` (failures propagate correctly — that path is real).
+- End-to-end verified with the real CVM — but with the **codegen stage as a labeled no-op**, which was honest at the time for two reasons: OSATE wasn't installed, and the demo edit touched no watched generated artifact.
+
+## What changed today
+
+The microkit expedition built exactly the missing infrastructure: **working OSATE 2.17 + version-matched standalone Sireum + a proven phantom→AIR→codegen invocation pattern**. The JVM variant is the same pipeline with `-p JVM --slang-output-dir slang -n tc` — so a *real* HAMR run in the promotion predicate is now just wiring plus verification.
+
+## Three things to handle before wiring it (the honest gaps)
+
+1. **Generation drift**: the checked-in `slang/` was generated by an older HAMR (`versions.properties` pins April-era artifacts); the current kekinian will regenerate GumboX oracles with diffs — likely including **line shifts**, which is precisely what target-map regeneration exists to absorb. Expected, but should be observed on a staging copy first, not discovered on the live tree.
+2. **Component-block propagation is unverified**: HAMR *overwrites* GumboX but explicitly does **not** overwrite the "safe to edit" component files — so whether a model change updates the `BEGIN/END` contract blocks in place, or leaves them stale, is an empirical question with direct consequences for `gumbo_l1b`'s baseline. Needs a staging-copy test.
+3. **Safety net**: `temp-control-jvm` is not git-tracked, and codegen rewrites many files *outside* our watched set (bridges, data types) that `golden/` cannot restore. Before the first live-tree codegen, I'd strongly recommend either `git init` on `temp-control-jvm` (one command, permanent safety) or a staging-first flow where codegen output is inspected before syncing.
+
+## Proposed plan
+
+1. **Staging verification**: run phantom + JVM codegen against a scratch copy of temp-control; diff the regenerated `slang/` against checked-in — answering the drift question and the block-propagation question concretely.
+2. **Wire it**: a `hamr_jvm_codegen()` default for the promotion predicate (phantom → AIR → codegen, using `~/Applications/Sireum`, `SIREUM_CACHE` workaround baked in), env-overridable, gated with a clear error when the toolchain is absent; AM's `--codegen-cmd` remains the override.
+3. **Safety**: `git init` temp-control-jvm (with your OK — it's your tree), or staging-first sync if you prefer.
+4. **Demo + integration test**: a sanctioned contract edit that *does* alter a generated oracle (e.g. change a port-range `assume` that GumboX realizes) → promote with real codegen → oracle actually regenerates → target maps shift and re-derive → provision → verification episode clean. Test gated on toolchain presence so plain `pytest` stays green.
+
+The one decision I need from you is #3 — `git init` on `temp-control-jvm`, or staging-first? Then I'll proceed.
+
+## User
+
+git init temp-control-jvm
+
+## Assistant
+
+> `[Bash]` Initialize git safety net for temp-control-jvm
+
+> `[Bash]` Stage original model, run real JVM codegen, diff vs checked-in
+
+Staging regen is running (task `by68coben`): the *original* JVM model (floats, single process — all fine for the JVM platform) through phantom → AIR → `codegen -p JVM` into a scratch output, then an automatic diff of the regenerated `bridge/` (GumboX oracles) and `component/` files against the checked-in generation. That diff answers both open questions at once — generation drift (does current HAMR produce different oracle text/line positions?) and whether component files with contract blocks are even emitted on regeneration. Results on notification, then the wiring step.
+
+## User
+
+<task-notification>
+<task-id>by68coben</task-id>
+<tool-use-id>toolu_01JoMJhkCRJoCiuXYwGkeAoo</tool-use-id>
+<output-file>/private/tmp/claude-501/-Users-adampetz-Claude-workspace/e6b8cfa3-8349-4e22-8f47-cbd66ed00252/tasks/by68coben.output</output-file>
+<status>completed</status>
+<summary>Background command "Stage original model, run real JVM codegen, diff vs checked-in" completed (exit code 0)</summary>
+</task-notification>
+
+## Assistant
+
+> `[Bash]` Read regen diff results
+
+The diff reveals something bigger than line drift — a decisive finding for the plan:
+
+## Finding: the checked-in generation and current HAMR speak different layouts
+
+Current kekinian codegen produces a **wholesale different file/package naming scheme** than the April-era checked-in tree:
+
+| checked-in (old) | regenerated (current) |
+|---|---|
+| `bridge/tc/TempControlSoftwareSystem/` | `bridge/tc/TempControlSystem/` |
+| `FanPeriodic_p_tcproc_fan_Bridge.scala` | `Fan_i_tcproc_fan_Bridge.scala` |
+| `TempSensorPeriodic_p_tcproc_tempSensor_GumboX.scala` | `TempSensor_i_…` naming family |
+| `component/tc/GUMBO_Definitions/` | `component/tc/defs/` |
+
+So regeneration doesn't *update* the existing artifacts — it produces a **parallel tree with new names**, orphaning every checked-in generated file, every path in our protocol targets, `TEMP_CONTROL_SPEC`, and the golden layout. (It also incidentally confirms the checked-in code predates both a HAMR naming change and possibly a model package rename.)
+
+## What this means for "HAMR run as part of provisioning"
+
+The promotion machinery was *built* for exactly this — target maps and goldens regenerate from content — but there's one step it cannot do mechanically: the old component files contain the tutorial's **developer-authored behavior code** under old names, and fresh codegen emits new-name **skeletons**. A one-time human-ish migration is required: port the four behavior bodies (tempControl, tempSensor, fan, operatorInterface) into the new-layout files. After that migration, the live baseline is current-HAMR, and repeated codegen becomes stable in place — which is the world where "HAMR run inside the promotion predicate" works exactly as designed.
+
+Worth noting: for the *attestation* tiers (l1a/l1b/l2 — text vs. gold), a skeleton-bodied project is already fully sufficient; the behavior port matters only for keeping the `--validate` semantic tier meaningful (Logika/tests on real behavior).
+
+## Options
+
+**A. One-time baseline migration (recommended).** Adopt the regenerated layout as the new live `slang/`: I port the behavior bodies from the old files into the new skeletons (mechanical — same port names, renamed API classes), update `TEMP_CONTROL_SPEC` to the new paths, then run the *entire* re-baseline through the blackboard promotion flow itself — real codegen as `codegen_fn`, target-map regen, golden capture, re-provisioning, verification episode. The git safety net (`7b1e6ff`) makes this fully reversible, and the migration *is* the flagship demo of the machinery. Then wire `hamr_jvm_codegen` as promotion's default and add the gated integration test.
+
+**B. Pin codegen to the April era** to match the checked-in layout — means resurrecting version-matched OSATE plugins for Sireum-dev's vintage, the brittle path we already rejected once.
+
+**C. Parallel fresh example** (new-layout project alongside, old example untouched) — avoids the port but leaves the existing example permanently unable to host real codegen, and splits the story.
+
+Given the safety net is in place and A is reversible, shall I proceed with the migration (Option A)?
+
+## User
+
+Proceed with option A
+
+## Assistant
+
+Starting the migration. Phase 1 — understand the porting surface: regen tree structure and skeleton-vs-behavior comparison:
+
+> `[Bash]` Inspect regenerated tree and skeleton structure
+
+Skeletons carry fresh contract blocks (l1b's basis regenerates ✓) with stub bodies to replace. Checking whether tests were regenerated too, then porting:
+
+> `[Bash]` Check regen test tree and component file sizes
+
+> `[Bash]` Read all four old behavior files
+
+Only tempControl and tempSensor carry real logic; fan/OI are near-stubs. Reading the new skeletons:
+
+> `[Bash]` Read all four new skeleton files
+
+> `[Bash]` Port behavior, swap live slang tree, commit migration
+
+> `[Bash]` Type-check migrated project with both Sireum versions
+
+> `[Bash]` Check new Temperature_i constructor signature
+
+> `[Bash]` Fix Temperature_i constructor call, re-run tipe checks
+
+Both Sireums: "Programs are well-typed!" Committing, then the pybb side — first, what the validation protocol references:
+
+> `[Bash]` Commit fix; dump validation protocol exe_args verbatim
+
+Four strings to update in the validation term. First the spec in `targetmap.py`:
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/pybb/attestation/targetmap.py
+
+> `[Bash]` Re-baseline pybb fixtures and golden on migrated tree, re-provision, verify
+
+Re-baseline complete — 4/6/33 targets provisioned, both entries attest clean. Now the test/example path+count updates:
+
+> `[Bash]` Update hardcoded paths and counts, run unit suite
+
+Expected fallout: `install_targets` correctly deleted the stale l1a prebuilt, and l2 grew to 33. Fixing the copland tests and conftest:
+
+> `[Bash]` Rework prebuilt tests, update counts, rerun unit suite
+
+> `[Bash]` Run CVM integration suite and key demos on migrated baseline
+
+> `[Bash]` Add phantom project files to live tree
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/examples/attestation_manager.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/examples/attestation_manager.py
+
+> `[Edit]` /Users/adampetz/Claude_workspace/pybb/examples/attestation_manager.py
+
+> `[Bash]` Run promotion with real HAMR codegen (moment of truth)
+
+> `[Bash]` Check live tree for codegen diffs after regeneration
+
+> `[Bash]` Inspect the one file codegen changed
+
+> `[Bash]` Fix block separator placement, rerun codegen, check idempotency
+
+> `[Bash]` Check temp-control idempotency after fixed port and codegen rerun
+
+> `[Bash]` Commit fixed layout, prove codegen idempotency
+
+> `[Bash]` Confirm idempotency, re-baseline repo golden/fixtures, full suite
+
+> `[Bash]` Re-baseline repo golden and fixtures, run full suite
+
+> `[Bash]` Commit re-baseline and real codegen wiring, push
+
+> `[Edit]` /Users/adampetz/.claude/projects/-Users-adampetz-Claude-workspace/memory/project_pybb_attestation.md
+
+Done — **a real HAMR run is now part of provisioning on the blackboard**, verified end to end. Committed as `a99654b` on `dev` and pushed. What landed:
+
+## The headline
+
+`attestation_manager.py promote` now executes, inside the promotion predicate in the provision partition: **`sireum hamr phantom` (AADL → AIR via headless OSATE) → `hamr codegen -p JVM`** regenerating the live Slang project → target-map regeneration (4/6/33) → golden capture → CVM provisioning → verification episode attesting clean. `--codegen-cmd` overrides; a missing toolchain raises a clear install pointer and escalates as a config failure.
+
+## What it took (the migration)
+
+- **`temp-control-jvm` is now git-tracked** (your call) and **migrated to the current-HAMR generation layout** — the April-era checked-in code used entirely different generated names. Behavior bodies ported by hand (only tempControl and tempSensor had real logic); both Sireums type-check the result.
+- **pybb re-baselined**: new `TEMP_CONTROL_SPEC` paths, `gumbo_validation` re-pointed at the new GumboX files and test classes, fixtures regenerated (l2 grew to 33 targets from the new oracle span set), golden recaptured, everything re-provisioned through the blackboard. Full suite: **84 passed, 2 skipped**; all demos work on the new baseline.
+
+## Two empirical HAMR facts worth keeping (now in the commit message and memory)
+
+1. **Model changes DO propagate to contract blocks** — codegen re-splices `BEGIN/END` content canonically inside safe-to-edit files on every rerun. This settles the open question from planning in the best possible way for the promotion story.
+2. **The flip side bit me and got fixed properly**: developer additions (like `api` in a `Modifies`) must live *entirely* outside the markers — including separator commas — or the next re-splice breaks the syntax. With the corrected layout, **codegen rerun on an unchanged model is a verified no-op** (git-clean after regeneration), which is exactly the idempotency the promotion predicate depends on.
+
+The JVM example now exercises the complete vision: sanctioned model edit → AM detects contract change → **real codegen** → validation gate (opt-in) → target regeneration → gold moves → provisioning → attestation at the new baseline — with repair, readiness, and the two-entry trees all riding on top.
+
+## User
+
+Run the jvm example end to end and show me output
+
+## Assistant
+
+Running the full JVM story in two acts: the **lifecycle** (sanctioned model edit → detect → real HAMR codegen → re-provision → verify) and the **trust loop** (tamper → attribute → repair → verify). Act one:
+
+> `[Bash]` Run AM check then full promote with sanctioned edit and real codegen
+
+> `[Bash]` Full promote demo output, then check live tree cleanliness
+
+> `[Bash]` Show and revert unwatched drift, then run tamper-repair demo
+
+Both acts complete. Here's the end-to-end story the output tells:
+
+## Act 1 — the lifecycle: sanctioned change → real HAMR → new baseline
+
+1. **`check`** (before any edit): *"No contract changes since last provisioning; codegen not needed"* — the manager re-measures AADL contract content against provisioned goldens and correctly reports quiescence.
+2. **`promote --demo-edit`**: the administrator's sanctioned edit lands (*"SetPoint bound 110.0 → 112.0"*), then the promotion episode runs on the provision partition — and the codegen line is the real thing: headless OSATE parses the model (you can see Eclipse/phantom booting in the raw output), AIR is generated, and **`codegen=ran: sireum hamr phantom + codegen -p JVM (live slang regenerated)`**. Targets regenerate (`4/6/33`), **6 files → golden**, then `provision:gumbo_l1a/l1b/l2` extract 4+6+33 fresh goldens via the CVM — all as ordered entries in the partition.
+3. **Verification episode**: readiness validates all three protocols → the starter writes both trust questions → `gumbo:files` and `gumbo:contracts` attest the live (edited!) tree **intact against the new baseline**, 2 cycles.
+4. Demo cleanup restored the watched files — and the leftover `SetPoint_i.scala` diff (`110.0f → 112.0f`) is a live demonstration of our coverage discussion: codegen propagated the bound into an **unwatched** generated file, invisible to the measured set, caught and reverted by the git safety net.
+
+## Act 2 — the trust loop: tamper → attribute → repair → verify
+
+The cycle log reads as the architecture diagram animated: readiness passes (C1) → starter writes both entries → **l1a fails** on the tampered AADL (C2) → dispatch to the fail chain, `gumbo_l2` refines and **fails on `tc_sys_aadl_305_308_targ`** (C3) → hand-off to `repair:whole-file`, which restores 1 file from golden (C4) → chain exhausts, escalate (C5) — with the summary saying precisely the right thing: *"integrity violation … **repaired from golden — verification pending next episode**"*, while `gumbo:contracts` stays honestly intact throughout. **Episode 2** (fresh predicates): everything attests clean in 2 cycles — repair converted to verified trust by fresh evidence, never by fiat.
+
+Final state: both repos clean (`temp-control-jvm` git-restored, pybb untouched by the scratch-mode run). The complete JVM loop — model lifecycle with a real HAMR run in provisioning, plus detection/attribution/repair/verification — is live and reproducible with two commands:
+
+```bash
+python examples/attestation_manager.py promote --demo-edit
+```
+
+```bash
+python examples/gumbo_attestation.py --tamper --repair
+```
+
+## User
+
+run this in claude and show me concrete output
+
+## Assistant
+
+Running both commands now, capturing **complete, unfiltered** output to files you can inspect, with the compact one shown verbatim inline:
+
+> `[Bash]` Run both JVM demos capturing complete unfiltered output
+
+Both exit 0, live tree clean. The logs are compact enough to show **verbatim and complete**:
+
+> `[Bash]` Show complete promote output verbatim
+
+> `[Bash]` Show complete tamper-repair output verbatim
+
+> `[SendUserFile]`
+
+That's the complete, unfiltered output of both runs (58 + 46 lines, also attached as files). What the raw logs show, line by line:
+
+**Run 1 — `promote --demo-edit`** (the 58-line log above): the first ~25 lines are the real toolchain talking — OSATE/Eclipse booting headless, `Sireum Version: 4.20260720` from the standalone install, the AADL model parsed (with its one benign lint warning), AIR written to a temp file, then codegen's `Wrote …` lines regenerating the live Slang project. Then the blackboard takes over: the sanctioned edit applied, the promotion episode showing **`codegen=ran: sireum hamr phantom + codegen -p JVM`**, targets regenerated `{l1a: 4, l1b: 6, l2: 33}`, 6 files → golden, three provisioning requests fulfilled (4/6/33 goldens via the real CVM), and the verification episode attesting the *edited* live tree intact against the new baseline — ending with demo cleanup restoring the original.
+
+**Run 2 — `--tamper --repair`** (the 46-line log): the six-cycle episode — readiness → starter → l1a fails → l2 refines and attributes `tc_sys_aadl_305_308_targ` → whole-file repair restores from golden → escalation reading *"repaired from golden — verification pending next episode"* — followed by episode 2's fresh two-cycle run where both entries come back **intact**, with the full audit trail and trust summaries printed by the blackboard itself.
+
+Both exited 0, and `temp-control-jvm` finished git-clean. Nothing in these logs was synthesized — this is the CVM, OSATE, HAMR, and the blackboard doing the work live on your machine.
+
+## User
+
+commit this and export the session to docs/
+
+## Assistant
+
+> `[Bash]` Check status, add demo run logs to docs
+
+> `[Bash]` Update session exporter header
