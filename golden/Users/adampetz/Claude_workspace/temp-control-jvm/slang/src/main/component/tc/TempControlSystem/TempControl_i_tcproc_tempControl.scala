@@ -1,24 +1,24 @@
 // #Sireum
 
-package tc.TempControlSoftwareSystem
+package tc.TempControlSystem
 
 import org.sireum._
 import tc._
 
-// This file will not be overwritten so is safe to edit
-object TempControlPeriodic_p_tcproc_tempControl {
+// This file will not be overwritten if HAMR codegen is rerun
+object TempControl_i_tcproc_tempControl {
 
   // BEGIN STATE VARS
-  var latestFanCmd: CoolingFan.FanCmd.Type = CoolingFan.FanCmd.Off
+  var latestFanCmd: CoolingFan.FanCmd.Type = CoolingFan.FanCmd.On
   // END STATE VARS
 
-  def initialise(api: TempControlPeriodic_p_Initialization_Api): Unit = {
+  def initialise(api: TempControl_i_Initialization_Api): Unit = {
     Contract(
       Modifies(
+        api,
         // BEGIN INITIALIZES MODIFIES
-        latestFanCmd,
+        latestFanCmd
         // END INITIALIZES MODIFIES
-        api
       ),
       Ensures(
         // BEGIN INITIALIZES ENSURES
@@ -35,13 +35,13 @@ object TempControlPeriodic_p_tcproc_tempControl {
     api.put_fanCmd(CoolingFan.FanCmd.Off)
   }
 
-  def timeTriggered(api: TempControlPeriodic_p_Operational_Api): Unit = {
+  def timeTriggered(api: TempControl_i_Operational_Api): Unit = {
     Contract(
       Modifies(
+        api,
         // BEGIN COMPUTE MODIFIES timeTriggered
-        latestFanCmd,
+        latestFanCmd
         // END COMPUTE MODIFIES timeTriggered
-        api
       ),
       Ensures(
         // BEGIN COMPUTE ENSURES timeTriggered
@@ -58,35 +58,18 @@ object TempControlPeriodic_p_tcproc_tempControl {
           latestFanCmd == CoolingFan.FanCmd.On &
             api.fanCmd == CoolingFan.FanCmd.On,
         // guarantee altCurrentTempInRange
-        //   If current temperature is greater than or equal to the
-        //   current low set point and less than or equal to the current high set point,
+        //   If current temperature is greater than or equal to the 
+        //   current low set point and less than or equal to the current high set point, 
         //   then the current fan state is maintained.
         api.currentTemp.degrees >= api.setPoint.low.degrees &
           api.currentTemp.degrees <= api.setPoint.high.degrees ___>:
           latestFanCmd == In(latestFanCmd) &
-            api.fanCmd == latestFanCmd,
-        // case currentTempLTSetPoint
-        //   If current temperature is less than
-        //   the current low set point, then the fan state shall be Off
-        (api.currentTemp.degrees < api.setPoint.low.degrees) ___>: (latestFanCmd == CoolingFan.FanCmd.Off &
-          api.fanCmd == CoolingFan.FanCmd.Off),
-        // case currentTempGTSetPoint
-        //   If current temperature is greater than
-        //   the current high set point, then the fan state shall be On
-        (api.currentTemp.degrees > api.setPoint.high.degrees) ___>: (latestFanCmd == CoolingFan.FanCmd.On &
-          api.fanCmd == CoolingFan.FanCmd.On),
-        // case currentTempInRange
-        //   If current temperature is greater than or equal to the
-        //   current low set point and less than or equal to the current high set point,
-        //   then the current fan state is maintained.
-        (api.currentTemp.degrees >= api.setPoint.low.degrees &
-          api.currentTemp.degrees <= api.setPoint.high.degrees) ___>: (latestFanCmd == In(latestFanCmd) &
-          api.fanCmd == latestFanCmd)
+            api.fanCmd == latestFanCmd
         // END COMPUTE ENSURES timeTriggered
       )
     )
     val currentTemp: TempSensor.Temperature_i = api.get_currentTemp().get
-    val setPoint: TempControlSoftwareSystem.SetPoint_i = api.get_setPoint().get
+    val setPoint: TempControlSystem.SetPoint_i = api.get_setPoint().get
 
     val newCmd: CoolingFan.FanCmd.Type =
       if (currentTemp.degrees < setPoint.low.degrees) CoolingFan.FanCmd.Off
@@ -97,5 +80,5 @@ object TempControlPeriodic_p_tcproc_tempControl {
     api.put_fanCmd(newCmd)
   }
 
-  def finalise(api: TempControlPeriodic_p_Operational_Api): Unit = { }
+  def finalise(api: TempControl_i_Operational_Api): Unit = { }
 }

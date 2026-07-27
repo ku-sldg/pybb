@@ -1,0 +1,169 @@
+{
+  "readfile_range": {
+    "tc_sys_aadl_140_141_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 140,
+      "end_index": 141
+    },
+    "tc_sys_aadl_145_146_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 145,
+      "end_index": 146
+    },
+    "tc_sys_aadl_148_149_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 148,
+      "end_index": 149
+    },
+    "tc_sys_aadl_154_157_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 154,
+      "end_index": 157
+    },
+    "tc_sys_aadl_159_162_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 159,
+      "end_index": 162
+    },
+    "tc_sys_aadl_164_168_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 164,
+      "end_index": 168
+    },
+    "tc_sys_aadl_305_308_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "start_index": 305,
+      "end_index": 308
+    },
+    "ts_aadl_48_49_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempSensor.aadl",
+      "start_index": 48,
+      "end_index": 49
+    },
+    "ts_aadl_52_53_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempSensor.aadl",
+      "start_index": 52,
+      "end_index": 53
+    },
+    "ts_aadl_113_114_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempSensor.aadl",
+      "start_index": 113,
+      "end_index": 114
+    },
+    "tc_gumbox_14_16_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 14,
+      "end_index": 16
+    },
+    "tc_gumbox_19_20_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 19,
+      "end_index": 20
+    },
+    "tc_gumbox_28_30_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 28,
+      "end_index": 30
+    },
+    "tc_gumbox_38_40_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 38,
+      "end_index": 40
+    },
+    "tc_gumbox_47_52_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 47,
+      "end_index": 52
+    },
+    "tc_gumbox_62_68_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 62,
+      "end_index": 68
+    },
+    "tc_gumbox_74_77_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 74,
+      "end_index": 77
+    },
+    "tc_gumbox_86_94_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 86,
+      "end_index": 94
+    },
+    "tc_gumbox_106_111_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 106,
+      "end_index": 111
+    },
+    "tc_gumbox_123_130_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 123,
+      "end_index": 130
+    },
+    "tc_gumbox_142_149_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 142,
+      "end_index": 149
+    },
+    "tc_gumbox_163_172_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 163,
+      "end_index": 172
+    },
+    "tc_gumbox_182_191_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 182,
+      "end_index": 191
+    },
+    "tc_gumbox_205_215_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 205,
+      "end_index": 215
+    },
+    "tc_gumbox_228_238_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "start_index": 228,
+      "end_index": 238
+    },
+    "ts_gumbox_14_16_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 14,
+      "end_index": 16
+    },
+    "ts_gumbox_19_20_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 19,
+      "end_index": 20
+    },
+    "ts_gumbox_27_29_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 27,
+      "end_index": 29
+    },
+    "ts_gumbox_35_37_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 35,
+      "end_index": 37
+    },
+    "ts_gumbox_43_47_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 43,
+      "end_index": 47
+    },
+    "ts_gumbox_62_64_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 62,
+      "end_index": 64
+    },
+    "ts_gumbox_70_74_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 70,
+      "end_index": 74
+    },
+    "ts_gumbox_87_92_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "start_index": 87,
+      "end_index": 92
+    }
+  }
+}

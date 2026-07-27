@@ -11,10 +11,11 @@ from pybb.attestation.copland import (
 from pybb.attestation.client import ProtocolDir
 
 
-def test_gumbo_l1a_request_round_trip(gumbo_l1a_request):
-    model = ProtocolRunRequest.model_validate(gumbo_l1a_request)
+def test_gumbo_l1a_request_round_trip(gumbo_l1a_dir):
+    request = ProtocolDir.load(str(gumbo_l1a_dir)).build_request()
+    model = ProtocolRunRequest.model_validate(request)
     dumped = json.loads(model.model_dump_json(exclude_none=True))
-    assert dumped == gumbo_l1a_request
+    assert dumped == request
 
 
 def test_iter_aspc_bodies_counts(gumbo_l1a_dir, gumbo_l1b_dir, gumbo_l2_dir):
@@ -23,7 +24,7 @@ def test_iter_aspc_bodies_counts(gumbo_l1a_dir, gumbo_l1b_dir, gumbo_l2_dir):
     l2_term = json.loads((gumbo_l2_dir / "term.json").read_text())
     assert len(list(iter_aspc_bodies(l1a_term))) == 4
     assert len(list(iter_aspc_bodies(l1b_term))) == 6
-    assert len(list(iter_aspc_bodies(l2_term))) == 22
+    assert len(list(iter_aspc_bodies(l2_term))) == 33
 
 
 def test_inject_asp_args_by_targ_id(gumbo_l2_dir):
@@ -61,11 +62,16 @@ def test_protocol_dir_build_request_dynamic(gumbo_l2_dir):
     # a dynamic request must validate against the typed model
     ProtocolRunRequest.model_validate(request)
     bodies = list(iter_aspc_bodies(request["TERM"]))
-    assert len(bodies) == 22
+    assert len(bodies) == 33
     assert all("golden_b64" in b["ASP_ARGS"] for b in bodies)
 
 
-def test_protocol_dir_prebuilt_request_used_verbatim(gumbo_l1a_dir, gumbo_l1a_request):
-    proto = ProtocolDir.load(str(gumbo_l1a_dir))
+def test_protocol_dir_prebuilt_request_used_verbatim(gumbo_l1a_dir, tmp_path):
+    import shutil
+    copy = tmp_path / "p"
+    shutil.copytree(gumbo_l1a_dir, copy)
+    prebuilt = {"TYPE": "REQUEST", "ACTION": "RUN", "MARKER": "prebuilt-wins"}
+    (copy / "cvm_request.json").write_text(json.dumps(prebuilt))
+    proto = ProtocolDir.load(str(copy))
     assert proto.prebuilt_request is not None
-    assert proto.build_request() == gumbo_l1a_request
+    assert proto.build_request() == prebuilt

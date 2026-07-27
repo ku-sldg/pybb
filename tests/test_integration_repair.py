@@ -114,8 +114,8 @@ def test_aadl_tamper_whole_file_repair_verified_next_episode(live_snapshot):
 
 
 def test_block_tamper_slice_repair_verified_next_episode(live_snapshot):
-    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSoftwareSystem"
-                     / "TempControlPeriodic_p_tcproc_tempControl.scala")
+    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSystem"
+                     / "TempControl_i_tcproc_tempControl.scala")
     golden_copy = mirror_path(GOLDEN_ROOT, comp)
     lines = comp.read_text().splitlines(keepends=True)
     begin = next(i for i, l in enumerate(lines)

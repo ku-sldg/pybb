@@ -98,7 +98,7 @@ def test_provision_from_golden_then_attest_live(tmp_path):
         outcomes[pid] = entry.result
     assert len(outcomes["gumbo_l1a"].provisioned) == 4
     assert len(outcomes["gumbo_l1b"].provisioned) == 6
-    assert len(outcomes["gumbo_l2"].provisioned) == 22
+    assert len(outcomes["gumbo_l2"].provisioned) == 33
 
     # freshly extracted goldens equal the committed fixture values
     for pid in PROTOCOL_IDS:

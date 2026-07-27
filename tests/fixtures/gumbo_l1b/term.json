@@ -40,7 +40,7 @@
                                 "ASP_CONSTRUCTOR": "ASPC",
                                 "ASP_BODY": {
                                   "ASP_ID": "readfile_marker_range",
-                                  "ASP_TARG_ID": "tc_comp_compute_mod_targ"
+                                  "ASP_TARG_ID": "tc_comp_init_mod_targ"
                                 }
                               }
                             }
@@ -52,7 +52,7 @@
                             "ASP_CONSTRUCTOR": "ASPC",
                             "ASP_BODY": {
                               "ASP_ID": "readfile_marker_range",
-                              "ASP_TARG_ID": "tc_comp_compute_ens_targ"
+                              "ASP_TARG_ID": "tc_comp_init_ens_targ"
                             }
                           }
                         }
@@ -64,7 +64,7 @@
                         "ASP_CONSTRUCTOR": "ASPC",
                         "ASP_BODY": {
                           "ASP_ID": "readfile_marker_range",
-                          "ASP_TARG_ID": "tc_comp_init_mod_targ"
+                          "ASP_TARG_ID": "tc_comp_compute_mod_targ"
                         }
                       }
                     }
@@ -76,7 +76,7 @@
                     "ASP_CONSTRUCTOR": "ASPC",
                     "ASP_BODY": {
                       "ASP_ID": "readfile_marker_range",
-                      "ASP_TARG_ID": "tc_comp_init_ens_targ"
+                      "ASP_TARG_ID": "tc_comp_compute_ens_targ"
                     }
                   }
                 }

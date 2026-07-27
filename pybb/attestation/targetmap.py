@@ -113,20 +113,20 @@ TEMP_CONTROL_SPEC = {
     "hash_files": [
         f"{_TC}/aadl/packages/TempControlSystem.aadl",
         f"{_TC}/aadl/packages/TempSensor.aadl",
-        f"{_TC}/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala",
-        f"{_TC}/slang/src/main/bridge/tc/TempSensor/TempSensorPeriodic_p_tcproc_tempSensor_GumboX.scala",
+        f"{_TC}/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+        f"{_TC}/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
     ],
     "aadl": [
         (f"{_TC}/aadl/packages/TempControlSystem.aadl", "tc_sys_aadl"),
         (f"{_TC}/aadl/packages/TempSensor.aadl", "ts_aadl"),
     ],
     "gumbox": [
-        (f"{_TC}/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala", "tc_gumbox"),
-        (f"{_TC}/slang/src/main/bridge/tc/TempSensor/TempSensorPeriodic_p_tcproc_tempSensor_GumboX.scala", "ts_gumbox"),
+        (f"{_TC}/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala", "tc_gumbox"),
+        (f"{_TC}/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala", "ts_gumbox"),
     ],
     "components": [
-        (f"{_TC}/slang/src/main/component/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl.scala", "tc_comp"),
-        (f"{_TC}/slang/src/main/component/tc/TempSensor/TempSensorPeriodic_p_tcproc_tempSensor.scala", "ts_comp"),
+        (f"{_TC}/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala", "tc_comp"),
+        (f"{_TC}/slang/src/main/component/tc/TempSensor/TempSensor_i_tcproc_tempSensor.scala", "ts_comp"),
     ],
 }
 

@@ -46,7 +46,7 @@
                               "--solver-valid",
                               "z3",
                               "/Users/adampetz/Claude_workspace/temp-control-jvm/slang",
-                              "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSoftwareSystem/TempControlPeriodic_p_tcproc_tempControl_GumboX.scala"
+                              "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala"
                             ]
                           }
                         }
@@ -67,7 +67,7 @@
                           "--solver-valid",
                           "z3",
                           "/Users/adampetz/Claude_workspace/temp-control-jvm/slang",
-                          "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensorPeriodic_p_tcproc_tempSensor_GumboX.scala"
+                          "/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala"
                         ]
                       }
                     }
@@ -86,7 +86,7 @@
                       "proyek",
                       "test",
                       "--classes",
-                      "tc.TempControlSoftwareSystem.TempControlPeriodic_p_tcproc_tempControl_GumboX_UnitTests",
+                      "tc.TempControlSystem.TempControl_i_tcproc_tempControl_GumboX_UnitTests",
                       "/Users/adampetz/Claude_workspace/temp-control-jvm/slang"
                     ]
                   }
@@ -106,7 +106,7 @@
                   "proyek",
                   "test",
                   "--classes",
-                  "tc.TempSensor.TempSensorPeriodic_p_tcproc_tempSensor_GumboX_UnitTests",
+                  "tc.TempSensor.TempSensor_i_tcproc_tempSensor_GumboX_UnitTests",
                   "/Users/adampetz/Claude_workspace/temp-control-jvm/slang"
                 ]
               }

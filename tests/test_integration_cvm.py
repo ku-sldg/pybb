@@ -143,8 +143,8 @@ def test_block_tamper_invisible_to_l1a_caught_by_l1b(live_snapshot):
     # corrupt a line inside the COMPUTE ENSURES contract block of the
     # developer-owned component file — the coverage gap the l1b sentinel
     # exists to close: whole-file hashing (l1a) cannot watch this file
-    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSoftwareSystem"
-                     / "TempControlPeriodic_p_tcproc_tempControl.scala")
+    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSystem"
+                     / "TempControl_i_tcproc_tempControl.scala")
     lines = comp.read_text().splitlines(keepends=True)
     begin = next(i for i, l in enumerate(lines)
                  if "BEGIN COMPUTE ENSURES timeTriggered" in l)

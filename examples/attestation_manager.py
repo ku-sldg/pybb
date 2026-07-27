@@ -25,14 +25,16 @@ Flags:
     --in-place      operate on the repo's protocol dirs and golden/ for
                     real (default: scratch copies, repo state untouched)
     --validate      opt-in semantic gate at promotion (sireum, ~minutes)
-    --codegen-cmd   shell command for the real HAMR rerun (e.g. a
-                    `sireum hamr phantom` + `codegen` invocation). Default
-                    is a labeled no-op: the demo's bound change does not
-                    alter any watched generated artifact.
+    --codegen-cmd   override the codegen invocation with a shell command.
+                    Default is the REAL HAMR run: phantom (AADL -> AIR via
+                    headless OSATE) + `hamr codegen -p JVM` regenerating
+                    the live slang project (requires the standalone Sireum
+                    toolchain at ~/Applications/Sireum).
 """
 
 import argparse
 import base64
+import os
 import shutil
 import subprocess
 import tempfile
@@ -110,14 +112,46 @@ def load_working_set(in_place: bool):
     return protocols, golden
 
 
+SIREUM_STANDALONE = Path.home() / "Applications/Sireum/bin/sireum"
+
+
+def hamr_jvm_codegen() -> str:
+    """
+    The real HAMR run: phantom (AADL -> AIR via headless OSATE) then
+    codegen -p JVM into the live slang project. Generated files are
+    overwritten; developer component files are not (HAMR contract).
+    Requires the standalone Sireum + OSATE toolchain; pass --codegen-cmd
+    to substitute a different invocation.
+    """
+    if not SIREUM_STANDALONE.is_file():
+        raise RuntimeError(
+            f"standalone Sireum not found at {SIREUM_STANDALONE} — install it "
+            "(git clone sireum/kekinian + bin/init.sh; sireum hamr phantom -u) "
+            "or pass --codegen-cmd")
+    env = {**os.environ,
+           "SIREUM_CACHE": str(Path.home() / "Claude_workspace/.sireum_cache")}
+    with tempfile.TemporaryDirectory(prefix="pybb_air_") as tmp:
+        air = Path(tmp) / "TempControlSystem_i.json"
+        subprocess.run(
+            [str(SIREUM_STANDALONE), "hamr", "phantom", "-f", str(air),
+             str(TC_ROOT / "aadl")],
+            check=True, env=env)
+        subprocess.run(
+            [str(SIREUM_STANDALONE), "hamr", "codegen", "-p", "JVM",
+             "--package-name", "tc",
+             "--slang-output-dir", str(TC_ROOT / "slang"),
+             "--no-proyek-ive", str(air)],
+            check=True, env=env)
+    return "ran: sireum hamr phantom + codegen -p JVM (live slang regenerated)"
+
+
 def make_codegen_fn(cmd: str | None):
     if cmd:
         def run() -> str:
             subprocess.run(cmd, shell=True, check=True, cwd=TC_ROOT)
             return f"ran: {cmd}"
         return run
-    return lambda: ("skipped (no --codegen-cmd): this change alters no "
-                    "watched generated artifact")
+    return hamr_jvm_codegen
 
 
 def cmd_check(protocols) -> list[str]:

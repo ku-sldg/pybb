@@ -85,8 +85,8 @@ def tamper_live() -> None:
 
 def tamper_block() -> None:
     """Corrupt a line inside a component file's contract block."""
-    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSoftwareSystem"
-                     / "TempControlPeriodic_p_tcproc_tempControl.scala")
+    comp = (TC_ROOT / "slang/src/main/component/tc/TempControlSystem"
+                     / "TempControl_i_tcproc_tempControl.scala")
     lines = comp.read_text().splitlines(keepends=True)
     begin = next(i for i, l in enumerate(lines)
                  if "BEGIN COMPUTE ENSURES timeTriggered" in l)

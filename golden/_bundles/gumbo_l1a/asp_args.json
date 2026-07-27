@@ -1,0 +1,20 @@
+{
+  "hashfile": {
+    "tempcontrolsystem_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempControlSystem.aadl",
+      "env_var": ""
+    },
+    "tempsensor_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/aadl/packages/TempSensor.aadl",
+      "env_var": ""
+    },
+    "tempcontrol_i_tcproc_tempcontrol_gumbox_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempControlSystem/TempControl_i_tcproc_tempControl_GumboX.scala",
+      "env_var": ""
+    },
+    "tempsensor_i_tcproc_tempsensor_gumbox_targ": {
+      "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/bridge/tc/TempSensor/TempSensor_i_tcproc_tempSensor_GumboX.scala",
+      "env_var": ""
+    }
+  }
+}
