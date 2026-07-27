@@ -1,0 +1,3122 @@
+{
+  "type" : "CodegenReports",
+  "reports" : {
+    "type" : "Map",
+    "entries" : [
+      [
+        "KEY_TOOL_REPORT",
+        {
+          "type" : "ToolReport",
+          "commandLineArgs" : "--platform Microkit --output-dir \/Users\/adampetz\/Claude_workspace\/pybb\/targets\/temp-control-microkit\/hamr --package-name tc --workspace-root-dir \/Users\/adampetz\/Claude_workspace\/pybb\/targets\/temp-control-microkit\/aadl",
+          "status" : {
+            "type" : "Status",
+            "value" : "Success"
+          },
+          "warningMessages" : [
+            {
+              "type" : "Message",
+              "level" : 2,
+              "message" : "TODO: Need to handle datatype invariants for TempSensor::Temperature.i",
+              "posOpt" : {
+                "type" : "None"
+              },
+              "kind" : "Mircokit Codegen"
+            },
+            {
+              "type" : "Message",
+              "level" : 2,
+              "message" : "TODO: Need to handle datatype invariants for TempControlSystem::SetPoint.i",
+              "posOpt" : {
+                "type" : "None"
+              },
+              "kind" : "Mircokit Codegen"
+            }
+          ],
+          "errorMessages" : [
+          ],
+          "resources" : [
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_aadl_types.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_event_counter.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_queue_TempSensor_Temperature_i_1.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/src\/sb_queue_TempSensor_Temperature_i_1.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_queue_CoolingFan_FanCmd_1.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/src\/sb_queue_CoolingFan_FanCmd_1.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_queue_TempControlSystem_SetPoint_i_1.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/src\/sb_queue_TempControlSystem_SetPoint_i_1.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_queue_CoolingFan_FanAck_1.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/src\/sb_queue_CoolingFan_FanAck_1.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/include\/sb_types.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tsproc_tempSensor\/src\/tsproc_tempSensor_MON.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tsproc_tempSensor\/src\/tsproc_tempSensor.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tsproc_tempSensor\/src\/tsproc_tempSensor_user.c",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tsproc_tempSensor\/include\/tsproc_tempSensor.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tcproc_tempControl\/src\/tcproc_tempControl_MON.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tcproc_tempControl\/src\/tcproc_tempControl_user.c",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/tcproc_tempControl\/include\/tcproc_tempControl.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface_MON.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface_user.c",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/oiproc_operatorInterface\/include\/oiproc_operatorInterface.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/fanproc_fan\/src\/fanproc_fan_MON.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/fanproc_fan\/src\/fanproc_fan.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/fanproc_fan\/src\/fanproc_fan_user.c",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/fanproc_fan\/include\/fanproc_fan.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "components\/pacer\/src\/pacer.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "Makefile",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "system.mk",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "util\/include\/printf.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "util\/src\/printf.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "util\/include\/util.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "util\/src\/util.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/TempSensor\/TempUnit.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/CoolingFan\/FanAck.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/CoolingFan\/FanCmd.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/TempSensor\/Temperature_i.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/TempControlSystem\/SetPoint_i.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/TempSensor\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/CoolingFan\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/TempControlSystem\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/sb_event_counter.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/sb_microkit_types.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/data\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/bridge\/extern_c_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/bridge\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/bridge\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/bridge\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/bridge\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/logging.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/component\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/Makefile",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/logging.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/component\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/Makefile",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/logging.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/component\/oiproc_operatorInterface_app.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/component\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/Makefile",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/logging.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/component\/fanproc_fan_app.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/component\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/Makefile",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/tests.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/util\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/util\/generators.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/util\/test_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/tests.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/util\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/util\/generators.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/util\/test_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/tests.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/util\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/util\/generators.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/util\/test_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/mod.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/tests.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/util\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/util\/generators.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/util\/test_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/defs\/src\/lib.rs",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/defs\/Cargo.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/defs\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tsproc_tempSensor\/src\/test\/util\/cb_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/tcproc_tempControl\/src\/test\/util\/cb_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_GUMBOX.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/oiproc_operatorInterface\/src\/test\/util\/cb_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_GUMBOX.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/fanproc_fan\/src\/test\/util\/cb_apis.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "microkit.system",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "microkit.schedule.xml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "microkit.dot",
+              "overwrittenIfExists" : true
+            }
+          ]
+        }
+      ],
+      [
+        "MicrokitReporterPlugin",
+        {
+          "type" : "org.sireum.hamr.codegen.microkit.reporting.MicrokitReport",
+          "componentReport" : {
+            "type" : "HashSMap",
+            "size" : 4,
+            "entries" : [
+              [
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                  "idPath" : ["TempControlSystem_i_Instance", "tsproc", "tempSensor"]
+                },
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentReport",
+                  "path" : ["TempControlSystem_i_Instance", "tsproc", "tempSensor"],
+                  "kind" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentKind",
+                    "value" : "Thread"
+                  },
+                  "optModelType" : {
+                    "type" : "None"
+                  },
+                  "modelImplementation" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPos",
+                    "id" : "TempSensor::TempSensor.i",
+                    "pos" : {
+                      "type" : "Position",
+                      "uriOpt" : {
+                        "type" : "Some",
+                        "value" : "\/temp-control-microkit\/packages\/TempControlSystem.aadl"
+                      },
+                      "beginLine" : 72,
+                      "beginColumn" : 4,
+                      "endLine" : 72,
+                      "endColumn" : 48,
+                      "offset" : 3330,
+                      "length" : 44
+                    }
+                  },
+                  "modelProperties" : [
+                  ],
+                  "subcomponents" : [
+                  ],
+                  "ports" : {
+                    "type" : "HashSMap",
+                    "size" : 1,
+                    "entries" : [
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "tsproc", "tempSensor", "currentTemp"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "tsproc", "tempSensor", "currentTemp"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "Out"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "TempSensor::Temperature.i"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempSensor.aadl"
+                            },
+                            "beginLine" : 38,
+                            "beginColumn" : 3,
+                            "endLine" : 38,
+                            "endColumn" : 44,
+                            "offset" : 1618,
+                            "length" : 41
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_api.rs"
+                                },
+                                "beginLine" : 33,
+                                "beginColumn" : 5,
+                                "endLine" : 45,
+                                "endColumn" : 5,
+                                "offset" : 857,
+                                "length" : 355
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_api.rs"
+                                },
+                                "beginLine" : 13,
+                                "beginColumn" : 5,
+                                "endLine" : 18,
+                                "endColumn" : 5,
+                                "offset" : 298,
+                                "length" : 148
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tsproc_tempSensor\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 17,
+                                "beginColumn" : 1,
+                                "endLine" : 22,
+                                "endColumn" : 1,
+                                "offset" : 385,
+                                "length" : 195
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tsproc_tempSensor\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 14,
+                                "beginColumn" : 3,
+                                "endLine" : 14,
+                                "endColumn" : 68,
+                                "offset" : 315,
+                                "length" : 65
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tsproc_tempSensor\/src\/tsproc_tempSensor.c"
+                                },
+                                "beginLine" : 13,
+                                "beginColumn" : 1,
+                                "endLine" : 17,
+                                "endColumn" : 1,
+                                "offset" : 348,
+                                "length" : 222
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tsproc_tempSensor\/src\/tsproc_tempSensor.c"
+                                },
+                                "beginLine" : 9,
+                                "beginColumn" : 1,
+                                "endLine" : 9,
+                                "endColumn" : 68,
+                                "offset" : 252,
+                                "length" : 67
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 11,
+                                "beginColumn" : 7,
+                                "endLine" : 15,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  "cCodeReport" : {
+                    "type" : "None"
+                  },
+                  "rustReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.RustReport",
+                      "entrypointReport" : {
+                        "type" : "HashSMap",
+                        "size" : 2,
+                        "entries" : [
+                          [
+                            "initialize",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs"
+                              },
+                              "beginLine" : 21,
+                              "beginColumn" : 5,
+                              "endLine" : 31,
+                              "endColumn" : 5,
+                              "offset" : 364,
+                              "length" : 375
+                            }
+                          ],
+                          [
+                            "timeTriggered",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs"
+                              },
+                              "beginLine" : 33,
+                              "beginColumn" : 5,
+                              "endLine" : 42,
+                              "endColumn" : 5,
+                              "offset" : 746,
+                              "length" : 321
+                            }
+                          ]
+                        ]
+                      },
+                      "apiReport" : {
+                        "type" : "org.sireum.hamr.codegen.microkit.reporting.RustApiReport",
+                        "extern_c_apiPath" : "crates\/tsproc_tempSensor\/src\/bridge\/extern_c_api.rs",
+                        "developerApiPath" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_api.rs",
+                        "developerApiReport" : {
+                          "type" : "HashSMap",
+                          "size" : 0,
+                          "entries" : [
+                          ]
+                        },
+                        "testApiPath" : "crates\/tsproc_tempSensor\/src\/test\/util\/test_apis.rs"
+                      }
+                    }
+                  },
+                  "gumboReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboReport",
+                      "stateReport" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      },
+                      "methodsReport" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      },
+                      "invariantsReport" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      },
+                      "integrationReport" : {
+                        "type" : "Some",
+                        "value" : {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.GubmoIntegrationReport",
+                          "assumesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 0,
+                            "entries" : [
+                            ]
+                          },
+                          "guaranteesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 1,
+                            "entries" : [
+                              [
+                                "currentTempOutputRange",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_api.rs"
+                                  },
+                                  "beginLine" : 37,
+                                  "beginColumn" : 11,
+                                  "endLine" : 39,
+                                  "endColumn" : 35,
+                                  "offset" : 995,
+                                  "length" : 73
+                                }
+                              ]
+                            ]
+                          }
+                        }
+                      },
+                      "initializeReport" : {
+                        "type" : "HashSMap",
+                        "size" : 1,
+                        "entries" : [
+                          [
+                            "currentTempInitialVal",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs"
+                              },
+                              "beginLine" : 26,
+                              "beginColumn" : 11,
+                              "endLine" : 27,
+                              "endColumn" : 40,
+                              "offset" : 591,
+                              "length" : 41
+                            }
+                          ]
+                        ]
+                      },
+                      "computeReport" : {
+                        "type" : "None"
+                      }
+                    }
+                  },
+                  "gumboXReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboXReport",
+                      "gumboxMethods" : {
+                        "type" : "HashSMap",
+                        "size" : 5,
+                        "entries" : [
+                          [
+                            "I_Guar_currentTemp",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs"
+                              },
+                              "beginLine" : 21,
+                              "beginColumn" : 1,
+                              "endLine" : 25,
+                              "endColumn" : 1,
+                              "offset" : 381,
+                              "length" : 148
+                            }
+                          ],
+                          [
+                            "initialize_currentTempInitialVal",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs"
+                              },
+                              "beginLine" : 32,
+                              "beginColumn" : 1,
+                              "endLine" : 35,
+                              "endColumn" : 1,
+                              "offset" : 657,
+                              "length" : 129
+                            }
+                          ],
+                          [
+                            "initialize_IEP_Guar",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs"
+                              },
+                              "beginLine" : 41,
+                              "beginColumn" : 1,
+                              "endLine" : 44,
+                              "endColumn" : 1,
+                              "offset" : 895,
+                              "length" : 133
+                            }
+                          ],
+                          [
+                            "initialize_IEP_Post",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs"
+                              },
+                              "beginLine" : 50,
+                              "beginColumn" : 1,
+                              "endLine" : 56,
+                              "endColumn" : 1,
+                              "offset" : 1137,
+                              "length" : 238
+                            }
+                          ],
+                          [
+                            "compute_CEP_Post",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tsproc_tempSensor\/src\/bridge\/tsproc_tempSensor_GUMBOX.rs"
+                              },
+                              "beginLine" : 62,
+                              "beginColumn" : 1,
+                              "endLine" : 68,
+                              "endColumn" : 1,
+                              "offset" : 1496,
+                              "length" : 221
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              [
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                  "idPath" : ["TempControlSystem_i_Instance", "tcproc", "tempControl"]
+                },
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentReport",
+                  "path" : ["TempControlSystem_i_Instance", "tcproc", "tempControl"],
+                  "kind" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentKind",
+                    "value" : "Thread"
+                  },
+                  "optModelType" : {
+                    "type" : "None"
+                  },
+                  "modelImplementation" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPos",
+                    "id" : "TempControlSystem::TempControl.i",
+                    "pos" : {
+                      "type" : "Position",
+                      "uriOpt" : {
+                        "type" : "Some",
+                        "value" : "\/temp-control-microkit\/packages\/TempControlSystem.aadl"
+                      },
+                      "beginLine" : 89,
+                      "beginColumn" : 4,
+                      "endLine" : 89,
+                      "endColumn" : 38,
+                      "offset" : 3825,
+                      "length" : 34
+                    }
+                  },
+                  "modelProperties" : [
+                  ],
+                  "subcomponents" : [
+                  ],
+                  "ports" : {
+                    "type" : "HashSMap",
+                    "size" : 4,
+                    "entries" : [
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "currentTemp"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "currentTemp"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "In"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "TempSensor::Temperature.i"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 142,
+                            "beginColumn" : 3,
+                            "endLine" : 142,
+                            "endColumn" : 55,
+                            "offset" : 5436,
+                            "length" : 52
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 83,
+                                "beginColumn" : 5,
+                                "endLine" : 95,
+                                "endColumn" : 5,
+                                "offset" : 2310,
+                                "length" : 484
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 23,
+                                "beginColumn" : 5,
+                                "endLine" : 33,
+                                "endColumn" : 5,
+                                "offset" : 539,
+                                "length" : 341
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 20,
+                                "beginColumn" : 1,
+                                "endLine" : 27,
+                                "endColumn" : 1,
+                                "offset" : 569,
+                                "length" : 216
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 14,
+                                "beginColumn" : 3,
+                                "endLine" : 14,
+                                "endColumn" : 68,
+                                "offset" : 315,
+                                "length" : 65
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 21,
+                                "beginColumn" : 1,
+                                "endLine" : 30,
+                                "endColumn" : 1,
+                                "offset" : 778,
+                                "length" : 405
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 9,
+                                "beginColumn" : 1,
+                                "endLine" : 9,
+                                "endColumn" : 68,
+                                "offset" : 256,
+                                "length" : 67
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 29,
+                                "beginColumn" : 7,
+                                "endLine" : 33,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "fanAck"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "fanAck"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "In"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "CoolingFan::FanAck"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 144,
+                            "beginColumn" : 3,
+                            "endLine" : 144,
+                            "endColumn" : 43,
+                            "offset" : 5492,
+                            "length" : 40
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 96,
+                                "beginColumn" : 5,
+                                "endLine" : 105,
+                                "endColumn" : 5,
+                                "offset" : 2800,
+                                "length" : 347
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 36,
+                                "beginColumn" : 5,
+                                "endLine" : 43,
+                                "endColumn" : 5,
+                                "offset" : 918,
+                                "length" : 207
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 29,
+                                "beginColumn" : 1,
+                                "endLine" : 36,
+                                "endColumn" : 1,
+                                "offset" : 788,
+                                "length" : 185
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 15,
+                                "beginColumn" : 3,
+                                "endLine" : 15,
+                                "endColumn" : 56,
+                                "offset" : 384,
+                                "length" : 53
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 53,
+                                "beginColumn" : 1,
+                                "endLine" : 62,
+                                "endColumn" : 1,
+                                "offset" : 1878,
+                                "length" : 357
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 14,
+                                "beginColumn" : 1,
+                                "endLine" : 14,
+                                "endColumn" : 56,
+                                "offset" : 587,
+                                "length" : 55
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 44,
+                                "beginColumn" : 7,
+                                "endLine" : 48,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "setPoint"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "setPoint"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "In"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "TempControlSystem::SetPoint.i"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 145,
+                            "beginColumn" : 3,
+                            "endLine" : 145,
+                            "endColumn" : 37,
+                            "offset" : 5535,
+                            "length" : 34
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 106,
+                                "beginColumn" : 5,
+                                "endLine" : 115,
+                                "endColumn" : 5,
+                                "offset" : 3153,
+                                "length" : 366
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 46,
+                                "beginColumn" : 5,
+                                "endLine" : 53,
+                                "endColumn" : 5,
+                                "offset" : 1163,
+                                "length" : 233
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 38,
+                                "beginColumn" : 1,
+                                "endLine" : 45,
+                                "endColumn" : 1,
+                                "offset" : 976,
+                                "length" : 222
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 16,
+                                "beginColumn" : 3,
+                                "endLine" : 16,
+                                "endColumn" : 69,
+                                "offset" : 441,
+                                "length" : 66
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 40,
+                                "beginColumn" : 1,
+                                "endLine" : 49,
+                                "endColumn" : 1,
+                                "offset" : 1426,
+                                "length" : 409
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 12,
+                                "beginColumn" : 1,
+                                "endLine" : 12,
+                                "endColumn" : 69,
+                                "offset" : 449,
+                                "length" : 68
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 39,
+                                "beginColumn" : 7,
+                                "endLine" : 43,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "fanCmd"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "tcproc", "tempControl", "fanCmd"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "Out"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "CoolingFan::FanCmd"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 147,
+                            "beginColumn" : 3,
+                            "endLine" : 147,
+                            "endColumn" : 44,
+                            "offset" : 5596,
+                            "length" : 41
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 68,
+                                "beginColumn" : 5,
+                                "endLine" : 79,
+                                "endColumn" : 5,
+                                "offset" : 1885,
+                                "length" : 332
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                },
+                                "beginLine" : 13,
+                                "beginColumn" : 5,
+                                "endLine" : 18,
+                                "endColumn" : 5,
+                                "offset" : 301,
+                                "length" : 131
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 47,
+                                "beginColumn" : 1,
+                                "endLine" : 52,
+                                "endColumn" : 1,
+                                "offset" : 1201,
+                                "length" : 164
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 17,
+                                "beginColumn" : 3,
+                                "endLine" : 17,
+                                "endColumn" : 56,
+                                "offset" : 511,
+                                "length" : 53
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 32,
+                                "beginColumn" : 1,
+                                "endLine" : 36,
+                                "endColumn" : 1,
+                                "offset" : 1186,
+                                "length" : 184
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/tcproc_tempControl\/src\/tcproc_tempControl.c"
+                                },
+                                "beginLine" : 11,
+                                "beginColumn" : 1,
+                                "endLine" : 11,
+                                "endColumn" : 56,
+                                "offset" : 392,
+                                "length" : 55
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 34,
+                                "beginColumn" : 7,
+                                "endLine" : 38,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  "cCodeReport" : {
+                    "type" : "None"
+                  },
+                  "rustReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.RustReport",
+                      "entrypointReport" : {
+                        "type" : "HashSMap",
+                        "size" : 2,
+                        "entries" : [
+                          [
+                            "initialize",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                              },
+                              "beginLine" : 25,
+                              "beginColumn" : 5,
+                              "endLine" : 39,
+                              "endColumn" : 5,
+                              "offset" : 516,
+                              "length" : 535
+                            }
+                          ],
+                          [
+                            "timeTriggered",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                              },
+                              "beginLine" : 41,
+                              "beginColumn" : 5,
+                              "endLine" : 71,
+                              "endColumn" : 5,
+                              "offset" : 1058,
+                              "length" : 1557
+                            }
+                          ]
+                        ]
+                      },
+                      "apiReport" : {
+                        "type" : "org.sireum.hamr.codegen.microkit.reporting.RustApiReport",
+                        "extern_c_apiPath" : "crates\/tcproc_tempControl\/src\/bridge\/extern_c_api.rs",
+                        "developerApiPath" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs",
+                        "developerApiReport" : {
+                          "type" : "HashSMap",
+                          "size" : 0,
+                          "entries" : [
+                          ]
+                        },
+                        "testApiPath" : "crates\/tcproc_tempControl\/src\/test\/util\/test_apis.rs"
+                      }
+                    }
+                  },
+                  "gumboReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboReport",
+                      "stateReport" : {
+                        "type" : "HashSMap",
+                        "size" : 1,
+                        "entries" : [
+                          [
+                            "latestFanCmd",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                              },
+                              "beginLine" : 11,
+                              "beginColumn" : 5,
+                              "endLine" : 11,
+                              "endColumn" : 40,
+                              "offset" : 224,
+                              "length" : 35
+                            }
+                          ]
+                        ]
+                      },
+                      "methodsReport" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      },
+                      "invariantsReport" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      },
+                      "integrationReport" : {
+                        "type" : "Some",
+                        "value" : {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.GubmoIntegrationReport",
+                          "assumesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 1,
+                            "entries" : [
+                              [
+                                "currentTempInputRange",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_api.rs"
+                                  },
+                                  "beginLine" : 90,
+                                  "beginColumn" : 11,
+                                  "endLine" : 92,
+                                  "endColumn" : 33,
+                                  "offset" : 2644,
+                                  "length" : 69
+                                }
+                              ]
+                            ]
+                          },
+                          "guaranteesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 0,
+                            "entries" : [
+                            ]
+                          }
+                        }
+                      },
+                      "initializeReport" : {
+                        "type" : "HashSMap",
+                        "size" : 2,
+                        "entries" : [
+                          [
+                            "initLatestFanCmd",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                              },
+                              "beginLine" : 30,
+                              "beginColumn" : 11,
+                              "endLine" : 32,
+                              "endColumn" : 52,
+                              "offset" : 740,
+                              "length" : 92
+                            }
+                          ],
+                          [
+                            "initFanCmd",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                              },
+                              "beginLine" : 33,
+                              "beginColumn" : 11,
+                              "endLine" : 35,
+                              "endColumn" : 45,
+                              "offset" : 865,
+                              "length" : 79
+                            }
+                          ]
+                        ]
+                      },
+                      "computeReport" : {
+                        "type" : "Some",
+                        "value" : {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboComputeReport",
+                          "assumesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 0,
+                            "entries" : [
+                            ]
+                          },
+                          "guaranteesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 3,
+                            "entries" : [
+                              [
+                                "altCurrentTempLTSetPoint",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                                  },
+                                  "beginLine" : 48,
+                                  "beginColumn" : 11,
+                                  "endLine" : 53,
+                                  "endColumn" : 51,
+                                  "offset" : 1363,
+                                  "length" : 298
+                                }
+                              ],
+                              [
+                                "altCurrentTempGTSetPoint",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                                  },
+                                  "beginLine" : 54,
+                                  "beginColumn" : 11,
+                                  "endLine" : 59,
+                                  "endColumn" : 51,
+                                  "offset" : 1708,
+                                  "length" : 302
+                                }
+                              ],
+                              [
+                                "altCurrentTempInRange",
+                                {
+                                  "type" : "Position",
+                                  "uriOpt" : {
+                                    "type" : "Some",
+                                    "value" : "crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs"
+                                  },
+                                  "beginLine" : 60,
+                                  "beginColumn" : 11,
+                                  "endLine" : 67,
+                                  "endColumn" : 46,
+                                  "offset" : 2054,
+                                  "length" : 457
+                                }
+                              ]
+                            ]
+                          },
+                          "casesReport" : {
+                            "type" : "HashSMap",
+                            "size" : 0,
+                            "entries" : [
+                            ]
+                          },
+                          "handlers" : {
+                            "type" : "HashSMap",
+                            "size" : 0,
+                            "entries" : [
+                            ]
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "gumboXReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboXReport",
+                      "gumboxMethods" : {
+                        "type" : "HashSMap",
+                        "size" : 11,
+                        "entries" : [
+                          [
+                            "I_Assm_currentTemp",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 21,
+                              "beginColumn" : 1,
+                              "endLine" : 25,
+                              "endColumn" : 1,
+                              "offset" : 378,
+                              "length" : 148
+                            }
+                          ],
+                          [
+                            "initialize_initLatestFanCmd",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 33,
+                              "beginColumn" : 1,
+                              "endLine" : 36,
+                              "endColumn" : 1,
+                              "offset" : 685,
+                              "length" : 121
+                            }
+                          ],
+                          [
+                            "initialize_initFanCmd",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 44,
+                              "beginColumn" : 1,
+                              "endLine" : 47,
+                              "endColumn" : 1,
+                              "offset" : 944,
+                              "length" : 111
+                            }
+                          ],
+                          [
+                            "initialize_IEP_Guar",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 54,
+                              "beginColumn" : 1,
+                              "endLine" : 60,
+                              "endColumn" : 1,
+                              "offset" : 1210,
+                              "length" : 191
+                            }
+                          ],
+                          [
+                            "initialize_IEP_Post",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 67,
+                              "beginColumn" : 1,
+                              "endLine" : 72,
+                              "endColumn" : 1,
+                              "offset" : 1555,
+                              "length" : 156
+                            }
+                          ],
+                          [
+                            "compute_CEP_Pre",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 81,
+                              "beginColumn" : 1,
+                              "endLine" : 91,
+                              "endColumn" : 1,
+                              "offset" : 1967,
+                              "length" : 344
+                            }
+                          ],
+                          [
+                            "compute_spec_altCurrentTempLTSetPoint_guarantee",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 103,
+                              "beginColumn" : 1,
+                              "endLine" : 113,
+                              "endColumn" : 1,
+                              "offset" : 2681,
+                              "length" : 396
+                            }
+                          ],
+                          [
+                            "compute_spec_altCurrentTempGTSetPoint_guarantee",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 125,
+                              "beginColumn" : 1,
+                              "endLine" : 135,
+                              "endColumn" : 1,
+                              "offset" : 3450,
+                              "length" : 394
+                            }
+                          ],
+                          [
+                            "compute_spec_altCurrentTempInRange_guarantee",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 149,
+                              "beginColumn" : 1,
+                              "endLine" : 161,
+                              "endColumn" : 1,
+                              "offset" : 4349,
+                              "length" : 475
+                            }
+                          ],
+                          [
+                            "compute_CEP_T_Guar",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 171,
+                              "beginColumn" : 1,
+                              "endLine" : 183,
+                              "endColumn" : 1,
+                              "offset" : 5151,
+                              "length" : 648
+                            }
+                          ],
+                          [
+                            "compute_CEP_Post",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/tcproc_tempControl\/src\/bridge\/tcproc_tempControl_GUMBOX.rs"
+                              },
+                              "beginLine" : 194,
+                              "beginColumn" : 1,
+                              "endLine" : 206,
+                              "endColumn" : 1,
+                              "offset" : 6148,
+                              "length" : 465
+                            }
+                          ]
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              [
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                  "idPath" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface"]
+                },
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentReport",
+                  "path" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface"],
+                  "kind" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentKind",
+                    "value" : "Thread"
+                  },
+                  "optModelType" : {
+                    "type" : "None"
+                  },
+                  "modelImplementation" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPos",
+                    "id" : "TempControlSystem::OperatorInterface.i",
+                    "pos" : {
+                      "type" : "Position",
+                      "uriOpt" : {
+                        "type" : "Some",
+                        "value" : "\/temp-control-microkit\/packages\/TempControlSystem.aadl"
+                      },
+                      "beginLine" : 107,
+                      "beginColumn" : 4,
+                      "endLine" : 107,
+                      "endColumn" : 50,
+                      "offset" : 4372,
+                      "length" : 46
+                    }
+                  },
+                  "modelProperties" : [
+                  ],
+                  "subcomponents" : [
+                  ],
+                  "ports" : {
+                    "type" : "HashSMap",
+                    "size" : 2,
+                    "entries" : [
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface", "currentTemp"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface", "currentTemp"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "In"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "TempSensor::Temperature.i"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 269,
+                            "beginColumn" : 3,
+                            "endLine" : 269,
+                            "endColumn" : 55,
+                            "offset" : 12561,
+                            "length" : 52
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs"
+                                },
+                                "beginLine" : 56,
+                                "beginColumn" : 5,
+                                "endLine" : 63,
+                                "endColumn" : 5,
+                                "offset" : 1632,
+                                "length" : 292
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs"
+                                },
+                                "beginLine" : 23,
+                                "beginColumn" : 5,
+                                "endLine" : 30,
+                                "endColumn" : 5,
+                                "offset" : 584,
+                                "length" : 231
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 18,
+                                "beginColumn" : 1,
+                                "endLine" : 25,
+                                "endColumn" : 1,
+                                "offset" : 455,
+                                "length" : 216
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 14,
+                                "beginColumn" : 3,
+                                "endLine" : 14,
+                                "endColumn" : 68,
+                                "offset" : 315,
+                                "length" : 65
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface.c"
+                                },
+                                "beginLine" : 17,
+                                "beginColumn" : 1,
+                                "endLine" : 26,
+                                "endColumn" : 1,
+                                "offset" : 565,
+                                "length" : 405
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface.c"
+                                },
+                                "beginLine" : 9,
+                                "beginColumn" : 1,
+                                "endLine" : 9,
+                                "endColumn" : 68,
+                                "offset" : 280,
+                                "length" : 67
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 62,
+                                "beginColumn" : 7,
+                                "endLine" : 66,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface", "setPoint"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "oiproc", "operatorInterface", "setPoint"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "Out"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "TempControlSystem::SetPoint.i"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/TempControlSystem.aadl"
+                            },
+                            "beginLine" : 271,
+                            "beginColumn" : 3,
+                            "endLine" : 271,
+                            "endColumn" : 38,
+                            "offset" : 12696,
+                            "length" : 35
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs"
+                                },
+                                "beginLine" : 43,
+                                "beginColumn" : 5,
+                                "endLine" : 52,
+                                "endColumn" : 5,
+                                "offset" : 1262,
+                                "length" : 265
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs"
+                                },
+                                "beginLine" : 13,
+                                "beginColumn" : 5,
+                                "endLine" : 18,
+                                "endColumn" : 5,
+                                "offset" : 319,
+                                "length" : 146
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 27,
+                                "beginColumn" : 1,
+                                "endLine" : 32,
+                                "endColumn" : 1,
+                                "offset" : 674,
+                                "length" : 201
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 15,
+                                "beginColumn" : 3,
+                                "endLine" : 15,
+                                "endColumn" : 69,
+                                "offset" : 384,
+                                "length" : 66
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface.c"
+                                },
+                                "beginLine" : 28,
+                                "beginColumn" : 1,
+                                "endLine" : 32,
+                                "endColumn" : 1,
+                                "offset" : 973,
+                                "length" : 232
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/oiproc_operatorInterface\/src\/oiproc_operatorInterface.c"
+                                },
+                                "beginLine" : 11,
+                                "beginColumn" : 1,
+                                "endLine" : 11,
+                                "endColumn" : 69,
+                                "offset" : 416,
+                                "length" : 68
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 67,
+                                "beginColumn" : 7,
+                                "endLine" : 71,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  "cCodeReport" : {
+                    "type" : "None"
+                  },
+                  "rustReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.RustReport",
+                      "entrypointReport" : {
+                        "type" : "HashSMap",
+                        "size" : 2,
+                        "entries" : [
+                          [
+                            "initialize",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/oiproc_operatorInterface\/src\/component\/oiproc_operatorInterface_app.rs"
+                              },
+                              "beginLine" : 21,
+                              "beginColumn" : 5,
+                              "endLine" : 28,
+                              "endColumn" : 5,
+                              "offset" : 385,
+                              "length" : 265
+                            }
+                          ],
+                          [
+                            "timeTriggered",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/oiproc_operatorInterface\/src\/component\/oiproc_operatorInterface_app.rs"
+                              },
+                              "beginLine" : 30,
+                              "beginColumn" : 5,
+                              "endLine" : 39,
+                              "endColumn" : 5,
+                              "offset" : 657,
+                              "length" : 335
+                            }
+                          ]
+                        ]
+                      },
+                      "apiReport" : {
+                        "type" : "org.sireum.hamr.codegen.microkit.reporting.RustApiReport",
+                        "extern_c_apiPath" : "crates\/oiproc_operatorInterface\/src\/bridge\/extern_c_api.rs",
+                        "developerApiPath" : "crates\/oiproc_operatorInterface\/src\/bridge\/oiproc_operatorInterface_api.rs",
+                        "developerApiReport" : {
+                          "type" : "HashSMap",
+                          "size" : 0,
+                          "entries" : [
+                          ]
+                        },
+                        "testApiPath" : "crates\/oiproc_operatorInterface\/src\/test\/util\/test_apis.rs"
+                      }
+                    }
+                  },
+                  "gumboReport" : {
+                    "type" : "None"
+                  },
+                  "gumboXReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboXReport",
+                      "gumboxMethods" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      }
+                    }
+                  }
+                }
+              ],
+              [
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                  "idPath" : ["TempControlSystem_i_Instance", "fanproc", "fan"]
+                },
+                {
+                  "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentReport",
+                  "path" : ["TempControlSystem_i_Instance", "fanproc", "fan"],
+                  "kind" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.ComponentKind",
+                    "value" : "Thread"
+                  },
+                  "optModelType" : {
+                    "type" : "None"
+                  },
+                  "modelImplementation" : {
+                    "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPos",
+                    "id" : "CoolingFan::Fan.i",
+                    "pos" : {
+                      "type" : "Position",
+                      "uriOpt" : {
+                        "type" : "Some",
+                        "value" : "\/temp-control-microkit\/packages\/TempControlSystem.aadl"
+                      },
+                      "beginLine" : 123,
+                      "beginColumn" : 4,
+                      "endLine" : 123,
+                      "endColumn" : 34,
+                      "offset" : 4817,
+                      "length" : 30
+                    }
+                  },
+                  "modelProperties" : [
+                  ],
+                  "subcomponents" : [
+                  ],
+                  "ports" : {
+                    "type" : "HashSMap",
+                    "size" : 2,
+                    "entries" : [
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "fanproc", "fan", "fanCmd"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "fanproc", "fan", "fanCmd"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "In"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "CoolingFan::FanCmd"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/CoolingFan.aadl"
+                            },
+                            "beginLine" : 35,
+                            "beginColumn" : 7,
+                            "endLine" : 35,
+                            "endColumn" : 35,
+                            "offset" : 1470,
+                            "length" : 28
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs"
+                                },
+                                "beginLine" : 56,
+                                "beginColumn" : 5,
+                                "endLine" : 63,
+                                "endColumn" : 5,
+                                "offset" : 1357,
+                                "length" : 251
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs"
+                                },
+                                "beginLine" : 23,
+                                "beginColumn" : 5,
+                                "endLine" : 30,
+                                "endColumn" : 5,
+                                "offset" : 504,
+                                "length" : 207
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 18,
+                                "beginColumn" : 1,
+                                "endLine" : 25,
+                                "endColumn" : 1,
+                                "offset" : 430,
+                                "length" : 185
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 14,
+                                "beginColumn" : 3,
+                                "endLine" : 14,
+                                "endColumn" : 56,
+                                "offset" : 315,
+                                "length" : 53
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/fanproc_fan\/src\/fanproc_fan.c"
+                                },
+                                "beginLine" : 17,
+                                "beginColumn" : 1,
+                                "endLine" : 26,
+                                "endColumn" : 1,
+                                "offset" : 464,
+                                "length" : 357
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/fanproc_fan\/src\/fanproc_fan.c"
+                                },
+                                "beginLine" : 9,
+                                "beginColumn" : 1,
+                                "endLine" : 9,
+                                "endColumn" : 56,
+                                "offset" : 228,
+                                "length" : 55
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 85,
+                                "beginColumn" : 7,
+                                "endLine" : 89,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      [
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.IdPathR",
+                          "idPath" : ["TempControlSystem_i_Instance", "fanproc", "fan", "fanAck"]
+                        },
+                        {
+                          "type" : "org.sireum.hamr.codegen.microkit.reporting.PortReport",
+                          "name" : ["TempControlSystem_i_Instance", "fanproc", "fan", "fanAck"],
+                          "kind" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortKind",
+                            "value" : "Data"
+                          },
+                          "direction" : {
+                            "type" : "org.sireum.hamr.codegen.microkit.reporting.PortDirection",
+                            "value" : "Out"
+                          },
+                          "payload" : {
+                            "type" : "Some",
+                            "value" : "CoolingFan::FanAck"
+                          },
+                          "modelPos" : {
+                            "type" : "Position",
+                            "uriOpt" : {
+                              "type" : "Some",
+                              "value" : "..\/..\/aadl\/packages\/CoolingFan.aadl"
+                            },
+                            "beginLine" : 37,
+                            "beginColumn" : 7,
+                            "endLine" : 37,
+                            "endColumn" : 36,
+                            "offset" : 1576,
+                            "length" : 29
+                          },
+                          "languageRealizations" : [
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/Verus API",
+                              "title" : "Rust\/Verus API",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs"
+                                },
+                                "beginLine" : 43,
+                                "beginColumn" : 5,
+                                "endLine" : 52,
+                                "endColumn" : 5,
+                                "offset" : 1042,
+                                "length" : 236
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Unverified Rust Interface",
+                              "title" : "Unverified Rust Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs"
+                                },
+                                "beginLine" : 13,
+                                "beginColumn" : 5,
+                                "endLine" : 18,
+                                "endColumn" : 5,
+                                "offset" : 280,
+                                "length" : 131
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Rust\/C Interface",
+                              "title" : "Rust\/C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 27,
+                                "beginColumn" : 1,
+                                "endLine" : 32,
+                                "endColumn" : 1,
+                                "offset" : 618,
+                                "length" : 164
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Extern",
+                              "title" : "C Extern",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs"
+                                },
+                                "beginLine" : 15,
+                                "beginColumn" : 3,
+                                "endLine" : 15,
+                                "endColumn" : 56,
+                                "offset" : 372,
+                                "length" : 53
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C Interface",
+                              "title" : "C Interface",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/fanproc_fan\/src\/fanproc_fan.c"
+                                },
+                                "beginLine" : 28,
+                                "beginColumn" : 1,
+                                "endLine" : 32,
+                                "endColumn" : 1,
+                                "offset" : 824,
+                                "length" : 184
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "C var_addr",
+                              "title" : "C Shared Memory Variable",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "components\/fanproc_fan\/src\/fanproc_fan.c"
+                                },
+                                "beginLine" : 11,
+                                "beginColumn" : 1,
+                                "endLine" : 11,
+                                "endColumn" : 56,
+                                "offset" : 340,
+                                "length" : 55
+                              }
+                            },
+                            {
+                              "type" : "org.sireum.hamr.codegen.microkit.reporting.PortLanguageArtifact",
+                              "name" : "Memory Map",
+                              "title" : "Memory Map",
+                              "pos" : {
+                                "type" : "Position",
+                                "uriOpt" : {
+                                  "type" : "Some",
+                                  "value" : "microkit.system"
+                                },
+                                "beginLine" : 90,
+                                "beginColumn" : 7,
+                                "endLine" : 94,
+                                "endColumn" : 9,
+                                "offset" : 0,
+                                "length" : 0
+                              }
+                            }
+                          ]
+                        }
+                      ]
+                    ]
+                  },
+                  "cCodeReport" : {
+                    "type" : "None"
+                  },
+                  "rustReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.RustReport",
+                      "entrypointReport" : {
+                        "type" : "HashSMap",
+                        "size" : 2,
+                        "entries" : [
+                          [
+                            "initialize",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/fanproc_fan\/src\/component\/fanproc_fan_app.rs"
+                              },
+                              "beginLine" : 21,
+                              "beginColumn" : 5,
+                              "endLine" : 28,
+                              "endColumn" : 5,
+                              "offset" : 346,
+                              "length" : 239
+                            }
+                          ],
+                          [
+                            "timeTriggered",
+                            {
+                              "type" : "Position",
+                              "uriOpt" : {
+                                "type" : "Some",
+                                "value" : "crates\/fanproc_fan\/src\/component\/fanproc_fan_app.rs"
+                              },
+                              "beginLine" : 30,
+                              "beginColumn" : 5,
+                              "endLine" : 39,
+                              "endColumn" : 5,
+                              "offset" : 592,
+                              "length" : 309
+                            }
+                          ]
+                        ]
+                      },
+                      "apiReport" : {
+                        "type" : "org.sireum.hamr.codegen.microkit.reporting.RustApiReport",
+                        "extern_c_apiPath" : "crates\/fanproc_fan\/src\/bridge\/extern_c_api.rs",
+                        "developerApiPath" : "crates\/fanproc_fan\/src\/bridge\/fanproc_fan_api.rs",
+                        "developerApiReport" : {
+                          "type" : "HashSMap",
+                          "size" : 0,
+                          "entries" : [
+                          ]
+                        },
+                        "testApiPath" : "crates\/fanproc_fan\/src\/test\/util\/test_apis.rs"
+                      }
+                    }
+                  },
+                  "gumboReport" : {
+                    "type" : "None"
+                  },
+                  "gumboXReport" : {
+                    "type" : "Some",
+                    "value" : {
+                      "type" : "org.sireum.hamr.codegen.microkit.reporting.GumboXReport",
+                      "gumboxMethods" : {
+                        "type" : "HashSMap",
+                        "size" : 0,
+                        "entries" : [
+                        ]
+                      }
+                    }
+                  }
+                }
+              ]
+            ]
+          }
+        }
+      ]
+    ]
+  }
+}

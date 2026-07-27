@@ -1,0 +1,387 @@
+{
+  "type": "AttestationReport",
+  "reports": [
+    {
+      "type": "ComponentReport",
+      "idPath": ["TempControlSystem_i_Instance", "tsproc", "tempSensor"],
+      "classifier": ["TempSensor", "TempSensor.i"],
+      "reports": [
+        {
+          "type": "ComponentContractReport",
+          "id": "currentTempInitialVal",
+          "kind": "Initialize",
+          "meta": "Initializes contract for TempSensor::TempSensor.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempSensor.aadl",
+                  "beginLine": 53,
+                  "beginCol": 4,
+                  "endLine": 54,
+                  "endCol": 36,
+                  "offset": 2188,
+                  "length": 68
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tsproc_tempSensor\/src\/component\/tsproc_tempSensor_app.rs",
+                  "beginLine": 26,
+                  "beginCol": 11,
+                  "endLine": 27,
+                  "endCol": 40,
+                  "offset": 591,
+                  "length": 41
+                }
+            }
+          ]
+        }
+       ]
+    },
+    {
+      "type": "ComponentReport",
+      "idPath": ["TempControlSystem_i_Instance", "tcproc", "tempControl"],
+      "classifier": ["TempControlSystem", "TempControl.i"],
+      "reports": [
+        {
+          "type": "ComponentContractReport",
+          "id": "initLatestFanCmd",
+          "kind": "Initialize",
+          "meta": "Initializes contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 173,
+                  "beginCol": 10,
+                  "endLine": 174,
+                  "endCol": 50,
+                  "offset": 6727,
+                  "length": 105
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "Touched GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 165,
+                  "beginCol": 9,
+                  "endLine": 165,
+                  "endCol": 42,
+                  "offset": 6485,
+                  "length": 33
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 30,
+                  "beginCol": 11,
+                  "endLine": 32,
+                  "endCol": 52,
+                  "offset": 740,
+                  "length": 92
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Rust",
+              "meta": "Touched Rust realization of GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 11,
+                  "beginCol": 5,
+                  "endLine": 11,
+                  "endCol": 40,
+                  "offset": 224,
+                  "length": 35
+                }
+            }
+          ]
+        },
+        {
+          "type": "ComponentContractReport",
+          "id": "initFanCmd",
+          "kind": "Initialize",
+          "meta": "Initializes contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 176,
+                  "beginCol": 10,
+                  "endLine": 177,
+                  "endCol": 44,
+                  "offset": 6851,
+                  "length": 87
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO initializes contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 33,
+                  "beginCol": 11,
+                  "endLine": 35,
+                  "endCol": 45,
+                  "offset": 865,
+                  "length": 79
+                }
+            }
+          ]
+        },
+        {
+          "type": "ComponentContractReport",
+          "id": "altCurrentTempLTSetPoint",
+          "kind": "Guarantee",
+          "meta": "General guarantee contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 182,
+                  "beginCol": 11,
+                  "endLine": 185,
+                  "endCol": 97,
+                  "offset": 7010,
+                  "length": 340
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "Touched GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 165,
+                  "beginCol": 9,
+                  "endLine": 165,
+                  "endCol": 42,
+                  "offset": 6485,
+                  "length": 33
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 48,
+                  "beginCol": 11,
+                  "endLine": 53,
+                  "endCol": 51,
+                  "offset": 1363,
+                  "length": 298
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Rust",
+              "meta": "Touched Rust realization of GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 11,
+                  "beginCol": 5,
+                  "endLine": 11,
+                  "endCol": 40,
+                  "offset": 224,
+                  "length": 35
+                }
+            }
+          ]
+        },
+        {
+          "type": "ComponentContractReport",
+          "id": "altCurrentTempGTSetPoint",
+          "kind": "Guarantee",
+          "meta": "General guarantee contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 187,
+                  "beginCol": 11,
+                  "endLine": 190,
+                  "endCol": 94,
+                  "offset": 7362,
+                  "length": 338
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "Touched GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 165,
+                  "beginCol": 9,
+                  "endLine": 165,
+                  "endCol": 42,
+                  "offset": 6485,
+                  "length": 33
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 54,
+                  "beginCol": 11,
+                  "endLine": 59,
+                  "endCol": 51,
+                  "offset": 1708,
+                  "length": 302
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Rust",
+              "meta": "Touched Rust realization of GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 11,
+                  "beginCol": 5,
+                  "endLine": 11,
+                  "endCol": 40,
+                  "offset": 224,
+                  "length": 35
+                }
+            }
+          ]
+        },
+        {
+          "type": "ComponentContractReport",
+          "id": "altCurrentTempInRange",
+          "kind": "Guarantee",
+          "meta": "General guarantee contract for TempControlSystem::TempControl.i",
+          "slices": [
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 192,
+                  "beginCol": 11,
+                  "endLine": 196,
+                  "endCol": 79,
+                  "offset": 7712,
+                  "length": 489
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Model",
+              "meta": "Touched GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/..\/..\/aadl\/packages\/TempControlSystem.aadl",
+                  "beginLine": 165,
+                  "beginCol": 9,
+                  "endLine": 165,
+                  "endCol": 42,
+                  "offset": 6485,
+                  "length": 33
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Verus",
+              "meta": "Verus realization of GUMBO general guarantees contract",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 60,
+                  "beginCol": 11,
+                  "endLine": 67,
+                  "endCol": 46,
+                  "offset": 2054,
+                  "length": 457
+                }
+            },
+            {
+              "type": "Slice",
+              "kind": "Rust",
+              "meta": "Touched Rust realization of GUMBO state variable: latestFanCmd",
+              "pos":
+                {
+                  "type": "Position",
+                  "uri": "..\/crates\/tcproc_tempControl\/src\/component\/tcproc_tempControl_app.rs",
+                  "beginLine": 11,
+                  "beginCol": 5,
+                  "endLine": 11,
+                  "endCol": 40,
+                  "offset": 224,
+                  "length": 35
+                }
+            }
+          ]
+        }
+       ]
+    }
+  ]
+}

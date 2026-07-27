@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<system xmlns:xi="http://www.w3.org/2001/XInclude">
+  <!-- Content between markers will be preserved if codegen is rerun -->
+
+  <xi:include href="microkit.schedule.xml" />
+
+  <protection_domain name="tsproc_tempSensor_MON" domain="domain_2">
+    <program_image path="tsproc_tempSensor_MON.elf" />
+    <protection_domain name="tsproc_tempSensor" domain="domain_2" id="1">
+      <program_image path="tsproc_tempSensor.elf" />
+      <map mr="TempControlSystem_i_Instance_tsproc_tempSensor_currentTemp_1_Memory_Region"
+           vaddr="0x10_000_000"
+           perms="rw"
+           setvar_vaddr="currentTemp_queue_1"
+      />
+
+      <!-- BEGIN CONTENT MARKER tsproc_tempSensor -->
+      <!-- END CONTENT MARKER tsproc_tempSensor -->
+    </protection_domain>
+
+    <!-- BEGIN CONTENT MARKER tsproc_tempSensor_MON -->
+    <!-- END CONTENT MARKER tsproc_tempSensor_MON -->
+  </protection_domain>
+
+  <protection_domain name="tcproc_tempControl_MON" domain="domain_3">
+    <program_image path="tcproc_tempControl_MON.elf" />
+    <protection_domain name="tcproc_tempControl" domain="domain_3" id="1">
+      <program_image path="tcproc_tempControl.elf" />
+      <map mr="TempControlSystem_i_Instance_tsproc_tempSensor_currentTemp_1_Memory_Region"
+           vaddr="0x10_000_000"
+           perms="r"
+           setvar_vaddr="currentTemp_queue_1"
+      />
+      <map mr="TempControlSystem_i_Instance_tcproc_tempControl_fanCmd_1_Memory_Region"
+           vaddr="0x10_001_000"
+           perms="rw"
+           setvar_vaddr="fanCmd_queue_1"
+      />
+      <map mr="TempControlSystem_i_Instance_oiproc_operatorInterface_setPoint_1_Memory_Region"
+           vaddr="0x10_002_000"
+           perms="r"
+           setvar_vaddr="setPoint_queue_1"
+      />
+      <map mr="TempControlSystem_i_Instance_fanproc_fan_fanAck_1_Memory_Region"
+           vaddr="0x10_003_000"
+           perms="r"
+           setvar_vaddr="fanAck_queue_1"
+      />
+
+      <!-- BEGIN CONTENT MARKER tcproc_tempControl -->
+      <!-- END CONTENT MARKER tcproc_tempControl -->
+    </protection_domain>
+
+    <!-- BEGIN CONTENT MARKER tcproc_tempControl_MON -->
+    <!-- END CONTENT MARKER tcproc_tempControl_MON -->
+  </protection_domain>
+
+  <protection_domain name="oiproc_operatorInterface_MON" domain="domain_4">
+    <program_image path="oiproc_operatorInterface_MON.elf" />
+    <protection_domain name="oiproc_operatorInterface" domain="domain_4" id="1">
+      <program_image path="oiproc_operatorInterface.elf" />
+      <map mr="TempControlSystem_i_Instance_tsproc_tempSensor_currentTemp_1_Memory_Region"
+           vaddr="0x10_000_000"
+           perms="r"
+           setvar_vaddr="currentTemp_queue_1"
+      />
+      <map mr="TempControlSystem_i_Instance_oiproc_operatorInterface_setPoint_1_Memory_Region"
+           vaddr="0x10_001_000"
+           perms="rw"
+           setvar_vaddr="setPoint_queue_1"
+      />
+
+      <!-- BEGIN CONTENT MARKER oiproc_operatorInterface -->
+      <!-- END CONTENT MARKER oiproc_operatorInterface -->
+    </protection_domain>
+
+    <!-- BEGIN CONTENT MARKER oiproc_operatorInterface_MON -->
+    <!-- END CONTENT MARKER oiproc_operatorInterface_MON -->
+  </protection_domain>
+
+  <protection_domain name="fanproc_fan_MON" domain="domain_5">
+    <program_image path="fanproc_fan_MON.elf" />
+    <protection_domain name="fanproc_fan" domain="domain_5" id="1">
+      <program_image path="fanproc_fan.elf" />
+      <map mr="TempControlSystem_i_Instance_tcproc_tempControl_fanCmd_1_Memory_Region"
+           vaddr="0x10_000_000"
+           perms="r"
+           setvar_vaddr="fanCmd_queue_1"
+      />
+      <map mr="TempControlSystem_i_Instance_fanproc_fan_fanAck_1_Memory_Region"
+           vaddr="0x10_001_000"
+           perms="rw"
+           setvar_vaddr="fanAck_queue_1"
+      />
+
+      <!-- BEGIN CONTENT MARKER fanproc_fan -->
+      <!-- END CONTENT MARKER fanproc_fan -->
+    </protection_domain>
+
+    <!-- BEGIN CONTENT MARKER fanproc_fan_MON -->
+    <!-- END CONTENT MARKER fanproc_fan_MON -->
+  </protection_domain>
+
+  <protection_domain name="pacer" domain="domain_1">
+    <program_image path="pacer.elf" />
+
+    <!-- BEGIN CONTENT MARKER pacer -->
+    <!-- END CONTENT MARKER pacer -->
+  </protection_domain>
+
+  <memory_region name="TempControlSystem_i_Instance_tsproc_tempSensor_currentTemp_1_Memory_Region"
+                 size="0x1_000" />
+
+  <memory_region name="TempControlSystem_i_Instance_tcproc_tempControl_fanCmd_1_Memory_Region"
+                 size="0x1_000" />
+
+  <memory_region name="TempControlSystem_i_Instance_oiproc_operatorInterface_setPoint_1_Memory_Region"
+                 size="0x1_000" />
+
+  <memory_region name="TempControlSystem_i_Instance_fanproc_fan_fanAck_1_Memory_Region"
+                 size="0x1_000" />
+
+  <channel>
+    <end pd="pacer" id="61" />
+    <end pd="tsproc_tempSensor_MON" id="61" />
+  </channel>
+
+  <channel>
+    <end pd="tsproc_tempSensor_MON" id="60" />
+    <end pd="tsproc_tempSensor" id="60" />
+  </channel>
+
+  <channel>
+    <end pd="pacer" id="59" />
+    <end pd="tcproc_tempControl_MON" id="59" />
+  </channel>
+
+  <channel>
+    <end pd="tcproc_tempControl_MON" id="58" />
+    <end pd="tcproc_tempControl" id="58" />
+  </channel>
+
+  <channel>
+    <end pd="pacer" id="57" />
+    <end pd="oiproc_operatorInterface_MON" id="57" />
+  </channel>
+
+  <channel>
+    <end pd="oiproc_operatorInterface_MON" id="56" />
+    <end pd="oiproc_operatorInterface" id="56" />
+  </channel>
+
+  <channel>
+    <end pd="pacer" id="55" />
+    <end pd="fanproc_fan_MON" id="55" />
+  </channel>
+
+  <channel>
+    <end pd="fanproc_fan_MON" id="54" />
+    <end pd="fanproc_fan" id="54" />
+  </channel>
+
+  <!-- BEGIN MSD CONTENT MARKER -->
+  <!-- END MSD CONTENT MARKER -->
+</system>

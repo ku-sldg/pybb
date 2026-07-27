@@ -90,24 +90,31 @@ class PromotionOutcome(BaseModel):
 def make_promotion_predicate(
     protocols: Dict[str, Any],
     golden_root: Path,
-    spec: dict,
-    codegen_fn: Callable[[], str],
+    spec: Optional[dict] = None,
+    codegen_fn: Callable[[], str] = lambda: "no codegen configured",
     client: Any = None,
     validate_with: Optional[str] = None,
+    targets_fn: Optional[Callable[[], Dict[str, Dict[str, dict]]]] = None,
 ) -> Callable[[dict], PromotionOutcome]:
     """
     Predicate over promotion requests. `codegen_fn` re-runs HAMR on the
     sanctioned model and returns a description. `validate_with` (opt-in)
     names a semantic protocol that must pass, via `client`, before gold
-    moves. Memoized on the measurement per predicate lifetime.
+    moves. Target derivation backend: `targets_fn` (e.g. a
+    derive_targets_from_report closure — the HAMR attestation report as
+    the authoritative source of golden slices), else the syntax scan over
+    `spec`. Memoized on the measurement per predicate lifetime.
     """
+    if targets_fn is None:
+        assert spec is not None, "need spec (syntax scan) or targets_fn (report)"
+        targets_fn = lambda: derive_targets(spec)  # noqa: E731
     cache: Dict[str, PromotionOutcome] = {}
 
     def predicate(measurement: dict) -> PromotionOutcome:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
             cache[key] = _promote(
-                protocols, golden_root, spec, codegen_fn, client,
+                protocols, golden_root, targets_fn, codegen_fn, client,
                 validate_with, measurement,
             )
         return cache[key]
@@ -118,7 +125,7 @@ def make_promotion_predicate(
 def _promote(
     protocols: Dict[str, Any],
     golden_root: Path,
-    spec: dict,
+    targets_fn: Callable[[], Dict[str, Dict[str, dict]]],
     codegen_fn: Callable[[], str],
     client: Any,
     validate_with: Optional[str],
@@ -156,7 +163,7 @@ def _promote(
     # new target maps from the regenerated content, installed into the
     # shared ProtocolDirs (goldens cleared; provisioning refills them)
     try:
-        derived = derive_targets(spec)
+        derived = targets_fn()
     except OSError as e:
         return PromotionOutcome(model=model, codegen=codegen,
                                 validated=validated, error=f"target derivation failed: {e}")

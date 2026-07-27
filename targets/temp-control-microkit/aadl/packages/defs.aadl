@@ -1,0 +1,15 @@
+package defs
+public
+	with Base_Types;
+	
+	annex GUMBO {**
+		functions
+			def aboveAbsZero(value: Base_Types::Integer_32):
+				Base_Types::Boolean := s32"-460" < value;
+	**};
+	
+	annex agree {**
+		fun aboveAbsZero(value: Base_Types::Integer_32) : bool = (-460 < value);
+	**};
+	
+end defs;
