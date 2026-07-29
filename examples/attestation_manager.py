@@ -64,27 +64,10 @@ TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
 PROTOCOL_IDS = ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
 
 
-def _normalize(s: str) -> str:
-    return "".join(s.split())
-
-
 def changed_contracts(protocols: dict) -> list[str]:
-    """
-    Contract slices from last provisioning whose content no longer appears
-    in the (sanctioned) current AADL models. Position-independent, so a
-    merely-moved contract does not read as changed.
-    """
-    aadl_paths = {fp for fp, _ in TEMP_CONTROL_SPEC["aadl"]}
-    texts = {fp: _normalize(Path(fp).read_text()) for fp in aadl_paths}
-    changed = []
-    for targ, args in protocols["gumbo_l2"].asp_args.get("readfile_range", {}).items():
-        fp, golden = args.get("filepath"), args.get("golden_b64")
-        if fp not in texts or not golden:
-            continue
-        content = _normalize(base64.b64decode(golden).decode())
-        if content not in texts[fp]:
-            changed.append(targ)
-    return changed
+    """Detection via the shared helper: model-slice goldens vs current AADL."""
+    from pybb.attestation import changed_contracts as _changed
+    return _changed(protocols["gumbo_l2"])
 
 
 def sanctioned_demo_edit() -> None:

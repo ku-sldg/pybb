@@ -23,8 +23,12 @@ whole-file-immutable):
                         episode 2 verifies
 
 Usage:
-    python examples/microkit_attestation.py [--provision] [--promote]
-        [--tamper-verus] [--repair] [--validate]
+    python examples/microkit_attestation.py [--check] [--provision]
+        [--promote] [--tamper-verus] [--repair] [--validate]
+
+--check      attestation-manager detection: compare the model's contract
+             content against the provisioned golden slices (position-
+             independent); reports whether HAMR codegen is needed
 
 --validate   semantic tier: a passing tcmk_l1a is provisional until
              tcmk_verus confirms — cargo-verus verify must PROVE the
@@ -60,6 +64,7 @@ from pybb.attestation import (
     attestation_request,
     make_attestation_predicate,
     make_promotion_predicate,
+    changed_contracts,
     make_provision_predicate,
     make_readiness_predicate,
     readiness_request,
@@ -208,6 +213,7 @@ def attest_episode(protocols: dict, repair: bool,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
     parser.add_argument("--provision", action="store_true")
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
@@ -215,6 +221,18 @@ def main() -> None:
     parser.add_argument("--validate", action="store_true")
     cli = parser.parse_args()
 
+    if cli.check:
+        protocols = load_protocols()
+        changed = changed_contracts(protocols["tcmk_l2"])
+        if changed:
+            print("HAMR codegen needed — model contracts changed since "
+                  "last provisioning:")
+            for targ in changed:
+                print(f"  {targ}")
+        else:
+            print("No model contract changes since last provisioning; "
+                  "codegen not needed.")
+        return
     if cli.provision:
         protocols = build_protocol_dirs()
         provision_flow(protocols)

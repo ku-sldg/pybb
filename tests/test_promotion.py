@@ -173,3 +173,48 @@ def test_promotion_runs_before_provisioning_in_partition_order(tmp_path):
 
     assert order[:3] == ["promote", "provision:gumbo_l1a", "provision:gumbo_l2"]
     assert "promote:sys" in ctl.blackboard.provision  # rests as the record
+
+
+# ── changed_contracts: the attestation-manager detection helper ──────────────
+
+def _l2_protocol(tmp_path, contract: str):
+    import base64
+    model = tmp_path / "Sys.aadl"
+    model.write_text(f"package Sys\nannex GUMBO {{**\n  {contract}\n**}};\n")
+    rust = tmp_path / "gen.rs"
+    rust.write_text("// generated realization\n")
+    asp_args = {"readfile_range": {
+        "model_targ": {"filepath": str(model), "start_index": 3, "end_index": 3,
+                       "golden_b64": base64.b64encode(contract.encode()).decode()},
+        "rust_targ": {"filepath": str(rust), "start_index": 1, "end_index": 1,
+                      "golden_b64": base64.b64encode(b"stale realization").decode()},
+    }}
+    return ProtocolDir(protocol_id="l2", path="/nowhere", term={},
+                       session={}, manifest={}, asp_args=asp_args), model
+
+
+def test_changed_contracts_quiet_when_model_matches_gold(tmp_path):
+    from pybb.attestation import changed_contracts
+    protocol, _ = _l2_protocol(tmp_path, "inv Inv1: x > 0;")
+    assert changed_contracts(protocol) == []
+
+
+def test_changed_contracts_detects_edit_but_not_movement(tmp_path):
+    from pybb.attestation import changed_contracts
+    protocol, model = _l2_protocol(tmp_path, "inv Inv1: x > 0;")
+
+    # moved (line shift) but identical content: not a change
+    model.write_text("-- header\n" + model.read_text())
+    assert changed_contracts(protocol) == []
+
+    # edited contract content: detected
+    model.write_text(model.read_text().replace("x > 0", "x > 1"))
+    assert changed_contracts(protocol) == ["model_targ"]
+
+
+def test_changed_contracts_ignores_generated_realizations(tmp_path):
+    from pybb.attestation import changed_contracts
+    # the .rs golden is deliberately stale: codegen OUTPUTS are not inputs
+    # to the codegen-needed decision, so it must not read as changed
+    protocol, _ = _l2_protocol(tmp_path, "inv Inv1: x > 0;")
+    assert changed_contracts(protocol) == []

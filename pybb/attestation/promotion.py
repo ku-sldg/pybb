@@ -48,6 +48,36 @@ from .snapshot import TargetSnapshot
 from .targetmap import derive_targets, install_targets
 
 
+def changed_contracts(l2_protocol: Any, model_suffix: str = ".aadl") -> List[str]:
+    """
+    Attestation-manager detection: contract slices from last provisioning
+    whose golden content no longer appears in the current model files.
+    Position-independent (a moved contract is not a changed one), and
+    restricted to model files (`model_suffix`) — generated realizations
+    are codegen OUTPUTS, not inputs to the codegen-needed decision.
+    A changed result means HAMR codegen is needed: request_promotion.
+    """
+    import base64
+
+    def norm(s: str) -> str:
+        return "".join(s.split())
+
+    texts: Dict[str, str] = {}
+    changed: List[str] = []
+    for targ, args in l2_protocol.asp_args.get("readfile_range", {}).items():
+        fp, golden = args.get("filepath"), args.get("golden_b64")
+        if not fp or not fp.endswith(model_suffix) or not golden:
+            continue
+        if fp not in texts:
+            try:
+                texts[fp] = norm(Path(fp).read_text())
+            except OSError:
+                texts[fp] = ""  # missing model file: every slice reads changed
+        if norm(base64.b64decode(golden).decode()) not in texts[fp]:
+            changed.append(targ)
+    return changed
+
+
 def promotion_request(model: str) -> dict:
     """Measurement descriptor for a promotion request."""
     return {"model": model}
