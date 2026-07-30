@@ -67,6 +67,10 @@ from pybb.attestation.targetmap import (
     derive_targets_from_report,
     report_slices,
 )
+from pybb.attestation.tools import (
+    build_tools_protocol_dir,
+    weave_tool_measurements,
+)
 
 REPO = Path(__file__).parent.parent
 ISL_ROOT = REPO / "targets" / "isolette-microkit"
@@ -97,12 +101,18 @@ def verus_crates() -> list:
     return sorted(crates)
 
 
+# Just-in-time tool measurement: the verus toolchain is hashed in the
+# same term as the verification, before the use (~21 ms); the HAMR
+# toolchain is measured by the promotion gate right before codegen.
+TOOL_CADENCE = "per_use"
+HAMR_TOOLS_ID = "hamr_tools"
+
+
 def build_verus_protocol() -> ProtocolDir:
-    """isl_verus: report-derived crate list, tcmk_verus session/manifest."""
+    """isl_verus: report-derived crate list, tcmk_verus session/manifest,
+    verus toolchain measurements woven in per TOOL_CADENCE."""
     d = FIXTURES / "isl_verus"
     d.mkdir(exist_ok=True)
-    for f in ("session.json", "manifest.json"):
-        shutil.copy2(FIXTURES / "tcmk_verus" / f, d / f)
     targets = {
         f"isl_{crate}_verus_targ": {
             "exe_args": VERUS_ARGS,
@@ -123,16 +133,28 @@ def build_verus_protocol() -> ProtocolDir:
         acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
     term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
         acc, {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
+    session = json.loads((FIXTURES / "tcmk_verus" / "session.json").read_text())
+    manifest = json.loads((FIXTURES / "tcmk_verus" / "manifest.json").read_text())
+    n_tools = 0
+    if TOOL_CADENCE == "per_use":
+        asp_args, term, session, manifest = weave_tool_measurements(
+            asp_args, term, session, manifest)
+        n_tools = len(asp_args.get("hashfile", {}))
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
     (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette Verus Verification (semantic tier)",
         "description": "cargo-verus verify over every contract-bearing "
                        "isolette crate (report-derived): the generated Verus "
-                       "contracts must PROVE against the implemented behavior.",
+                       "contracts must PROVE against the implemented behavior. "
+                       "The verus toolchain is hashed in the same term, before "
+                       "the invocations (measure-then-use).",
         "copland": f"lseq( bseq( run_command_cargo_verus×{len(targets)} ), APPR )",
     }, indent=2) + "\n")
-    print(f"  isl_verus: {len(targets)} crates from report")
+    print(f"  isl_verus: {len(targets)} crates from report"
+          + (f" + {n_tools} woven tool measurements" if n_tools else ""))
     return ProtocolDir.load(str(d))
 
 
@@ -158,7 +180,15 @@ def build_protocol_dirs() -> dict:
         "slice goldens are derivable from the blessed content.")
     protocols[PROPS_ID] = ProtocolDir.load(str(FIXTURES / PROPS_ID))
     print(f"  {PROPS_ID}: {len(model_files)} blessed model files")
-    build_verus_protocol()
+    protocols["isl_verus"] = build_verus_protocol()
+    build_tools_protocol_dir(
+        FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
+        "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
+        "org.sireum OSATE plugins): measured in place at blessing, and "
+        "re-measured by the promotion gate immediately before codegen.")
+    protocols[HAMR_TOOLS_ID] = ProtocolDir.load(str(FIXTURES / HAMR_TOOLS_ID))
+    print(f"  {HAMR_TOOLS_ID}: "
+          f"{len(protocols[HAMR_TOOLS_ID].asp_args['hashfile'])} tool artifacts")
     return protocols
 
 
@@ -178,8 +208,12 @@ def load_protocols(validate: bool = False) -> dict:
 def provision_flow(protocols: dict) -> None:
     """Capture golden and provision all report-derived goldens on the
     blackboard (the provisioning run signs each evidence bundle; the
-    isl_props bundle is the administrator's blessing of the model files)."""
+    isl_props bundle is the administrator's blessing of the model files;
+    tool hash goldens land measure-in-place)."""
     measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
+    for pid in ("isl_verus", HAMR_TOOLS_ID):
+        if pid in protocols and "hashfile" in protocols[pid].asp_args:
+            measured[pid] = protocols[pid]
     snapshot = TargetSnapshot.capture(measured, dest=GOLDEN_ROOT)
     print(f"golden captured: {len(snapshot.files)} files")
     client = CvmSubprocessClient()

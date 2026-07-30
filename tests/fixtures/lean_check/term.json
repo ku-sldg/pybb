@@ -2,23 +2,129 @@
   "TERM_CONSTRUCTOR": "lseq",
   "TERM_BODY": [
     {
-      "TERM_CONSTRUCTOR": "asp",
-      "TERM_BODY": {
-        "ASP_CONSTRUCTOR": "ASPC",
-        "ASP_BODY": {
-          "ASP_ID": "run_command_lean",
-          "ASP_TARG_ID": "lean_spec_check_targ",
-          "ASP_ARGS": {
-            "exe_args": [
-              "lean",
-              "TempControl/Spec.lean",
-              "--",
-              "--json"
-            ],
-            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean"
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "lseq",
+          "TERM_BODY": [
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "bseq",
+                          "TERM_BODY": [
+                            "both_paths",
+                            {
+                              "TERM_CONSTRUCTOR": "bseq",
+                              "TERM_BODY": [
+                                "both_paths",
+                                {
+                                  "TERM_CONSTRUCTOR": "asp",
+                                  "TERM_BODY": {
+                                    "ASP_CONSTRUCTOR": "ASPC",
+                                    "ASP_BODY": {
+                                      "ASP_ID": "hashfile",
+                                      "ASP_TARG_ID": "tool_lean_lake_targ"
+                                    }
+                                  }
+                                },
+                                {
+                                  "TERM_CONSTRUCTOR": "asp",
+                                  "TERM_BODY": {
+                                    "ASP_CONSTRUCTOR": "ASPC",
+                                    "ASP_BODY": {
+                                      "ASP_ID": "hashfile",
+                                      "ASP_TARG_ID": "tool_lean_lake_2_targ"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "hashfile",
+                                  "ASP_TARG_ID": "tool_lean_lean_targ"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "tool_lean_lake_3_targ"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "tool_lean_leanchecker_targ"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "tool_lean_libleanshared_dylib_targ"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "run_command_lean",
+                  "ASP_TARG_ID": "lean_spec_check_targ",
+                  "ASP_ARGS": {
+                    "exe_args": [
+                      "lean",
+                      "TempControl/Spec.lean",
+                      "--",
+                      "--json"
+                    ],
+                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
           }
         }
-      }
+      ]
     },
     {
       "TERM_CONSTRUCTOR": "asp",

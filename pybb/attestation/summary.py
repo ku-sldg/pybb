@@ -41,9 +41,12 @@ def _attribution(trail: List[Verdict]) -> str:
         return errors[-1] if errors else "no appraisal evidence"
     # ties go to the later (finer) tier
     finest = max(reversed(failing_verdicts), key=lambda v: len(v.components))
-    names = sorted(
+    # deduplicate: bseq(both_paths) replicates prior evidence into every
+    # branch, so one violated event (e.g. a woven tool measurement) can be
+    # witnessed once per branch — same violation, one name
+    names = sorted({
         c.targ_id or c.description or c.target_asp for c in finest.failing()
-    )
+    })
     return f"failing components ({finest.protocol}): " + ", ".join(names)
 
 

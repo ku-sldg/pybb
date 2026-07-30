@@ -150,14 +150,38 @@ def _tier_verdict(protocol_id: str):
 
 
 @needs_lean
-def test_proofs_and_behavior_tiers_clean():
+def test_proofs_and_behavior_tiers_clean_with_woven_tools():
     check = _tier_verdict("lean_check")
     assert check.passed, check
-    assert {c.targ_id for c in check.components} == {"lean_spec_check_targ"}
+    check_targs = {c.targ_id for c in check.components}
+    assert "lean_spec_check_targ" in check_targs
+    # the lean toolchain was measured in the same term, before the use
+    tool_targs = {c.targ_id for c in check.components
+                  if (c.args.get("metadata") or "").startswith("tool::lean")}
+    assert len(tool_targs) == 6
     behavior = _tier_verdict("lean_exec")
     assert behavior.passed, behavior
-    assert {c.targ_id for c in behavior.components} == \
-        {"lean_exec_hot_targ", "lean_exec_cold_targ", "lean_exec_hold_targ"}
+    assert {"lean_exec_hot_targ", "lean_exec_cold_targ",
+            "lean_exec_hold_targ"} <= {c.targ_id for c in behavior.components}
+
+
+@needs_lean
+def test_tampered_tool_on_invocation_chain_fails_both_tiers():
+    """Measure-then-use: a modified artifact on the lean invocation chain
+    (the workspace wrapper) makes BOTH tier verdicts untrustworthy —
+    attributed to the tool target, regardless of what the tool outputs."""
+    orig = LAKE_WRAPPER.read_bytes()
+    LAKE_WRAPPER.write_bytes(orig + b"\n# TAMPERED: altered after blessing\n")
+    try:
+        check = _tier_verdict("lean_check")
+        assert not check.passed
+        assert {c.targ_id for c in check.failing()} == {"tool_lean_lake_targ"}
+        behavior = _tier_verdict("lean_exec")
+        assert not behavior.passed
+        assert {c.targ_id for c in behavior.failing()} == {"tool_lean_lake_targ"}
+    finally:
+        LAKE_WRAPPER.write_bytes(orig)
+    assert _tier_verdict("lean_check").passed
 
 
 @needs_lean

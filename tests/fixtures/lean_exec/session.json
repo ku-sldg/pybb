@@ -18,10 +18,42 @@
           "_BODY": 1
         },
         "ATTRS": []
+      },
+      "hashfile": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "NONE"
+        },
+        "ATTRS": []
+      },
+      "sig": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "ALL"
+        },
+        "ATTRS": []
+      },
+      "sig_appr": {
+        "FWD": {
+          "FWD": "REPLACE",
+          "_BODY": 1
+        },
+        "ATTRS": []
+      },
+      "goldenbytes_appr": {
+        "FWD": {
+          "FWD": "REPLACE",
+          "_BODY": 1
+        },
+        "ATTRS": []
       }
     },
     "ASP_Comps": {
-      "run_command_lean": "run_command_lean_appr"
+      "run_command_lean": "run_command_lean_appr",
+      "hashfile": "goldenbytes_appr",
+      "sig": "sig_appr"
     }
   }
 }

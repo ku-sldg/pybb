@@ -1,0 +1,135 @@
+{
+  "hashfile": {
+    "tool_cargo_verus_cargo_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_cargo_verus_2_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_rust_verify_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    }
+  },
+  "run_command_cargo_verus": {
+    "isl_operator_interface_oip_oit_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit"
+    },
+    "isl_thermostat_mt_ma_ma_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma"
+    },
+    "isl_thermostat_mt_mmi_mmi_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi"
+    },
+    "isl_thermostat_mt_mmm_mmm_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm"
+    },
+    "isl_thermostat_rt_mhs_mhs_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs"
+    },
+    "isl_thermostat_rt_mri_mri_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri"
+    },
+    "isl_thermostat_rt_mrm_mrm_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm"
+    }
+  }
+}

@@ -73,6 +73,11 @@ from pybb.attestation import (
     trust_summary,
 )
 from pybb.attestation.targetmap import build_term, derive_targets_from_report
+from pybb.attestation.tools import (
+    build_tools_protocol_dir,
+    make_tool_gate,
+    weave_tool_measurements,
+)
 
 REPO = Path(__file__).parent.parent
 TCMK_ROOT = REPO / "targets" / "temp-control-microkit"
@@ -82,6 +87,56 @@ GOLDEN_ROOT = REPO / "golden"
 PROTOCOL_IDS = ("tcmk_l1a", "tcmk_l2")
 TEMPLATES = {"tcmk_l1a": "gumbo_l1a", "tcmk_l2": "gumbo_l2"}
 SIREUM_STANDALONE = Path.home() / "Applications/Sireum/bin/sireum"
+
+# Just-in-time tool measurement: verus toolchain hashed in the tcmk_verus
+# term before the use; HAMR toolchain measured by the promotion gate
+# immediately before codegen runs (make_tool_gate).
+TOOL_CADENCE = "per_use"
+HAMR_TOOLS_ID = "hamr_tools"
+VERUS_CRATES = ("tcproc_tempControl", "tsproc_tempSensor")
+VERUS_ARGS = [
+    "verify", "-Z", "build-std=core,alloc,compiler_builtins",
+    "-Z", "build-std-features=compiler-builtins-mem",
+    "--target", "aarch64-unknown-none", "--", "--output-json", "--time",
+]
+
+
+def build_verus_protocol() -> ProtocolDir:
+    """tcmk_verus regenerated with verus toolchain measurements woven in."""
+    d = FIXTURES / "tcmk_verus"
+    targets = {
+        f"{'tc' if c.startswith('tcproc') else 'ts'}_verus_targ": {
+            "exe_args": VERUS_ARGS,
+            "cwd": str(TCMK_ROOT / "hamr" / "microkit" / "crates" / c),
+        }
+        for c in VERUS_CRATES
+    }
+    asp_args = {"run_command_cargo_verus": targets}
+    nodes = [
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": "run_command_cargo_verus",
+                         "ASP_TARG_ID": targ, "ASP_ARGS": args}}}
+        for targ, args in targets.items()
+    ]
+    acc = nodes[0]
+    for node in nodes[1:]:
+        acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        acc, {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
+    session = json.loads((d / "session.json").read_text())
+    manifest = json.loads((d / "manifest.json").read_text())
+    if TOOL_CADENCE == "per_use" and "hashfile" not in asp_args:
+        asp_args, term, session, manifest = weave_tool_measurements(
+            asp_args, term, session, manifest)
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
+    (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+    print(f"  tcmk_verus: {len(targets)} crates"
+          + (f" + {len(asp_args.get('hashfile', {}))} woven tool measurements"
+             if "hashfile" in asp_args else ""))
+    return ProtocolDir.load(str(d))
 
 
 def derive_report_targets():
@@ -102,6 +157,13 @@ def build_protocol_dirs() -> dict:
         (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in asp_args.values())} targets from report")
+    protocols["tcmk_verus"] = build_verus_protocol()
+    build_tools_protocol_dir(
+        FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
+        "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
+        "org.sireum OSATE plugins): measured in place at blessing, and "
+        "re-measured by the promotion gate immediately before codegen.")
+    protocols[HAMR_TOOLS_ID] = ProtocolDir.load(str(FIXTURES / HAMR_TOOLS_ID))
     return protocols
 
 
@@ -150,13 +212,18 @@ def provision_flow(protocols: dict) -> None:
 
 
 def promote_flow(protocols: dict) -> None:
-    """Full lifecycle: real codegen -> report-driven targets -> gold -> goldens."""
+    """Full lifecycle: real codegen -> report-driven targets -> gold -> goldens.
+    The HAMR toolchain is measured immediately before codegen (tool_gate):
+    promotion is refused if the tools drift from their blessed hashes."""
     client = CvmSubprocessClient()
+    hamr_tools = ProtocolDir.load(str(FIXTURES / HAMR_TOOLS_ID)) \
+        if (FIXTURES / HAMR_TOOLS_ID / "session.json").is_file() else None
     ctl = BlackboardController()
     ctl.register_predicate("promotion", make_promotion_predicate(
         protocols, GOLDEN_ROOT,
         codegen_fn=hamr_microkit_codegen,
         targets_fn=derive_report_targets,
+        tool_gate=make_tool_gate(client, hamr_tools) if hamr_tools else None,
     ))
     ctl.register_predicate("provision",
                            make_provision_predicate(client, protocols, GOLDEN_ROOT))

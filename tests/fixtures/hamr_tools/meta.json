@@ -1,0 +1,5 @@
+{
+  "name": "hamr toolchain measurement",
+  "description": "The HAMR codegen + report-emitter toolchain (sireum.jar + the org.sireum OSATE plugins): measured in place at blessing, and re-measured by the promotion gate immediately before codegen.",
+  "copland": "lseq( lseq( bseq( hashfile\u00d79 ), SIG ), APPR )"
+}

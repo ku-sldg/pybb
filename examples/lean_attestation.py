@@ -68,6 +68,11 @@ from pybb.attestation import (
 )
 from pybb.attestation.props import write_props_protocol_dir
 from pybb.attestation.targetmap import build_term, derive_targets_from_lean
+from pybb.attestation.tools import (
+    lean_artifacts,
+    register_tool,
+    weave_tool_measurements,
+)
 
 REPO = Path(__file__).parent.parent
 LEAN_ROOT = REPO / "targets" / "temp-control-lean"
@@ -78,6 +83,104 @@ PROPS_ID = "lean_props"
 TIER_IDS = ("lean_check", "lean_exec")
 TEMPLATES = {"lean_l1a": "gumbo_l1a", "lean_l2": "gumbo_l2"}
 SPEC_FILE = LEAN_ROOT / "TempControl" / "Spec.lean"
+
+# Just-in-time tool measurement: the lean toolchain (wrapper -> elan shim
+# -> pinned binaries -> elaborator library) is hashed IN THE SAME TERM as
+# each tier's tool invocation, sequenced before the use. Cadence is the
+# optimization parameter (~123 ms per woven term): "per_use" (default),
+# "per_episode" (standalone tools entry), "provision_only" (blessed
+# hashes, no live re-measurement).
+TOOL_CADENCE = "per_use"
+register_tool("lean", lambda: lean_artifacts(LEAN_ROOT))
+
+_APPR = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}
+TIER_SESSION = {
+    "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
+    "Session_Context": {
+        "ASP_Types": {
+            "run_command_lean": {
+                "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                "ATTRS": []},
+            "run_command_lean_appr": {
+                "FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []},
+        },
+        "ASP_Comps": {"run_command_lean": "run_command_lean_appr"},
+    },
+}
+TIER_MANIFEST = {"ASPS": ["run_command_lean", "run_command_lean_appr"],
+                 "ASP_FS_MAP": {}, "POLICY": []}
+TIER_TARGETS = {
+    "lean_check": {
+        "lean_spec_check_targ": {
+            "exe_args": ["lean", "TempControl/Spec.lean", "--", "--json"],
+            "cwd": str(LEAN_ROOT)},
+    },
+    "lean_exec": {
+        "lean_exec_hot_targ": {
+            "exe_args": ["exe", "temp-control", "101", "70", "90", "Off"],
+            "cwd": str(LEAN_ROOT), "expected": "fanCmd=On"},
+        "lean_exec_cold_targ": {
+            "exe_args": ["exe", "temp-control", "60", "70", "90", "On"],
+            "cwd": str(LEAN_ROOT), "expected": "fanCmd=Off"},
+        "lean_exec_hold_targ": {
+            "exe_args": ["exe", "temp-control", "80", "70", "90", "On"],
+            "cwd": str(LEAN_ROOT), "expected": "fanCmd=On"},
+    },
+}
+TIER_META = {
+    "lean_check": {
+        "name": "Lean Proof Check (semantic tier)",
+        "description": "Runs `lake lean TempControl/Spec.lean -- --json`: "
+                       "every theorem must still PROVE. The appraiser fails "
+                       "on any error diagnostic or hasSorry warning. The "
+                       "lean toolchain is hashed in the same term, before "
+                       "the invocation (measure-then-use).",
+    },
+    "lean_exec": {
+        "name": "Lean Executable Behavior (exec tier)",
+        "description": "Runs the built temp-control binary via `lake exe` "
+                       "on one input vector per GUMBO case; the appraiser "
+                       "compares stdout to the expected command. The lean "
+                       "toolchain is hashed in the same term, before the "
+                       "invocations (measure-then-use).",
+    },
+}
+
+
+def _tier_term(asp_id: str, targets: dict) -> dict:
+    nodes = [
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": asp_id, "ASP_TARG_ID": targ,
+                         "ASP_ARGS": args}}}
+        for targ, args in targets.items()
+    ]
+    acc = nodes[0]
+    for node in nodes[1:]:
+        acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
+    return {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [acc, _APPR]}
+
+
+def build_tier_protocol_dirs() -> None:
+    """(Re)generate the semantic-tier dirs from the base config, with tool
+    measurements woven in per TOOL_CADENCE."""
+    for pid, targets in TIER_TARGETS.items():
+        asp_args = {"run_command_lean": dict(targets)}
+        term = _tier_term("run_command_lean", targets)
+        session, manifest = TIER_SESSION, TIER_MANIFEST
+        if TOOL_CADENCE == "per_use":
+            asp_args, term, session, manifest = weave_tool_measurements(
+                asp_args, term, session, manifest)
+        d = FIXTURES / pid
+        d.mkdir(exist_ok=True)
+        (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+        (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+        (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
+        (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+        (d / "meta.json").write_text(json.dumps(TIER_META[pid], indent=2) + "\n")
+        n_tools = len(asp_args.get("hashfile", {}))
+        print(f"  {pid}: {len(targets)} targets"
+              + (f" + {n_tools} woven tool measurements" if n_tools else ""))
 
 
 def build_protocol_dirs() -> dict:
@@ -101,6 +204,9 @@ def build_protocol_dirs() -> dict:
         "goldens are derivable from the blessed content.")
     protocols[PROPS_ID] = ProtocolDir.load(str(FIXTURES / PROPS_ID))
     print(f"  {PROPS_ID}: 1 blessed spec file")
+    build_tier_protocol_dirs()
+    for pid in TIER_IDS:
+        protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
     return protocols
 
 
@@ -119,10 +225,14 @@ def load_protocols(validate: bool = False) -> dict:
 
 
 def provision_flow(protocols: dict) -> None:
-    """Capture golden and provision the scan-derived goldens on the
-    blackboard (the lean_props bundle is the administrator's blessing of
-    the spec file)."""
+    """Capture golden and provision on the blackboard: measurement
+    protocols, the spec blessing (lean_props), and — with woven tool
+    measurements — the tier protocols, whose tool hash goldens land
+    measure-in-place (live artifacts, no golden copies)."""
     measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
+    for pid in TIER_IDS:
+        if pid in protocols and "hashfile" in protocols[pid].asp_args:
+            measured[pid] = protocols[pid]
     snapshot = TargetSnapshot.capture(measured, dest=GOLDEN_ROOT)
     print(f"golden captured: {len(snapshot.files)} files")
     client = CvmSubprocessClient()

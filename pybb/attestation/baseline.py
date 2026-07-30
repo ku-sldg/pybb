@@ -97,7 +97,7 @@ def _golden_records(protocol: Any, golden_root: Path, golden_ids: set) -> List[d
             continue
         for targ_id, args in targets.items():
             rec_args = {k: v for k, v in args.items() if k not in _BOOKKEEPING_KEYS}
-            if rec_args.get("filepath"):
+            if rec_args.get("filepath") and not rec_args.get("measure_in_place"):
                 rec_args["filepath"] = _mirror(golden_root, rec_args["filepath"])
             records.append({"asp_id": asp_id, "targ_id": targ_id,
                             "args": rec_args,

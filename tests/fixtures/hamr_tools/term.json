@@ -1,0 +1,160 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "bseq",
+          "TERM_BODY": [
+            "both_paths",
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "bseq",
+                          "TERM_BODY": [
+                            "both_paths",
+                            {
+                              "TERM_CONSTRUCTOR": "bseq",
+                              "TERM_BODY": [
+                                "both_paths",
+                                {
+                                  "TERM_CONSTRUCTOR": "bseq",
+                                  "TERM_BODY": [
+                                    "both_paths",
+                                    {
+                                      "TERM_CONSTRUCTOR": "bseq",
+                                      "TERM_BODY": [
+                                        "both_paths",
+                                        {
+                                          "TERM_CONSTRUCTOR": "asp",
+                                          "TERM_BODY": {
+                                            "ASP_CONSTRUCTOR": "ASPC",
+                                            "ASP_BODY": {
+                                              "ASP_ID": "hashfile",
+                                              "ASP_TARG_ID": "hamr_tool_hamr_sireum_jar_targ"
+                                            }
+                                          }
+                                        },
+                                        {
+                                          "TERM_CONSTRUCTOR": "asp",
+                                          "TERM_BODY": {
+                                            "ASP_CONSTRUCTOR": "ASPC",
+                                            "ASP_BODY": {
+                                              "ASP_ID": "hashfile",
+                                              "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_gumbo_ide_1_0_0_18efbba7_jar_targ"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "TERM_CONSTRUCTOR": "asp",
+                                      "TERM_BODY": {
+                                        "ASP_CONSTRUCTOR": "ASPC",
+                                        "ASP_BODY": {
+                                          "ASP_ID": "hashfile",
+                                          "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_gumbo_ui_1_0_0_18efbba7_jar_targ"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "TERM_CONSTRUCTOR": "asp",
+                                  "TERM_BODY": {
+                                    "ASP_CONSTRUCTOR": "ASPC",
+                                    "ASP_BODY": {
+                                      "ASP_ID": "hashfile",
+                                      "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_gumbo_1_2026_6240925_18efbba7_jar_targ"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "hashfile",
+                                  "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_osate_awas_1_2026_7131214_177108b3_jar_targ"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_osate_cli_1_2026_7131214_177108b3_jar_targ"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_osate_gumbo2air_1_2026_6240925_18efbba7_jar_targ"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_osate_hamr_1_2026_7131214_177108b3_jar_targ"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "hashfile",
+                  "ASP_TARG_ID": "hamr_tool_hamr_org_sireum_aadl_osate_1_2026_7131214_177108b3_jar_targ"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

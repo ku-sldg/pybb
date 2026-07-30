@@ -1,5 +1,4 @@
 {
   "name": "Lean Proof Check (semantic tier)",
-  "description": "Runs `lake lean TempControl/Spec.lean -- --json` (imports built first, then the spec re-elaborated): every theorem must still PROVE. The appraiser fails on any error diagnostic or hasSorry warning (a sorry exits 0, so exit codes alone would bless it).",
-  "copland": "lseq( run_command_lean, APPR )"
+  "description": "Runs `lake lean TempControl/Spec.lean -- --json`: every theorem must still PROVE. The appraiser fails on any error diagnostic or hasSorry warning. The lean toolchain is hashed in the same term, before the invocation (measure-then-use)."
 }

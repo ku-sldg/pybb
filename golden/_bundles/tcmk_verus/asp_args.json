@@ -1,0 +1,60 @@
+{
+  "hashfile": {
+    "tool_cargo_verus_cargo_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_cargo_verus_2_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_rust_verify_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    },
+    "tool_cargo_verus_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus"
+    }
+  },
+  "run_command_cargo_verus": {
+    "tc_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+    },
+    "ts_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+    }
+  }
+}

@@ -172,7 +172,14 @@ def test_isl_l1a_pass_confirmed_by_verus():
     entry = bb.get_entry("isl:files")
     assert entry is not None and entry.good_standing, entry
     assert entry.result.protocol == "isl_verus"
-    assert len(entry.result.components) == 7  # every contract-bearing crate
+    crates = {c.targ_id for c in entry.result.components
+              if c.targ_id and c.targ_id.startswith("isl_")
+              and c.targ_id.endswith("_verus_targ")}
+    assert len(crates) == 7  # every contract-bearing crate
+    # the verus toolchain was measured in the same term, before the uses
+    tools = {c.targ_id for c in entry.result.components
+             if (c.args.get("metadata") or "").startswith("tool::cargo-verus")}
+    assert len(tools) == 4
     assert "isl_l1a passed; confirmed by isl_verus" in \
         trust_summary(bb, semantic=["isl_verus"])
 

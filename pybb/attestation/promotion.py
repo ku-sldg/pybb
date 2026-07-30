@@ -125,10 +125,15 @@ def make_promotion_predicate(
     client: Any = None,
     validate_with: Optional[str] = None,
     targets_fn: Optional[Callable[[], Dict[str, Dict[str, dict]]]] = None,
+    tool_gate: Optional[Callable[[], Optional[str]]] = None,
 ) -> Callable[[dict], PromotionOutcome]:
     """
     Predicate over promotion requests. `codegen_fn` re-runs HAMR on the
-    sanctioned model and returns a description. `validate_with` (opt-in)
+    sanctioned model and returns a description. `tool_gate` (opt-in;
+    see tools.make_tool_gate) measures the codegen toolchain IMMEDIATELY
+    BEFORE codegen_fn runs and refuses promotion on drift from the
+    blessed hashes — every report/codegen event is bound to a measured
+    emitter. `validate_with` (opt-in)
     names a semantic protocol that must pass, via `client`, before gold
     moves. Target derivation backend: `targets_fn` (e.g. a
     derive_targets_from_report closure — the HAMR attestation report as
@@ -145,7 +150,7 @@ def make_promotion_predicate(
         if key not in cache:
             cache[key] = _promote(
                 protocols, golden_root, targets_fn, codegen_fn, client,
-                validate_with, measurement,
+                validate_with, measurement, tool_gate,
             )
         return cache[key]
 
@@ -160,8 +165,16 @@ def _promote(
     client: Any,
     validate_with: Optional[str],
     measurement: dict,
+    tool_gate: Optional[Callable[[], Optional[str]]] = None,
 ) -> PromotionOutcome:
     model = measurement.get("model", "")
+
+    if tool_gate is not None:
+        gate_error = tool_gate()
+        if gate_error:
+            return PromotionOutcome(
+                model=model,
+                error=f"toolchain gate refused codegen: {gate_error}")
 
     try:
         codegen = codegen_fn()

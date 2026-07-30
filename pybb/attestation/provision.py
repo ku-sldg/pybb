@@ -202,7 +202,14 @@ def _provision(
         args = {k: v for k, v in (body.get("ASP_ARGS") or {}).items()
                 if k not in _BOOKKEEPING_KEYS}
         filepath = args.get("filepath")
-        if filepath:
+        if filepath and args.get("measure_in_place"):
+            # tool artifacts: hash the LIVE file at blessing time — there
+            # is no golden copy (toolchains are not golden-restorable and
+            # their binaries do not belong in the repository); the
+            # installed hash golden is protected by the bundle signature
+            if not Path(filepath).is_file():
+                missing.append(filepath)
+        elif filepath:
             golden_copy = mirror_path(golden_root, Path(filepath))
             if not golden_copy.is_file():
                 missing.append(filepath)
@@ -296,6 +303,6 @@ def _provision(
 
 def _golden_args(args: dict, golden_root: Path) -> dict:
     out = {k: v for k, v in args.items() if k not in _BOOKKEEPING_KEYS}
-    if out.get("filepath"):
+    if out.get("filepath") and not out.get("measure_in_place"):
         out["filepath"] = str(mirror_path(golden_root, Path(out["filepath"])))
     return out

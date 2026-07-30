@@ -38,3 +38,8 @@ builds are multi-minute and RUN_VERUS-gated in tests). The laundering
 negative — re-provisioning the measurement baselines over a tampered
 golden tree, refuted only by the administrator's blessing — is an
 automated test; see `signed_baselines.md`.
+
+Toolchain identity (see `signed_baselines.md`): `isl_verus` hashes the
+verus toolchain in the same term, before the verifications; `hamr_tools`
+(sireum.jar + OSATE plugins) is blessed measure-in-place and re-measured
+by the promotion gate immediately before codegen.

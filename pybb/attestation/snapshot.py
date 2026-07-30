@@ -26,13 +26,15 @@ def mirror_path(root: Path, live: Path) -> Path:
 
 
 def watched_files(protocols: Dict[str, Any]) -> Set[Path]:
-    """Every filepath referenced by the protocols' asp_args."""
+    """Every filepath referenced by the protocols' asp_args — except
+    measure-in-place targets (tool artifacts): those are hashed live at
+    provisioning, never snapshot-copied, and cannot be golden-restored."""
     return {
         Path(args["filepath"])
         for proto in protocols.values()
         for targets in proto.asp_args.values()
         for args in targets.values()
-        if args.get("filepath")
+        if args.get("filepath") and not args.get("measure_in_place")
     }
 
 

@@ -1,4 +1,38 @@
 {
+  "hashfile": {
+    "tool_cargo_verus_cargo_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "golden_b64": "fBUd3tk3Sb/Apw5lij5DyY2X1hNqeHLtBQLoEiihIII=",
+      "golden_ts": "2026-07-30 15:00:15"
+    },
+    "tool_cargo_verus_cargo_verus_2_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "golden_b64": "8BsYQYkX23ppQblNgLvmb+bJ7pVQShsHqfN4mUuLHzY=",
+      "golden_ts": "2026-07-30 15:00:15"
+    },
+    "tool_cargo_verus_rust_verify_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "golden_b64": "0Rmu8+j69QSxFO0pWMVYkDVe+NVlnfCh2Bn0w3/NqN4=",
+      "golden_ts": "2026-07-30 15:00:15"
+    },
+    "tool_cargo_verus_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "golden_b64": "6YFdT4PzWgJhB5/Xc9I0tffcA5vn9HOU8YFaNqDYSu0=",
+      "golden_ts": "2026-07-30 15:00:15"
+    }
+  },
   "run_command_cargo_verus": {
     "tc_verus_targ": {
       "exe_args": [

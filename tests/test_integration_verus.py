@@ -66,8 +66,12 @@ def test_l1a_pass_confirmed_by_verus():
     entry = bb.get_entry("tcmk:files")
     assert entry is not None and entry.good_standing, entry
     assert entry.result.protocol == "tcmk_verus"
-    assert {c.targ_id for c in entry.result.components} == \
-        {"tc_verus_targ", "ts_verus_targ"}
+    targs = {c.targ_id for c in entry.result.components}
+    assert {"tc_verus_targ", "ts_verus_targ"} <= targs
+    # the verus toolchain was measured in the same term, before the uses
+    tools = {c.targ_id for c in entry.result.components
+             if (c.args.get("metadata") or "").startswith("tool::cargo-verus")}
+    assert len(tools) == 4
     assert "tcmk_l1a passed; confirmed by tcmk_verus" in \
         trust_summary(bb, semantic=["tcmk_verus"])
 

@@ -98,6 +98,51 @@ goldens anchored, provisioning timestamp. All protocols with bundles are
 loaded as anchor sources, so props bundles are audited with full
 hash-and-slice anchoring. Exit 1 on any failure.
 
+## Tool identity: measure-then-use
+
+The verifier toolchains themselves are measured targets
+(`pybb/attestation/tools.py` — the parameterizable registry of what
+constitutes each tool's identity):
+
+| Tool | Artifacts | Measured when |
+|---|---|---|
+| `lean` | 6: workspace wrapper → elan shim → pinned toolchain binaries → `libleanshared.dylib` (the pin is read from the package's `lean-toolchain`, itself hash-anchored) | woven into `lean_check` / `lean_exec` |
+| `cargo-verus` | 4: wrapper + distro `cargo-verus`, `rust_verify`, `verus` | woven into `isl_verus` / `tcmk_verus` |
+| `hamr` | 9: `sireum.jar` + the 8 `org.sireum` OSATE plugins | promotion gate, immediately before codegen |
+
+**Weaving** (`weave_tool_measurements`): the tool's artifacts are hashed
+in the SAME term as the tool invocation, sequenced before the use —
+`lseq( lseq( lseq( bseq(hashfile×N), body ), SIG ), APPR )` — so the
+evidence order witnesses "the tool was in this state immediately before
+it ran". A verdict produced by an unsanctioned tool fails attestation
+attributed to the `tool::` target, regardless of the tool's output
+(demonstrated: a byte appended to the lake wrapper fails both Lean tiers).
+
+**Provisioning** is measure-in-place: tool artifacts are hashed live at
+blessing time (no golden copies — toolchains are not golden-restorable
+and 128M jars do not belong in the repository); the installed hash
+goldens are protected by the bundle signature like every other golden.
+
+**The promotion gate** (`make_tool_gate` + `make_promotion_predicate`'s
+`tool_gate`): the HAMR toolchain is re-measured against its blessed
+hashes immediately before `codegen_fn` runs, and promotion is refused on
+drift — every attestation-report emission is bound to a measured emitter.
+This is the A2′ upgrade of the audit argument: "the translation performed
+by THE MEASURED TOOL is faithful", falsifiable by substitution.
+
+**Cadence** is the optimization parameter (`TOOL_CADENCE` in the
+drivers): `per_use` (default; ~123 ms lean / ~21 ms verus per woven term
+with the asm-accelerated hashfile — in vivo, +0.41 s on a 1.13 s
+validated Lean episode, of which ~150 ms is readiness verifying the
+tiers' new bundles), `per_episode` (a standalone tools entry), or
+`provision_only` (blessed hashes, no live re-measurement).
+
+**Deliberately out of scope** (recorded decision): the attestation stack
+itself (cvm binary, ASP executables). Self-measurement is drift
+detection, not a root of trust; a system mechanism (e.g. TPM-backed boot
+attestation) is the right tool for that layer, and the registry accepts
+it later without redesign.
+
 ## Recorded limitations
 
 - **Key custody is the real trust root.** The signing keypair is the demo

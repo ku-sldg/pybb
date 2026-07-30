@@ -100,3 +100,9 @@ behavior still passes (`tests/test_integration_lean.py`).
   must equal the scan), clean attestation, tamper→attribution→repair→verify
   (auto-run when the CVM stack is present); the toolchain tiers — clean,
   sorry-separation, laundered double refutation — gated behind `RUN_LEAN=1`.
+
+**Toolchain identity** (see `signed_baselines.md`): both tiers hash the
+lean invocation chain (wrapper → elan shim → pinned binaries →
+elaborator library, 6 artifacts) in the same term, before invoking lake —
+a tampered artifact anywhere on the chain fails both tiers attributed to
+the `tool::` target, regardless of the tool's output.

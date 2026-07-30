@@ -118,8 +118,10 @@ def test_readiness_verifies_signed_baselines():
                                          client=_client())
     report = predicate(readiness_request(list(protocols)))
     assert report, (report.problems, report.baseline_problems)
-    # golden-bearing protocols verified; semantic tiers have no baseline
-    assert report.baseline_verified == ["lean_l1a", "lean_l2"]
+    # every golden-bearing protocol verified — including the tiers, whose
+    # woven tool measurements carry measure-in-place hash goldens
+    assert report.baseline_verified == ["lean_l1a", "lean_l2",
+                                        "lean_check", "lean_exec"]
 
 
 def test_readiness_reports_baseline_integrity_as_distinct_category():
