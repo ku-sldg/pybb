@@ -197,3 +197,73 @@ def test_laundered_behavior_change_refuted_by_proof_and_behavior():
         assert failing == {"lean_exec_hot_targ"}  # cold and hold still match
     finally:
         IMPL.write_text(orig)
+
+
+# ── signed golden spec (props): the administrator-blessed Spec.lean ───────────
+
+def test_props_blesses_the_spec_and_anchors_are_not_vacuous():
+    from pybb.attestation import verify_bundle
+    from pybb.attestation.baseline import _build_anchors
+
+    protocols = _protocols("lean_props")
+    committed = protocols["lean_props"].asp_args["readfile"]
+    assert [a["filepath"] for a in committed.values()] == [str(SPEC)]
+    assert all(a.get("golden_b64") for a in committed.values())
+    # the blessed spec anchors its hash golden AND every declaration slice
+    # lean_l2 installs for Spec.lean (theorems, invariant, examples)
+    anchors = _build_anchors(protocols)
+    assert anchors[str(SPEC)].get("hash_golden_b64")
+    assert len(anchors[str(SPEC)]["slices"]) == 8
+    report = verify_bundle(CvmSubprocessClient(), protocols["lean_props"],
+                           GOLDEN_ROOT, anchor_protocols=protocols)
+    assert report, report.problems
+    assert report.anchored == ["lean_props_spec_targ"]
+
+
+def test_laundered_theorem_refuted_by_blessing():
+    """Tamper a theorem in the GOLDEN tree and re-provision the measurement
+    protocols: their baselines re-sign self-consistently and verify — only
+    the administrator's blessing of Spec.lean (not re-provisioned) refutes
+    the laundered goldens."""
+    from pybb import BlackboardController
+    from pybb.attestation import (make_provision_predicate,
+                                  make_readiness_predicate, readiness_request,
+                                  request_provision)
+
+    pids = ["lean_l1a", "lean_l2", "lean_props"]
+    protocols = {p: ProtocolDir.load(str(FIXTURES / p)) for p in pids}
+    client = CvmSubprocessClient()
+    args = protocols["lean_l2"].asp_args["readfile_range"][
+        "lean_spec_fanOn_when_hot_targ"]
+    gold = Path("golden" + args["filepath"])
+    orig = gold.read_bytes()
+
+    def reprovision():
+        ctl = BlackboardController()
+        sub = {p: protocols[p] for p in ("lean_l1a", "lean_l2")}
+        ctl.register_predicate("provision",
+                               make_provision_predicate(client, sub, GOLDEN_ROOT))
+        for p in sub:
+            request_provision(ctl.blackboard, p)
+        bb = ctl.run()
+        assert not bb.get_escalate(), bb.get_escalate()
+
+    lines = gold.read_text().splitlines(keepends=True)
+    lines[args["start_index"]] = "    computeFanCmd temp sp latest = .Off := by\n"
+    gold.write_text("".join(lines))
+    try:
+        reprovision()
+        report = make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT,
+            client=CvmSubprocessClient())(readiness_request(pids))
+        assert not report
+        assert report.baseline_verified == ["lean_l1a", "lean_l2"]
+        assert any("lean_props" in p and "not derivable from blessed content" in p
+                   for p in report.baseline_problems)
+    finally:
+        gold.write_bytes(orig)
+        reprovision()
+    report = make_readiness_predicate(
+        protocols, baseline_root=GOLDEN_ROOT,
+        client=CvmSubprocessClient())(readiness_request(pids))
+    assert report, (report.problems, report.baseline_problems)

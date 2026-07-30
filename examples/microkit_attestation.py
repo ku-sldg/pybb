@@ -188,10 +188,13 @@ def tamper_verus(protocols: dict) -> None:
 def attest_episode(protocols: dict, repair: bool,
                    validate: bool = False) -> BlackboardController:
     controller = BlackboardController()
+    client = CvmSubprocessClient()
     controller.register_predicate(
-        "attestation", make_attestation_predicate(CvmSubprocessClient(), protocols))
+        "attestation", make_attestation_predicate(client, protocols))
     controller.register_predicate("protocol_check",
-                                  make_readiness_predicate(protocols))
+                                  make_readiness_predicate(
+                                      protocols, baseline_root=GOLDEN_ROOT,
+                                      client=client))
     fail_chain = [TierKS(protocol_id="tcmk_l2")]
     if repair:
         fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,

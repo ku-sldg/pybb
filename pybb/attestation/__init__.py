@@ -1,4 +1,5 @@
 from .appraisal import ComponentResult, overall_verdict, parse_appraisal, parse_appsumm
+from .baseline import BaselineReport, verify_bundle
 from .client import (
     AttestationClient,
     CvmConfig,
@@ -50,7 +51,9 @@ __all__ = [
     "Verdict",
     "attestation_request",
     "make_attestation_predicate",
+    "BaselineReport",
     "ReadinessReport",
+    "verify_bundle",
     "make_readiness_predicate",
     "readiness_request",
     "SliceRestoreKS",

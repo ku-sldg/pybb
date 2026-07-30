@@ -1,0 +1,222 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "bseq",
+      "TERM_BODY": [
+        "both_paths",
+        {
+          "TERM_CONSTRUCTOR": "bseq",
+          "TERM_BODY": [
+            "both_paths",
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "bseq",
+                          "TERM_BODY": [
+                            "both_paths",
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "run_command_cargo_verus",
+                                  "ASP_TARG_ID": "isl_operator_interface_oip_oit_verus_targ",
+                                  "ASP_ARGS": {
+                                    "exe_args": [
+                                      "verify",
+                                      "-Z",
+                                      "build-std=core,alloc,compiler_builtins",
+                                      "-Z",
+                                      "build-std-features=compiler-builtins-mem",
+                                      "--target",
+                                      "aarch64-unknown-none",
+                                      "--",
+                                      "--output-json",
+                                      "--time"
+                                    ],
+                                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit"
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "run_command_cargo_verus",
+                                  "ASP_TARG_ID": "isl_thermostat_mt_ma_ma_verus_targ",
+                                  "ASP_ARGS": {
+                                    "exe_args": [
+                                      "verify",
+                                      "-Z",
+                                      "build-std=core,alloc,compiler_builtins",
+                                      "-Z",
+                                      "build-std-features=compiler-builtins-mem",
+                                      "--target",
+                                      "aarch64-unknown-none",
+                                      "--",
+                                      "--output-json",
+                                      "--time"
+                                    ],
+                                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "run_command_cargo_verus",
+                              "ASP_TARG_ID": "isl_thermostat_mt_mmi_mmi_verus_targ",
+                              "ASP_ARGS": {
+                                "exe_args": [
+                                  "verify",
+                                  "-Z",
+                                  "build-std=core,alloc,compiler_builtins",
+                                  "-Z",
+                                  "build-std-features=compiler-builtins-mem",
+                                  "--target",
+                                  "aarch64-unknown-none",
+                                  "--",
+                                  "--output-json",
+                                  "--time"
+                                ],
+                                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi"
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "run_command_cargo_verus",
+                          "ASP_TARG_ID": "isl_thermostat_mt_mmm_mmm_verus_targ",
+                          "ASP_ARGS": {
+                            "exe_args": [
+                              "verify",
+                              "-Z",
+                              "build-std=core,alloc,compiler_builtins",
+                              "-Z",
+                              "build-std-features=compiler-builtins-mem",
+                              "--target",
+                              "aarch64-unknown-none",
+                              "--",
+                              "--output-json",
+                              "--time"
+                            ],
+                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "run_command_cargo_verus",
+                      "ASP_TARG_ID": "isl_thermostat_rt_mhs_mhs_verus_targ",
+                      "ASP_ARGS": {
+                        "exe_args": [
+                          "verify",
+                          "-Z",
+                          "build-std=core,alloc,compiler_builtins",
+                          "-Z",
+                          "build-std-features=compiler-builtins-mem",
+                          "--target",
+                          "aarch64-unknown-none",
+                          "--",
+                          "--output-json",
+                          "--time"
+                        ],
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs"
+                      }
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "run_command_cargo_verus",
+                  "ASP_TARG_ID": "isl_thermostat_rt_mri_mri_verus_targ",
+                  "ASP_ARGS": {
+                    "exe_args": [
+                      "verify",
+                      "-Z",
+                      "build-std=core,alloc,compiler_builtins",
+                      "-Z",
+                      "build-std-features=compiler-builtins-mem",
+                      "--target",
+                      "aarch64-unknown-none",
+                      "--",
+                      "--output-json",
+                      "--time"
+                    ],
+                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri"
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {
+              "ASP_ID": "run_command_cargo_verus",
+              "ASP_TARG_ID": "isl_thermostat_rt_mrm_mrm_verus_targ",
+              "ASP_ARGS": {
+                "exe_args": [
+                  "verify",
+                  "-Z",
+                  "build-std=core,alloc,compiler_builtins",
+                  "-Z",
+                  "build-std-features=compiler-builtins-mem",
+                  "--target",
+                  "aarch64-unknown-none",
+                  "--",
+                  "--output-json",
+                  "--time"
+                ],
+                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

@@ -45,6 +45,11 @@ from .snapshot import mirror_path
 
 _NULL_ASP = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "NULL"}}
 
+# Companion appraisers whose measurement ASPs carry provisioned goldens.
+# model_slices_appr marks the signed golden-spec protocols: whole-file
+# evidence whose golden is the administrator-blessed file content.
+GOLDEN_COMPANIONS = ("goldenbytes_appr", "goldenevidence_appr", "model_slices_appr")
+
 # Dashboard bookkeeping fields stored in asp_args.json but never sent to the
 # CVM; they must not appear in the provisioning term's ASP_ARGS or the
 # evidence-tree args would fail to match at extraction time.
@@ -180,8 +185,7 @@ def _provision(
                                 error=f"unknown protocol '{protocol_id}'")
 
     comps = protocol.session.get("Session_Context", {}).get("ASP_Comps", {})
-    golden_ids = {a for a, c in comps.items()
-                  if c in ("goldenbytes_appr", "goldenevidence_appr")}
+    golden_ids = {a for a, c in comps.items() if c in GOLDEN_COMPANIONS}
     if not golden_ids:
         return ProvisionOutcome(
             protocol=protocol_id,

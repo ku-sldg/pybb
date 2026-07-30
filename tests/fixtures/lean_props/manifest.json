@@ -1,0 +1,10 @@
+{
+  "ASPS": [
+    "readfile",
+    "sig",
+    "sig_appr",
+    "model_slices_appr"
+  ],
+  "ASP_FS_MAP": {},
+  "POLICY": []
+}

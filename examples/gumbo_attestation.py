@@ -122,12 +122,14 @@ def print_report(controller: BlackboardController, semantic: list[str]) -> None:
 def build_controller(protocols: dict, cli) -> BlackboardController:
     """One episode's controller: fresh predicates, fresh memo caches."""
     controller = BlackboardController()
+    client = CvmSubprocessClient()
     controller.register_predicate(
         "attestation",
-        make_attestation_predicate(CvmSubprocessClient(), protocols),
+        make_attestation_predicate(client, protocols),
     )
     controller.register_predicate(
-        "protocol_check", make_readiness_predicate(protocols)
+        "protocol_check", make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT, client=client)
     )
 
     # the two decision trees, pre-registered (their entries are written by

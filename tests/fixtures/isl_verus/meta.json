@@ -1,0 +1,5 @@
+{
+  "name": "Isolette Verus Verification (semantic tier)",
+  "description": "cargo-verus verify over every contract-bearing isolette crate (report-derived): the generated Verus contracts must PROVE against the implemented behavior.",
+  "copland": "lseq( bseq( run_command_cargo_verus\u00d77 ), APPR )"
+}

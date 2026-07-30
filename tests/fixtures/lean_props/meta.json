@@ -1,0 +1,5 @@
+{
+  "name": "lean signed golden spec (props)",
+  "description": "The administrator-blessed golden spec: whole-file signed evidence of TempControl/Spec.lean (the GUMBO-mirror theorems). Baseline verification checks that the spec's hash and declaration-slice goldens are derivable from the blessed content.",
+  "copland": "lseq( lseq( bseq( readfile\u00d71 ), SIG ), APPR )"
+}

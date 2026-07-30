@@ -36,6 +36,7 @@ names the tampered theorem.
 | `lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
 | `lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
 | `lean_exec` | Behavior of the built binary: one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | `lake exe temp-control <vector>`; appraiser compares stdout to `expected`, which rides in the measurement args (the `golden_b64` convention) |
+| `lean_props` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
 
 Three always-run entries, three independent trust questions:
 

@@ -99,6 +99,8 @@ def trust_summary(blackboard: Blackboard, semantic: Iterable[str] = ()) -> str:
     """One line per attestation entry, certify segment then escalate."""
     lines = [
         f"{key}: protocols validated ({', '.join(entry.result.checked)})"
+        + (f"; signed baselines verified ({', '.join(entry.result.baseline_verified)})"
+           if entry.result.baseline_verified else "")
         for key, entry in blackboard.get_all_entries().items()
         if isinstance(entry.result, ReadinessReport) and entry.good_standing
     ]
@@ -113,8 +115,13 @@ def trust_summary(blackboard: Blackboard, semantic: Iterable[str] = ()) -> str:
         if isinstance(entry.result, Verdict)
     ]
     lines += [
-        f"{key}: protocol readiness failed — {'; '.join(entry.result.problems)}; "
-        f"attestation never started; user intervention required"
+        f"{key}: " + "; ".join(
+            (["protocol readiness failed — " + "; ".join(entry.result.problems)]
+             if entry.result.problems else [])
+            + (["golden baseline integrity failed — "
+                + "; ".join(entry.result.baseline_problems)]
+               if entry.result.baseline_problems else [])
+        ) + "; attestation never started; user intervention required"
         for key, entry in blackboard.get_escalate().items()
         if isinstance(entry.result, ReadinessReport)
     ]

@@ -66,6 +66,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.props import write_props_protocol_dir
 from pybb.attestation.targetmap import build_term, derive_targets_from_lean
 
 REPO = Path(__file__).parent.parent
@@ -73,8 +74,10 @@ LEAN_ROOT = REPO / "targets" / "temp-control-lean"
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 PROTOCOL_IDS = ("lean_l1a", "lean_l2")
+PROPS_ID = "lean_props"
 TIER_IDS = ("lean_check", "lean_exec")
 TEMPLATES = {"lean_l1a": "gumbo_l1a", "lean_l2": "gumbo_l2"}
+SPEC_FILE = LEAN_ROOT / "TempControl" / "Spec.lean"
 
 
 def build_protocol_dirs() -> dict:
@@ -90,15 +93,25 @@ def build_protocol_dirs() -> dict:
         (d / "term.json").write_text(json.dumps(build_term(derived[pid])) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in derived[pid].values())} targets from scan")
+    write_props_protocol_dir(
+        FIXTURES / PROPS_ID, "lean", [str(SPEC_FILE)],
+        "The administrator-blessed golden spec: whole-file signed evidence "
+        "of TempControl/Spec.lean (the GUMBO-mirror theorems). Baseline "
+        "verification checks that the spec's hash and declaration-slice "
+        "goldens are derivable from the blessed content.")
+    protocols[PROPS_ID] = ProtocolDir.load(str(FIXTURES / PROPS_ID))
+    print(f"  {PROPS_ID}: 1 blessed spec file")
     return protocols
 
 
 def load_protocols(validate: bool = False) -> dict:
-    if not all((FIXTURES / pid / "asp_args.json").is_file() for pid in PROTOCOL_IDS):
+    if not all((FIXTURES / pid / "asp_args.json").is_file()
+               for pid in (*PROTOCOL_IDS, PROPS_ID)):
         print("lean protocol dirs missing — generating from the syntax scan")
         protocols = build_protocol_dirs()
     else:
-        protocols = {pid: ProtocolDir.load(str(FIXTURES / pid)) for pid in PROTOCOL_IDS}
+        protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
+                     for pid in (*PROTOCOL_IDS, PROPS_ID)}
     if validate:
         for pid in TIER_IDS:
             protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
@@ -106,8 +119,10 @@ def load_protocols(validate: bool = False) -> dict:
 
 
 def provision_flow(protocols: dict) -> None:
-    """Capture golden and provision the scan-derived goldens on the blackboard."""
-    measured = {pid: protocols[pid] for pid in PROTOCOL_IDS}
+    """Capture golden and provision the scan-derived goldens on the
+    blackboard (the lean_props bundle is the administrator's blessing of
+    the spec file)."""
+    measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
     snapshot = TargetSnapshot.capture(measured, dest=GOLDEN_ROOT)
     print(f"golden captured: {len(snapshot.files)} files")
     client = CvmSubprocessClient()
@@ -149,10 +164,13 @@ def tamper_semantic() -> None:
 def attest_episode(protocols: dict, repair: bool,
                    validate: bool = False) -> BlackboardController:
     controller = BlackboardController()
+    client = CvmSubprocessClient()
     controller.register_predicate(
-        "attestation", make_attestation_predicate(CvmSubprocessClient(), protocols))
+        "attestation", make_attestation_predicate(client, protocols))
     controller.register_predicate("protocol_check",
-                                  make_readiness_predicate(protocols))
+                                  make_readiness_predicate(
+                                      protocols, baseline_root=GOLDEN_ROOT,
+                                      client=client))
     fail_chain = [TierKS(protocol_id="lean_l2")]
     if repair:
         fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,

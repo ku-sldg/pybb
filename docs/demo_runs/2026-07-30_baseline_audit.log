@@ -1,0 +1,37 @@
+verifying key: sha256:4606e565d20b7882 (unsecure_pub_key_dont_use.pem — DEMO key, custody follow-up pending)
+
+gumbo_l1a: VERIFIED
+  bundle:  golden/_bundles/gumbo_l1a/provision_bundle.json
+  goldens: 4/4 anchored to signed evidence (provisioned 2026-07-27 11:17:28)
+gumbo_l1b: VERIFIED
+  bundle:  golden/_bundles/gumbo_l1b/provision_bundle.json
+  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-27 11:17:28)
+gumbo_l2: VERIFIED
+  bundle:  golden/_bundles/gumbo_l2/provision_bundle.json
+  goldens: 33/33 anchored to signed evidence (provisioned 2026-07-27 11:17:28)
+isl_l1a: VERIFIED
+  bundle:  golden/_bundles/isl_l1a/provision_bundle.json
+  goldens: 13/13 anchored to signed evidence (provisioned 2026-07-30 11:19:46)
+isl_l2: VERIFIED
+  bundle:  golden/_bundles/isl_l2/provision_bundle.json
+  goldens: 67/67 anchored to signed evidence (provisioned 2026-07-30 11:19:46)
+isl_props: VERIFIED
+  bundle:  golden/_bundles/isl_props/provision_bundle.json
+  goldens: 5/0 anchored to signed evidence (provisioned 2026-07-30 11:06:07)
+lean_l1a: VERIFIED
+  bundle:  golden/_bundles/lean_l1a/provision_bundle.json
+  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-30 11:20:00)
+lean_l2: VERIFIED
+  bundle:  golden/_bundles/lean_l2/provision_bundle.json
+  goldens: 15/15 anchored to signed evidence (provisioned 2026-07-30 11:20:00)
+lean_props: VERIFIED
+  bundle:  golden/_bundles/lean_props/provision_bundle.json
+  goldens: 1/0 anchored to signed evidence (provisioned 2026-07-30 11:20:00)
+tcmk_l1a: VERIFIED
+  bundle:  golden/_bundles/tcmk_l1a/provision_bundle.json
+  goldens: 4/4 anchored to signed evidence (provisioned 2026-07-27 11:52:46)
+tcmk_l2: VERIFIED
+  bundle:  golden/_bundles/tcmk_l2/provision_bundle.json
+  goldens: 16/16 anchored to signed evidence (provisioned 2026-07-27 11:52:46)
+
+11/11 baselines verified
