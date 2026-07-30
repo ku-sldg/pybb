@@ -14,31 +14,34 @@ hamr_tools: VERIFIED
   goldens: 9/9 anchored to signed evidence (provisioned 2026-07-30 15:00:15)
 isl_l1a: VERIFIED
   bundle:  golden/_bundles/isl_l1a/provision_bundle.json
-  goldens: 13/13 anchored to signed evidence (provisioned 2026-07-30 15:04:19)
+  goldens: 13/13 anchored to signed evidence (provisioned 2026-07-30 15:36:32)
 isl_l2: VERIFIED
   bundle:  golden/_bundles/isl_l2/provision_bundle.json
-  goldens: 67/67 anchored to signed evidence (provisioned 2026-07-30 15:04:19)
+  goldens: 67/67 anchored to signed evidence (provisioned 2026-07-30 15:36:32)
 isl_props: VERIFIED
   bundle:  golden/_bundles/isl_props/provision_bundle.json
   goldens: 5/0 anchored to signed evidence (provisioned 2026-07-30 15:00:06)
 isl_verus: VERIFIED
   bundle:  golden/_bundles/isl_verus/provision_bundle.json
   goldens: 28/4 anchored to signed evidence (provisioned 2026-07-30 15:00:13)
+lean_build: VERIFIED
+  bundle:  golden/_bundles/lean_build/provision_bundle.json
+  goldens: 43/13 anchored to signed evidence (provisioned 2026-07-30 15:36:01)
 lean_check: VERIFIED
   bundle:  golden/_bundles/lean_check/provision_bundle.json
-  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-30 14:50:41)
+  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-30 15:36:01)
 lean_exec: VERIFIED
   bundle:  golden/_bundles/lean_exec/provision_bundle.json
-  goldens: 18/6 anchored to signed evidence (provisioned 2026-07-30 14:50:42)
+  goldens: 21/7 anchored to signed evidence (provisioned 2026-07-30 15:36:02)
 lean_l1a: VERIFIED
   bundle:  golden/_bundles/lean_l1a/provision_bundle.json
-  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-30 15:04:30)
+  goldens: 6/6 anchored to signed evidence (provisioned 2026-07-30 15:36:41)
 lean_l2: VERIFIED
   bundle:  golden/_bundles/lean_l2/provision_bundle.json
-  goldens: 15/15 anchored to signed evidence (provisioned 2026-07-30 15:04:30)
+  goldens: 15/15 anchored to signed evidence (provisioned 2026-07-30 15:36:41)
 lean_props: VERIFIED
   bundle:  golden/_bundles/lean_props/provision_bundle.json
-  goldens: 1/0 anchored to signed evidence (provisioned 2026-07-30 14:50:40)
+  goldens: 1/0 anchored to signed evidence (provisioned 2026-07-30 15:36:00)
 tcmk_l1a: VERIFIED
   bundle:  golden/_bundles/tcmk_l1a/provision_bundle.json
   goldens: 4/4 anchored to signed evidence (provisioned 2026-07-30 15:01:06)
@@ -49,4 +52,4 @@ tcmk_verus: VERIFIED
   bundle:  golden/_bundles/tcmk_verus/provision_bundle.json
   goldens: 8/4 anchored to signed evidence (provisioned 2026-07-30 15:00:15)
 
-16/16 baselines verified
+17/17 baselines verified

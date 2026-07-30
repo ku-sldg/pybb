@@ -98,34 +98,71 @@
               ]
             },
             {
-              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_CONSTRUCTOR": "lseq",
               "TERM_BODY": [
-                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "lean_bin_temp_control_targ"
+                    }
+                  }
+                },
                 {
                   "TERM_CONSTRUCTOR": "bseq",
                   "TERM_BODY": [
                     "both_paths",
                     {
-                      "TERM_CONSTRUCTOR": "asp",
-                      "TERM_BODY": {
-                        "ASP_CONSTRUCTOR": "ASPC",
-                        "ASP_BODY": {
-                          "ASP_ID": "run_command_lean",
-                          "ASP_TARG_ID": "lean_exec_hot_targ",
-                          "ASP_ARGS": {
-                            "exe_args": [
-                              "exe",
-                              "temp-control",
-                              "101",
-                              "70",
-                              "90",
-                              "Off"
-                            ],
-                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                            "expected": "fanCmd=On"
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "run_command_lean",
+                              "ASP_TARG_ID": "lean_exec_hot_targ",
+                              "ASP_ARGS": {
+                                "exe_args": [
+                                  "env",
+                                  "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+                                  "101",
+                                  "70",
+                                  "90",
+                                  "Off"
+                                ],
+                                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+                                "expected": "fanCmd=On"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "run_command_lean",
+                              "ASP_TARG_ID": "lean_exec_cold_targ",
+                              "ASP_ARGS": {
+                                "exe_args": [
+                                  "env",
+                                  "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+                                  "60",
+                                  "70",
+                                  "90",
+                                  "On"
+                                ],
+                                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+                                "expected": "fanCmd=Off"
+                              }
+                            }
                           }
                         }
-                      }
+                      ]
                     },
                     {
                       "TERM_CONSTRUCTOR": "asp",
@@ -133,45 +170,23 @@
                         "ASP_CONSTRUCTOR": "ASPC",
                         "ASP_BODY": {
                           "ASP_ID": "run_command_lean",
-                          "ASP_TARG_ID": "lean_exec_cold_targ",
+                          "ASP_TARG_ID": "lean_exec_hold_targ",
                           "ASP_ARGS": {
                             "exe_args": [
-                              "exe",
-                              "temp-control",
-                              "60",
+                              "env",
+                              "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+                              "80",
                               "70",
                               "90",
                               "On"
                             ],
                             "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                            "expected": "fanCmd=Off"
+                            "expected": "fanCmd=On"
                           }
                         }
                       }
                     }
                   ]
-                },
-                {
-                  "TERM_CONSTRUCTOR": "asp",
-                  "TERM_BODY": {
-                    "ASP_CONSTRUCTOR": "ASPC",
-                    "ASP_BODY": {
-                      "ASP_ID": "run_command_lean",
-                      "ASP_TARG_ID": "lean_exec_hold_targ",
-                      "ASP_ARGS": {
-                        "exe_args": [
-                          "exe",
-                          "temp-control",
-                          "80",
-                          "70",
-                          "90",
-                          "On"
-                        ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                        "expected": "fanCmd=On"
-                      }
-                    }
-                  }
                 }
               ]
             }

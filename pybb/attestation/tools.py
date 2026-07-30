@@ -220,9 +220,11 @@ def weave_tool_measurements(asp_args: Dict[str, dict], term: dict,
     tools = tools_for_term(asp_args)
     if not tools:
         return asp_args, term, session, manifest
-    if "hashfile" in asp_args:
-        raise ValueError("protocol already carries hashfile targets — "
-                         "refusing to weave tool measurements twice")
+    existing_hash = asp_args.get("hashfile", {})
+    if any(str(a.get("metadata", "")).startswith("tool::")
+           for a in existing_hash.values()):
+        raise ValueError("protocol already carries tool measurements — "
+                         "refusing to weave twice")
     if not (term.get("TERM_CONSTRUCTOR") == "lseq"
             and isinstance(term.get("TERM_BODY"), list)
             and len(term["TERM_BODY"]) == 2
@@ -238,7 +240,8 @@ def weave_tool_measurements(asp_args: Dict[str, dict], term: dict,
             _SIG]},
         _APPR]}
 
-    woven_args = {"hashfile": targets, **asp_args}
+    woven_args = {"hashfile": {**targets, **existing_hash},
+                  **{k: v for k, v in asp_args.items() if k != "hashfile"}}
 
     session = json.loads(json.dumps(session))  # deep copy
     ctx = session.setdefault("Session_Context", {})

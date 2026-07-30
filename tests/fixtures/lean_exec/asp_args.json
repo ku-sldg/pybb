@@ -6,7 +6,7 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "Ud6ydlKLplK1kojcLNAh5CbdbB+XbnAOLGRLL23pR4I=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
     },
     "tool_lean_lake_2_targ": {
       "filepath": "/Users/adampetz/.elan/bin/lake",
@@ -14,7 +14,7 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "h1SFi2VJqbBvSgGecUWl4eGfkzmDc0OIkgoQeBp1N9s=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
     },
     "tool_lean_lean_targ": {
       "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
@@ -22,7 +22,7 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "GzcM/L9E6A0bAEqxsauaTHOVH598JCFAvP+bxXdXZVQ=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
     },
     "tool_lean_lake_3_targ": {
       "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
@@ -30,7 +30,7 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "WCYaGi+ho2I3bHHgLKhUoJPnHMXm6mSyh6kxyyVlJz0=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
     },
     "tool_lean_leanchecker_targ": {
       "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
@@ -38,7 +38,7 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "HgtertZgqPLGHZvQ8DxX4q620ofzbgw+OE6pNF2zSD4=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
     },
     "tool_lean_libleanshared_dylib_targ": {
       "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
@@ -46,14 +46,22 @@
       "measure_in_place": true,
       "metadata": "tool::lean",
       "golden_b64": "ppWpqmhIHEK5lhngEDU35rQzxvpwIZJ7GE4ZpobQOYk=",
-      "golden_ts": "2026-07-30 14:50:42"
+      "golden_ts": "2026-07-30 15:36:02"
+    },
+    "lean_bin_temp_control_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "binary::temp-control",
+      "golden_b64": "3PRJZRp2xSs4eXaE3/524sGmAbX1Z8mjQojyfxQXaqo=",
+      "golden_ts": "2026-07-30 15:36:01"
     }
   },
   "run_command_lean": {
     "lean_exec_hot_targ": {
       "exe_args": [
-        "exe",
-        "temp-control",
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
         "101",
         "70",
         "90",
@@ -64,8 +72,8 @@
     },
     "lean_exec_cold_targ": {
       "exe_args": [
-        "exe",
-        "temp-control",
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
         "60",
         "70",
         "90",
@@ -76,8 +84,8 @@
     },
     "lean_exec_hold_targ": {
       "exe_args": [
-        "exe",
-        "temp-control",
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
         "80",
         "70",
         "90",

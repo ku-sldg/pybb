@@ -202,11 +202,14 @@ def test_sorry_fails_proofs_but_not_behavior():
 
 
 @needs_lean
-def test_laundered_behavior_change_refuted_by_proof_and_behavior():
-    """The scenario only the semantic tiers catch: flip the hot branch of
-    the implementation. Hash measurements would bless it after laundering
-    (goldens are not consulted by the tier protocols at all); the theorems
-    no longer prove AND the hot vector no longer matches."""
+def test_impl_change_refuted_by_proof_while_pinned_binary_stands():
+    """Flip the hot branch of the implementation. The proofs refute
+    immediately (theorems are checked against the LIVE Impl); the exec
+    tier attests the PINNED binary — which is still the blessed artifact
+    with the correct behavior, because episodes never rebuild. The
+    behavioral refutation moves to the build event: laundering that
+    re-runs the build produces a flipped binary that fails the hot vector
+    (the --tamper-semantic arc exercises exactly that)."""
     orig = IMPL.read_text()
     broken = orig.replace("if temp > sp.high then .On",
                           "if temp > sp.high then .Off")
@@ -216,11 +219,29 @@ def test_laundered_behavior_change_refuted_by_proof_and_behavior():
         check = _tier_verdict("lean_check")
         assert not check.passed
         behavior = _tier_verdict("lean_exec")
-        assert not behavior.passed
-        failing = {c.targ_id for c in behavior.failing()}
-        assert failing == {"lean_exec_hot_targ"}  # cold and hold still match
+        assert behavior.passed  # the pinned artifact is untouched
     finally:
         IMPL.write_text(orig)
+
+
+@needs_lean
+def test_swapped_binary_fails_behavior_tier_before_its_output_matters():
+    """Hash-then-run: a replaced executable fails the behavior tier at the
+    binary target — its hash cannot match the build-anchored golden —
+    regardless of what the replacement prints."""
+    BIN = LEAN_ROOT / ".lake" / "build" / "bin" / "temp-control"
+    orig = BIN.read_bytes()
+    BIN.write_bytes(b"#!/bin/sh\necho fanCmd=On\n")
+    BIN.chmod(0o755)
+    try:
+        behavior = _tier_verdict("lean_exec")
+        assert not behavior.passed
+        assert "lean_bin_temp_control_targ" in \
+            {c.targ_id for c in behavior.failing()}
+    finally:
+        BIN.write_bytes(orig)
+        BIN.chmod(0o755)
+    assert _tier_verdict("lean_exec").passed
 
 
 # ── signed golden spec (props): the administrator-blessed Spec.lean ───────────

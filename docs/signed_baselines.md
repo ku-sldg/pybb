@@ -143,6 +143,55 @@ detection, not a root of trust; a system mechanism (e.g. TPM-backed boot
 attestation) is the right tool for that layer, and the registry accepts
 it later without redesign.
 
+## Executable provenance: the build event (C6)
+
+The built executable is a measured artifact whose golden is **born linked
+to the evidence of its production** (`pybb/attestation/build.py`). A build
+protocol makes the build itself an attested event — one term, one
+signature:
+
+    lean_build = lseq( lseq( lseq( lseq( bseq(hashfile: lean toolchain ×6),
+                                         bseq(hashfile: input sources ×6) ),
+                                   run_command_lean(lake build) ),
+                             bseq(hashfile: output binary) ),
+                       SIG )
+
+Run at PROVISIONING only (building is a blessing-time act; episodes never
+rebuild). The bundle is the build-provenance record: the evidence order
+witnesses "this toolchain existed, these inputs existed, then the build
+ran, then this output existed". The exec tier's binary golden is
+extracted from this bundle (install_build_outputs) — a fragment of signed
+build evidence at birth.
+
+**Cross-link verification** (build-mode in verify_bundle, selected by the
+events' provenance roles `tool::` / `build_in::` / `build_out::`): each
+build-bundle event is anchored against ANOTHER protocol's golden — inputs
+against the source baseline (lean_l1a, itself blessed via props), tools
+against the blessed toolchain goldens, the output against the runtime
+protocol that enforces it. Failures are precise: an input outside the
+measured set, an unenforced output, anchor protocols disagreeing on a
+golden, or a stale build (sources re-blessed after the build — its input
+evidence no longer matches the baseline). The audit statement this
+licenses: *the binary the exec tier runs is byte-identical to the output
+of a signed build event whose inputs were the blessed sources and whose
+builder was the blessed toolchain.*
+
+**Hash-then-run**: lean_exec hashes the PINNED artifact against its
+build-anchored golden in the same term that then executes it directly
+(`lake env <binary>` — no rebuild). A swapped binary fails at the binary
+target regardless of what the replacement prints. Consequence worth
+stating: an implementation edit without a rebuild is refuted by the
+proofs while the exec tier correctly reports the pinned binary intact —
+the deployed artifact IS still the blessed one; and laundering that
+re-runs the build produces a binary refuted by the AM-owned expected
+vectors. Evidence-only gating (recorded decision): the hash event
+precedes execution and appraisal refuses trust afterward, but a drifted
+binary is not blocked from executing during the episode.
+
+Isolette: the seL4/Microkit image build requires the Microkit SDK (not on
+this host); the machinery is example-agnostic and the image build event is
+the designed follow-up when an SDK lands.
+
 ## Recorded limitations
 
 - **Key custody is the real trust root.** The signing keypair is the demo

@@ -75,6 +75,7 @@ class BaselineReport(BaseModel):
     bundle_path: str = ""
     signature_ok: bool = False
     anchored: List[str] = []  # targ_ids whose installed golden matches signed evidence
+    linked: Dict[str, str] = {}  # build-mode cross-links: targ_id -> anchor protocol
     problems: List[str] = []
     components: List[ComponentResult] = []
 
@@ -106,12 +107,17 @@ def _golden_records(protocol: Any, golden_root: Path, golden_ids: set) -> List[d
     return records
 
 
-def _build_anchors(anchor_protocols: Dict[str, Any]) -> Dict[str, dict]:
-    """Per live filepath, the goldens that must be DERIVABLE from blessed
-    whole-file content: the hashfile golden and every readfile_range slice
-    golden any protocol installs for that file."""
+def _build_anchors(anchor_protocols: Dict[str, Any],
+                   exclude_pid: Optional[str] = None) -> Dict[str, dict]:
+    """Per live filepath, the goldens installed across the protocol map:
+    the hashfile golden (with its source protocol, for cross-linking and
+    audit) and every readfile_range slice golden. Protocols disagreeing on
+    a file's hash golden are marked conflicted — a cross-link cannot pick
+    a side silently."""
     anchors: Dict[str, dict] = {}
-    for protocol in (anchor_protocols or {}).values():
+    for pid, protocol in (anchor_protocols or {}).items():
+        if exclude_pid is not None and pid == exclude_pid:
+            continue
         for asp_id, targets in protocol.asp_args.items():
             for targ_id, args in targets.items():
                 fp, golden = args.get("filepath"), args.get("golden_b64")
@@ -119,7 +125,13 @@ def _build_anchors(anchor_protocols: Dict[str, Any]) -> Dict[str, dict]:
                     continue
                 entry = anchors.setdefault(fp, {"slices": {}})
                 if asp_id == "hashfile":
-                    entry["hash_golden_b64"] = golden
+                    if "hash_golden_b64" in entry \
+                            and entry["hash_golden_b64"] != golden:
+                        entry["hash_conflict"] = \
+                            f"{entry['hash_source']} vs {pid}"
+                    else:
+                        entry["hash_golden_b64"] = golden
+                        entry["hash_source"] = pid
                 elif asp_id == "readfile_range":
                     entry["slices"][targ_id] = {
                         "start_index": args["start_index"],
@@ -160,9 +172,55 @@ def _absolutize_paths(et_node: Any, golden_root: Path) -> None:
         _absolutize_paths(body, golden_root)
 
 
+_ROLE_MISSING = {
+    "build_in": "build input not covered by any source baseline",
+    "build_out": "build output not enforced by any runtime protocol",
+    "tool": "tool artifact has no blessed golden elsewhere",
+}
+
+
+def _record_role(rec: dict) -> Optional[str]:
+    meta = str(rec["args"].get("metadata", ""))
+    for role in ("build_in", "build_out", "tool"):
+        if meta.startswith(role):
+            return role
+    return None
+
+
+def _cross_link(rec: dict, anchors: Dict[str, dict], linked: Dict[str, str],
+                problems: List[str]) -> Optional[str]:
+    """Build-mode anchor selection: the golden to inject for a build-bundle
+    event comes from ANOTHER protocol, chosen by the event's role — inputs
+    from the source baseline, tools from the blessed toolchain goldens,
+    outputs from the runtime protocol that enforces the artifact. Returns
+    the golden to inject, or None after recording the problem."""
+    role = _record_role(rec)
+    anchor = anchors.get(rec["live_filepath"], {})
+    if anchor.get("hash_conflict"):
+        problems.append(
+            f"{rec['targ_id']}: anchor protocols disagree on the golden "
+            f"for {rec['live_filepath']} ({anchor['hash_conflict']})")
+        return None
+    golden = anchor.get("hash_golden_b64")
+    if not golden:
+        problems.append(
+            f"{rec['targ_id']}: {_ROLE_MISSING[role]} "
+            f"({rec['live_filepath']})")
+        return None
+    if rec["golden_b64"] and rec["golden_b64"] != golden:
+        problems.append(
+            f"{rec['targ_id']}: build record and {anchor['hash_source']} "
+            f"disagree on the golden for {rec['live_filepath']}")
+        return None
+    linked[rec["targ_id"]] = anchor["hash_source"]
+    return golden
+
+
 def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
                     comps: Dict[str, str], anchors: Dict[str, dict],
-                    matched: Dict[str, int], problems: List[str]) -> None:
+                    matched: Dict[str, int], problems: List[str],
+                    build_mode: bool = False,
+                    linked: Optional[Dict[str, str]] = None) -> None:
     """Walk the bundle's evidence tree; inject each measurement event's
     installed golden_b64 so its goldenbytes companion anchors the signed
     bytes against the installed value. Events whose companion is
@@ -176,7 +234,7 @@ def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
     if ctor == "split_evt" and isinstance(body, list):
         for child in body:
             _inject_goldens(child, records, golden_ids, comps, anchors,
-                            matched, problems)
+                            matched, problems, build_mode, linked)
     elif ctor == "asp_evt" and isinstance(body, list) and len(body) >= 3:
         _, params, sub_et = body
         asp_id = params.get("ASP_ID", "")
@@ -187,6 +245,13 @@ def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
                 problems.append(
                     f"bundle event not in current target map: "
                     f"{asp_id} {args.get('filepath', args)}")
+            elif build_mode and _record_role(rec) is not None:
+                golden = _cross_link(rec, anchors, linked if linked is not None
+                                     else {}, problems)
+                if golden is not None:
+                    args["golden_b64"] = golden
+                    params["ASP_ARGS"] = args
+                    matched[rec["targ_id"]] = matched.get(rec["targ_id"], 0) + 1
             elif not rec["golden_b64"]:
                 problems.append(f"{rec['targ_id']}: no golden installed to anchor")
             else:
@@ -200,11 +265,11 @@ def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
                 params["ASP_ARGS"] = args
                 matched[rec["targ_id"]] = matched.get(rec["targ_id"], 0) + 1
         _inject_goldens(sub_et, records, golden_ids, comps, anchors,
-                        matched, problems)
+                        matched, problems, build_mode, linked)
     elif ctor in ("left_evt", "right_evt"):
         inner = body if isinstance(body, dict) else (body[0] if body else None)
         _inject_goldens(inner, records, golden_ids, comps, anchors,
-                        matched, problems)
+                        matched, problems, build_mode, linked)
 
 
 def verify_bundle(client: Any, protocol: Any, golden_root: Path,
@@ -249,11 +314,16 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
     if isinstance(evidence, list) and len(evidence) > 1:
         _absolutize_paths(evidence[1], golden_root)
     records = _golden_records(protocol, golden_root, golden_ids)
-    anchors = _build_anchors(anchor_protocols or {})
+    anchors = _build_anchors(anchor_protocols or {}, exclude_pid=protocol_id)
+    # build-bundle mode: events carry provenance roles; each is anchored
+    # against ANOTHER protocol's golden (inputs vs the source baseline,
+    # tools vs the blessed toolchain, outputs vs the runtime enforcer)
+    build_mode = any(str(r["args"].get("metadata", "")).startswith("build_in")
+                     for r in records)
     matched: Dict[str, int] = {}
     _inject_goldens(evidence[1] if isinstance(evidence, list) and len(evidence) > 1
                     else None, records, golden_ids, comps, anchors,
-                    matched, report.problems)
+                    matched, report.problems, build_mode, report.linked)
     for rec in records:
         if rec["targ_id"] not in matched:
             report.problems.append(

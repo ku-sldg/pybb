@@ -203,11 +203,14 @@ def _provision(
                 if k not in _BOOKKEEPING_KEYS}
         filepath = args.get("filepath")
         if filepath and args.get("measure_in_place"):
-            # tool artifacts: hash the LIVE file at blessing time — there
-            # is no golden copy (toolchains are not golden-restorable and
-            # their binaries do not belong in the repository); the
-            # installed hash golden is protected by the bundle signature
-            if not Path(filepath).is_file():
+            # tool artifacts and build inputs/outputs: hash the LIVE file —
+            # there is no golden copy (toolchains and build trees are not
+            # golden-restorable); the installed hash golden is protected by
+            # the bundle signature. Build OUTPUTS may not exist yet: the
+            # term produces them before hashing them (the build event runs
+            # between the input and output measurements).
+            if not Path(filepath).is_file() and \
+                    not str(args.get("metadata", "")).startswith("build_out"):
                 missing.append(filepath)
         elif filepath:
             golden_copy = mirror_path(golden_root, Path(filepath))

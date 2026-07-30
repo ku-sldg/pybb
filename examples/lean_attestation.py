@@ -16,10 +16,17 @@ Protocols:
     lean_check `lake lean TempControl/Spec.lean -- --json`: every theorem
                must still PROVE (fails on error diagnostics and hasSorry —
                a sorry exits 0, so exit codes alone would bless it)
-    lean_exec  `lake exe temp-control <vector>` per GUMBO case (hot/cold/
-               hold); stdout must equal the expected command. Main imports
-               only TempControl.Impl, so a broken proof cannot fail this
-               build: provability and behavior are independent measurements.
+    lean_exec  hash-then-run of the PINNED built binary: its hash must
+               match the build-anchored golden, then it is executed
+               directly (lake env <binary>, never rebuilt) per GUMBO case;
+               stdout must equal the expected command. Main imports only
+               TempControl.Impl, so provability and behavior stay
+               independent measurements.
+    lean_build the build event, run at provisioning: toolchain -> input
+               sources -> lake build -> output binary, one signature. The
+               exec tier's binary golden is born from this bundle; baseline
+               verification cross-links inputs to lean_l1a, tools to the
+               blessed toolchain, and the output to lean_exec.
 
 Three independent trust questions, three always-run entries:
 
@@ -38,11 +45,13 @@ Usage:
 --tamper     corrupt a line inside a theorem slice; detection/attribution
              (and --repair)
 --tamper-semantic  flip computeFanCmd's hot branch (.On -> .Off) in the
-             implementation AND re-provision over the tampered tree — the
-             laundered change passes every hash, and is refuted twice:
-             the proofs no longer check (lean_check) and the binary's
-             behavior no longer matches its expected vectors (lean_exec,
-             whose expectations are config, not provisioned goldens).
+             implementation AND re-provision over the tampered tree —
+             laundering that now includes RE-RUNNING THE BUILD EVENT, so
+             the flipped binary is consistently re-anchored and every
+             baseline verifies. Refuted twice anyway: the proofs no longer
+             check (lean_check), and the rebuilt binary fails the hot
+             vector (lean_exec's expected outputs are AM config, not
+             provisioned goldens — laundering cannot reach them).
              Implies --validate; restores and re-provisions clean after.
 """
 
@@ -66,6 +75,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
 from pybb.attestation.props import write_props_protocol_dir
 from pybb.attestation.targetmap import build_term, derive_targets_from_lean
 from pybb.attestation.tools import (
@@ -93,6 +103,14 @@ SPEC_FILE = LEAN_ROOT / "TempControl" / "Spec.lean"
 TOOL_CADENCE = "per_use"
 register_tool("lean", lambda: lean_artifacts(LEAN_ROOT))
 
+# The built executable is a measured artifact: lean_build runs the build
+# as a signed Copland term at provisioning (tools -> inputs -> lake build
+# -> output binary, one signature), and the binary golden the exec tier
+# enforces is cross-installed from that bundle. Episodes never rebuild:
+# lean_exec hashes the PINNED artifact and executes it directly.
+BUILD_ID = "lean_build"
+BIN = LEAN_ROOT / ".lake" / "build" / "bin" / "temp-control"
+
 _APPR = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}
 TIER_SESSION = {
     "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
@@ -117,13 +135,13 @@ TIER_TARGETS = {
     },
     "lean_exec": {
         "lean_exec_hot_targ": {
-            "exe_args": ["exe", "temp-control", "101", "70", "90", "Off"],
+            "exe_args": ["env", str(BIN), "101", "70", "90", "Off"],
             "cwd": str(LEAN_ROOT), "expected": "fanCmd=On"},
         "lean_exec_cold_targ": {
-            "exe_args": ["exe", "temp-control", "60", "70", "90", "On"],
+            "exe_args": ["env", str(BIN), "60", "70", "90", "On"],
             "cwd": str(LEAN_ROOT), "expected": "fanCmd=Off"},
         "lean_exec_hold_targ": {
-            "exe_args": ["exe", "temp-control", "80", "70", "90", "On"],
+            "exe_args": ["env", str(BIN), "80", "70", "90", "On"],
             "cwd": str(LEAN_ROOT), "expected": "fanCmd=On"},
     },
 }
@@ -138,11 +156,12 @@ TIER_META = {
     },
     "lean_exec": {
         "name": "Lean Executable Behavior (exec tier)",
-        "description": "Runs the built temp-control binary via `lake exe` "
-                       "on one input vector per GUMBO case; the appraiser "
-                       "compares stdout to the expected command. The lean "
-                       "toolchain is hashed in the same term, before the "
-                       "invocations (measure-then-use).",
+        "description": "Hashes the PINNED built binary against its "
+                       "build-anchored golden, then executes it directly "
+                       "(lake env <binary>, no rebuild) on one input vector "
+                       "per GUMBO case; the appraiser compares stdout to the "
+                       "expected command. The lean toolchain is hashed in "
+                       "the same term, before the invocations.",
     },
 }
 
@@ -163,10 +182,26 @@ def _tier_term(asp_id: str, targets: dict) -> dict:
 
 def build_tier_protocol_dirs() -> None:
     """(Re)generate the semantic-tier dirs from the base config, with tool
-    measurements woven in per TOOL_CADENCE."""
+    measurements woven in per TOOL_CADENCE. lean_exec additionally hashes
+    the pinned binary against its build-anchored golden BEFORE running it
+    (hash-then-run, same term)."""
     for pid, targets in TIER_TARGETS.items():
         asp_args = {"run_command_lean": dict(targets)}
         term = _tier_term("run_command_lean", targets)
+        if pid == "lean_exec":
+            bin_targs = {"lean_bin_temp_control_targ": {
+                "filepath": str(BIN), "env_var": "",
+                "measure_in_place": True,
+                "metadata": "binary::temp-control"}}
+            asp_args = {"hashfile": bin_targs, **asp_args}
+            body = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+                {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {"ASP_ID": "hashfile",
+                                 "ASP_TARG_ID": "lean_bin_temp_control_targ"}}},
+                term["TERM_BODY"][0]]}
+            term = {"TERM_CONSTRUCTOR": "lseq",
+                    "TERM_BODY": [body, _APPR]}
         session, manifest = TIER_SESSION, TIER_MANIFEST
         if TOOL_CADENCE == "per_use":
             asp_args, term, session, manifest = weave_tool_measurements(
@@ -207,6 +242,19 @@ def build_protocol_dirs() -> dict:
     build_tier_protocol_dirs()
     for pid in TIER_IDS:
         protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
+    inputs = [a["filepath"]
+              for a in derived["lean_l1a"]["hashfile"].values()]
+    write_build_protocol_dir(
+        FIXTURES / BUILD_ID, "lean", ["lean"], inputs, [str(BIN)],
+        "run_command_lean", "run_command_lean_appr",
+        {"exe_args": ["build"], "cwd": str(LEAN_ROOT)},
+        "The build event: lake build as a signed term — toolchain, input "
+        "sources, the build, and the output binary under one signature. "
+        "The exec tier's binary golden is cross-installed from this "
+        "bundle's output evidence.")
+    protocols[BUILD_ID] = ProtocolDir.load(str(FIXTURES / BUILD_ID))
+    print(f"  {BUILD_ID}: {len(inputs)} inputs -> 1 output, "
+          "toolchain-measured build event")
     return protocols
 
 
@@ -219,7 +267,7 @@ def load_protocols(validate: bool = False) -> dict:
         protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
                      for pid in (*PROTOCOL_IDS, PROPS_ID)}
     if validate:
-        for pid in TIER_IDS:
+        for pid in (*TIER_IDS, BUILD_ID):
             protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
     return protocols
 
@@ -230,6 +278,8 @@ def provision_flow(protocols: dict) -> None:
     measurements — the tier protocols, whose tool hash goldens land
     measure-in-place (live artifacts, no golden copies)."""
     measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
+    if BUILD_ID in protocols:
+        measured[BUILD_ID] = protocols[BUILD_ID]  # build runs before tiers
     for pid in TIER_IDS:
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
             measured[pid] = protocols[pid]
@@ -246,6 +296,12 @@ def provision_flow(protocols: dict) -> None:
         print(f"  {key}: {len(entry.result.provisioned)} goldens provisioned")
     for key, entry in bb.get_escalate().items():
         raise SystemExit(f"  {key}: FAILED - {entry.result.error}")
+    if BUILD_ID in protocols:
+        installed = install_build_outputs(
+            protocols[BUILD_ID],
+            {pid: protocols[pid] for pid in TIER_IDS if pid in protocols})
+        for entry in installed:
+            print(f"  build output golden -> {entry}")
 
 
 def tamper(protocols: dict) -> None:

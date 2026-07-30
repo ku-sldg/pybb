@@ -35,7 +35,8 @@ names the tampered theorem.
 | `lean_l1a` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
 | `lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
 | `lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
-| `lean_exec` | Behavior of the built binary: one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | `lake exe temp-control <vector>`; appraiser compares stdout to `expected`, which rides in the measurement args (the `golden_b64` convention) |
+| `lean_exec` | Behavior of the **pinned** built binary: hash vs the build-anchored golden, then one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | hash-then-run: `hashfile(binary)` then `lake env <binary> <vector>` (never rebuilt); appraiser compares stdout to `expected` in the measurement args |
+| `lean_build` | Executable provenance: toolchain → input sources → `lake build` → output binary, one signature; the exec tier's binary golden is born from this bundle (see `signed_baselines.md`) | build event at provisioning; cross-linked baseline verification at every readiness gate |
 | `lean_props` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
 
 Three always-run entries, three independent trust questions:

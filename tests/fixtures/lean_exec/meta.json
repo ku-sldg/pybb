@@ -1,4 +1,4 @@
 {
   "name": "Lean Executable Behavior (exec tier)",
-  "description": "Runs the built temp-control binary via `lake exe` on one input vector per GUMBO case; the appraiser compares stdout to the expected command. The lean toolchain is hashed in the same term, before the invocations (measure-then-use)."
+  "description": "Hashes the PINNED built binary against its build-anchored golden, then executes it directly (lake env <binary>, no rebuild) on one input vector per GUMBO case; the appraiser compares stdout to the expected command. The lean toolchain is hashed in the same term, before the invocations."
 }
