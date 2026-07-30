@@ -266,6 +266,114 @@ def derive_targets_from_report(report_path: Path, prefix: str = "gumbo") -> Dict
     }
 
 
+# ── lean-package backend ──────────────────────────────────────────────────────
+
+_LEAN_DECL = re.compile(
+    r"^(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
+    r"(theorem|lemma|def|abbrev|inductive|structure|instance|example)\b"
+    r"\s*([A-Za-z_][\w'.]*)?")
+
+
+def lean_decl_spans(text: str) -> List[Tuple[str, Optional[str], int, int]]:
+    """
+    (kind, name, start, end) for every top-level declaration in a Lean
+    source: the declaration line through the end of its contiguous
+    non-blank block (or the line before the next top-level declaration,
+    whichever comes first) — 1-based inclusive, the same contiguous-block
+    rule as gumbox_spans, so proof bodies must not contain blank lines.
+    `name` is None for anonymous declarations (instance/example).
+
+    Purely syntactic, but block-comment aware: lines inside `/- ... -/`
+    (including doc comments, which nest per Lean's lexer) are never
+    declaration starts — a comment line beginning with a declaration
+    keyword must not become a target. An attribute line of its own
+    (`@[simp]`) above the declaration is outside the span; it lives
+    inside the l1a file hash regardless — l2 spans are attribution
+    granularity, not the trust boundary.
+    """
+    lines = text.splitlines()
+    starts: List[Tuple[int, str, Optional[str]]] = []
+    depth = 0
+    for i, line in enumerate(lines):
+        at_line_start = depth
+        depth = max(0, depth + line.count("/-") - line.count("-/"))
+        if at_line_start > 0 or not line.strip() or line[:1].isspace():
+            continue
+        m = _LEAN_DECL.match(line)
+        if m:
+            starts.append((i, m.group(1), m.group(2)))
+    spans: List[Tuple[str, Optional[str], int, int]] = []
+    for idx, (i, kind, name) in enumerate(starts):
+        next_start = starts[idx + 1][0] if idx + 1 < len(starts) else len(lines)
+        j = i
+        while j + 1 < next_start and lines[j + 1].strip():
+            j += 1
+        spans.append((kind, name, i + 1, j + 1))
+    return spans
+
+
+def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[str, Dict[str, dict]]:
+    """
+    Lean/Lake-package backend: measurement targets by syntax scan of the
+    package's .lean sources (.lake build tree excluded). Same output shape
+    as the other backends:
+
+        {"<prefix>_l1a": {"hashfile": ...},        # every .lean source +
+                                                   #   lakefile + lean-toolchain
+         "<prefix>_l2":  {"readfile_range": ...}}  # every declaration span
+
+    Hashing lakefile* and lean-toolchain pins the build configuration and
+    the toolchain the proofs were checked under, not just the sources.
+
+    l2 targets are named by declaration (lean_spec_fanOn_when_hot_targ),
+    so a violated slice reads as the tampered theorem; anonymous
+    declarations fall back to positional names. metadata carries
+    Module.Path::decl for attribution.
+    """
+    package_root = Path(package_root)
+    sources = sorted(p for p in package_root.rglob("*.lean")
+                     if ".lake" not in p.parts)
+    manifests = [p for p in (package_root / "lakefile.toml",
+                             package_root / "lakefile.lean",
+                             package_root / "lean-toolchain") if p.is_file()]
+
+    l1a: Dict[str, dict] = {}
+    for p in [*sources, *manifests]:
+        targ, n = f"{prefix}_{_stem_slug(str(p))}_targ", 1
+        while targ in l1a:
+            n += 1
+            targ = f"{prefix}_{_stem_slug(str(p))}_{n}_targ"
+        l1a[targ] = {"filepath": str(p), "env_var": ""}
+
+    l2: Dict[str, dict] = {}
+    for p in sources:
+        module = ".".join(p.relative_to(package_root).with_suffix("").parts)
+        fslug = _stem_slug(str(p))
+        for kind, name, start, end in lean_decl_spans(p.read_text()):
+            if name:
+                base_id = f"{prefix}_{fslug}_" + re.sub(r"\W+", "_", name)
+                meta = f"{module}::{name}"
+            else:
+                base_id = f"{prefix}_{fslug}_{kind}_{start}_{end}"
+                meta = f"{module}::{kind}@{start}"
+            targ, n = f"{base_id}_targ", 1
+            while targ in l2:
+                n += 1
+                targ = f"{base_id}_{n}_targ"
+            l2[targ] = {
+                "filepath": str(p),
+                "start_index": start,
+                "end_index": end,
+                "metadata": meta,
+            }
+
+    return {
+        f"{prefix}_l1a": {"hashfile": l1a},
+        f"{prefix}_l2": {"readfile_range": l2},
+    }
+
+
 # ── term construction (the shape the provisioned protocols use) ──────────────
 
 _SIG = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}

@@ -1,0 +1,40 @@
+{
+  "hashfile": {
+    "lean_main_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
+      "env_var": "",
+      "golden_b64": "N3Ap3soY5t8y81BqYDsQZ665svezc4wwXpPU9e95afk=",
+      "golden_ts": "2026-07-30 09:49:52"
+    },
+    "lean_impl_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "env_var": "",
+      "golden_b64": "aC0BKVa3IojMfvxe2lNoUogdQkqSWfAuyO4isd03bJE=",
+      "golden_ts": "2026-07-30 09:49:52"
+    },
+    "lean_spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "env_var": "",
+      "golden_b64": "wOyeFf4Zct2DS55flcz+dxJkDyZkGibdfgrw5JmjDXo=",
+      "golden_ts": "2026-07-30 09:49:52"
+    },
+    "lean_tempcontrol_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl.lean",
+      "env_var": "",
+      "golden_b64": "1hRh9V6PPsayG//8ZuZT3U/mTcGlW0o9wMN0wkxI6U8=",
+      "golden_ts": "2026-07-30 09:49:52"
+    },
+    "lean_lakefile_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lakefile.toml",
+      "env_var": "",
+      "golden_b64": "a0a64sJYiFQAcl+lBqnDP5tcGT3EDHn48NPrnjrA/BE=",
+      "golden_ts": "2026-07-30 09:49:52"
+    },
+    "lean_lean_toolchain_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lean-toolchain",
+      "env_var": "",
+      "golden_b64": "76wLlJI7LYtoQM01vpF3rQ/FqyMy9PQxHJhxLO6S/e4=",
+      "golden_ts": "2026-07-30 09:49:52"
+    }
+  }
+}

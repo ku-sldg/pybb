@@ -1,0 +1,10 @@
+name = "TempControl"
+version = "0.1.0"
+defaultTargets = ["temp-control"]
+
+[[lean_lib]]
+name = "TempControl"
+
+[[lean_exe]]
+name = "temp-control"
+root = "Main"

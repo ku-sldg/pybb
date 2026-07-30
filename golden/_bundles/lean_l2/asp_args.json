@@ -1,0 +1,94 @@
+{
+  "readfile_range": {
+    "lean_main_parseFan_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
+      "start_index": 15,
+      "end_index": 18,
+      "metadata": "Main::parseFan"
+    },
+    "lean_main_usage_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
+      "start_index": 20,
+      "end_index": 21,
+      "metadata": "Main::usage"
+    },
+    "lean_main_main_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
+      "start_index": 23,
+      "end_index": 35,
+      "metadata": "Main::main"
+    },
+    "lean_impl_FanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "start_index": 15,
+      "end_index": 18,
+      "metadata": "TempControl.Impl::FanCmd"
+    },
+    "lean_impl_instance_20_23_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "start_index": 20,
+      "end_index": 23,
+      "metadata": "TempControl.Impl::instance@20"
+    },
+    "lean_impl_SetPoint_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "start_index": 25,
+      "end_index": 28,
+      "metadata": "TempControl.Impl::SetPoint"
+    },
+    "lean_impl_computeFanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "start_index": 32,
+      "end_index": 35,
+      "metadata": "TempControl.Impl::computeFanCmd"
+    },
+    "lean_spec_SetPoint_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 14,
+      "end_index": 15,
+      "metadata": "TempControl.Spec::SetPoint.valid"
+    },
+    "lean_spec_fanOn_when_hot_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 18,
+      "end_index": 21,
+      "metadata": "TempControl.Spec::fanOn_when_hot"
+    },
+    "lean_spec_fanOff_when_cold_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 24,
+      "end_index": 29,
+      "metadata": "TempControl.Spec::fanOff_when_cold"
+    },
+    "lean_spec_fanHold_in_band_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 32,
+      "end_index": 37,
+      "metadata": "TempControl.Spec::fanHold_in_band"
+    },
+    "lean_spec_fanOn_only_if_hot_or_held_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 41,
+      "end_index": 49,
+      "metadata": "TempControl.Spec::fanOn_only_if_hot_or_held"
+    },
+    "lean_spec_example_52_52_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 52,
+      "end_index": 52,
+      "metadata": "TempControl.Spec::example@52"
+    },
+    "lean_spec_example_53_53_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 53,
+      "end_index": 53,
+      "metadata": "TempControl.Spec::example@53"
+    },
+    "lean_spec_example_54_54_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "start_index": 54,
+      "end_index": 54,
+      "metadata": "TempControl.Spec::example@54"
+    }
+  }
+}

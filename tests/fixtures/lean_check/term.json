@@ -1,0 +1,30 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "ASPC",
+        "ASP_BODY": {
+          "ASP_ID": "run_command_lean",
+          "ASP_TARG_ID": "lean_spec_check_targ",
+          "ASP_ARGS": {
+            "exe_args": [
+              "lean",
+              "TempControl/Spec.lean",
+              "--",
+              "--json"
+            ],
+            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean"
+          }
+        }
+      }
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

@@ -191,3 +191,109 @@ def test_install_targets_writes_through_and_drops_prebuilt(tmp_path):
     assert not (proto_dir / "cvm_request.json").exists()
     term = json.loads((proto_dir / "term.json").read_text())
     assert len(list(iter_aspc_bodies(term))) == 1
+
+
+# ── lean-package backend ──────────────────────────────────────────────────────
+
+LEAN_ROOT = Path(__file__).parent.parent / "targets" / "temp-control-lean"
+
+
+def test_lean_decl_spans_shapes():
+    from pybb.attestation.targetmap import lean_decl_spans
+
+    text = (
+        "/-\n"
+        "A block comment whose lines start at column 0: a\n"
+        "theorem mentioned here must not become a target,\n"
+        "def or otherwise.\n"
+        "-/\n"
+        "import Foo\n"
+        "\n"
+        "namespace N\n"
+        "\n"
+        "inductive Cmd where\n"
+        "  | a\n"
+        "deriving Repr\n"
+        "\n"
+        "/-- doc comment stays outside the span -/\n"
+        "theorem t1 (x : Int) :\n"
+        "    x = x := by\n"
+        "  rfl\n"
+        "\n"
+        "instance : ToString Cmd where\n"
+        "  toString _ := \"a\"\n"
+        "\n"
+        "example : 1 = 1 := by decide\n"
+        "example : 2 = 2 := by decide\n"
+        "\n"
+        "def Cmd.flip : Cmd -> Cmd\n"
+        "  | a => a\n"
+        "\n"
+        "end N\n"
+    )
+    spans = lean_decl_spans(text)
+    assert spans == [
+        ("inductive", "Cmd", 10, 12),    # deriving line inside the span
+        ("theorem", "t1", 15, 17),       # doc comment excluded
+        ("instance", None, 19, 20),      # anonymous
+        ("example", None, 22, 22),       # consecutive decls split correctly
+        ("example", None, 23, 23),
+        ("def", "Cmd.flip", 25, 26),     # dotted name captured whole
+    ]
+
+
+def test_lean_spans_shift_with_content():
+    from pybb.attestation.targetmap import lean_decl_spans
+
+    base = "theorem t1 : 1 = 1 := by\n  decide\n"
+    before = lean_decl_spans(base)
+    shifted = lean_decl_spans("-- a new header line\n\n" + base)
+    assert before == [("theorem", "t1", 1, 2)]
+    assert shifted == [("theorem", "t1", 3, 4)]
+
+
+def test_lean_derived_targets_live_tree():
+    from pybb.attestation.targetmap import derive_targets_from_lean
+
+    derived = derive_targets_from_lean(LEAN_ROOT)
+
+    l1a = derived["lean_l1a"]["hashfile"]
+    # sources AND build configuration: lakefile + toolchain pin are hashed
+    assert {"lean_impl_targ", "lean_spec_targ", "lean_main_targ",
+            "lean_tempcontrol_targ", "lean_lakefile_targ",
+            "lean_lean_toolchain_targ"} <= set(l1a)
+    for args in l1a.values():
+        assert Path(args["filepath"]).is_file()
+        assert ".lake" not in Path(args["filepath"]).parts
+
+    l2 = derived["lean_l2"]["readfile_range"]
+    # every l2 slice lives inside an l1a-hashed file (tcmk-style: one
+    # trust question, l2 is pure refinement)
+    hashed = {a["filepath"] for a in l1a.values()}
+    for targ, args in l2.items():
+        assert args["filepath"] in hashed, targ
+        assert 0 < args["start_index"] <= args["end_index"]
+        assert "::" in args["metadata"]
+
+    # declaration-named attribution: the implementation function and the
+    # GUMBO-mirror theorems are targets, in their split-out modules
+    named = {"lean_impl_computeFanCmd_targ": ("computeFanCmd", "TempControl.Impl"),
+             **{f"lean_spec_{n}_targ": (n, "TempControl.Spec")
+                for n in ("fanOn_when_hot", "fanOff_when_cold",
+                          "fanHold_in_band", "fanOn_only_if_hot_or_held")}}
+    for targ, (name, module) in named.items():
+        assert targ in l2, targ
+        first = Path(l2[targ]["filepath"]).read_text().splitlines()[
+            l2[targ]["start_index"] - 1]
+        assert name in first  # the span starts at the declaration line
+        assert l2[targ]["metadata"] == f"{module}::{name}"
+    # the Impl block comment mentions "theorem ..." at column 0 — the
+    # scanner must not have minted a target from it
+    assert not any("cannot" in t for t in l2)
+
+    # the executable's entry point is attributable too
+    assert "lean_main_main_targ" in l2
+
+    # derived maps feed straight into term construction
+    term = build_term(derived["lean_l2"])
+    assert len(list(iter_aspc_bodies(term))) == len(l2)

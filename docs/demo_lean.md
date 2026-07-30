@@ -1,0 +1,101 @@
+# Lean example: attesting a specification and its executable
+
+The temp-control model ported to a third verification ecosystem — Lean 4 —
+alongside the JVM/Logika and Microkit/Verus examples. Nothing in the
+blackboard/KS layer changed to admit it: the Lean ecosystem entered as two
+ASPs (asp-libs `run_command_lean` / `run_command_lean_appr`), one targetmap
+backend (`derive_targets_from_lean`), and four protocol dirs. That is the
+architectural claim this example validates.
+
+## The target
+
+`targets/temp-control-lean` — a Lake package (core Lean v4.31.0, no
+dependencies):
+
+| File | Role |
+|---|---|
+| `TempControl/Impl.lean` | Implementation: `FanCmd`, `SetPoint`, `computeFanCmd`. Deliberately proof-free. |
+| `TempControl/Spec.lean` | Specification: the GUMBO compute contracts as theorems (`fanOn_when_hot`, `fanOff_when_cold`, `fanHold_in_band`, safety property `fanOn_only_if_hot_or_held`), the `SetPoint.valid` data invariant, three kernel-evaluated `decide` examples. |
+| `Main.lean` | The executable. Imports **only** `TempControl.Impl`; `computeFanCmd` is the only logic. |
+| `lakefile.toml`, `lean-toolchain` | Build configuration and toolchain pin. |
+
+The Impl/Spec split is load-bearing: because `Main` never imports the
+specification, `lake exe` never elaborates the theorems — a tamper that
+breaks a proof cannot fail the executable's build. Provability and behavior
+stay **independent measurements** (demonstrated below).
+
+## Measurements
+
+Targets derive from a syntax scan of the package (`derive_targets_from_lean`,
+block-comment aware). l2 slices are **named by declaration**, so attribution
+names the tampered theorem.
+
+| Protocol | Measures | How |
+|---|---|---|
+| `lean_l1a` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
+| `lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
+| `lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
+| `lean_exec` | Behavior of the built binary: one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | `lake exe temp-control <vector>`; appraiser compares stdout to `expected`, which rides in the measurement args (the `golden_b64` convention) |
+
+Three always-run entries, three independent trust questions:
+
+    lean:files     eval lean_l1a: fail -> lean_l2 refines (which declaration)
+                                       -> [--repair] WholeFileRestoreKS
+    lean:proofs    [--validate] eval lean_check: fail escalates directly
+    lean:behavior  [--validate] eval lean_exec:  fail escalates directly
+
+## Demo arcs
+
+```sh
+python examples/lean_attestation.py                # clean episode
+python examples/lean_attestation.py --validate     # + proof & behavior tiers
+python examples/lean_attestation.py --provision    # regenerate + re-provision
+python examples/lean_attestation.py --tamper --repair
+python examples/lean_attestation.py --tamper-semantic
+```
+
+**Structural tamper + repair** (`--tamper --repair`, log:
+`demo_runs/2026-07-30_lean_tamper_repair.log`): a corrupted proof line makes
+`lean_l1a` fail on exactly `lean_spec_targ`; `TierKS(lean_l2)` refines to
+`lean_spec_fanOn_when_hot_targ` (metadata `TempControl.Spec::fanOn_when_hot`
+— the violated *theorem*, by name); `WholeFileRestoreKS` restores from
+golden; the episode ends escalated as "repaired from golden — verification
+pending next episode"; episode 2 attests clean. Repair cannot mint trust.
+
+**Laundered semantic tamper** (`--tamper-semantic`, log:
+`demo_runs/2026-07-30_lean_tamper_semantic.log`): the hot branch of
+`computeFanCmd` is flipped `.On -> .Off` and the tree **re-provisioned** —
+every hash measurement now blesses the tampered state:
+
+    lean:files:    all attested components intact (lean_l1a passed)
+    lean:proofs:   integrity violation — lean_check failed;
+                   failing components: lean_spec_check_targ
+    lean:behavior: integrity violation — lean_exec failed;
+                   failing components: lean_exec_hot_targ
+
+The laundered change is refuted **twice, independently**: `fanOn_when_hot`
+(and the kernel-evaluated `decide` example) no longer prove, and the binary
+answers `fanCmd=Off` to the hot vector against expected `On`. The `expected`
+vectors are AM-owned protocol config, not provisioned goldens — laundering
+cannot reach them. A `sorry` shows the converse separation: proofs fail,
+behavior still passes (`tests/test_integration_lean.py`).
+
+## Notes for appraiser authors
+
+- `lean --json` emits one JSON diagnostic per line on stdout; a clean run
+  emits nothing. A `sorry` is severity `warning`, kind `hasSorry`, exit 0.
+- `lake` build progress goes to stderr; `lake exe` stdout stays pure even
+  when the run triggers a rebuild. Non-JSON stdout lines are skipped by the
+  diagnostics appraiser regardless (the cargo-verus cold-build lesson).
+- Appraisal failure reasons travel unescaped inside the CVM's response JSON
+  (fix pending on the CVM side): `run_command_lean_appr` sanitizes reasons
+  to single-line, quote-free, bounded strings.
+
+## Tests
+
+- `tests/test_targetmap.py` — scanner shapes (block-comment false positive
+  covered), live-tree derivation, declaration-named attribution.
+- `tests/test_integration_lean.py` — fixtures-consistency (committed maps
+  must equal the scan), clean attestation, tamper→attribution→repair→verify
+  (auto-run when the CVM stack is present); the toolchain tiers — clean,
+  sorry-separation, laundered double refutation — gated behind `RUN_LEAN=1`.

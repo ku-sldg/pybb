@@ -1,0 +1,5 @@
+{
+  "name": "Lean Executable Behavior (exec tier)",
+  "description": "Runs the built temp-control binary via `lake exe` on one input vector per GUMBO case (hot/cold/hold); the appraiser compares stdout to the expected command.",
+  "copland": "lseq( bseq( run_command_lean\u00d73 ), APPR )"
+}

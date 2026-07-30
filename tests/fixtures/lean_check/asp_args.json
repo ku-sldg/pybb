@@ -1,0 +1,13 @@
+{
+  "run_command_lean": {
+    "lean_spec_check_targ": {
+      "exe_args": [
+        "lean",
+        "TempControl/Spec.lean",
+        "--",
+        "--json"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean"
+    }
+  }
+}

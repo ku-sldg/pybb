@@ -1,0 +1,21 @@
+Tampered theorem slice: Spec.lean line 21 (TempControl.Spec::fanOn_when_hot)
+Cycle 1: 'lean:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:lean:files'
+Cycle 2: 'lean:files' failed - dispatching to on_fail chain
+Cycle 2: running 'tier:lean_l2'
+Cycle 3: running 'tier:lean_l2'
+Cycle 3: 'tier:lean_l2' exhausted on 'lean:files' - restoring original measurement, handing to 'repair:whole-file'
+Cycle 4: running 'repair:whole-file'
+  repair:whole-file: restored 1 file(s) from golden
+Cycle 5: running 'repair:whole-file'
+Cycle 5: no eligible KS left for 'lean:files' - escalating with history
+Cycle 6: all entries in good standing - halting
+lean:ready: protocols validated (lean_l1a, lean_l2)
+lean:files: integrity violation — ladder exhausted (lean_l1a, lean_l2 failed); failing components (lean_l2): lean_spec_fanOn_when_hot_targ; repaired from golden — verification pending next episode (re-run the workflow)
+
+=== episode 2: verification (fresh run, fresh caches) ===
+Cycle 1: 'lean:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:lean:files'
+Cycle 2: all entries in good standing - halting
+lean:ready: protocols validated (lean_l1a, lean_l2)
+lean:files: all attested components intact (lean_l1a passed)

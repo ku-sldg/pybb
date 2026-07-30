@@ -1,0 +1,26 @@
+Tampered implementation: computeFanCmd hot branch .On -> .Off (TempControl/Impl.lean)
+
+=== laundering: re-provisioning over the tampered tree ===
+golden captured: 6 files
+Cycle 1: all entries in good standing - halting
+  provision:lean_l1a: 6 goldens provisioned
+  provision:lean_l2: 15 goldens provisioned
+
+=== attestation episode (hashes bless the laundered change) ===
+Cycle 1: 'lean:ready' passed - dispatching to confirmation chain
+Cycle 1: running 'start:lean:files,lean:proofs,lean:behavior'
+Cycle 2: 'lean:proofs' failed - dispatching to on_fail chain
+Cycle 2: no eligible KS for 'lean:proofs' - escalating with history
+Cycle 2: 'lean:behavior' failed - dispatching to on_fail chain
+Cycle 2: no eligible KS for 'lean:behavior' - escalating with history
+Cycle 2: all entries in good standing - halting
+lean:ready: protocols validated (lean_l1a, lean_l2, lean_check, lean_exec)
+lean:files: all attested components intact (lean_l1a passed)
+lean:proofs: integrity violation — ladder exhausted (lean_check failed); failing components (lean_check): lean_spec_check_targ; user intervention required
+lean:behavior: integrity violation — ladder exhausted (lean_exec failed); failing components (lean_exec): lean_exec_hot_targ; user intervention required
+
+Restored implementation; re-provisioning clean baseline
+golden captured: 6 files
+Cycle 1: all entries in good standing - halting
+  provision:lean_l1a: 6 goldens provisioned
+  provision:lean_l2: 15 goldens provisioned
