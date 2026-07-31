@@ -164,10 +164,12 @@ def derive_targets(spec: dict) -> Dict[str, Dict[str, dict]]:
                 "end_marker": end,
             }
 
+    from .copland import with_asp_targids
+
     return {
-        "gumbo_l1a": {"hashfile": l1a},
-        "gumbo_l1b": {"readfile_marker_range": l1b},
-        "gumbo_l2": {"readfile_range": l2},
+        "gumbo_l1a": {"hashfile": with_asp_targids(l1a)},
+        "gumbo_l1b": {"readfile_marker_range": with_asp_targids(l1b)},
+        "gumbo_l2": {"readfile_range": with_asp_targids(l2)},
     }
 
 
@@ -260,9 +262,11 @@ def derive_targets_from_report(report_path: Path, prefix: str = "gumbo") -> Dict
             "metadata": s["metadata"],
         }
 
+    from .copland import with_asp_targids
+
     return {
-        f"{prefix}_l1a": {"hashfile": l1a},
-        f"{prefix}_l2": {"readfile_range": l2},
+        f"{prefix}_l1a": {"hashfile": with_asp_targids(l1a)},
+        f"{prefix}_l2": {"readfile_range": with_asp_targids(l2)},
     }
 
 
@@ -368,9 +372,11 @@ def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[s
                 "metadata": meta,
             }
 
+    from .copland import with_asp_targids
+
     return {
-        f"{prefix}_l1a": {"hashfile": l1a},
-        f"{prefix}_l2": {"readfile_range": l2},
+        f"{prefix}_l1a": {"hashfile": with_asp_targids(l1a)},
+        f"{prefix}_l2": {"readfile_range": with_asp_targids(l2)},
     }
 
 

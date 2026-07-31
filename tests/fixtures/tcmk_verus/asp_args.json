@@ -5,32 +5,36 @@
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_targ",
       "golden_b64": "fBUd3tk3Sb/Apw5lij5DyY2X1hNqeHLtBQLoEiihIII=",
-      "golden_ts": "2026-07-30 15:00:15"
+      "golden_ts": "2026-07-31 10:31:15"
     },
     "tool_cargo_verus_cargo_verus_2_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_2_targ",
       "golden_b64": "8BsYQYkX23ppQblNgLvmb+bJ7pVQShsHqfN4mUuLHzY=",
-      "golden_ts": "2026-07-30 15:00:15"
+      "golden_ts": "2026-07-31 10:31:15"
     },
     "tool_cargo_verus_rust_verify_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_rust_verify_targ",
       "golden_b64": "0Rmu8+j69QSxFO0pWMVYkDVe+NVlnfCh2Bn0w3/NqN4=",
-      "golden_ts": "2026-07-30 15:00:15"
+      "golden_ts": "2026-07-31 10:31:15"
     },
     "tool_cargo_verus_verus_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_verus_targ",
       "golden_b64": "6YFdT4PzWgJhB5/Xc9I0tffcA5vn9HOU8YFaNqDYSu0=",
-      "golden_ts": "2026-07-30 15:00:15"
+      "golden_ts": "2026-07-31 10:31:15"
     }
   },
   "run_command_cargo_verus": {
@@ -47,7 +51,8 @@
         "--output-json",
         "--time"
       ],
-      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl",
+      "asp_targid": "tc_verus_targ"
     },
     "ts_verus_targ": {
       "exe_args": [
@@ -62,7 +67,8 @@
         "--output-json",
         "--time"
       ],
-      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor",
+      "asp_targid": "ts_verus_targ"
     }
   }
 }

@@ -70,7 +70,8 @@ def props_targets(prefix: str, filepaths: List[str]) -> Dict[str, dict]:
         while targ in targets:
             n += 1
             targ = f"{prefix}_props_{_stem_slug(fp)}_{n}_targ"
-        targets[targ] = {"env_var": "", "filepath": str(fp)}
+        targets[targ] = {"env_var": "", "filepath": str(fp),
+                         "asp_targid": targ}
     return targets
 
 

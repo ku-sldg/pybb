@@ -72,6 +72,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.targetmap import build_term, derive_targets_from_report
 from pybb.attestation.tools import (
     build_tools_protocol_dir,
@@ -104,13 +105,13 @@ VERUS_ARGS = [
 def build_verus_protocol() -> ProtocolDir:
     """tcmk_verus regenerated with verus toolchain measurements woven in."""
     d = FIXTURES / "tcmk_verus"
-    targets = {
+    targets = with_asp_targids({
         f"{'tc' if c.startswith('tcproc') else 'ts'}_verus_targ": {
             "exe_args": VERUS_ARGS,
             "cwd": str(TCMK_ROOT / "hamr" / "microkit" / "crates" / c),
         }
         for c in VERUS_CRATES
-    }
+    })
     asp_args = {"run_command_cargo_verus": targets}
     nodes = [
         {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {

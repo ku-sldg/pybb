@@ -2,23 +2,28 @@
   "readfile": {
     "isl_props_gumbo_library_targ": {
       "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/GUMBO_Library.aadl"
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/GUMBO_Library.aadl",
+      "asp_targid": "isl_props_gumbo_library_targ"
     },
     "isl_props_monitor_targ": {
       "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Monitor.aadl"
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Monitor.aadl",
+      "asp_targid": "isl_props_monitor_targ"
     },
     "isl_props_operator_interface_targ": {
       "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Operator_Interface.aadl"
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Operator_Interface.aadl",
+      "asp_targid": "isl_props_operator_interface_targ"
     },
     "isl_props_regulate_targ": {
       "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Regulate.aadl"
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Regulate.aadl",
+      "asp_targid": "isl_props_regulate_targ"
     },
     "isl_props_operator_interface_oip_oit_app_targ": {
       "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs"
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "asp_targid": "isl_props_operator_interface_oip_oit_app_targ"
     }
   }
 }

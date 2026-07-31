@@ -297,3 +297,43 @@ def test_lean_derived_targets_live_tree():
     # derived maps feed straight into term construction
     term = build_term(derived["lean_l2"])
     assert len(list(iter_aspc_bodies(term))) == len(l2)
+
+
+# ── asp_targid: self-describing targets ───────────────────────────────────────
+
+def test_every_fixture_target_is_self_identifying():
+    """Derivation-time injection: every committed target's args carry
+    asp_targid equal to its key (gumbo_validation predates the target
+    convention and has no targets to stamp)."""
+    for proto_dir in sorted(FIXTURES.iterdir()):
+        aa = proto_dir / "asp_args.json"
+        if not aa.is_file():
+            continue
+        asp_args = json.loads(aa.read_text())
+        for asp_id, targets in asp_args.items():
+            for targ_id, args in targets.items():
+                assert args.get("asp_targid") == targ_id, \
+                    f"{proto_dir.name}/{asp_id}/{targ_id} not self-identifying"
+
+
+def test_load_rejects_asp_targid_drift(tmp_path):
+    from pybb.attestation import ProtocolDir
+
+    d = tmp_path / "p"
+    d.mkdir()
+    (d / "term.json").write_text("{}")
+    (d / "session.json").write_text("{}")
+    (d / "manifest.json").write_text("{}")
+    (d / "asp_args.json").write_text(json.dumps({"hashfile": {
+        "t1": {"filepath": "/f", "asp_targid": "OTHER"}}}))
+    import pytest as _pytest
+    with _pytest.raises(ValueError, match="asp_targid"):
+        ProtocolDir.load(str(d))
+
+
+def test_with_asp_targids_stamps_and_preserves():
+    from pybb.attestation.copland import with_asp_targids
+
+    out = with_asp_targids({"a_targ": {"filepath": "/x"}, "b_targ": {}})
+    assert out["a_targ"] == {"filepath": "/x", "asp_targid": "a_targ"}
+    assert out["b_targ"]["asp_targid"] == "b_targ"

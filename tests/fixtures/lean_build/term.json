@@ -206,7 +206,8 @@
                         "exe_args": [
                           "build"
                         ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean"
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+                        "asp_targid": "lean_build_cmd_targ"
                       }
                     }
                   }

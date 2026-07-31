@@ -143,6 +143,7 @@ def tool_targets(tool_names: List[str], prefix: str = "tool") -> Dict[str, dict]
                 "env_var": "",
                 "measure_in_place": True,
                 "metadata": f"tool::{name}",
+                "asp_targid": targ,
             }
             seen[fp] = targ
     return targets

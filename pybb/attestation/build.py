@@ -67,6 +67,7 @@ def _file_targets(prefix: str, role: str, filepaths: List[str]) -> Dict[str, dic
             "env_var": "",
             "measure_in_place": True,
             "metadata": f"build_{role}::{Path(fp).name}",
+            "asp_targid": targ,
         }
     return targets
 
@@ -89,6 +90,7 @@ def write_build_protocol_dir(
     inputs = _file_targets(prefix, "in", input_filepaths)
     outputs = _file_targets(prefix, "out", output_filepaths)
     cmd_targ = f"{prefix}_build_cmd_targ"
+    build_args = {**build_args, "asp_targid": cmd_targ}
 
     core = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
         {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
@@ -104,7 +106,7 @@ def write_build_protocol_dir(
         {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [core, _SIG]}, _APPR]}
 
     asp_args = {"hashfile": {**tools, **inputs, **outputs},
-                build_asp_id: {cmd_targ: dict(build_args)}}
+                build_asp_id: {cmd_targ: build_args}}
 
     session = {
         "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},

@@ -77,13 +77,24 @@ class ProtocolDir(BaseModel):
                 return None
             return json.loads(p.read_text())
 
+        asp_args = _read("asp_args.json", required=False) or {}
+        # self-identification drift guard: a target stamped with an
+        # asp_targid that disagrees with its own key would silently
+        # misattribute every downstream verdict — refuse to load it
+        for asp_id, targets in asp_args.items():
+            for targ_id, args in targets.items():
+                stamped = isinstance(args, dict) and args.get("asp_targid")
+                if stamped and stamped != targ_id:
+                    raise ValueError(
+                        f"{base}: target '{targ_id}' carries asp_targid "
+                        f"'{stamped}' — must equal the target key")
         return cls(
             protocol_id=protocol_id or base.name,
             path=str(base),
             term=_read("term.json"),
             session=_read("session.json"),
             manifest=_read("manifest.json"),
-            asp_args=_read("asp_args.json", required=False) or {},
+            asp_args=asp_args,
             prebuilt_request=_read("cvm_request.json", required=False),
         )
 

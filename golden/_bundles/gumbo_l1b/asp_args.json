@@ -3,32 +3,38 @@
     "tc_comp_state_vars_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala",
       "begin_marker": "BEGIN STATE VARS",
-      "end_marker": "END STATE VARS"
+      "end_marker": "END STATE VARS",
+      "asp_targid": "tc_comp_state_vars_targ"
     },
     "tc_comp_init_mod_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala",
       "begin_marker": "BEGIN INITIALIZES MODIFIES",
-      "end_marker": "END INITIALIZES MODIFIES"
+      "end_marker": "END INITIALIZES MODIFIES",
+      "asp_targid": "tc_comp_init_mod_targ"
     },
     "tc_comp_init_ens_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala",
       "begin_marker": "BEGIN INITIALIZES ENSURES",
-      "end_marker": "END INITIALIZES ENSURES"
+      "end_marker": "END INITIALIZES ENSURES",
+      "asp_targid": "tc_comp_init_ens_targ"
     },
     "tc_comp_compute_mod_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala",
       "begin_marker": "BEGIN COMPUTE MODIFIES timeTriggered",
-      "end_marker": "END COMPUTE MODIFIES timeTriggered"
+      "end_marker": "END COMPUTE MODIFIES timeTriggered",
+      "asp_targid": "tc_comp_compute_mod_targ"
     },
     "tc_comp_compute_ens_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempControlSystem/TempControl_i_tcproc_tempControl.scala",
       "begin_marker": "BEGIN COMPUTE ENSURES timeTriggered",
-      "end_marker": "END COMPUTE ENSURES timeTriggered"
+      "end_marker": "END COMPUTE ENSURES timeTriggered",
+      "asp_targid": "tc_comp_compute_ens_targ"
     },
     "ts_comp_init_ens_targ": {
       "filepath": "golden/Users/adampetz/Claude_workspace/temp-control-jvm/slang/src/main/component/tc/TempSensor/TempSensor_i_tcproc_tempSensor.scala",
       "begin_marker": "BEGIN INITIALIZES ENSURES",
-      "end_marker": "END INITIALIZES ENSURES"
+      "end_marker": "END INITIALIZES ENSURES",
+      "asp_targid": "ts_comp_init_ens_targ"
     }
   }
 }

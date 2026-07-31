@@ -135,7 +135,8 @@
                                   "Off"
                                 ],
                                 "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                                "expected": "fanCmd=On"
+                                "expected": "fanCmd=On",
+                                "asp_targid": "lean_exec_hot_targ"
                               }
                             }
                           }
@@ -157,7 +158,8 @@
                                   "On"
                                 ],
                                 "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                                "expected": "fanCmd=Off"
+                                "expected": "fanCmd=Off",
+                                "asp_targid": "lean_exec_cold_targ"
                               }
                             }
                           }
@@ -181,7 +183,8 @@
                               "On"
                             ],
                             "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
-                            "expected": "fanCmd=On"
+                            "expected": "fanCmd=On",
+                            "asp_targid": "lean_exec_hold_targ"
                           }
                         }
                       }

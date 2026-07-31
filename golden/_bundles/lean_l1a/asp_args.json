@@ -2,27 +2,33 @@
   "hashfile": {
     "lean_main_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_main_targ"
     },
     "lean_impl_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_impl_targ"
     },
     "lean_spec_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_spec_targ"
     },
     "lean_tempcontrol_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl.lean",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_tempcontrol_targ"
     },
     "lean_lakefile_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lakefile.toml",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_lakefile_targ"
     },
     "lean_lean_toolchain_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lean-toolchain",
-      "env_var": ""
+      "env_var": "",
+      "asp_targid": "lean_lean_toolchain_targ"
     }
   }
 }

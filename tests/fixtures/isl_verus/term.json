@@ -109,7 +109,8 @@
                                               "--output-json",
                                               "--time"
                                             ],
-                                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit"
+                                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+                                            "asp_targid": "isl_operator_interface_oip_oit_verus_targ"
                                           }
                                         }
                                       }
@@ -134,7 +135,8 @@
                                               "--output-json",
                                               "--time"
                                             ],
-                                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma"
+                                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
+                                            "asp_targid": "isl_thermostat_mt_ma_ma_verus_targ"
                                           }
                                         }
                                       }
@@ -161,7 +163,8 @@
                                           "--output-json",
                                           "--time"
                                         ],
-                                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi"
+                                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
+                                        "asp_targid": "isl_thermostat_mt_mmi_mmi_verus_targ"
                                       }
                                     }
                                   }
@@ -188,7 +191,8 @@
                                       "--output-json",
                                       "--time"
                                     ],
-                                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm"
+                                    "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
+                                    "asp_targid": "isl_thermostat_mt_mmm_mmm_verus_targ"
                                   }
                                 }
                               }
@@ -215,7 +219,8 @@
                                   "--output-json",
                                   "--time"
                                 ],
-                                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs"
+                                "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
+                                "asp_targid": "isl_thermostat_rt_mhs_mhs_verus_targ"
                               }
                             }
                           }
@@ -242,7 +247,8 @@
                               "--output-json",
                               "--time"
                             ],
-                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri"
+                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
+                            "asp_targid": "isl_thermostat_rt_mri_mri_verus_targ"
                           }
                         }
                       }
@@ -269,7 +275,8 @@
                           "--output-json",
                           "--time"
                         ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm"
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
+                        "asp_targid": "isl_thermostat_rt_mrm_mrm_verus_targ"
                       }
                     }
                   }

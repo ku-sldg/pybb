@@ -89,7 +89,8 @@
                           "--output-json",
                           "--time"
                         ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl",
+                        "asp_targid": "tc_verus_targ"
                       }
                     }
                   }
@@ -114,7 +115,8 @@
                           "--output-json",
                           "--time"
                         ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor",
+                        "asp_targid": "ts_verus_targ"
                       }
                     }
                   }

@@ -212,6 +212,19 @@ for _m in (
 
 # ── Dict-level term utilities ─────────────────────────────────────────────────
 
+def with_asp_targids(targets: dict) -> dict:
+    """Stamp each target's args with its own id under the dedicated key
+    "asp_targid", making evidence self-describing: the id rides in
+    ASP_ARGS through terms, CVM evidence trees, provisioning bundles, and
+    appraisal summaries, so target attribution is a field read rather
+    than arg-matching. Every target-creation site applies this
+    (derivation-time injection — the committed artifact IS the wire
+    truth); ProtocolDir.load rejects drift between the key and the dict
+    key."""
+    return {targ: {**args, "asp_targid": targ}
+            for targ, args in targets.items()}
+
+
 def iter_aspc_bodies(term: dict):
     """Yield every ASPC ASP_BODY dict in the term, in DFS order."""
     if not isinstance(term, dict):

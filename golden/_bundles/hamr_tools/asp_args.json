@@ -4,55 +4,64 @@
       "filepath": "/Users/adampetz/Applications/Sireum/bin/sireum.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_sireum_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_gumbo_ide_1_0_0_18efbba7_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.gumbo.ide_1.0.0.18efbba7.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_gumbo_ide_1_0_0_18efbba7_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_gumbo_ui_1_0_0_18efbba7_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.gumbo.ui_1.0.0.18efbba7.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_gumbo_ui_1_0_0_18efbba7_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_gumbo_1_2026_6240925_18efbba7_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.gumbo_1.2026.6240925.18efbba7.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_gumbo_1_2026_6240925_18efbba7_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_osate_awas_1_2026_7131214_177108b3_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.osate.awas_1.2026.7131214.177108b3.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_osate_awas_1_2026_7131214_177108b3_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_osate_cli_1_2026_7131214_177108b3_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.osate.cli_1.2026.7131214.177108b3.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_osate_cli_1_2026_7131214_177108b3_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_osate_gumbo2air_1_2026_6240925_18efbba7_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.osate.gumbo2air_1.2026.6240925.18efbba7.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_osate_gumbo2air_1_2026_6240925_18efbba7_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_osate_hamr_1_2026_7131214_177108b3_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.osate.hamr_1.2026.7131214.177108b3.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_osate_hamr_1_2026_7131214_177108b3_jar_targ"
     },
     "hamr_tool_hamr_org_sireum_aadl_osate_1_2026_7131214_177108b3_jar_targ": {
       "filepath": "/Users/adampetz/.sireum/phantom/osate-2.17.0-vfinal.app/Contents/Eclipse/plugins/org.sireum.aadl.osate_1.2026.7131214.177108b3.jar",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::hamr"
+      "metadata": "tool::hamr",
+      "asp_targid": "hamr_tool_hamr_org_sireum_aadl_osate_1_2026_7131214_177108b3_jar_targ"
     }
   }
 }

@@ -61,6 +61,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import model_files_from_report, write_props_protocol_dir
 from pybb.attestation.targetmap import (
     build_term,
@@ -113,13 +114,13 @@ def build_verus_protocol() -> ProtocolDir:
     verus toolchain measurements woven in per TOOL_CADENCE."""
     d = FIXTURES / "isl_verus"
     d.mkdir(exist_ok=True)
-    targets = {
+    targets = with_asp_targids({
         f"isl_{crate}_verus_targ": {
             "exe_args": VERUS_ARGS,
             "cwd": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
         }
         for crate in verus_crates()
-    }
+    })
     asp_args = {"run_command_cargo_verus": targets}
     nodes = [
         {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {

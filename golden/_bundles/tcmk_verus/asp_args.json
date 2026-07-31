@@ -4,25 +4,29 @@
       "filepath": "/Users/adampetz/Claude_workspace/bin/cargo-verus",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::cargo-verus"
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_targ"
     },
     "tool_cargo_verus_cargo_verus_2_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::cargo-verus"
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_2_targ"
     },
     "tool_cargo_verus_rust_verify_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::cargo-verus"
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_rust_verify_targ"
     },
     "tool_cargo_verus_verus_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
       "env_var": "",
       "measure_in_place": true,
-      "metadata": "tool::cargo-verus"
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_verus_targ"
     }
   },
   "run_command_cargo_verus": {
@@ -39,7 +43,8 @@
         "--output-json",
         "--time"
       ],
-      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl"
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl",
+      "asp_targid": "tc_verus_targ"
     },
     "ts_verus_targ": {
       "exe_args": [
@@ -54,7 +59,8 @@
         "--output-json",
         "--time"
       ],
-      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor"
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor",
+      "asp_targid": "ts_verus_targ"
     }
   }
 }

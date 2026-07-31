@@ -76,6 +76,7 @@ from pybb.attestation import (
     trust_summary,
 )
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
+from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import write_props_protocol_dir
 from pybb.attestation.targetmap import build_term, derive_targets_from_lean
 from pybb.attestation.tools import (
@@ -186,13 +187,14 @@ def build_tier_protocol_dirs() -> None:
     the pinned binary against its build-anchored golden BEFORE running it
     (hash-then-run, same term)."""
     for pid, targets in TIER_TARGETS.items():
+        targets = with_asp_targids(targets)
         asp_args = {"run_command_lean": dict(targets)}
         term = _tier_term("run_command_lean", targets)
         if pid == "lean_exec":
-            bin_targs = {"lean_bin_temp_control_targ": {
+            bin_targs = with_asp_targids({"lean_bin_temp_control_targ": {
                 "filepath": str(BIN), "env_var": "",
                 "measure_in_place": True,
-                "metadata": "binary::temp-control"}}
+                "metadata": "binary::temp-control"}})
             asp_args = {"hashfile": bin_targs, **asp_args}
             body = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
                 {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
