@@ -21,8 +21,10 @@ from .readiness import (
 )
 from .repair import SliceRestoreKS, WholeFileRestoreKS
 from .promotion import (
+    DeclDiff,
     PromotionOutcome,
     changed_contracts,
+    changed_decls,
     make_promotion_predicate,
     promotion_request,
     request_promotion,
@@ -62,8 +64,10 @@ __all__ = [
     "make_provision_predicate",
     "provision_request",
     "request_provision",
+    "DeclDiff",
     "PromotionOutcome",
     "changed_contracts",
+    "changed_decls",
     "make_promotion_predicate",
     "promotion_request",
     "request_promotion",

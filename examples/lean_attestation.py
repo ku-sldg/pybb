@@ -35,13 +35,41 @@ Three independent trust questions, three always-run entries:
     lean:proofs    [--validate] eval lean_check: fail escalates directly
     lean:behavior  [--validate] eval lean_exec: fail escalates directly
 
+Two artifacts are owned by the out-of-band attestation manager and change
+ONLY through --promote (the administrator's sanctioning act):
+
+    lean_props      the blessing of TempControl/Spec.lean. Ordinary
+                    provisioning (--provision, laundering) never re-signs
+                    it, so a spec change without promotion leaves a stale
+                    blessing that baseline verification refutes.
+    exec expecteds  the behavior vectors' expected outputs (AM config,
+                    never provisioned goldens). --promote re-runs the
+                    vectors against the sanctioned build and REFUSES if
+                    they diverge from the sanctioned expecteds; a
+                    deliberate behavior change is sanctioned via --expect.
+
 Usage:
-    python examples/lean_attestation.py [--provision] [--tamper]
+    python examples/lean_attestation.py [--check] [--provision]
+        [--promote [--expect KEY=VALUE ...]] [--tamper]
         [--tamper-semantic] [--repair] [--validate]
 
+--check      attestation-manager detection: declaration-level diff of the
+             live spec against the provisioned golden slices, matched by
+             declaration NAME (moved is not changed); reports whether
+             promotion is needed
+--promote    the sanctioned pipeline: behavior gate (lake build + the
+             vectors must match the sanctioned expecteds) -> proof gate
+             (lean_check must prove, toolchain measured in the same term)
+             -> syntax-scan target regeneration -> gold moves -> full
+             provisioning INCLUDING the lean_props re-blessing -> a
+             verification episode against the new baseline
+--expect     (with --promote) sanction a behavior change: override an
+             exec vector's expected output, e.g. --expect hot=fanCmd=Off
 --provision  (re)generate lean_l1a/lean_l2 protocol dirs from the syntax
-             scan, capture golden, and provision via the blackboard
-             (lean_check/lean_exec are static AM-owned config)
+             scan, capture golden, and provision via the blackboard —
+             WITHOUT re-blessing lean_props (that is --promote's act;
+             the existing blessing is kept, and exec expecteds carry
+             over from the installed protocol)
 --tamper     corrupt a line inside a theorem slice; detection/attribution
              (and --repair)
 --tamper-semantic  flip computeFanCmd's hot branch (.On -> .Off) in the
@@ -56,8 +84,10 @@ Usage:
 """
 
 import argparse
+import copy
 import json
 import shutil
+import subprocess
 from pathlib import Path
 
 from pybb import BlackboardController
@@ -68,9 +98,12 @@ from pybb.attestation import (
     TargetSnapshot,
     TierKS,
     WholeFileRestoreKS,
+    changed_decls,
     make_attestation_predicate,
+    make_promotion_predicate,
     make_provision_predicate,
     make_readiness_predicate,
+    promotion_request,
     readiness_request,
     request_provision,
     trust_summary,
@@ -174,6 +207,76 @@ TIER_META = {
 }
 
 
+LAKE = Path.home() / "Claude_workspace" / "bin" / "lake"
+EXEC_KEYS = ("hot", "cold", "hold")
+
+
+def _exec_targ(key: str) -> str:
+    return f"lean_exec_{key}_targ"
+
+
+def resolved_exec_targets(overrides: dict | None = None) -> dict:
+    """
+    The sanctioned behavior expectation: TIER_TARGETS defaults, then the
+    currently installed (previously sanctioned) expecteds, then explicit
+    --expect overrides — the promote-time sanctioning of a behavior
+    change. Expecteds are AM config: laundering re-provisions goldens,
+    never these.
+    """
+    targets = copy.deepcopy(TIER_TARGETS["lean_exec"])
+    installed = FIXTURES / "lean_exec" / "asp_args.json"
+    if installed.is_file():
+        current = json.loads(installed.read_text()).get("run_command_lean", {})
+        for targ, args in targets.items():
+            if "expected" in current.get(targ, {}):
+                args["expected"] = current[targ]["expected"]
+    for key, value in (overrides or {}).items():
+        if _exec_targ(key) not in targets:
+            raise SystemExit(f"--expect: unknown vector '{key}' "
+                             f"(choose from {', '.join(EXEC_KEYS)})")
+        targets[_exec_targ(key)]["expected"] = value
+    return targets
+
+
+def _run_vector(args: dict) -> str:
+    out = subprocess.run([str(LAKE), *args["exe_args"]], cwd=args["cwd"],
+                         capture_output=True, text=True, check=True)
+    return out.stdout.strip()
+
+
+def vector_failures(exec_targets: dict, run_vector=_run_vector) -> list:
+    """Behavior vectors vs the sanctioned expecteds; [] iff conformant."""
+    failures = []
+    for targ, args in exec_targets.items():
+        got = run_vector(args)
+        if got != args["expected"]:
+            failures.append(
+                f"{targ}: expected '{args['expected']}', got '{got}'")
+    return failures
+
+
+def make_codegen_fn(exec_targets: dict, run_vector=_run_vector):
+    """
+    The promotion pipeline's 'codegen' for Lean: there is no model->code
+    step, so the sanctioned build IS the regeneration — lake build, then
+    the behavior gate: every exec vector must match the sanctioned
+    expecteds. A behavior change that was not sanctioned via --expect
+    refuses the promotion before anything is blessed.
+    """
+    def build_and_check() -> str:
+        subprocess.run([str(LAKE), "build"], cwd=LEAN_ROOT, check=True,
+                       capture_output=True)
+        failures = vector_failures(exec_targets, run_vector)
+        if failures:
+            raise RuntimeError(
+                "behavior gate refused: " + "; ".join(failures)
+                + " — if this behavior change is sanctioned, "
+                  "re-run with --expect KEY=VALUE")
+        return ("lake build ok; behavior vectors match the sanctioned "
+                "expecteds")
+    return build_and_check
+
+
 def _tier_term(asp_id: str, targets: dict) -> dict:
     nodes = [
         {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
@@ -188,12 +291,17 @@ def _tier_term(asp_id: str, targets: dict) -> dict:
     return {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [acc, _APPR]}
 
 
-def build_tier_protocol_dirs() -> None:
+def build_tier_protocol_dirs(exec_targets: dict | None = None) -> None:
     """(Re)generate the semantic-tier dirs from the base config, with tool
     measurements woven in per TOOL_CADENCE. lean_exec additionally hashes
     the pinned binary against its build-anchored golden BEFORE running it
-    (hash-then-run, same term)."""
+    (hash-then-run, same term). Exec expecteds are AM-owned: unless a
+    sanctioned set is passed in (--promote --expect), the installed
+    expecteds carry over (resolved_exec_targets)."""
     for pid, targets in TIER_TARGETS.items():
+        if pid == "lean_exec":
+            targets = (exec_targets if exec_targets is not None
+                       else resolved_exec_targets())
         targets = with_asp_targids(targets)
         asp_args = {"run_command_lean": dict(targets)}
         term = _tier_term("run_command_lean", targets)
@@ -227,8 +335,12 @@ def build_tier_protocol_dirs() -> None:
               + (f" + {n_tools} woven tool measurements" if n_tools else ""))
 
 
-def build_protocol_dirs() -> dict:
-    """(Re)generate the measurement protocol dirs from the syntax scan."""
+def build_protocol_dirs(bless_props: bool = False,
+                        exec_targets: dict | None = None) -> dict:
+    """(Re)generate the measurement protocol dirs from the syntax scan.
+    The lean_props definition is AM-owned: it is rewritten only under
+    --promote (bless_props) or when missing entirely (bootstrap) — an
+    ordinary --provision keeps the existing blessing untouched."""
     derived = derive_targets_from_lean(LEAN_ROOT)
     protocols = {}
     for pid, template in TEMPLATES.items():
@@ -240,15 +352,20 @@ def build_protocol_dirs() -> dict:
         (d / "term.json").write_text(json.dumps(build_term(derived[pid])) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in derived[pid].values())} targets from scan")
-    write_props_protocol_dir(
-        FIXTURES / PROPS_ID, "lean", [str(SPEC_FILE)],
-        "The administrator-blessed golden spec: whole-file signed evidence "
-        "of TempControl/Spec.lean (the GUMBO-mirror theorems). Baseline "
-        "verification checks that the spec's hash and declaration-slice "
-        "goldens are derivable from the blessed content.")
-    protocols[PROPS_ID] = ProtocolDir.load(str(FIXTURES / PROPS_ID))
-    print(f"  {PROPS_ID}: 1 blessed spec file")
-    build_tier_protocol_dirs()
+    props_dir = FIXTURES / PROPS_ID
+    if bless_props or not (props_dir / "asp_args.json").is_file():
+        write_props_protocol_dir(
+            props_dir, "lean", [str(SPEC_FILE)],
+            "The administrator-blessed golden spec: whole-file signed evidence "
+            "of TempControl/Spec.lean (the GUMBO-mirror theorems). Baseline "
+            "verification checks that the spec's hash and declaration-slice "
+            "goldens are derivable from the blessed content.")
+        print(f"  {PROPS_ID}: 1 blessed spec file")
+    else:
+        print(f"  {PROPS_ID}: existing blessing kept "
+              "(only --promote re-blesses the spec)")
+    protocols[PROPS_ID] = ProtocolDir.load(str(props_dir))
+    build_tier_protocol_dirs(exec_targets)
     for pid in TIER_IDS:
         protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
     inputs = [a["filepath"]
@@ -281,12 +398,23 @@ def load_protocols(validate: bool = False) -> dict:
     return protocols
 
 
-def provision_flow(protocols: dict) -> None:
+def provision_flow(protocols: dict, bless_props: bool = False) -> None:
     """Capture golden and provision on the blackboard: measurement
-    protocols, the spec blessing (lean_props), and — with woven tool
-    measurements — the tier protocols, whose tool hash goldens land
-    measure-in-place (live artifacts, no golden copies)."""
-    measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
+    protocols and — with woven tool measurements — the tier protocols,
+    whose tool hash goldens land measure-in-place (live artifacts, no
+    golden copies). The lean_props blessing is provisioned ONLY under
+    --promote (bless_props) or when it has never been blessed (bootstrap):
+    re-signing the spec is the administrator's sanctioning act, so
+    ordinary re-provisioning — including a laundering pass — cannot
+    refresh it."""
+    props = protocols.get(PROPS_ID)
+    props_unblessed = props is not None and not any(
+        a.get("golden_b64")
+        for a in props.asp_args.get("readfile", {}).values())
+    pids = list(PROTOCOL_IDS)
+    if props is not None and (bless_props or props_unblessed):
+        pids.append(PROPS_ID)
+    measured = {pid: protocols[pid] for pid in pids}
     if BUILD_ID in protocols:
         measured[BUILD_ID] = protocols[BUILD_ID]  # build runs before tiers
     for pid in TIER_IDS:
@@ -311,6 +439,84 @@ def provision_flow(protocols: dict) -> None:
             {pid: protocols[pid] for pid in TIER_IDS if pid in protocols})
         for entry in installed:
             print(f"  build output golden -> {entry}")
+
+
+def check_flow(protocols: dict) -> None:
+    """AM detection: the declaration-level diff, matched by name. The
+    blessed spec bytes (lean_props) are the authoritative baseline for
+    Spec.lean — l2 goldens are launderable, the blessing is not."""
+    diff = changed_decls(protocols["lean_l2"], LEAN_ROOT,
+                         props_protocol=protocols.get(PROPS_ID))
+    if not diff:
+        print("No declaration changes since last blessing; "
+              "promotion not needed.")
+        return
+    print("Promotion needed — declarations changed since last blessing:")
+    for label, bucket in (("added", diff.added), ("removed", diff.removed),
+                          ("modified", diff.modified), ("moved", diff.moved)):
+        for meta in bucket:
+            print(f"  {label:<9}{meta}")
+    print("Run --promote to make the sanctioned change the new baseline"
+          " (an unsanctioned change should be investigated instead).")
+
+
+def promote_flow(protocols: dict, expect_overrides: dict) -> None:
+    """
+    The sanctioning act, in pipeline order:
+
+      1. detection report (informational — what is being sanctioned)
+      2. promotion request on the blackboard; its predicate runs the gates
+         and moves gold: behavior gate (lake build + vectors vs the
+         sanctioned expecteds), proof gate (lean_check must prove, lean
+         toolchain measured in the same term), syntax-scan target
+         regeneration, golden capture
+      3. only after the promote outcome is good: regenerate the AM-owned
+         config (tier dirs with the sanctioned expecteds, the props
+         blessing definition, the build event) and provision EVERYTHING,
+         lean_props included — the re-blessing
+      4. verification episode against the new baseline
+
+    Steps 2 and 3 are deliberately two blackboard runs: a refused gate
+    must leave the old baseline fully in place, so no provision request
+    exists until the promotion outcome is known good.
+    """
+    print("=== sanction review (declaration diff) ===")
+    check_flow(protocols)
+    exec_targets = resolved_exec_targets(expect_overrides)
+    for key in expect_overrides or {}:
+        print(f"  sanctioned expected: {key} -> "
+              f"{exec_targets[_exec_targ(key)]['expected']}")
+
+    print("\n=== promotion episode (gates, then gold moves) ===")
+    client = CvmSubprocessClient()
+    gated = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
+    gated["lean_check"] = protocols["lean_check"]
+    ctl = BlackboardController()
+    ctl.register_predicate("promotion", make_promotion_predicate(
+        gated, GOLDEN_ROOT,
+        targets_fn=lambda: derive_targets_from_lean(LEAN_ROOT),
+        codegen_fn=make_codegen_fn(exec_targets),
+        client=client,
+        validate_with="lean_check",
+    ))
+    ctl.blackboard.write_entry(
+        key="promote:lean", predicate="promotion",
+        measurement=promotion_request("lean"), partition="provision")
+    bb = ctl.run()
+    for key, entry in bb.get_escalate().items():
+        raise SystemExit(f"  {key}: REFUSED - {entry.result.error}")
+    outcome = bb.provision["promote:lean"].result
+    print(f"  promote:lean: {outcome.codegen}; proofs validated; "
+          f"targets regenerated={outcome.targets}; "
+          f"{outcome.captured} files -> golden")
+
+    print("\n=== provisioning the new baseline (props re-blessed) ===")
+    fresh = build_protocol_dirs(bless_props=True, exec_targets=exec_targets)
+    protocols.update(fresh)
+    provision_flow(protocols, bless_props=True)
+
+    print("\n=== verification episode (new baseline) ===")
+    attest_episode(protocols, repair=False, validate=True)
 
 
 def tamper(protocols: dict) -> None:
@@ -373,13 +579,32 @@ def attest_episode(protocols: dict, repair: bool,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--check", action="store_true")
     parser.add_argument("--provision", action="store_true")
+    parser.add_argument("--promote", action="store_true")
+    parser.add_argument("--expect", action="append", default=[],
+                        metavar="KEY=VALUE")
     parser.add_argument("--tamper", action="store_true")
     parser.add_argument("--tamper-semantic", action="store_true")
     parser.add_argument("--repair", action="store_true")
     parser.add_argument("--validate", action="store_true")
     cli = parser.parse_args()
 
+    if cli.expect and not cli.promote:
+        parser.error("--expect is the promote-time sanctioning knob; "
+                     "use it with --promote")
+    if cli.check:
+        check_flow(load_protocols())
+        return
+    if cli.promote:
+        overrides = {}
+        for item in cli.expect:
+            key, sep, value = item.partition("=")
+            if not sep:
+                parser.error(f"--expect wants KEY=VALUE, got '{item}'")
+            overrides[key] = value
+        promote_flow(load_protocols(validate=True), overrides)
+        return
     if cli.provision:
         protocols = build_protocol_dirs()
         provision_flow(protocols)

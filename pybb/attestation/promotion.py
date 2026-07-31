@@ -42,7 +42,6 @@ from typing import Any, Callable, Dict, List, Optional
 from pydantic import BaseModel
 
 from ..blackboard import Blackboard, BlackboardEntry
-from .appraisal import overall_verdict, parse_appraisal
 from .provision import request_provision
 from .snapshot import TargetSnapshot
 from .targetmap import derive_targets, install_targets
@@ -76,6 +75,151 @@ def changed_contracts(l2_protocol: Any, model_suffix: str = ".aadl") -> List[str
         if norm(base64.b64decode(golden).decode()) not in texts[fp]:
             changed.append(targ)
     return changed
+
+
+class DeclDiff(BaseModel):
+    """changed_decls report; truthy iff promotion is needed. Entries are
+    declaration metadata names (Module.Path::decl)."""
+
+    added: List[str] = []      # live declarations with no provisioned slice
+    removed: List[str] = []    # provisioned slices with no live declaration
+    modified: List[str] = []   # same declaration, different content
+    moved: List[str] = []      # same content, different position (re-baseline only)
+
+    def __bool__(self) -> bool:
+        return bool(self.added or self.removed or self.modified or self.moved)
+
+
+def changed_decls(l2_protocol: Any, package_root: Path,
+                  prefix: str = "lean",
+                  props_protocol: Any = None) -> DeclDiff:
+    """
+    Attestation-manager detection for a Lean package: the declaration-level
+    diff between the baseline and a fresh syntax scan of the live sources.
+    Declarations are matched by NAME (metadata Module::decl), so a moved
+    declaration is not a changed one; anonymous declarations
+    (instance/example, metadata `Module::kind@line`) are matched by content
+    instead. Comparison is whitespace-insensitive — byte-level drift within
+    a declaration is the episode's job (l1a/l2); this answers the
+    sanctioning question: WHICH declarations changed.
+
+    The baseline side: for files the administrator blessed (props_protocol,
+    whole-file signed content), declarations are scanned FROM THE BLESSED
+    BYTES — the l2 goldens are launderable by re-provisioning, the
+    blessing is not, so it is the authoritative sanctioning reference.
+    Files outside the blessing fall back to their provisioned l2 slices
+    (detection scope = last provisioning for those).
+
+    A truthy result means the baseline no longer describes the live spec:
+    a sanctioned change should be promoted (--promote), an unsanctioned
+    one investigated.
+    """
+    import base64
+
+    from .targetmap import derive_targets_from_lean, lean_decl_spans
+
+    def norm(s: str) -> str:
+        return "".join(s.split())
+
+    live = derive_targets_from_lean(
+        Path(package_root), prefix=prefix)[f"{prefix}_l2"]["readfile_range"]
+    files: Dict[str, List[str]] = {}
+
+    def segment(args: dict) -> str:
+        fp = args["filepath"]
+        if fp not in files:
+            try:
+                files[fp] = Path(fp).read_text().splitlines()
+            except OSError:
+                files[fp] = []
+        return norm("".join(
+            files[fp][args["start_index"] - 1:args["end_index"]]))
+
+    def position(args: dict) -> tuple:
+        return (args.get("filepath"), args.get("start_index"),
+                args.get("end_index"))
+
+    def named(meta: str) -> bool:
+        return "@" not in meta
+
+    # the baseline: blessed files scanned from signed bytes, the rest
+    # from provisioned l2 slices — (meta, content, position) triples
+    blessed_texts: Dict[str, str] = {}
+    if props_protocol is not None:
+        for args in props_protocol.asp_args.get("readfile", {}).values():
+            if args.get("golden_b64"):
+                blessed_texts[args["filepath"]] = base64.b64decode(
+                    args["golden_b64"]).decode()
+    baseline: List[tuple] = []
+    for fp, text in blessed_texts.items():
+        lines = text.splitlines()
+        for kind, name, start, end in lean_decl_spans(text):
+            content = norm("".join(lines[start - 1:end]))
+            meta = name if name else f"{kind}@{start}"
+            baseline.append((fp, meta, name is not None, content,
+                             (fp, start, end)))
+    for targ, args in l2_protocol.asp_args.get("readfile_range", {}).items():
+        if not args.get("golden_b64") or args["filepath"] in blessed_texts:
+            continue
+        meta = args.get("metadata", targ)
+        baseline.append((args["filepath"], meta, named(meta),
+                         norm(base64.b64decode(args["golden_b64"]).decode()),
+                         position(args)))
+
+    # blessed-side metas carry only the decl name; l2 metas are
+    # Module::name — normalize live metas to both forms via suffix match
+    def meta_key(fp: str, meta: str) -> str:
+        return meta.rsplit("::", 1)[-1] if fp in blessed_texts else meta
+
+    live_named = {}
+    live_anon = []
+    for a in live.values():
+        meta = a.get("metadata", "")
+        if named(meta):
+            live_named[(a["filepath"], meta_key(a["filepath"], meta))] = a
+        else:
+            live_anon.append(a)
+
+    diff = DeclDiff()
+    matched_anon: set = set()
+    baseline_named_keys = set()
+
+    def display(fp: str, meta: str) -> str:
+        if "::" in meta:
+            return meta
+        module = ".".join(
+            Path(fp).relative_to(package_root).with_suffix("").parts) \
+            if str(fp).startswith(str(package_root)) else Path(fp).stem
+        return f"{module}::{meta}"
+
+    for fp, meta, is_named, content, pos in baseline:
+        if is_named:
+            key = (fp, meta_key(fp, meta))
+            baseline_named_keys.add(key)
+            hit = live_named.get(key)
+            if hit is None:
+                diff.removed.append(display(fp, meta))
+            elif segment(hit) != content:
+                diff.modified.append(display(fp, meta))
+            elif position(hit) != pos:
+                diff.moved.append(display(fp, meta))
+        else:
+            hit = next((i for i, a in enumerate(live_anon)
+                        if i not in matched_anon and a["filepath"] == fp
+                        and segment(a) == content), None)
+            if hit is None:
+                diff.modified.append(display(fp, meta))
+            else:
+                matched_anon.add(hit)
+                if position(live_anon[hit]) != pos:
+                    diff.moved.append(live_anon[hit]["metadata"])
+    diff.added.extend(a["metadata"] for k, a in live_named.items()
+                      if k not in baseline_named_keys)
+    diff.added.extend(a["metadata"] for i, a in enumerate(live_anon)
+                      if i not in matched_anon)
+    for bucket in (diff.added, diff.removed, diff.modified, diff.moved):
+        bucket.sort()
+    return diff
 
 
 def promotion_request(model: str) -> dict:
@@ -189,18 +333,28 @@ def _promote(
                 model=model, codegen=codegen,
                 error=f"validation gate needs client and protocol '{validate_with}'",
             )
+        # interpret exactly as an episode would (verified appraisal
+        # summary primary) — the gate must not judge evidence more
+        # leniently than attestation does
+        from .knowledge_sources import (attestation_request,
+                                        make_attestation_predicate)
         try:
-            response = client.run_protocol(protocol)
+            verdict = make_attestation_predicate(
+                client, {validate_with: protocol}
+            )(attestation_request(validate_with))
         except Exception as e:
             return PromotionOutcome(model=model, codegen=codegen,
                                     error=f"validation gate failed: {e}")
-        validated = overall_verdict(
-            parse_appraisal(response, protocol.target_records())
-        )
+        validated = bool(verdict.passed)
         if not validated:
+            failing = sorted({c.targ_id or c.description
+                              for c in verdict.failing()})
+            detail = ("; failing: " + ", ".join(failing) if failing
+                      else f"; {verdict.error}" if verdict.error else "")
             return PromotionOutcome(
                 model=model, codegen=codegen, validated=False,
-                error="validation gate failed: regenerated project does not verify",
+                error="validation gate failed: regenerated project "
+                      "does not verify" + detail,
             )
 
     # new target maps from the regenerated content, installed into the

@@ -54,6 +54,9 @@ python examples/lean_attestation.py --validate     # + proof & behavior tiers
 python examples/lean_attestation.py --provision    # regenerate + re-provision
 python examples/lean_attestation.py --tamper --repair
 python examples/lean_attestation.py --tamper-semantic
+python examples/lean_attestation.py --check        # AM: declaration diff
+python examples/lean_attestation.py --promote      # AM: sanction a change
+python examples/lean_attestation.py --promote --expect hot=fanCmd=Off
 ```
 
 **Structural tamper + repair** (`--tamper --repair`, log:
@@ -82,6 +85,39 @@ vectors are AM-owned protocol config, not provisioned goldens — laundering
 cannot reach them. A `sorry` shows the converse separation: proofs fail,
 behavior still passes (`tests/test_integration_lean.py`).
 
+**Sanctioned change** (`--check` / `--promote`, the out-of-band attestation
+manager): the system is intent-blind — a provable, well-meant spec addition
+fails episodes exactly like tamper until the administrator sanctions it.
+Two artifacts change ONLY through `--promote`:
+
+- the **`lean_props` blessing**: ordinary provisioning (including a
+  laundering pass) never re-signs it, so a spec change without promotion
+  leaves a stale blessing that baseline verification refutes at readiness
+  ("hash golden not derivable from blessed content") — attestation never
+  starts;
+- the **exec expecteds**: `--promote` re-runs the behavior vectors against
+  the sanctioned build and refuses on divergence; a deliberate behavior
+  change is sanctioned with `--expect KEY=VALUE`.
+
+`--check` is the sanction review: a declaration-level diff of the live
+sources against the baseline, matched by declaration *name* (added /
+removed / modified / moved — a moved declaration is not a changed one; the
+line-shifted `decide` examples report as moved, not violated). For
+`Spec.lean` the baseline side is scanned from the **blessed signed bytes**,
+not the l2 goldens — the goldens are launderable by re-provisioning, the
+blessing is not (`changed_decls(props_protocol=...)`,
+`tests/test_integration_lean.py::test_check_sees_through_laundered_l2_goldens`).
+
+`--promote` is the sanctioning pipeline, gates before gold: behavior gate
+(`lake build` + vectors vs sanctioned expecteds) → proof gate (`lean_check`
+must prove, toolchain measured in the same term) → syntax-scan target
+regeneration (a new theorem becomes a new *named* l2 target) → gold moves →
+full provisioning including the props re-blessing → verification episode.
+A refused gate leaves the old baseline fully in place: the promote request
+runs alone on the blackboard, and provision requests are only written after
+its outcome is known good. There is no `codegen_fn` for Lean — the
+sanctioned build plays that role.
+
 ## Notes for appraiser authors
 
 - `lean --json` emits one JSON diagnostic per line on stdout; a clean run
@@ -100,7 +136,11 @@ behavior still passes (`tests/test_integration_lean.py`).
 - `tests/test_integration_lean.py` — fixtures-consistency (committed maps
   must equal the scan), clean attestation, tamper→attribution→repair→verify
   (auto-run when the CVM stack is present); the toolchain tiers — clean,
-  sorry-separation, laundered double refutation — gated behind `RUN_LEAN=1`.
+  sorry-separation, laundered double refutation — gated behind `RUN_LEAN=1`;
+  sanctioned change — declaration diff (named add, moved examples),
+  blessing-authoritative detection through laundered goldens, AM-owned
+  expecteds with `--expect` sanction, and the full promote-and-rebless arc
+  on scratch copies (`RUN_LEAN=1`).
 
 **Toolchain identity** (see `signed_baselines.md`): both tiers hash the
 lean invocation chain (wrapper → elan shim → pinned binaries →

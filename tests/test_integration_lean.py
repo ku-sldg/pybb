@@ -19,7 +19,10 @@ Hash/repair tests auto-skip unless the CVM binary and asp-libs are
 present (the vendored tree ships with the repo).
 """
 
+import base64
 import os
+import shutil
+import sys
 from pathlib import Path
 
 import pytest
@@ -32,7 +35,14 @@ from pybb.attestation import (
     TierKS,
     WholeFileRestoreKS,
     attestation_request,
+    changed_decls,
     make_attestation_predicate,
+    make_promotion_predicate,
+    make_provision_predicate,
+    make_readiness_predicate,
+    promotion_request,
+    readiness_request,
+    request_provision,
     trust_summary,
 )
 from pybb.attestation.client import DEFAULT_ASP_BIN, DEFAULT_CVM_BINARY
@@ -312,3 +322,151 @@ def test_laundered_theorem_refuted_by_blessing():
         protocols, baseline_root=GOLDEN_ROOT,
         client=CvmSubprocessClient())(readiness_request(pids))
     assert report, (report.problems, report.baseline_problems)
+
+
+# ── sanctioned change: --check / --promote (the out-of-band AM) ───────────────
+
+SANCTIONED_THEOREM = '''\
+/-- Safety: the fan is only ever Off because the temperature permits it
+    or because it was already Off. -/
+theorem fanOff_only_if_cold_or_held (temp : Int) (sp : SetPoint) (latest : FanCmd) :
+    computeFanCmd temp sp latest = .Off → temp < sp.low ∨ latest = .Off := by
+  unfold computeFanCmd
+  split
+  next => exact fun h => FanCmd.noConfusion h
+  next =>
+    split
+    next hcold => exact fun _ => Or.inl hcold
+    next => exact fun h => Or.inr h
+
+'''
+_ANCHOR = "-- Executable sanity checks (kernel-evaluated)."
+
+
+@pytest.fixture
+def sanctioned_edit():
+    """Add the dual safety theorem to the live spec; restore after."""
+    orig = SPEC.read_text()
+    SPEC.write_text(orig.replace(_ANCHOR, SANCTIONED_THEOREM + _ANCHOR, 1))
+    try:
+        yield
+    finally:
+        SPEC.write_text(orig)
+
+
+def test_changed_decls_clean_tree_reports_nothing():
+    protocols = _protocols("lean_props")
+    diff = changed_decls(protocols["lean_l2"], LEAN_ROOT,
+                         props_protocol=protocols["lean_props"])
+    assert not diff, diff
+
+
+def test_changed_decls_names_the_added_theorem_and_moves(sanctioned_edit):
+    protocols = _protocols("lean_props")
+    diff = changed_decls(protocols["lean_l2"], LEAN_ROOT,
+                         props_protocol=protocols["lean_props"])
+    assert diff.added == ["TempControl.Spec::fanOff_only_if_cold_or_held"]
+    # the three examples below the insertion shifted: moved, not changed
+    assert len(diff.moved) == 3 and all("example" in m for m in diff.moved)
+    assert not diff.modified and not diff.removed
+
+
+def test_check_sees_through_laundered_l2_goldens(sanctioned_edit):
+    """Re-provisioning over an unsanctioned edit re-blesses the l2 golden
+    slices — against those alone the diff vanishes. The blessed spec bytes
+    (lean_props) are not launderable, so detection against the blessing
+    still names the change."""
+    from pybb.attestation.targetmap import derive_targets_from_lean
+
+    protocols = _protocols("lean_props")
+    live = derive_targets_from_lean(LEAN_ROOT)["lean_l2"]["readfile_range"]
+    for args in live.values():
+        lines = Path(args["filepath"]).read_text().splitlines()
+        flat = "".join(lines[args["start_index"] - 1:args["end_index"]])
+        args["golden_b64"] = base64.b64encode(flat.encode()).decode()
+    laundered = protocols["lean_l2"].model_copy(deep=True)
+    laundered.asp_args = {"readfile_range": live}
+
+    assert not changed_decls(laundered, LEAN_ROOT)  # the laundering "works"...
+    diff = changed_decls(laundered, LEAN_ROOT,
+                         props_protocol=protocols["lean_props"])
+    assert diff.added == ["TempControl.Spec::fanOff_only_if_cold_or_held"]
+
+
+def test_exec_expecteds_are_am_config_with_promote_time_sanction():
+    """The behavior gate compares against AM-owned expecteds; --expect is
+    the only way to sanction a behavior change."""
+    sys.path.insert(0, str(REPO / "examples"))
+    from lean_attestation import (EXEC_KEYS, resolved_exec_targets,
+                                  vector_failures)
+
+    targets = resolved_exec_targets()
+    assert [targets[f"lean_exec_{k}_targ"]["expected"] for k in EXEC_KEYS] \
+        == ["fanCmd=On", "fanCmd=Off", "fanCmd=On"]
+    # unsanctioned behavior change: the gate names every diverging vector
+    failures = vector_failures(targets, run_vector=lambda a: "fanCmd=Off")
+    assert len(failures) == 2
+    assert all("expected 'fanCmd=On', got 'fanCmd=Off'" in f for f in failures)
+    # the sanctioning knob
+    sanctioned = resolved_exec_targets({"hot": "fanCmd=Off",
+                                        "hold": "fanCmd=Off"})
+    assert not vector_failures(sanctioned, run_vector=lambda a: "fanCmd=Off")
+    with pytest.raises(SystemExit):
+        resolved_exec_targets({"tepid": "fanCmd=On"})
+
+
+@needs_lean
+def test_sanctioned_spec_change_promoted_and_reblessed(tmp_path, sanctioned_edit):
+    """The full sanctioning arc on scratch copies: gates (build + vectors,
+    proofs) -> gold moves -> l2 gains the theorem-named target -> the props
+    re-blessing -> baseline verifies -> detection and attestation clean
+    against the new baseline."""
+    from pybb.attestation.props import write_props_protocol_dir
+    from pybb.attestation.targetmap import derive_targets_from_lean
+
+    sys.path.insert(0, str(REPO / "examples"))
+    from lean_attestation import make_codegen_fn, resolved_exec_targets
+
+    golden_tmp = tmp_path / "golden"
+    shutil.copytree(GOLDEN_ROOT, golden_tmp)
+    protocols = {}
+    for pid in ("lean_l1a", "lean_l2", "lean_props", "lean_check"):
+        shutil.copytree(FIXTURES / pid, tmp_path / pid)
+        protocols[pid] = ProtocolDir.load(str(tmp_path / pid))
+    client = CvmSubprocessClient()
+
+    predicate = make_promotion_predicate(
+        protocols, golden_tmp,
+        targets_fn=lambda: derive_targets_from_lean(LEAN_ROOT),
+        codegen_fn=make_codegen_fn(resolved_exec_targets()),
+        client=client, validate_with="lean_check")
+    outcome = predicate(promotion_request("lean"))
+    assert outcome, outcome.error
+    assert outcome.validated is True
+    assert outcome.targets == {"lean_l1a": 6, "lean_l2": 16}
+    assert "lean_spec_fanOff_only_if_cold_or_held_targ" \
+        in protocols["lean_l2"].asp_args["readfile_range"]
+
+    # the re-blessing: props definition regenerated over the sanctioned
+    # spec, then provisioned (measure + sign on the moved gold)
+    write_props_protocol_dir(tmp_path / "lean_props", "lean", [str(SPEC)],
+                             "test blessing")
+    protocols["lean_props"] = ProtocolDir.load(str(tmp_path / "lean_props"))
+    measured = {p: protocols[p] for p in ("lean_l1a", "lean_l2", "lean_props")}
+    ctl = BlackboardController()
+    ctl.register_predicate("provision",
+                           make_provision_predicate(client, measured, golden_tmp))
+    for p in measured:
+        request_provision(ctl.blackboard, p)
+    bb = ctl.run()
+    assert not bb.get_escalate(), bb.get_escalate()
+
+    report = make_readiness_predicate(
+        measured, baseline_root=golden_tmp,
+        client=client)(readiness_request(list(measured)))
+    assert report, (report.problems, report.baseline_problems)
+    assert not changed_decls(protocols["lean_l2"], LEAN_ROOT,
+                             props_protocol=protocols["lean_props"])
+    verdict = make_attestation_predicate(client, protocols)(
+        attestation_request("lean_l1a"))
+    assert verdict.passed, verdict

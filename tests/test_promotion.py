@@ -8,6 +8,8 @@ import base64
 import json
 from pathlib import Path
 
+import pytest
+
 from pybb import BlackboardController
 from pybb.attestation import (
     ProtocolDir,
@@ -18,6 +20,15 @@ from pybb.attestation import (
 )
 from pybb.attestation.client import AttestationClient
 from pybb.attestation.snapshot import mirror_path
+
+
+@pytest.fixture(autouse=True)
+def _legacy_interpreter(monkeypatch):
+    """The validation-gate tests drive the pipeline with FABRICATED
+    responses via stub clients; the verified summarizer rightly refuses
+    non-evidence, so the legacy parser is pinned explicitly here."""
+    from pybb.attestation import summarizer
+    monkeypatch.setattr(summarizer, "EVIDENCE_TOOLS_BIN", "/nonexistent")
 
 
 def _model_tree(tmp_path):
