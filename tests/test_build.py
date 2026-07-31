@@ -101,7 +101,7 @@ def test_stub_build_provisions_signs_cross_installs_and_links(tmp_path):
             (d / f).write_text((tmp_path / "stub_build" / f).read_text())
         (d / "asp_args.json").write_text(json.dumps({"hashfile": {
             targ: {"filepath": str(filepath), "env_var": "",
-                   "measure_in_place": True}}}, indent=2))
+                   "measure_in_place": True, "asp_targid": targ}}}, indent=2))
         (d / "term.json").write_text(json.dumps(
             {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
                 {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [

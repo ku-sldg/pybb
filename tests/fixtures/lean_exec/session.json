@@ -14,8 +14,9 @@
       },
       "run_command_lean_appr": {
         "FWD": {
-          "FWD": "REPLACE",
-          "_BODY": 1
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "NONE"
         },
         "ATTRS": []
       },

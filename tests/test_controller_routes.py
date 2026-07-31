@@ -5,6 +5,8 @@ existing number/pair examples behave as before; the new on_pass chain makes
 a passing evaluation provisional until the chain's work re-evaluates.
 """
 
+import pytest
+
 from pybb import (
     BlackboardController,
     ComponentAdder,
@@ -15,6 +17,16 @@ from pybb import (
     is_positive,
     less_than_3,
 )
+
+@pytest.fixture(autouse=True)
+def _legacy_interpreter(monkeypatch):
+    """These tests drive the predicate with FABRICATED responses via stub
+    clients; the verified summarizer rightly refuses non-evidence, so the
+    legacy parser is pinned explicitly here."""
+    from pybb.attestation import summarizer
+    monkeypatch.setattr(summarizer, "EVIDENCE_TOOLS_BIN", "/nonexistent")
+
+
 
 
 def _controller():

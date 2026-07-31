@@ -89,6 +89,7 @@ REPO = Path(__file__).parent.parent
 LEAN_ROOT = REPO / "targets" / "temp-control-lean"
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
+EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
 PROTOCOL_IDS = ("lean_l1a", "lean_l2")
 PROPS_ID = "lean_props"
 TIER_IDS = ("lean_check", "lean_exec")
@@ -121,7 +122,13 @@ TIER_SESSION = {
                 "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
                 "ATTRS": []},
             "run_command_lean_appr": {
-                "FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []},
+                # EXTEND: the appraiser retains the evidence it judged, so
+                # the tool's output survives into the episode response and
+                # the verified appraisal summary lifts it per entry
+                # (ComponentResult.measured_b64) — the per-contract join
+                # material
+                "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                "ATTRS": []},
         },
         "ASP_Comps": {"run_command_lean": "run_command_lean_appr"},
     },
@@ -334,7 +341,8 @@ def attest_episode(protocols: dict, repair: bool,
     controller = BlackboardController()
     client = CvmSubprocessClient()
     controller.register_predicate(
-        "attestation", make_attestation_predicate(client, protocols))
+        "attestation", make_attestation_predicate(client, protocols,
+                                                  archive_dir=EVIDENCE_DIR))
     controller.register_predicate("protocol_check",
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,

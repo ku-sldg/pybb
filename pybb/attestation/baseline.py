@@ -353,9 +353,19 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
             f"verification run failed: {response.get('PAYLOAD', 'unknown error')}")
         return report
 
-    match_records = [{"asp_id": r["asp_id"], "targ_id": r["targ_id"],
-                      "args": r["args"]} for r in records]
-    report.components = parse_appraisal(response, match_records)
+    from . import summarizer
+
+    if summarizer.available():
+        try:
+            report.components = summarizer.summarize_response(
+                response, protocol.session)
+        except summarizer.SummaryError as e:
+            report.problems.append(f"verified appraisal summary refused: {e}")
+            return report
+    else:
+        match_records = [{"asp_id": r["asp_id"], "targ_id": r["targ_id"],
+                          "args": r["args"]} for r in records]
+        report.components = parse_appraisal(response, match_records)
     if not report.components:
         report.problems.append("verification run returned no appraisal evidence")
         return report

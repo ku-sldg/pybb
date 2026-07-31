@@ -27,6 +27,9 @@ class ComponentResult(BaseModel):
     reason: str = ""
     args: dict = {}
     description: str = ""
+    # retained appraised output (EXTEND appraisers, via the verified
+    # appraisal summary): the join material, base64
+    measured_b64: str = ""
 
 
 def _decode_verdict(raw: str) -> tuple[bool, str]:

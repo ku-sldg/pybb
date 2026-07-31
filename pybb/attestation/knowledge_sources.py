@@ -66,6 +66,9 @@ class Verdict(BaseModel):
     passed: bool
     components: List[ComponentResult] = []
     error: str = ""
+    # archived raw response (gzipped) this verdict was interpreted from —
+    # the episode's durable evidence artifact, re-summarizable later
+    evidence_ref: str = ""
 
     def __bool__(self) -> bool:
         return self.passed
@@ -75,26 +78,51 @@ class Verdict(BaseModel):
 
 
 def make_attestation_predicate(
-    client: Any, protocols: Dict[str, Any]
+    client: Any, protocols: Dict[str, Any], archive_dir: Any = None
 ) -> Callable[[dict], Verdict]:
     """
     Predicate over attestation-request measurements: run the named protocol
     (ProtocolDir | RodeoProtocol) via the client and appraise the response.
     Memoized on the measurement so per-cycle re-evaluation of unchanged
     entries does not re-run protocols.
+
+    With `archive_dir` set, every raw response is archived (gzipped —
+    evidence-type trees are highly self-similar and compress ~50x) under
+    one timestamped episode directory, BEFORE interpretation and
+    regardless of verdict: failures especially deserve durable evidence.
+    The verdict's evidence_ref names its artifact; a summary is always
+    re-derivable from it via the verified summarizer.
     """
     cache: Dict[str, Verdict] = {}
+    episode_dir: List[Any] = [None]
+
+    def _archive(response: dict, protocol_id: str) -> str:
+        if archive_dir is None:
+            return ""
+        import gzip
+        import time
+        from pathlib import Path as _P
+
+        if episode_dir[0] is None:
+            d = _P(archive_dir) / time.strftime("%Y%m%d-%H%M%S")
+            d.mkdir(parents=True, exist_ok=True)
+            episode_dir[0] = d
+        path = episode_dir[0] / f"{protocol_id}.response.json.gz"
+        with gzip.open(path, "wt") as f:
+            json.dump(response, f)
+        return str(path)
 
     def predicate(measurement: dict) -> Verdict:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
-            cache[key] = _attest(client, protocols, measurement)
+            cache[key] = _attest(client, protocols, measurement, _archive)
         return cache[key]
 
     return predicate
 
 
-def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdict:
+def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
+            archive: Any = None) -> Verdict:
     protocol_id = measurement.get("protocol", "")
     protocol = protocols.get(protocol_id)
     if protocol is None:
@@ -104,12 +132,35 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict) -> Verdic
         response = client.run_protocol(protocol)
     except Exception as e:
         return Verdict(protocol=protocol_id, passed=False, error=str(e))
-    components = parse_appraisal(response, protocol.target_records())
+    ref = archive(response, protocol_id) if archive else ""
+    components = _interpret(response, protocol)
+    if isinstance(components, str):  # summarizer refusal — fail closed
+        return Verdict(protocol=protocol_id, passed=False, error=components,
+                       evidence_ref=ref)
     return Verdict(
         protocol=protocol_id,
         passed=overall_verdict(components),
         components=components,
+        evidence_ref=ref,
     )
+
+
+def _interpret(response: dict, protocol: Any):
+    """Interpret a protocol response: the VERIFIED appraisal summary
+    (copland-evidence-tools) is primary for CVM evidence responses — its
+    partitioning carries a correctness theorem, and attribution is an
+    asp_targid field read. Rodeo APPSUMM responses keep their own path;
+    the legacy Python walker remains only for hosts without the tool."""
+    from . import summarizer
+
+    if response.get("ACTION") == "APPSUMM":
+        return parse_appraisal(response, protocol.target_records())
+    if summarizer.available():
+        try:
+            return summarizer.summarize_response(response, protocol.session)
+        except summarizer.SummaryError as e:
+            return f"verified appraisal summary refused: {e}"
+    return parse_appraisal(response, protocol.target_records())
 
 
 class StartAttestationKS(KnowledgeSource):

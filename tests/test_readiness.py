@@ -5,6 +5,8 @@ attestation entry via StartAttestationKS; readiness failure escalates as a
 configuration failure and attestation never begins.
 """
 
+import pytest
+
 import base64
 
 from pybb import BlackboardController
@@ -17,6 +19,16 @@ from pybb.attestation import (
     trust_summary,
 )
 from pybb.attestation.client import CvmConfig
+
+@pytest.fixture(autouse=True)
+def _legacy_interpreter(monkeypatch):
+    """These tests drive the predicate with FABRICATED responses via stub
+    clients; the verified summarizer rightly refuses non-evidence, so the
+    legacy parser is pinned explicitly here."""
+    from pybb.attestation import summarizer
+    monkeypatch.setattr(summarizer, "EVIDENCE_TOOLS_BIN", "/nonexistent")
+
+
 
 
 def _config(tmp_path, asps=("hashfile", "sig")) -> CvmConfig:

@@ -192,6 +192,52 @@ Isolette: the seL4/Microkit image build requires the Microkit SDK (not on
 this host); the machinery is example-agnostic and the image build event is
 the designed follow-up when an SDK lands.
 
+## The verified appraisal summary: episode interpretation with a theorem
+
+Episode responses are interpreted by copland-spec's formally verified
+`do_appraisal_summary` (via the CakeML-extracted copland-evidence-tools
+binary), not by Python evidence-walking. The summary re-partitions the
+flat RawEv into one entry per appraisal event — `(measurement ASP,
+appraiser, EvidenceT, RawEv slice)` — under a machine-checked correctness
+theorem: every input slot is accounted for (Permutation — the fail-open
+dropped-verdict hazard is eliminated by proof) and every entry's
+appraiser is the session-declared ASP_Comps companion of its measurement
+(provenance). Typing and slot-size preconditions fail closed inside the
+tool.
+
+pybb's role is per-entry LOCAL interpretation only: decode the verdict
+slot, read the target id from the stored EvidenceT's `asp_targid` (every
+target's args carry their own id, derivation-time injected and
+drift-guarded at load — attribution is a field read), and lift the
+retained measured output of EXTEND-forwarded appraisers
+(ComponentResult.measured_b64 — the per-contract join material). Both
+episode attestation and baseline verification interpret this way; the
+legacy Python walker remains only for hosts without the tool, and unit
+tests with fabricated responses pin it explicitly (the summarizer rightly
+refuses non-evidence).
+
+Transport note: real evidence exceeds the CakeML runtime's ~64KB argv
+buffer; the tool gained a `--req-file` mode (workspace patch, upstream
+candidate).
+
+**Episode archives**: with `archive_dir` set on the attestation
+predicate, every raw response is archived gzipped under a timestamped
+episode directory, before interpretation and regardless of verdict;
+`Verdict.evidence_ref` names the artifact, and re-summarizing an archived
+response reproduces its verdicts (audit replay, tested).
+
+**Evidence size (measured)**: raw evidence bytes are tiny (<1KB); 95-99%
+of a response is the evidence-TYPE tree, which grows O(events²) because
+every appraiser — REPLACE and EXTEND alike — embeds a full provenance
+copy of the pre-appraisal tree (lean_l2, plain REPLACE, is the largest
+measured response at 177KB/257 nodes for 15 events). EXTEND's marginal
+cost is small (per-branch retained incoming evidence + the measured
+outputs themselves). The trees are highly self-similar: gzip compresses
+25-57x, so archives are ~1-2KB per response. The principled fix for the
+quadratic term is upstream (DAG-sharing of evidence-type subtrees in the
+CVM's serialization); until then, wide protocols (hundreds of targets)
+should be split.
+
 ## Recorded limitations
 
 - **Key custody is the real trust root.** The signing keypair is the demo
