@@ -19,7 +19,7 @@ Step-1 self-identification key — attribution is a field read), and lift
 the retained measured output (slot 1 of an EXTEND appraiser's slice).
 No positional reconstruction happens in Python.
 
-Transport: the tool reads the request from a FILE (--req-file, our
+Transport: the tool reads the request from a FILE (--req_file, our
 patch) because real evidence exceeds the CakeML runtime's ~64KB argv
 buffer. The summary JSON uses DUPLICATE keys for repeated ASP ids
 (association-list semantics — one entry per event, order preserved), so
@@ -120,7 +120,7 @@ def summarize_response(response: dict, session: dict) -> List[ComponentResult]:
         with os.fdopen(fd, "w") as f:
             json.dump(request, f)
         proc = subprocess.run(
-            [EVIDENCE_TOOLS_BIN, "--req-file", req_path],
+            [EVIDENCE_TOOLS_BIN, "--req_file", req_path],
             capture_output=True, text=True, timeout=300)
     finally:
         os.unlink(req_path)

@@ -217,7 +217,7 @@ tests with fabricated responses pin it explicitly (the summarizer rightly
 refuses non-evidence).
 
 Transport note: real evidence exceeds the CakeML runtime's ~64KB argv
-buffer; the tool gained a `--req-file` mode (workspace patch, upstream
+buffer; the tool gained a `--req_file` mode (workspace patch, upstream
 candidate).
 
 **Episode archives**: with `archive_dir` set on the attestation
