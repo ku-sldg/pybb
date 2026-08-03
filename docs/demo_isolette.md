@@ -43,3 +43,46 @@ Toolchain identity (see `signed_baselines.md`): `isl_verus` hashes the
 verus toolchain in the same term, before the verifications; `hamr_tools`
 (sireum.jar + OSATE plugins) is blessed measure-in-place and re-measured
 by the promotion gate immediately before codegen.
+
+## SysML v2 frontend (`--frontend sysml`)
+
+HAMR's attestation reporter is frontend-agnostic: the same Microkit
+backend plugin emits `aadl_attestation_report.json` or
+`sysml_attestation_report.json` depending only on the model language it
+was fed, and INSPECTA ships BOTH reports over its single implemented
+tree. `targets/isolette-microkit` therefore vendors both frontends —
+the AADL workspace (`aadl/`) and the SysML v2 model (`sysml/`, textual,
+no OSATE/phantom required for codegen) — and
+`examples/isolette_attestation.py --frontend sysml` runs the identical
+workflow off the SysML report under its own protocol namespace:
+
+    isy_l1a (13 hashes) / isy_l2 (67 slices) / isy_props (5 blessed
+    model files) / isy_verus (7 crates) — entries isy:files / isy:ready
+
+Verified properties:
+
+- **Slice parity**: the two reports' Verus/Rust realization slices are
+  SET-EQUAL over the shared implemented crates; only the 40 Model-kind
+  slices move (5 `.aadl` workspace files vs 4 `.sysml` files — plus, in
+  both reports, one Model-classified Verus spec fn in a generated
+  app.rs, which the blessing covers in both; the report's kind
+  classification is the authority, not the file extension).
+- Both baselines coexist: each frontend has its own signed blessing and
+  goldens; shared crate files provision byte-identical golden copies.
+- AM detection speaks SysML: `changed_contracts(model_suffix=".sysml")`
+  names a revised GUMBO guarantee in `Regulate.sysml`
+  position-independently.
+- The default (`--frontend aadl`, implied) is byte-identical to the
+  pre-SysML behavior — regeneration reproduces the committed `isl_*`
+  fixtures exactly.
+
+Codegen from SysML (not needed for attestation; the committed report is
+the authority) is a single call — no OSATE:
+`sireum hamr sysml codegen -p Microkit --workspace-root-dir sysml ...`
+with the santoslab sysml-aadl-libraries on `--sourcepath`, **pinned no
+newer than the Sireum release** (newer library commits crash older
+frontends with an empty `halt("")` in
+`Instantiate.allowedDataComponentMembers`). A `--promote` with real
+SysML codegen is the natural follow-up; the regeneration-coherence
+story for the implemented crates (developer-owned app.rs) is the open
+piece.

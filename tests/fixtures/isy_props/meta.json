@@ -1,0 +1,5 @@
+{
+  "name": "isy signed golden spec (props)",
+  "description": "The administrator-blessed golden spec: whole-file signed evidence of every SysML v2 model file the report's GUMBO contract (Model) slices live in. Baseline verification checks that all hash and slice goldens are derivable from the blessed content.",
+  "copland": "lseq( lseq( bseq( readfile\u00d75 ), SIG ), APPR )"
+}

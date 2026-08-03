@@ -1,0 +1,12 @@
+{
+  "ASPS": [
+    "run_command_cargo_verus",
+    "run_command_verus_appr",
+    "hashfile",
+    "goldenbytes_appr",
+    "sig",
+    "sig_appr"
+  ],
+  "ASP_FS_MAP": {},
+  "POLICY": []
+}

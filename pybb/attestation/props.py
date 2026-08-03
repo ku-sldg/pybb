@@ -109,9 +109,14 @@ def write_props_protocol_dir(proto_dir: Path, prefix: str,
     }, indent=2) + "\n")
 
 
-def model_files_from_report(report_path: Path) -> List[str]:
-    """The model files: every file the report's Model-kind slices live in."""
+def model_files_from_report(report_path: Path,
+                            suffix: str = "") -> List[str]:
+    """The model files: every file the report's Model-kind slices live in.
+    `suffix` (optional) restricts to a model-language extension — a report
+    may classify a generated realization (e.g. a Verus spec fn) as
+    Model-kind; the blessing covers the model sources, measurement
+    (l1a/l2) covers the realization either way."""
     from .targetmap import report_slices
 
     return sorted({s["filepath"] for s in report_slices(report_path)
-                   if s["kind"] == "Model"})
+                   if s["kind"] == "Model" and s["filepath"].endswith(suffix)})

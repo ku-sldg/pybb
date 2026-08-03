@@ -1,48 +1,62 @@
 """
 Attestation-driven blackboard demo for the isolette — the INSPECTA
-seL4/Microkit exemplar (targets/isolette-microkit: the vendored AADL model
-with GUMBO contracts, plus the generated Microkit/Rust/Verus tree), with
-the HAMR **attestation report** as the authoritative source of the
-measurement targets and golden slices.
+seL4/Microkit exemplar (targets/isolette-microkit), with the HAMR
+**attestation report** as the authoritative source of the measurement
+targets and golden slices.
 
-Protocols (generated from the report, never hand-curated):
+The target vendors BOTH model frontends over ONE implemented
+Microkit/Rust tree: the AADL workspace (aadl/) and the SysML v2 model
+(sysml/). HAMR emits an attestation report per frontend
+(aadl_attestation_report.json / sysml_attestation_report.json) from the
+same frontend-agnostic reporter; the reports differ only in where their
+Model-kind slices live (.aadl vs .sysml) — the Verus/Rust realization
+slices cover the same implemented crates. `--frontend` selects which
+report drives the workflow; each frontend has its own protocol set
+(isl_* / isy_*) and blessing, so both baselines coexist.
 
-    isl_l1a    whole-file hashes of every file the report names
-               (AADL model packages + contract-bearing Rust files)
-    isl_l2     readfile_range of every report slice: Model (GUMBO
-               contracts in AADL) + Verus/Rust realizations in the
-               generated crates
-    isl_verus  [--validate] cargo-verus verify of every contract-bearing
+Protocols (generated from the selected report, never hand-curated;
+prefix isl_ for AADL, isy_ for SysML):
+
+    <p>_l1a    whole-file hashes of every file the report names
+               (model files + contract-bearing Rust files)
+    <p>_l2     readfile_range of every report slice: Model (GUMBO
+               contracts in the model language) + Verus/Rust realizations
+               in the generated crates
+    <p>_verus  [--validate] cargo-verus verify of every contract-bearing
                crate (7): the generated Verus contracts must PROVE against
                the implemented behavior
+    <p>_props  the administrator-blessed model files (whole-file, signed)
 
-One trust question — isl:files — since every l2 slice lives inside an
+One trust question — <p>:files — since every l2 slice lives inside an
 l1a-hashed file:
 
-    eval isl_l1a: pass = intact (readiness has already verified the
+    eval <p>_l1a: pass = intact (readiness has already verified the
                   SIGNED golden baseline bundle)
-      fail -> isl_l2 refines (which contract slice, model or Verus)
+      fail -> <p>_l2 refines (which contract slice, model or Verus)
                 fail -> [--repair] WholeFileRestoreKS restores the
                         violated files from golden; episode 2 verifies
 
 Usage:
-    python examples/isolette_attestation.py [--check] [--provision]
-        [--tamper-verus] [--repair] [--validate]
+    python examples/isolette_attestation.py [--frontend {aadl,sysml}]
+        [--check] [--provision] [--tamper-verus] [--repair] [--validate]
 
+--frontend   which model frontend's report drives the workflow
+             (default: aadl — byte-identical to the pre-SysML behavior)
 --check      attestation-manager detection: compare the model's contract
              content against the provisioned golden slices
---provision  (re)generate the isl protocol dirs from the attestation
+--provision  (re)generate the protocol dirs from the attestation
              report, capture golden, and provision via the blackboard
              (creates the signed evidence bundles readiness verifies)
 --tamper-verus  corrupt a line inside a Verus contract slice of the
              generated Rust; detection/attribution (and --repair)
---validate   run the Verus semantic tier after a passing isl_l1a
+--validate   run the Verus semantic tier after a passing l1a
              (requires the Verus toolchain; cold builds are slow)
 """
 
 import argparse
 import json
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 from pybb import BlackboardController
@@ -75,12 +89,9 @@ from pybb.attestation.tools import (
 
 REPO = Path(__file__).parent.parent
 ISL_ROOT = REPO / "targets" / "isolette-microkit"
-REPORT = ISL_ROOT / "hamr" / "microkit" / "attestation" / "aadl_attestation_report.json"
+ATTESTATION_DIR = ISL_ROOT / "hamr" / "microkit" / "attestation"
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
-PROTOCOL_IDS = ("isl_l1a", "isl_l2")
-PROPS_ID = "isl_props"
-TEMPLATES = {"isl_l1a": "gumbo_l1a", "isl_l2": "gumbo_l2"}
 VERUS_ARGS = [
     "verify", "-Z", "build-std=core,alloc,compiler_builtins",
     "-Z", "build-std-features=compiler-builtins-mem",
@@ -88,19 +99,41 @@ VERUS_ARGS = [
 ]
 
 
-def derive_report_targets():
-    """The report is the authority on targets and golden slices."""
-    return derive_targets_from_report(REPORT, prefix="isl")
+@dataclass(frozen=True)
+class Frontend:
+    """One model frontend: its report and the protocol namespace it owns."""
+
+    name: str           # "aadl" | "sysml"
+    prefix: str         # protocol-id prefix (isl_ / isy_)
+    model_suffix: str   # model-language extension (--check, props scope)
+    model_label: str    # human phrase for the props blessing description
+
+    @property
+    def report(self) -> Path:
+        return ATTESTATION_DIR / f"{self.name}_attestation_report.json"
+
+    @property
+    def l1a(self) -> str: return f"{self.prefix}_l1a"
+
+    @property
+    def l2(self) -> str: return f"{self.prefix}_l2"
+
+    @property
+    def props_id(self) -> str: return f"{self.prefix}_props"
+
+    @property
+    def verus_id(self) -> str: return f"{self.prefix}_verus"
+
+    @property
+    def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
 
 
-def verus_crates() -> list:
-    """Contract-bearing crates, from the report's Verus/Rust slices."""
-    crates = set()
-    for s in report_slices(REPORT):
-        if s["kind"] in ("Verus", "Rust") and "/crates/" in s["filepath"]:
-            crates.add(s["filepath"].split("/crates/")[1].split("/")[0])
-    return sorted(crates)
-
+FRONTENDS = {
+    "aadl": Frontend(name="aadl", prefix="isl", model_suffix=".aadl",
+                     model_label="AADL model file"),
+    "sysml": Frontend(name="sysml", prefix="isy", model_suffix=".sysml",
+                      model_label="SysML v2 model file"),
+}
 
 # Just-in-time tool measurement: the verus toolchain is hashed in the
 # same term as the verification, before the use (~21 ms); the HAMR
@@ -109,17 +142,31 @@ TOOL_CADENCE = "per_use"
 HAMR_TOOLS_ID = "hamr_tools"
 
 
-def build_verus_protocol() -> ProtocolDir:
-    """isl_verus: report-derived crate list, tcmk_verus session/manifest,
+def derive_report_targets(fe: Frontend):
+    """The report is the authority on targets and golden slices."""
+    return derive_targets_from_report(fe.report, prefix=fe.prefix)
+
+
+def verus_crates(fe: Frontend) -> list:
+    """Contract-bearing crates, from the report's Verus/Rust slices."""
+    crates = set()
+    for s in report_slices(fe.report):
+        if s["kind"] in ("Verus", "Rust") and "/crates/" in s["filepath"]:
+            crates.add(s["filepath"].split("/crates/")[1].split("/")[0])
+    return sorted(crates)
+
+
+def build_verus_protocol(fe: Frontend) -> ProtocolDir:
+    """<p>_verus: report-derived crate list, tcmk_verus session/manifest,
     verus toolchain measurements woven in per TOOL_CADENCE."""
-    d = FIXTURES / "isl_verus"
+    d = FIXTURES / fe.verus_id
     d.mkdir(exist_ok=True)
     targets = with_asp_targids({
-        f"isl_{crate}_verus_targ": {
+        f"{fe.prefix}_{crate}_verus_targ": {
             "exe_args": VERUS_ARGS,
             "cwd": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
         }
-        for crate in verus_crates()
+        for crate in verus_crates(fe)
     })
     asp_args = {"run_command_cargo_verus": targets}
     nodes = [
@@ -154,34 +201,39 @@ def build_verus_protocol() -> ProtocolDir:
                        "the invocations (measure-then-use).",
         "copland": f"lseq( bseq( run_command_cargo_verus×{len(targets)} ), APPR )",
     }, indent=2) + "\n")
-    print(f"  isl_verus: {len(targets)} crates from report"
+    print(f"  {fe.verus_id}: {len(targets)} crates from report"
           + (f" + {n_tools} woven tool measurements" if n_tools else ""))
     return ProtocolDir.load(str(d))
 
 
-def build_protocol_dirs() -> dict:
-    """(Re)generate the isl protocol dirs from the attestation report."""
-    derived = derive_report_targets()
+def build_protocol_dirs(fe: Frontend) -> dict:
+    """(Re)generate the frontend's protocol dirs from its report."""
+    derived = derive_report_targets(fe)
     protocols = {}
     for pid, asp_args in derived.items():
         d = FIXTURES / pid
         d.mkdir(exist_ok=True)
+        template = "gumbo_l1a" if pid.endswith("_l1a") else "gumbo_l2"
         for f in ("session.json", "manifest.json"):
-            shutil.copy2(FIXTURES / TEMPLATES[pid] / f, d / f)
+            shutil.copy2(FIXTURES / template / f, d / f)
         (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
         (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in asp_args.values())} targets from report")
-    model_files = model_files_from_report(REPORT)
+    # props scope = every file the report classifies as Model-kind — the
+    # report is the authority, not the file extension (both reports place
+    # one Model-classified Verus spec fn in a generated app.rs; the
+    # committed AADL blessing has always covered it)
+    model_files = model_files_from_report(fe.report)
     write_props_protocol_dir(
-        FIXTURES / PROPS_ID, "isl", model_files,
+        FIXTURES / fe.props_id, fe.prefix, model_files,
         "The administrator-blessed golden spec: whole-file signed evidence "
-        "of every AADL model file the report's GUMBO contract (Model) "
+        f"of every {fe.model_label} the report's GUMBO contract (Model) "
         "slices live in. Baseline verification checks that all hash and "
         "slice goldens are derivable from the blessed content.")
-    protocols[PROPS_ID] = ProtocolDir.load(str(FIXTURES / PROPS_ID))
-    print(f"  {PROPS_ID}: {len(model_files)} blessed model files")
-    protocols["isl_verus"] = build_verus_protocol()
+    protocols[fe.props_id] = ProtocolDir.load(str(FIXTURES / fe.props_id))
+    print(f"  {fe.props_id}: {len(model_files)} blessed model files")
+    protocols[fe.verus_id] = build_verus_protocol(fe)
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
         "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
@@ -193,26 +245,27 @@ def build_protocol_dirs() -> dict:
     return protocols
 
 
-def load_protocols(validate: bool = False) -> dict:
+def load_protocols(fe: Frontend, validate: bool = False) -> dict:
     if not all((FIXTURES / pid / "asp_args.json").is_file()
-               for pid in (*PROTOCOL_IDS, PROPS_ID)):
-        print("isl protocol dirs missing — generating from the attestation report")
-        protocols = build_protocol_dirs()
+               for pid in (*fe.protocol_ids, fe.props_id)):
+        print(f"{fe.prefix} protocol dirs missing — generating from the "
+              "attestation report")
+        protocols = build_protocol_dirs(fe)
     else:
         protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
-                     for pid in (*PROTOCOL_IDS, PROPS_ID)}
+                     for pid in (*fe.protocol_ids, fe.props_id)}
     if validate:
-        protocols["isl_verus"] = ProtocolDir.load(str(FIXTURES / "isl_verus"))
+        protocols[fe.verus_id] = ProtocolDir.load(str(FIXTURES / fe.verus_id))
     return protocols
 
 
-def provision_flow(protocols: dict) -> None:
+def provision_flow(fe: Frontend, protocols: dict) -> None:
     """Capture golden and provision all report-derived goldens on the
     blackboard (the provisioning run signs each evidence bundle; the
-    isl_props bundle is the administrator's blessing of the model files;
+    props bundle is the administrator's blessing of the model files;
     tool hash goldens land measure-in-place)."""
-    measured = {pid: protocols[pid] for pid in (*PROTOCOL_IDS, PROPS_ID)}
-    for pid in ("isl_verus", HAMR_TOOLS_ID):
+    measured = {pid: protocols[pid] for pid in (*fe.protocol_ids, fe.props_id)}
+    for pid in (fe.verus_id, HAMR_TOOLS_ID):
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
             measured[pid] = protocols[pid]
     snapshot = TargetSnapshot.capture(measured, dest=GOLDEN_ROOT)
@@ -230,9 +283,9 @@ def provision_flow(protocols: dict) -> None:
         raise SystemExit(f"  {key}: FAILED - {entry.result.error}")
 
 
-def tamper_verus(protocols: dict) -> None:
+def tamper_verus(fe: Frontend, protocols: dict) -> None:
     """Corrupt a line inside a Verus contract slice of the generated Rust."""
-    l2 = protocols["isl_l2"].asp_args["readfile_range"]
+    l2 = protocols[fe.l2].asp_args["readfile_range"]
     targ, args = next((t, a) for t, a in sorted(l2.items())
                       if "thermostat_rt_mhs" in a["filepath"]
                       and a["filepath"].endswith(".rs"))
@@ -243,7 +296,7 @@ def tamper_verus(protocols: dict) -> None:
     print(f"Tampered Verus slice: {rs.name} line {args['start_index']} ({targ})")
 
 
-def attest_episode(protocols: dict, repair: bool,
+def attest_episode(fe: Frontend, protocols: dict, repair: bool,
                    validate: bool = False) -> BlackboardController:
     controller = BlackboardController()
     client = CvmSubprocessClient()
@@ -253,36 +306,40 @@ def attest_episode(protocols: dict, repair: bool,
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,
                                       client=client))
-    fail_chain = [TierKS(protocol_id="isl_l2")]
+    fail_chain = [TierKS(protocol_id=fe.l2)]
     if repair:
         fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                             refined_by="isl_l2"))
-    confirm = [TierKS(protocol_id="isl_verus")] if validate else []
-    starter = StartAttestationKS(episodes={"isl:files": "isl_l1a"})
+                                             refined_by=fe.l2))
+    confirm = [TierKS(protocol_id=fe.verus_id)] if validate else []
+    starter = StartAttestationKS(episodes={f"{fe.prefix}:files": fe.l1a})
     for ks in (*confirm, *fail_chain, starter):
         controller.add_ks(ks)
-    controller.route("isl:files", on_pass=confirm, on_fail=fail_chain)
+    controller.route(f"{fe.prefix}:files", on_pass=confirm, on_fail=fail_chain)
     controller.blackboard.write_entry(
-        key="isl:ready", predicate="protocol_check",
+        key=f"{fe.prefix}:ready", predicate="protocol_check",
         measurement=readiness_request(list(protocols)))
-    controller.route("isl:ready", on_pass=[starter], on_fail=[])
+    controller.route(f"{fe.prefix}:ready", on_pass=[starter], on_fail=[])
     controller.run()
-    print(trust_summary(controller.blackboard, semantic=["isl_verus"]))
+    print(trust_summary(controller.blackboard, semantic=[fe.verus_id]))
     return controller
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--frontend", choices=sorted(FRONTENDS),
+                        default="aadl")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--provision", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
     parser.add_argument("--repair", action="store_true")
     parser.add_argument("--validate", action="store_true")
     cli = parser.parse_args()
+    fe = FRONTENDS[cli.frontend]
 
     if cli.check:
-        protocols = load_protocols()
-        changed = changed_contracts(protocols["isl_l2"])
+        protocols = load_protocols(fe)
+        changed = changed_contracts(protocols[fe.l2],
+                                    model_suffix=fe.model_suffix)
         if changed:
             print("HAMR codegen needed — model contracts changed since "
                   "last provisioning:")
@@ -293,20 +350,21 @@ def main() -> None:
                   "codegen not needed.")
         return
     if cli.provision:
-        protocols = build_protocol_dirs()
-        provision_flow(protocols)
+        protocols = build_protocol_dirs(fe)
+        provision_flow(fe, protocols)
         return
 
-    protocols = load_protocols(validate=cli.validate)
+    protocols = load_protocols(fe, validate=cli.validate)
     golden = TargetSnapshot.load(
-        {pid: protocols[pid] for pid in PROTOCOL_IDS}, GOLDEN_ROOT)
+        {pid: protocols[pid] for pid in fe.protocol_ids}, GOLDEN_ROOT)
     if cli.tamper_verus:
-        tamper_verus(protocols)
+        tamper_verus(fe, protocols)
     try:
-        attest_episode(protocols, repair=cli.repair, validate=cli.validate)
+        attest_episode(fe, protocols, repair=cli.repair, validate=cli.validate)
         if cli.repair:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
-            attest_episode(protocols, repair=cli.repair, validate=cli.validate)
+            attest_episode(fe, protocols, repair=cli.repair,
+                           validate=cli.validate)
     finally:
         restored = golden.restore()
         if restored:

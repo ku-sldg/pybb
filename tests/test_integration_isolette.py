@@ -264,3 +264,73 @@ def test_laundered_measurement_baselines_refuted_by_blessing():
         protocols, baseline_root=GOLDEN_ROOT,
         client=CvmSubprocessClient())(readiness_request(pids))
     assert report, (report.problems, report.baseline_problems)
+
+
+# ── SysML frontend (--frontend sysml): same tree, second report ───────────────
+
+SYSML_REPORT = ISL_ROOT / "hamr" / "microkit" / "attestation" / "sysml_attestation_report.json"
+SYSML_PROTOCOL_IDS = ("isy_l1a", "isy_l2")
+
+
+def test_sysml_committed_fixtures_derive_from_the_sysml_report():
+    """The SysML report is the authority for the isy_* protocol set."""
+    derived = derive_targets_from_report(SYSML_REPORT, prefix="isy")
+    for pid in SYSML_PROTOCOL_IDS:
+        committed = ProtocolDir.load(str(FIXTURES / pid)).asp_args
+        for asp_id, targets in derived[pid].items():
+            assert set(committed[asp_id]) == set(targets), pid
+            for targ_id, args in targets.items():
+                c = committed[asp_id][targ_id]
+                for k, v in args.items():
+                    assert c[k] == v, f"{pid}/{targ_id}/{k} diverged from report"
+
+
+def test_sysml_report_is_slice_parity_with_aadl_over_shared_crates():
+    """Both frontends' reports cover the SAME implemented crates with the
+    same Verus/Rust realization slices; only the Model slices move
+    (.aadl workspace vs .sysml files)."""
+    def realizations(report):
+        return {(s["filepath"], s["begin"], s["end"])
+                for s in report_slices(report) if s["kind"] in ("Verus", "Rust")}
+    assert realizations(SYSML_REPORT) == realizations(REPORT)
+    sysml_model = {s["filepath"] for s in report_slices(SYSML_REPORT)
+                   if s["kind"] == "Model"}
+    assert {f for f in sysml_model if f.endswith(".sysml")}, sysml_model
+    assert not {f for f in sysml_model if f.endswith(".aadl")}
+
+
+def test_sysml_clean_attestation_with_verified_baseline():
+    protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
+                 for pid in (*SYSML_PROTOCOL_IDS, "isy_props")}
+    client = CvmSubprocessClient()
+    report = make_readiness_predicate(
+        protocols, baseline_root=GOLDEN_ROOT,
+        client=client)(readiness_request(list(protocols)))
+    assert report, (report.problems, report.baseline_problems)
+    assert set(report.baseline_verified) == set(protocols)
+    verdict = make_attestation_predicate(client, protocols)(
+        attestation_request("isy_l1a"))
+    assert verdict.passed, verdict
+    assert len(verdict.components) == 14  # 13 hashes + sig
+
+
+def test_sysml_detection_names_a_changed_sysml_contract():
+    """AM detection with model_suffix='.sysml': a revised GUMBO guarantee
+    in the SysML model is named, position-independently."""
+    from pybb.attestation import changed_contracts
+
+    protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
+                 for pid in SYSML_PROTOCOL_IDS}
+    assert changed_contracts(protocols["isy_l2"], model_suffix=".sysml") == []
+    regulate = ISL_ROOT / "sysml" / "Regulate.sysml"
+    orig = regulate.read_text()
+    assert "regulator_status == Isolette_Data_Model::Status.Init_Status" in orig
+    regulate.write_text(orig.replace(
+        "regulator_status == Isolette_Data_Model::Status.Init_Status",
+        "regulator_status == Isolette_Data_Model::Status.On_Status", 1))
+    try:
+        changed = changed_contracts(protocols["isy_l2"], model_suffix=".sysml")
+        assert any("regulate" in t for t in changed), changed
+    finally:
+        regulate.write_text(orig)
+    assert changed_contracts(protocols["isy_l2"], model_suffix=".sysml") == []

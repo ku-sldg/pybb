@@ -1,0 +1,607 @@
+{
+  "readfile_range": {
+    "isy_regulate_176_177_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 176,
+      "end_index": 177,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::RegulatorStatusIsInitiallyInit",
+      "asp_targid": "isy_regulate_176_177_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSAgICAgICAgICAgICAgICAgICAgUmVndWxhdG9yU3RhdHVzSXNJbml0aWFsbHlJbml0OiByZWd1bGF0b3Jfc3RhdHVzID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlN0YXR1cy5Jbml0X1N0YXR1czs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mri_mri_app_25_26_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "start_index": 25,
+      "end_index": 26,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::RegulatorStatusIsInitiallyInit",
+      "asp_targid": "isy_thermostat_rt_mri_mri_app_25_26_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgUmVndWxhdG9yU3RhdHVzSXNJbml0aWFsbHlJbml0ICAgICAgICBhcGkucmVndWxhdG9yX3N0YXR1cyA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpTdGF0dXM6OkluaXRfU3RhdHVzLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_182_186_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 182,
+      "end_index": 186,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::lower_is_not_higher_than_upper",
+      "asp_targid": "isy_regulate_182_186_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGFzc3VtZSBsb3dlcl9pc19ub3RfaGlnaGVyX3RoYW5fdXBwZXIgIlRoZSBvcmRlcmluZyBvZiB0aGUgZGVzaXJlZCB0ZW1wZXJhdHVyZSByYW5nZSBpcyBvbmx5IGEgbWVhbmluZ2Z1bCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHxjb25zdHJhaW50IG9uIFZhbGlkIHJlYWRpbmdzIjogICAgICAgICAgICAgICAgICAgIChsb3dlcl9kZXNpcmVkX3RlbXBXc3RhdHVzLnN0YXR1cyA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpWYWx1ZVN0YXR1cy5WYWxpZCAmICAgICAgICAgICAgICAgICAgICAgdXBwZXJfZGVzaXJlZF90ZW1wV3N0YXR1cy5zdGF0dXMgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6VmFsdWVTdGF0dXMuVmFsaWQpIGltcGxpZXMgICAgICAgICAgICAgICAgICAgICAgICAobG93ZXJfZGVzaXJlZF90ZW1wV3N0YXR1cy5kZWdyZWVzIDw9IHVwcGVyX2Rlc2lyZWRfdGVtcFdzdGF0dXMuZGVncmVlcyk7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mri_mri_app_54_59_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "start_index": 54,
+      "end_index": 59,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::lower_is_not_higher_than_upper",
+      "asp_targid": "isy_thermostat_rt_mri_mri_app_54_59_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgbG93ZXJfaXNfbm90X2hpZ2hlcl90aGFuX3VwcGVyICAgICAgICAvLyAgIFRoZSBvcmRlcmluZyBvZiB0aGUgZGVzaXJlZCB0ZW1wZXJhdHVyZSByYW5nZSBpcyBvbmx5IGEgbWVhbmluZ2Z1bCAgICAgICAgLy8gICBjb25zdHJhaW50IG9uIFZhbGlkIHJlYWRpbmdzICAgICAgICAoKG9sZChhcGkpLmxvd2VyX2Rlc2lyZWRfdGVtcFdzdGF0dXMuc3RhdHVzID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlZhbHVlU3RhdHVzOjpWYWxpZCkgJiYgICAgICAgICAgKG9sZChhcGkpLnVwcGVyX2Rlc2lyZWRfdGVtcFdzdGF0dXMuc3RhdHVzID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlZhbHVlU3RhdHVzOjpWYWxpZCkpID09PiAgICAgICAgICAob2xkKGFwaSkubG93ZXJfZGVzaXJlZF90ZW1wV3N0YXR1cy5kZWdyZWVzIDw9IG9sZChhcGkpLnVwcGVyX2Rlc2lyZWRfdGVtcFdzdGF0dXMuZGVncmVlcyks",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_189_191_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 189,
+      "end_index": 191,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::lower_is_lower_temp",
+      "asp_targid": "isy_regulate_189_191_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSBsb3dlcl9pc19sb3dlcl90ZW1wICJEZXJpdmVkIHJlcXVpcmVtZW50LCBub3QgaW4gQVItMDgtMzI6IE1IUyB1bmNvbmRpdGlvbmFsbHkgYXNzdW1lcyB0aGUgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfERlc2lyZWQgUmFuZ2UgaXMgd2VsbC1vcmRlcmVkLC4iOiAgICAgICAgICAgICAgICAgICAgbG93ZXJfZGVzaXJlZF90ZW1wLmRlZ3JlZXMgPD0gdXBwZXJfZGVzaXJlZF90ZW1wLmRlZ3JlZXM7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mri_mri_app_63_66_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "start_index": 63,
+      "end_index": 66,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mri_mri::lower_is_lower_temp",
+      "asp_targid": "isy_thermostat_rt_mri_mri_app_63_66_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgbG93ZXJfaXNfbG93ZXJfdGVtcCAgICAgICAgLy8gICBEZXJpdmVkIHJlcXVpcmVtZW50LCBub3QgaW4gQVItMDgtMzI6IE1IUyB1bmNvbmRpdGlvbmFsbHkgYXNzdW1lcyB0aGUgICAgICAgIC8vICAgRGVzaXJlZCBSYW5nZSBpcyB3ZWxsLW9yZGVyZWQsLiAgICAgICAgYXBpLmxvd2VyX2Rlc2lyZWRfdGVtcC5kZWdyZWVzIDw9IGFwaS51cHBlcl9kZXNpcmVkX3RlbXAuZGVncmVlcyw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_453_454_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 453,
+      "end_index": 454,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::initlastCmd",
+      "asp_targid": "isy_regulate_453_454_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSAgICAgICAgICAgICAgICAgICAgaW5pdGxhc3RDbWQ6IGxhc3RDbWQgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6T25fT2ZmLk9mZjs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_449_449_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 449,
+      "end_index": 449,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::initlastCmd",
+      "asp_targid": "isy_regulate_449_449_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGxhc3RDbWQ6IElzb2xldHRlX0RhdGFfTW9kZWw6Ok9uX09mZjs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mhs_mhs_app_33_34_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "start_index": 33,
+      "end_index": 34,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::initlastCmd",
+      "asp_targid": "isy_thermostat_rt_mhs_mhs_app_33_34_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgaW5pdGxhc3RDbWQgICAgICAgIHNlbGYubGFzdENtZCA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmY6Ok9mZiw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mhs_mhs_app_14_14_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "start_index": 14,
+      "end_index": 14,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::initlastCmd",
+      "asp_targid": "isy_thermostat_rt_mhs_mhs_app_14_14_targ",
+      "golden_b64": "ICAgIHB1YiBsYXN0Q21kOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmYs",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_455_458_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 455,
+      "end_index": 458,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::REQ_MHS_1",
+      "asp_targid": "isy_regulate_455_458_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSBSRVFfTUhTXzEgIklmIHRoZSBSZWd1bGF0b3IgTW9kZSBpcyBJTklULCB0aGUgSGVhdCBDb250cm9sIHNoYWxsIGJlICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfHNldCB0byBPZmYuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgfGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTAgIjogICAgICAgICAgICAgICAgICAgIGhlYXRfY29udHJvbCA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmYuT2ZmOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mhs_mhs_app_35_39_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "start_index": 35,
+      "end_index": 39,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::REQ_MHS_1",
+      "asp_targid": "isy_thermostat_rt_mhs_mhs_app_35_39_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgUkVRX01IU18xICAgICAgICAvLyAgIElmIHRoZSBSZWd1bGF0b3IgTW9kZSBpcyBJTklULCB0aGUgSGVhdCBDb250cm9sIHNoYWxsIGJlICAgICAgICAvLyAgIHNldCB0byBPZmYuICAgICAgICAvLyAgIGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTAgICAgICAgICBhcGkuaGVhdF9jb250cm9sID09IElzb2xldHRlX0RhdGFfTW9kZWw6Ok9uX09mZjo6T2ZmLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_463_463_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 463,
+      "end_index": 463,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::lower_is_lower_temp",
+      "asp_targid": "isy_regulate_463_463_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGFzc3VtZSBsb3dlcl9pc19sb3dlcl90ZW1wOiBsb3dlcl9kZXNpcmVkX3RlbXAuZGVncmVlcyA8PSB1cHBlcl9kZXNpcmVkX3RlbXAuZGVncmVlczs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mhs_mhs_app_56_57_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "start_index": 56,
+      "end_index": 57,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::lower_is_lower_temp",
+      "asp_targid": "isy_thermostat_rt_mhs_mhs_app_56_57_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgbG93ZXJfaXNfbG93ZXJfdGVtcCAgICAgICAgb2xkKGFwaSkubG93ZXJfZGVzaXJlZF90ZW1wLmRlZ3JlZXMgPD0gb2xkKGFwaSkudXBwZXJfZGVzaXJlZF90ZW1wLmRlZ3JlZXMs",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_466_467_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 466,
+      "end_index": 467,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::lastCmd",
+      "asp_targid": "isy_regulate_466_467_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSBsYXN0Q21kICJTZXQgbGFzdENtZCB0byB2YWx1ZSBvZiBvdXRwdXQgQ21kIHBvcnQiOiAgICAgICAgICAgICAgICAgICAgbGFzdENtZCA9PSBoZWF0X2NvbnRyb2w7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mhs_mhs_app_61_63_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "start_index": 61,
+      "end_index": 63,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mhs_mhs::lastCmd",
+      "asp_targid": "isy_thermostat_rt_mhs_mhs_app_61_63_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgbGFzdENtZCAgICAgICAgLy8gICBTZXQgbGFzdENtZCB0byB2YWx1ZSBvZiBvdXRwdXQgQ21kIHBvcnQgICAgICAgIHNlbGYubGFzdENtZCA9PSBhcGkuaGVhdF9jb250cm9sLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_330_332_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 330,
+      "end_index": 332,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::REQ_MRM_1",
+      "asp_targid": "isy_regulate_330_332_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSBSRVFfTVJNXzEgIlRoZSBpbml0aWFsIG1vZGUgb2YgdGhlIHJlZ3VsYXIgaXMgSU5JVCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHxodHRwczovL3d3dy5mYWEuZ292L3NpdGVzL2ZhYS5nb3YvZmlsZXMvYWlyY3JhZnQvYWlyX2NlcnQvZGVzaWduX2FwcHJvdmFscy9haXJfc29mdHdhcmUvQVItMDgtMzIucGRmI3BhZ2U9MTA5ICIgOiAgICAgICAgICAgICAgICAgICAgcmVndWxhdG9yX21vZGUgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6UmVndWxhdG9yX01vZGUuSW5pdF9SZWd1bGF0b3JfTW9kZTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mrm_mrm_app_31_34_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "start_index": 31,
+      "end_index": 34,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::REQ_MRM_1",
+      "asp_targid": "isy_thermostat_rt_mrm_mrm_app_31_34_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgUkVRX01STV8xICAgICAgICAvLyAgIFRoZSBpbml0aWFsIG1vZGUgb2YgdGhlIHJlZ3VsYXIgaXMgSU5JVCAgICAgICAgLy8gICBodHRwczovL3d3dy5mYWEuZ292L3NpdGVzL2ZhYS5nb3YvZmlsZXMvYWlyY3JhZnQvYWlyX2NlcnQvZGVzaWduX2FwcHJvdmFscy9haXJfc29mdHdhcmUvQVItMDgtMzIucGRmI3BhZ2U9MTA5ICAgICAgICAgYXBpLnJlZ3VsYXRvcl9tb2RlID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlJlZ3VsYXRvcl9Nb2RlOjpJbml0X1JlZ3VsYXRvcl9Nb2RlLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_336_337_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 336,
+      "end_index": 337,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::update_lastRegulatorMode",
+      "asp_targid": "isy_regulate_336_337_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGd1YXJhbnRlZSB1cGRhdGVfbGFzdFJlZ3VsYXRvck1vZGU6ICAgICAgICAgICAgICAgICAgICBsYXN0UmVndWxhdG9yTW9kZSA9PSByZWd1bGF0b3JfbW9kZTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_regulate_311_311_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "start_index": 311,
+      "end_index": 311,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::update_lastRegulatorMode",
+      "asp_targid": "isy_regulate_311_311_targ",
+      "golden_b64": "ICAgICAgICAgICAgICAgIGxhc3RSZWd1bGF0b3JNb2RlOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpSZWd1bGF0b3JfTW9kZTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mrm_mrm_app_48_49_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "start_index": 48,
+      "end_index": 49,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::update_lastRegulatorMode",
+      "asp_targid": "isy_thermostat_rt_mrm_mrm_app_48_49_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgdXBkYXRlX2xhc3RSZWd1bGF0b3JNb2RlICAgICAgICBzZWxmLmxhc3RSZWd1bGF0b3JNb2RlID09IGFwaS5yZWd1bGF0b3JfbW9kZSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_rt_mrm_mrm_app_12_12_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "start_index": 12,
+      "end_index": 12,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_rt_mrm_mrm::update_lastRegulatorMode",
+      "asp_targid": "isy_thermostat_rt_mrm_mrm_app_12_12_targ",
+      "golden_b64": "ICAgIHB1YiBsYXN0UmVndWxhdG9yTW9kZTogSXNvbGV0dGVfRGF0YV9Nb2RlbDo6UmVndWxhdG9yX01vZGUs",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_168_169_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 168,
+      "end_index": 169,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::monitorStatusInitiallyInit",
+      "asp_targid": "isy_monitor_168_169_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgbW9uaXRvclN0YXR1c0luaXRpYWxseUluaXQ6ICAgICAgICAgIG1vbml0b3Jfc3RhdHVzID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlN0YXR1cy5Jbml0X1N0YXR1czs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmi_mmi_app_31_32_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "start_index": 31,
+      "end_index": 32,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::monitorStatusInitiallyInit",
+      "asp_targid": "isy_thermostat_mt_mmi_mmi_app_31_32_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgbW9uaXRvclN0YXR1c0luaXRpYWxseUluaXQgICAgICAgIGFwaS5tb25pdG9yX3N0YXR1cyA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpTdGF0dXM6OkluaXRfU3RhdHVzLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_175_179_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 175,
+      "end_index": 179,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_monitor_175_179_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgICAgICAgICAgQWxsb3dlZF9BbGFybVRlbXBXc3RhdHVzX1JhbmdlcyAgICAgICAgICAgICAiQW4gaW50ZWdyYXRpb24gY29uc3RyYWludCBjYW4gb25seSByZWZlciB0byBhIHNpbmdsZSBwb3J0LCBzbyBuZWVkIGEgZ2VuZXJhbCBhc3N1bWUgY2xhdXNlICAgICAgICAgICAgfGluIG9yZGVyIHRvIHJlbGF0ZSB0aGUgbG93ZXIgYW5kIHVwZXIgdGVtcHMiOiAgICAgICAgICAgIEdVTUJPX0xpYnJhcnk6OkdVTUJPX19MaWJyYXJ5OjpBbGxvd2VkX0FsYXJtVGVtcFdTdGF0dXNfUmFuZ2VzKGxvd2VyX2FsYXJtX3RlbXBXc3RhdHVzLCB1cHBlcl9hbGFybV90ZW1wV3N0YXR1cyk7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_43_46_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 43,
+      "end_index": 46,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_43_46_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX0FsYXJtVGVtcFdTdGF0dXNfUmFuZ2VzKGxvd2VyOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpUZW1wV3N0YXR1c19pLCAgICAgICAgICAgICAgICAgICAgICAgICAgICB1cHBlcjogSXNvbGV0dGVfRGF0YV9Nb2RlbDo6VGVtcFdzdGF0dXNfaSk6IEJhc2VfVHlwZXM6OkJvb2xlYW4gOj0gICAgICAgICAgICAnLT46JyAoKGlzVmFsaWRUZW1wV3N0YXR1cyhsb3dlcikgJiBpc1ZhbGlkVGVtcFdzdGF0dXModXBwZXIpKSwgICAgICAgICAgICAgICAgICAoQWxsb3dlZF9BbGFybVRlbXBfUmFuZ2VzKGxvd2VyLmRlZ3JlZXMsIHVwcGVyLmRlZ3JlZXMpKSk7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_160_161_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 160,
+      "end_index": 161,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_monitor_160_161_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgQWxsb3dlZF9Mb3dlckFsYXJtVGVtcDogICAgICAgICAgR1VNQk9fTGlicmFyeTo6R1VNQk9fX0xpYnJhcnk6OkFsbG93ZWRfTG93ZXJBbGFybVRlbXBXU3RhdHVzKGxvd2VyX2FsYXJtX3RlbXBXc3RhdHVzKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_163_164_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 163,
+      "end_index": 164,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_monitor_163_164_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgQWxsb3dlZF9VcHBlckFsYXJtVGVtcDogICAgICAgICAgR1VNQk9fTGlicmFyeTo6R1VNQk9fX0xpYnJhcnk6OkFsbG93ZWRfVXBwZXJBbGFybVRlbXBXU3RhdHVzKHVwcGVyX2FsYXJtX3RlbXBXc3RhdHVzKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_49_50_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 49,
+      "end_index": 50,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_49_50_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBpc1ZhbGlkVGVtcFdzdGF0dXModmFsdWU6IElzb2xldHRlX0RhdGFfTW9kZWw6OlRlbXBXc3RhdHVzX2kpOiBCYXNlX1R5cGVzOjpCb29sZWFuIDo9ICAgICAgICAgICAgdmFsdWUuc3RhdHVzID09IElzb2xldHRlX0RhdGFfTW9kZWw6OlZhbHVlU3RhdHVzLlZhbGlkOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_37_40_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 37,
+      "end_index": 40,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_37_40_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX0FsYXJtVGVtcF9SYW5nZXMobG93ZXI6IEJhc2VfVHlwZXM6OkludGVnZXJfMzIsICAgICAgICAgICAgICAgICAgICAgICAgdXBwZXI6IEJhc2VfVHlwZXM6OkludGVnZXJfMzIpOiBCYXNlX1R5cGVzOjpCb29sZWFuIDo9ICAgICAgICAgICAgbG93ZXIgPD0gdXBwZXIgJiAgICAgICAgICAgIEFsbG93ZWRfTG93ZXJBbGFybVRlbXAobG93ZXIpICYgQWxsb3dlZF9VcHBlckFsYXJtVGVtcCh1cHBlcik7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_26_28_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 26,
+      "end_index": 28,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_26_28_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX0xvd2VyQWxhcm1UZW1wV1N0YXR1cyhsb3dlcjogSXNvbGV0dGVfRGF0YV9Nb2RlbDo6VGVtcFdzdGF0dXNfaSk6IEJhc2VfVHlwZXM6OkJvb2xlYW4gOj0gICAgICAgICAgICAnLT46JyAoaXNWYWxpZFRlbXBXc3RhdHVzKGxvd2VyKSwgICAgICAgICAgICAgICAgICBBbGxvd2VkX0xvd2VyQWxhcm1UZW1wKGxvd2VyLmRlZ3JlZXMpKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_31_33_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 31,
+      "end_index": 33,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_31_33_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX1VwcGVyQWxhcm1UZW1wV1N0YXR1cyh1cHBlcjogSXNvbGV0dGVfRGF0YV9Nb2RlbDo6VGVtcFdzdGF0dXNfaSk6IEJhc2VfVHlwZXM6OkJvb2xlYW4gOj0gICAgICAgICAgICAnLT46JyAoaXNWYWxpZFRlbXBXc3RhdHVzKHVwcGVyKSwgICAgICAgICAgICAgICAgICBBbGxvd2VkX1VwcGVyQWxhcm1UZW1wKHVwcGVyLmRlZ3JlZXMpKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_17_18_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 17,
+      "end_index": 18,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_17_18_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX0xvd2VyQWxhcm1UZW1wKGxvd2VyOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyKTogQmFzZV9UeXBlczo6Qm9vbGVhbiA6PSAgICAgICAgICAgIExvd2VyQWxhcm1UZW1wX2xvd2VyKCkgPD0gbG93ZXIgJiBsb3dlciA8PSBMb3dlckFsYXJtVGVtcF91cHBlcigpOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_21_22_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 21,
+      "end_index": 22,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_21_22_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBBbGxvd2VkX1VwcGVyQWxhcm1UZW1wKHVwcGVyOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyKTogQmFzZV9UeXBlczo6Qm9vbGVhbiA6PSAgICAgICAgICAgIFVwcGVyQWxhcm1UZW1wX2xvd2VyKCkgPD0gdXBwZXIgJiB1cHBlciA8PSBVcHBlckFsYXJtVGVtcF91cHBlcigpOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_7_7_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 7,
+      "end_index": 7,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_7_7_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBMb3dlckFsYXJtVGVtcF9sb3dlcigpOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyIDo9IDk2W3MzMl07",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_8_8_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 8,
+      "end_index": 8,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_8_8_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBMb3dlckFsYXJtVGVtcF91cHBlcigpOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyIDo9IDEwMVtzMzJdOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_12_12_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 12,
+      "end_index": 12,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_12_12_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBVcHBlckFsYXJtVGVtcF9sb3dlcigpOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyIDo9IDk3W3MzMl07",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_gumbo_library_13_13_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "start_index": 13,
+      "end_index": 13,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_gumbo_library_13_13_targ",
+      "golden_b64": "ICAgICAgICAgIGRlZiBVcHBlckFsYXJtVGVtcF91cHBlcigpOiBCYXNlX1R5cGVzOjpJbnRlZ2VyXzMyIDo9IDEwMltzMzJdOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmi_mmi_app_58_61_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "start_index": 58,
+      "end_index": 61,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_thermostat_mt_mmi_mmi_app_58_61_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgQWxsb3dlZF9BbGFybVRlbXBXc3RhdHVzX1JhbmdlcyAgICAgICAgLy8gICBBbiBpbnRlZ3JhdGlvbiBjb25zdHJhaW50IGNhbiBvbmx5IHJlZmVyIHRvIGEgc2luZ2xlIHBvcnQsIHNvIG5lZWQgYSBnZW5lcmFsIGFzc3VtZSBjbGF1c2UgICAgICAgIC8vICAgaW4gb3JkZXIgdG8gcmVsYXRlIHRoZSBsb3dlciBhbmQgdXBlciB0ZW1wcyAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9BbGFybVRlbXBXU3RhdHVzX1Jhbmdlc19zcGVjKG9sZChhcGkpLmxvd2VyX2FsYXJtX3RlbXBXc3RhdHVzLCBvbGQoYXBpKS51cHBlcl9hbGFybV90ZW1wV3N0YXR1cyks",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmi_mmi_api_201_202_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/bridge/thermostat_mt_mmi_mmi_api.rs",
+      "start_index": 201,
+      "end_index": 202,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_thermostat_mt_mmi_mmi_api_201_202_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgQWxsb3dlZF9Mb3dlckFsYXJtVGVtcCAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9Mb3dlckFsYXJtVGVtcFdTdGF0dXNfc3BlYyhyZXMpLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmi_mmi_api_185_186_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/bridge/thermostat_mt_mmi_mmi_api.rs",
+      "start_index": 185,
+      "end_index": 186,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmi_mmi::Allowed_AlarmTempWstatus_Ranges",
+      "asp_targid": "isy_thermostat_mt_mmi_mmi_api_185_186_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgQWxsb3dlZF9VcHBlckFsYXJtVGVtcCAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9VcHBlckFsYXJtVGVtcFdTdGF0dXNfc3BlYyhyZXMpLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_439_443_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 439,
+      "end_index": 443,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::REQ_MA_1",
+      "asp_targid": "isy_monitor_439_443_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgUkVRX01BXzEgIklmIHRoZSBNb25pdG9yIE1vZGUgaXMgSU5JVCwgdGhlIEFsYXJtIENvbnRyb2wgc2hhbGwgYmUgc2V0ICAgICAgICAgICAgICAgICAgfHRvIE9mZi4gICAgICAgICAgICAgICAgICB8aHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExNSAiIDogICAgICAgICAgYWxhcm1fY29udHJvbCA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmYuT2ZmICYgICAgICAgICAgbGFzdENtZCA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmYuT2ZmOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_432_432_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 432,
+      "end_index": 432,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::REQ_MA_1",
+      "asp_targid": "isy_monitor_432_432_targ",
+      "golden_b64": "ICAgICAgICBsYXN0Q21kOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmY7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_ma_ma_app_31_36_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "start_index": 31,
+      "end_index": 36,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::REQ_MA_1",
+      "asp_targid": "isy_thermostat_mt_ma_ma_app_31_36_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgUkVRX01BXzEgICAgICAgIC8vICAgSWYgdGhlIE1vbml0b3IgTW9kZSBpcyBJTklULCB0aGUgQWxhcm0gQ29udHJvbCBzaGFsbCBiZSBzZXQgICAgICAgIC8vICAgdG8gT2ZmLiAgICAgICAgLy8gICBodHRwczovL3d3dy5mYWEuZ292L3NpdGVzL2ZhYS5nb3YvZmlsZXMvYWlyY3JhZnQvYWlyX2NlcnQvZGVzaWduX2FwcHJvdmFscy9haXJfc29mdHdhcmUvQVItMDgtMzIucGRmI3BhZ2U9MTE1ICAgICAgICAgKGFwaS5hbGFybV9jb250cm9sID09IElzb2xldHRlX0RhdGFfTW9kZWw6Ok9uX09mZjo6T2ZmKSAmJiAgICAgICAgICAoc2VsZi5sYXN0Q21kID09IElzb2xldHRlX0RhdGFfTW9kZWw6Ok9uX09mZjo6T2ZmKSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_ma_ma_app_12_12_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "start_index": 12,
+      "end_index": 12,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::REQ_MA_1",
+      "asp_targid": "isy_thermostat_mt_ma_ma_app_12_12_targ",
+      "golden_b64": "ICAgIHB1YiBsYXN0Q21kOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpPbl9PZmYs",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_448_451_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 448,
+      "end_index": 451,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Figure_A_7",
+      "asp_targid": "isy_monitor_448_451_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgRmlndXJlX0FfNyAiVW5vcmRlcmVkIGJvdW5kcyBtYWtlIFJFUS1NQS0yIGFuZCBSRVEtTUEtMyBjb250cmFkaWN0b3J5ICAgICAgICAgICAgICAgICAgfGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTUgIjogICAgICAgICAgbW9uaXRvcl9tb2RlID09IElzb2xldHRlX0RhdGFfTW9kZWw6Ok1vbml0b3JfTW9kZS5Ob3JtYWxfTW9uaXRvcl9Nb2RlIGltcGxpZXMgICAgICAgICAgICBsb3dlcl9hbGFybV90ZW1wLmRlZ3JlZXMgPD0gdXBwZXJfYWxhcm1fdGVtcC5kZWdyZWVzOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_ma_ma_app_50_54_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "start_index": 50,
+      "end_index": 54,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Figure_A_7",
+      "asp_targid": "isy_thermostat_mt_ma_ma_app_50_54_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgRmlndXJlX0FfNyAgICAgICAgLy8gICBVbm9yZGVyZWQgYm91bmRzIG1ha2UgUkVRLU1BLTIgYW5kIFJFUS1NQS0zIGNvbnRyYWRpY3RvcnkgICAgICAgIC8vICAgaHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExNSAgICAgICAgIChvbGQoYXBpKS5tb25pdG9yX21vZGUgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6TW9uaXRvcl9Nb2RlOjpOb3JtYWxfTW9uaXRvcl9Nb2RlKSA9PT4gICAgICAgICAgKG9sZChhcGkpLmxvd2VyX2FsYXJtX3RlbXAuZGVncmVlcyA8PSBvbGQoYXBpKS51cHBlcl9hbGFybV90ZW1wLmRlZ3JlZXMpLA==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_453_456_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 453,
+      "end_index": 456,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Table_A_12_LowerAlarmTemp",
+      "asp_targid": "isy_monitor_453_456_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgVGFibGVfQV8xMl9Mb3dlckFsYXJtVGVtcCAiUmFuZ2UgWzk2Li4xMDFdICAgICAgICAgICAgICAgICAgICAgICAgICB8aHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExMiAiIDogICAgICAgICAgbW9uaXRvcl9tb2RlID09IElzb2xldHRlX0RhdGFfTW9kZWw6Ok1vbml0b3JfTW9kZS5Ob3JtYWxfTW9uaXRvcl9Nb2RlIGltcGxpZXMgICAgICAgICAgICBHVU1CT19MaWJyYXJ5OjpHVU1CT19fTGlicmFyeTo6QWxsb3dlZF9Mb3dlckFsYXJtVGVtcChsb3dlcl9hbGFybV90ZW1wLmRlZ3JlZXMpOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_ma_ma_app_55_59_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "start_index": 55,
+      "end_index": 59,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Table_A_12_LowerAlarmTemp",
+      "asp_targid": "isy_thermostat_mt_ma_ma_app_55_59_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgVGFibGVfQV8xMl9Mb3dlckFsYXJtVGVtcCAgICAgICAgLy8gICBSYW5nZSBbOTYuLjEwMV0gICAgICAgIC8vICAgaHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExMiAgICAgICAgIChvbGQoYXBpKS5tb25pdG9yX21vZGUgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6TW9uaXRvcl9Nb2RlOjpOb3JtYWxfTW9uaXRvcl9Nb2RlKSA9PT4gICAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9Mb3dlckFsYXJtVGVtcF9zcGVjKG9sZChhcGkpLmxvd2VyX2FsYXJtX3RlbXAuZGVncmVlcyks",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_458_461_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 458,
+      "end_index": 461,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Table_A_12_UpperAlarmTemp",
+      "asp_targid": "isy_monitor_458_461_targ",
+      "golden_b64": "ICAgICAgICBhc3N1bWUgVGFibGVfQV8xMl9VcHBlckFsYXJtVGVtcCAiUmFuZ2UgWzk3Li4xMDJdICAgICAgICAgICAgICAgICAgICAgICAgfGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTIgIiA6ICAgICAgICAgIG1vbml0b3JfbW9kZSA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpNb25pdG9yX01vZGUuTm9ybWFsX01vbml0b3JfTW9kZSBpbXBsaWVzICAgICAgICAgICAgR1VNQk9fTGlicmFyeTo6R1VNQk9fX0xpYnJhcnk6OkFsbG93ZWRfVXBwZXJBbGFybVRlbXAodXBwZXJfYWxhcm1fdGVtcC5kZWdyZWVzKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_ma_ma_app_60_64_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "start_index": 60,
+      "end_index": 64,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_ma_ma::Table_A_12_UpperAlarmTemp",
+      "asp_targid": "isy_thermostat_mt_ma_ma_app_60_64_targ",
+      "golden_b64": "ICAgICAgICAvLyBhc3N1bWUgVGFibGVfQV8xMl9VcHBlckFsYXJtVGVtcCAgICAgICAgLy8gICBSYW5nZSBbOTcuLjEwMl0gICAgICAgIC8vICAgaHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExMiAgICAgICAgIChvbGQoYXBpKS5tb25pdG9yX21vZGUgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6TW9uaXRvcl9Nb2RlOjpOb3JtYWxfTW9uaXRvcl9Nb2RlKSA9PT4gICAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9VcHBlckFsYXJtVGVtcF9zcGVjKG9sZChhcGkpLnVwcGVyX2FsYXJtX3RlbXAuZGVncmVlcyks",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_306_308_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 306,
+      "end_index": 308,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::REQ_MMM_1",
+      "asp_targid": "isy_monitor_306_308_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgUkVRX01NTV8xICJVcG9uIHRoZSBmaXJzdCBkaXNwYXRjaCBvZiB0aGUgdGhyZWFkLCB0aGUgbW9uaXRvciBtb2RlIGlzIEluaXQuICAgICAgICAgICAgICAgICAgfGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTQgIiA6ICAgICAgICAgIG1vbml0b3JfbW9kZSA9PSBJc29sZXR0ZV9EYXRhX01vZGVsOjpNb25pdG9yX01vZGUuSW5pdF9Nb25pdG9yX01vZGU7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmm_mmm_app_31_34_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "start_index": 31,
+      "end_index": 34,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::REQ_MMM_1",
+      "asp_targid": "isy_thermostat_mt_mmm_mmm_app_31_34_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgUkVRX01NTV8xICAgICAgICAvLyAgIFVwb24gdGhlIGZpcnN0IGRpc3BhdGNoIG9mIHRoZSB0aHJlYWQsIHRoZSBtb25pdG9yIG1vZGUgaXMgSW5pdC4gICAgICAgIC8vICAgaHR0cHM6Ly93d3cuZmFhLmdvdi9zaXRlcy9mYWEuZ292L2ZpbGVzL2FpcmNyYWZ0L2Fpcl9jZXJ0L2Rlc2lnbl9hcHByb3ZhbHMvYWlyX3NvZnR3YXJlL0FSLTA4LTMyLnBkZiNwYWdlPTExNCAgICAgICAgIGFwaS5tb25pdG9yX21vZGUgPT0gSXNvbGV0dGVfRGF0YV9Nb2RlbDo6TW9uaXRvcl9Nb2RlOjpJbml0X01vbml0b3JfTW9kZSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_310_311_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 310,
+      "end_index": 311,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::update_lastMonitorMode",
+      "asp_targid": "isy_monitor_310_311_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgdXBkYXRlX2xhc3RNb25pdG9yTW9kZTogICAgICAgICAgbGFzdE1vbml0b3JNb2RlID09IG1vbml0b3JfbW9kZTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_monitor_293_293_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "start_index": 293,
+      "end_index": 293,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::update_lastMonitorMode",
+      "asp_targid": "isy_monitor_293_293_targ",
+      "golden_b64": "ICAgICAgICBsYXN0TW9uaXRvck1vZGU6IElzb2xldHRlX0RhdGFfTW9kZWw6Ok1vbml0b3JfTW9kZTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmm_mmm_app_35_36_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "start_index": 35,
+      "end_index": 36,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::update_lastMonitorMode",
+      "asp_targid": "isy_thermostat_mt_mmm_mmm_app_35_36_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgdXBkYXRlX2xhc3RNb25pdG9yTW9kZSAgICAgICAgc2VsZi5sYXN0TW9uaXRvck1vZGUgPT0gYXBpLm1vbml0b3JfbW9kZSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_thermostat_mt_mmm_mmm_app_12_12_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "start_index": 12,
+      "end_index": 12,
+      "metadata": "Isolette_Single_Sensor_Instance_thermostat_mt_mmm_mmm::update_lastMonitorMode",
+      "asp_targid": "isy_thermostat_mt_mmm_mmm_app_12_12_targ",
+      "golden_b64": "ICAgIHB1YiBsYXN0TW9uaXRvck1vZGU6IElzb2xldHRlX0RhdGFfTW9kZWw6Ok1vbml0b3JfTW9kZSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_134_137_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "start_index": 134,
+      "end_index": 137,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_134_137_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgQWxsb3dlZF9BbGFybVRlbXBXU3RhdHVzX1JhbmdlcyAgICAgICAgICAiQW4gaW50ZWdyYXRpb24gY29uc3RyYWludCBjYW4gb25seSByZWZlciB0byBhIHNpbmdsZSBwb3J0LCBzbyBuZWVkIGEgZ2VuZXJhbCByZXF1aXJlcyAgICAgICAgICB8Y2xhdXNlIHRvIHJlbGF0ZSB0aGUgbG93ZXIgYW5kIHVwcGVyIHRlbXBzIjogICAgICAgICAgR1VNQk9fTGlicmFyeTo6R1VNQk9fX0xpYnJhcnk6OkFsbG93ZWRfQWxhcm1UZW1wV1N0YXR1c19SYW5nZXMobG93ZXJfYWxhcm1fdGVtcFdzdGF0dXMsIHVwcGVyX2FsYXJtX3RlbXBXc3RhdHVzKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_120_125_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "start_index": 120,
+      "end_index": 125,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_120_125_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgQWxsb3dlZF9Mb3dlckFsYXJtVGVtcFdzdGF0dXMJICAgICAgICAgICJUYWJsZV9BXzEyX0xvd2VyQWxhcm1UZW1wOiBSYW5nZSBbOTYuLjEwMV06ICAgICAgICAgIHxodHRwczovL3d3dy5mYWEuZ292L3NpdGVzL2ZhYS5nb3YvZmlsZXMvYWlyY3JhZnQvYWlyX2NlcnQvZGVzaWduX2FwcHJvdmFscy9haXJfc29mdHdhcmUvQVItMDgtMzIucGRmI3BhZ2U9MTEyICIgOiAgICAgICAgICAvL0dVTUJPX0xpYnJhcnk6OkdVTUJPX19MaWJyYXJ5OjpBbGxvd2VkX0xvd2VyQWxhcm1UZW1wV1N0YXR1cyhsb3dlcl9hbGFybV90ZW1wV3N0YXR1cyk7ICAgICAgICAgICctPjonKEdVTUJPX0xpYnJhcnk6OkdVTUJPX19MaWJyYXJ5Ojppc1ZhbGlkVGVtcFdzdGF0dXMobG93ZXJfYWxhcm1fdGVtcFdzdGF0dXMpLCAgICAgICAgICAgICAgICA5NltpMzJdIDw9IGxvd2VyX2FsYXJtX3RlbXBXc3RhdHVzLmRlZ3JlZXMgJiBsb3dlcl9hbGFybV90ZW1wV3N0YXR1cy5kZWdyZWVzIDw9IDEwMVtpMzJdKTs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_127_131_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "start_index": 127,
+      "end_index": 131,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_127_131_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgQWxsb3dlZF9VcHBlckFsYXJtVGVtcFdzdGF0dXMJICAgICAgICAgICJUYWJsZV9BXzEyX1VwcGVyQWxhcm1UZW1wOiBSYW5nZSBbOTcuLjEwMl0gICAgICAgICAgfGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTIgIiA6ICAgICAgICAgIC8vIGV4YW1wbGUgb2YgY2FsbGluZyBhIHN1YmNsYXVzZSBmdW5jdGlvbiBmcm9tIGFuIGludGVncmF0aW9uIGNvbnN0cmFpbnQgICAgICAgICAgQWxsb3dlZF9VcHBlckFsYXJtVGVtcFdTdGF0dXModXBwZXJfYWxhcm1fdGVtcFdzdGF0dXMpOw==",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_112_113_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "start_index": 112,
+      "end_index": 113,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_112_113_targ",
+      "golden_b64": "ICAgICAgICBkZWYgQWxsb3dlZF9VcHBlckFsYXJtVGVtcFdTdGF0dXModXBwZXI6IElzb2xldHRlX0RhdGFfTW9kZWw6OlRlbXBXc3RhdHVzX2kpOiBCYXNlX1R5cGVzOjpCb29sZWFuIDo9ICAgICAgICAgIEdVTUJPX0xpYnJhcnk6OkdVTUJPX19MaWJyYXJ5OjpBbGxvd2VkX1VwcGVyQWxhcm1UZW1wV1N0YXR1cyh1cHBlcik7",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_oip_oit_app_55_58_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "start_index": 55,
+      "end_index": 58,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_oip_oit_app_55_58_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgQWxsb3dlZF9BbGFybVRlbXBXU3RhdHVzX1JhbmdlcyAgICAgICAgLy8gICBBbiBpbnRlZ3JhdGlvbiBjb25zdHJhaW50IGNhbiBvbmx5IHJlZmVyIHRvIGEgc2luZ2xlIHBvcnQsIHNvIG5lZWQgYSBnZW5lcmFsIHJlcXVpcmVzICAgICAgICAvLyAgIGNsYXVzZSB0byByZWxhdGUgdGhlIGxvd2VyIGFuZCB1cHBlciB0ZW1wcyAgICAgICAgR1VNQk9fTGlicmFyeTo6QWxsb3dlZF9BbGFybVRlbXBXU3RhdHVzX1Jhbmdlc19zcGVjKGFwaS5sb3dlcl9hbGFybV90ZW1wV3N0YXR1cywgYXBpLnVwcGVyX2FsYXJtX3RlbXBXc3RhdHVzKSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_oip_oit_api_139_144_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/bridge/operator_interface_oip_oit_api.rs",
+      "start_index": 139,
+      "end_index": 144,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_oip_oit_api_139_144_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgQWxsb3dlZF9Mb3dlckFsYXJtVGVtcFdzdGF0dXMgICAgICAgIC8vICAgVGFibGVfQV8xMl9Mb3dlckFsYXJtVGVtcDogUmFuZ2UgWzk2Li4xMDFdOiAgICAgICAgLy8gICBodHRwczovL3d3dy5mYWEuZ292L3NpdGVzL2ZhYS5nb3YvZmlsZXMvYWlyY3JhZnQvYWlyX2NlcnQvZGVzaWduX2FwcHJvdmFscy9haXJfc29mdHdhcmUvQVItMDgtMzIucGRmI3BhZ2U9MTEyICAgICAgICAgR1VNQk9fTGlicmFyeTo6aXNWYWxpZFRlbXBXc3RhdHVzX3NwZWModmFsdWUpID09PiAgICAgICAgICAoKDk2aTMyIDw9IHZhbHVlLmRlZ3JlZXMpICYmICAgICAgICAgICAgKHZhbHVlLmRlZ3JlZXMgPD0gMTAxaTMyKSks",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_oip_oit_api_162_165_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/bridge/operator_interface_oip_oit_api.rs",
+      "start_index": 162,
+      "end_index": 165,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_oip_oit_api_162_165_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgQWxsb3dlZF9VcHBlckFsYXJtVGVtcFdzdGF0dXMgICAgICAgIC8vICAgVGFibGVfQV8xMl9VcHBlckFsYXJtVGVtcDogUmFuZ2UgWzk3Li4xMDJdICAgICAgICAvLyAgIGh0dHBzOi8vd3d3LmZhYS5nb3Yvc2l0ZXMvZmFhLmdvdi9maWxlcy9haXJjcmFmdC9haXJfY2VydC9kZXNpZ25fYXBwcm92YWxzL2Fpcl9zb2Z0d2FyZS9BUi0wOC0zMi5wZGYjcGFnZT0xMTIgICAgICAgICBjcmF0ZTo6Y29tcG9uZW50OjpvcGVyYXRvcl9pbnRlcmZhY2Vfb2lwX29pdF9hcHA6OkFsbG93ZWRfVXBwZXJBbGFybVRlbXBXU3RhdHVzKHZhbHVlKSw=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_oip_oit_app_109_112_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "start_index": 109,
+      "end_index": 112,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Allowed_AlarmTempWStatus_Ranges",
+      "asp_targid": "isy_operator_interface_oip_oit_app_109_112_targ",
+      "golden_b64": "ICBwdWIgb3BlbiBzcGVjIGZuIEFsbG93ZWRfVXBwZXJBbGFybVRlbXBXU3RhdHVzKHVwcGVyOiBJc29sZXR0ZV9EYXRhX01vZGVsOjpUZW1wV3N0YXR1c19pKSAtPiBib29sICB7ICAgIEdVTUJPX0xpYnJhcnk6OkFsbG93ZWRfVXBwZXJBbGFybVRlbXBXU3RhdHVzX3NwZWModXBwZXIpICB9",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_139_143_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "start_index": 139,
+      "end_index": 143,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Desired_Temps_Ordered",
+      "asp_targid": "isy_operator_interface_139_143_targ",
+      "golden_b64": "ICAgICAgICBndWFyYW50ZWUgRGVzaXJlZF9UZW1wc19PcmRlcmVkICAgICAgICAgICJUaGUgb3BlcmF0b3IgaW50ZXJmYWNlIG9ubHkgZW1pdHMgZGVzaXJlZCB0ZW1wZXJhdHVyZXMgd2hlcmUgdGhlIGxvd2VyICAgICAgICAgIHxib3VuZCBkb2VzIG5vdCBleGNlZWQgdGhlIHVwcGVyIGJvdW5kIChlc3RhYmxpc2hlcyB0aGUgc3lzdGVtIHByb3BlcnR5ICAgICAgICAgIHxsb3dlcl9pc19ub3RfaGlnaGVyX3RoYW5fdXBwZXIgY29uc3VtZWQgYnkgdGhlIHJlZ3VsYXRvciBzdWJzeXN0ZW0pIjogICAgICAgICAgbG93ZXJfZGVzaXJlZF90ZW1wV3N0YXR1cy5kZWdyZWVzIDw9IHVwcGVyX2Rlc2lyZWRfdGVtcFdzdGF0dXMuZGVncmVlczs=",
+      "golden_ts": "2026-08-03 11:57:47"
+    },
+    "isy_operator_interface_oip_oit_app_59_63_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "start_index": 59,
+      "end_index": 63,
+      "metadata": "Isolette_Single_Sensor_Instance_operator_interface_oip_oit::Desired_Temps_Ordered",
+      "asp_targid": "isy_operator_interface_oip_oit_app_59_63_targ",
+      "golden_b64": "ICAgICAgICAvLyBndWFyYW50ZWUgRGVzaXJlZF9UZW1wc19PcmRlcmVkICAgICAgICAvLyAgIFRoZSBvcGVyYXRvciBpbnRlcmZhY2Ugb25seSBlbWl0cyBkZXNpcmVkIHRlbXBlcmF0dXJlcyB3aGVyZSB0aGUgbG93ZXIgICAgICAgIC8vICAgYm91bmQgZG9lcyBub3QgZXhjZWVkIHRoZSB1cHBlciBib3VuZCAoZXN0YWJsaXNoZXMgdGhlIHN5c3RlbSBwcm9wZXJ0eSAgICAgICAgLy8gICBsb3dlcl9pc19ub3RfaGlnaGVyX3RoYW5fdXBwZXIgY29uc3VtZWQgYnkgdGhlIHJlZ3VsYXRvciBzdWJzeXN0ZW0pICAgICAgICBhcGkubG93ZXJfZGVzaXJlZF90ZW1wV3N0YXR1cy5kZWdyZWVzIDw9IGFwaS51cHBlcl9kZXNpcmVkX3RlbXBXc3RhdHVzLmRlZ3JlZXMs",
+      "golden_ts": "2026-08-03 11:57:47"
+    }
+  }
+}

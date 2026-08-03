@@ -1,0 +1,29 @@
+{
+  "readfile": {
+    "isy_props_operator_interface_oip_oit_app_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "asp_targid": "isy_props_operator_interface_oip_oit_app_targ"
+    },
+    "isy_props_gumbo_library_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/GUMBO_Library.sysml",
+      "asp_targid": "isy_props_gumbo_library_targ"
+    },
+    "isy_props_monitor_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Monitor.sysml",
+      "asp_targid": "isy_props_monitor_targ"
+    },
+    "isy_props_operator_interface_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Operator_Interface.sysml",
+      "asp_targid": "isy_props_operator_interface_targ"
+    },
+    "isy_props_regulate_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/sysml/Regulate.sysml",
+      "asp_targid": "isy_props_regulate_targ"
+    }
+  }
+}
