@@ -180,9 +180,11 @@ class LeanExampleConfig:
 
     @property
     def tier_meta(self) -> dict:
+        # display names carry no prefix — the protocol ids (lean_check,
+        # gear_check) disambiguate
         return {
             self.check_id: {
-                "name": f"{self.prefix} Lean Proof Check (semantic tier)",
+                "name": "Lean Proof Check (semantic tier)",
                 "description":
                     f"Runs `lake lean {self.spec_rel} -- --json`: every "
                     "theorem must still PROVE. The appraiser fails on any "
@@ -191,7 +193,7 @@ class LeanExampleConfig:
                     "invocation (measure-then-use).",
             },
             self.exec_id: {
-                "name": f"{self.prefix} Lean Executable Behavior (exec tier)",
+                "name": "Lean Executable Behavior (exec tier)",
                 "description":
                     "Hashes the PINNED built binary against its "
                     "build-anchored golden, then executes it directly "
