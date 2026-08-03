@@ -1,0 +1,34 @@
+{
+  "hashfile": {
+    "gear_impl_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "env_var": "",
+      "asp_targid": "gear_impl_targ"
+    },
+    "gear_spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "env_var": "",
+      "asp_targid": "gear_spec_targ"
+    },
+    "gear_landinggear_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear.lean",
+      "env_var": "",
+      "asp_targid": "gear_landinggear_targ"
+    },
+    "gear_main_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "env_var": "",
+      "asp_targid": "gear_main_targ"
+    },
+    "gear_lakefile_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/lakefile.toml",
+      "env_var": "",
+      "asp_targid": "gear_lakefile_targ"
+    },
+    "gear_lean_toolchain_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/lean-toolchain",
+      "env_var": "",
+      "asp_targid": "gear_lean_toolchain_targ"
+    }
+  }
+}

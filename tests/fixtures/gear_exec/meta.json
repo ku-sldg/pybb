@@ -1,0 +1,4 @@
+{
+  "name": "gear Lean Executable Behavior (exec tier)",
+  "description": "Hashes the PINNED built binary against its build-anchored golden, then executes it directly (lake env <binary>, no rebuild) on one input vector per contract case; the appraiser compares stdout to the expected command. The lean toolchain is hashed in the same term, before the invocations."
+}

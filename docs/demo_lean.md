@@ -7,6 +7,11 @@ ASPs (asp-libs `run_command_lean` / `run_command_lean_appr`), one targetmap
 backend (`derive_targets_from_lean`), and four protocol dirs. That is the
 architectural claim this example validates.
 
+The workflow itself lives in the shared driver `examples/lean_workflow.py`;
+`examples/lean_attestation.py` is a thin `LeanExampleConfig` over it. A
+second Lean scenario is pure configuration — see `demo_gear.md`
+(landing-gear retraction interlock, `examples/gear_attestation.py`).
+
 ## The target
 
 `targets/temp-control-lean` — a Lake package (core Lean v4.31.0, no

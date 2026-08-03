@@ -1,0 +1,10 @@
+name = "LandingGear"
+version = "0.1.0"
+defaultTargets = ["landing-gear"]
+
+[[lean_lib]]
+name = "LandingGear"
+
+[[lean_exe]]
+name = "landing-gear"
+root = "Main"

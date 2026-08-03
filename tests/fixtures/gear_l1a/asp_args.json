@@ -1,0 +1,46 @@
+{
+  "hashfile": {
+    "gear_impl_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "env_var": "",
+      "asp_targid": "gear_impl_targ",
+      "golden_b64": "6o4+bKfwQvJvRzuAAHnj7pPejxq9egyu4F22N7hWzrI=",
+      "golden_ts": "2026-08-03 10:13:56"
+    },
+    "gear_spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "env_var": "",
+      "asp_targid": "gear_spec_targ",
+      "golden_b64": "3h0BUJSuJcxlaZvPOKrvIJEnXOOUqmlFfE6ZzaEgFxk=",
+      "golden_ts": "2026-08-03 10:13:56"
+    },
+    "gear_landinggear_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear.lean",
+      "env_var": "",
+      "asp_targid": "gear_landinggear_targ",
+      "golden_b64": "dSU3x/LkIv50CGXC/GGBPEUdeds5My1W0mlbuG+g3Yc=",
+      "golden_ts": "2026-08-03 10:13:56"
+    },
+    "gear_main_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "env_var": "",
+      "asp_targid": "gear_main_targ",
+      "golden_b64": "Os2kW75MjHxYcsnU8Za518QGsEtkq9+TkCT/m56Cb/k=",
+      "golden_ts": "2026-08-03 10:13:56"
+    },
+    "gear_lakefile_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/lakefile.toml",
+      "env_var": "",
+      "asp_targid": "gear_lakefile_targ",
+      "golden_b64": "aAJANzdQZ+Bn5Dztx1ox2awFDFtdBs+iqumpMmwpasI=",
+      "golden_ts": "2026-08-03 10:13:56"
+    },
+    "gear_lean_toolchain_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/lean-toolchain",
+      "env_var": "",
+      "asp_targid": "gear_lean_toolchain_targ",
+      "golden_b64": "76wLlJI7LYtoQM01vpF3rQ/FqyMy9PQxHJhxLO6S/e4=",
+      "golden_ts": "2026-08-03 10:13:56"
+    }
+  }
+}
