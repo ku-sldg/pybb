@@ -1,0 +1,5 @@
+{
+  "name": "sysml toolchain measurement",
+  "description": "The SysMLv2 AADL libraries the codegen elaborates against (pinned clone): codegen INPUT measured like a tool \u2014 a contract change laundered through a library edit must fail the promotion gate's live hashes against these blessed goldens.",
+  "copland": "lseq( lseq( bseq( hashfile\u00d717 ), SIG ), APPR )"
+}

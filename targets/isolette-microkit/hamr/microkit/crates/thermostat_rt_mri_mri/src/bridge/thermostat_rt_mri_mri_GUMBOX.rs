@@ -77,7 +77,7 @@ pub fn compute_spec_lower_is_not_higher_than_upper_assume(
   api_lower_desired_tempWstatus: Isolette_Data_Model::TempWstatus_i,
   api_upper_desired_tempWstatus: Isolette_Data_Model::TempWstatus_i) -> bool
 {
-  impliesL!(
+  implies!(
     (api_lower_desired_tempWstatus.status == Isolette_Data_Model::ValueStatus::Valid) &
       (api_upper_desired_tempWstatus.status == Isolette_Data_Model::ValueStatus::Valid),
     (api_lower_desired_tempWstatus.degrees <= api_upper_desired_tempWstatus.degrees))
@@ -284,14 +284,12 @@ pub fn compute_case_REQ_MRI_8(
 /** guarantee REQ_MRI_9
   *   If the Regulator Interface Failure is True,
   *   the Desired Range is UNSPECIFIED.
+  *   the Desired Range shall be set to the Desired Temperature Range.
   *   https://www.faa.gov/sites/faa.gov/files/aircraft/air_cert/design_approvals/air_software/AR-08-32.pdf#page=108 
-  * @param api_interface_failure outgoing data port
   */
-pub fn compute_case_REQ_MRI_9(api_interface_failure: Isolette_Data_Model::Failure_Flag_i) -> bool
+pub fn compute_case_REQ_MRI_9() -> bool
 {
-  impliesL!(
-    api_interface_failure.flag,
-    true)
+  true
 }
 
 /** CEP-T-Case: Top-Level case contracts for mri's compute entrypoint
@@ -325,7 +323,7 @@ pub fn compute_CEP_T_Case(
   let r5: bool = compute_case_REQ_MRI_6(api_upper_desired_tempWstatus, api_interface_failure);
   let r6: bool = compute_case_REQ_MRI_7(api_lower_desired_tempWstatus, api_upper_desired_tempWstatus, api_interface_failure);
   let r7: bool = compute_case_REQ_MRI_8(api_lower_desired_tempWstatus, api_upper_desired_tempWstatus, api_interface_failure, api_lower_desired_temp, api_upper_desired_temp);
-  let r8: bool = compute_case_REQ_MRI_9(api_interface_failure);
+  let r8: bool = compute_case_REQ_MRI_9();
 
   return r0 && r1 && r2 && r3 && r4 && r5 && r6 && r7 && r8;
 }

@@ -1,0 +1,157 @@
+{
+  "hashfile": {
+    "sysml_tool_sysml_libs_aadl_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/AADL.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_aadl_sysml_targ",
+      "golden_b64": "AOjjv0REHA5PgQMtXy9t/LF1E686GJNNXMAZ4W+shzA=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_aadl_project_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/AADL_Project.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_aadl_project_sysml_targ",
+      "golden_b64": "LZ+aFGZaLcEnrcDsyHg6mLcVzWJcESQfcUhze7vz1vY=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_base_types_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Base_Types.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_base_types_sysml_targ",
+      "golden_b64": "jSK6mccrl92dhQ5N1kyjpAziTTnEWLCFZXbvOzhwaVc=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_communication_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Communication_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_communication_properties_sysml_targ",
+      "golden_b64": "4Jp8LoucXfVnl5eVq6mcijcZbgOz2ah8lUiKfD6s/2c=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_data_model_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Data_Model.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_data_model_sysml_targ",
+      "golden_b64": "up44ONX+SpVuh707ZODt1+vwoadBIAv3MRY8Fw6U8bQ=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_deployment_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Deployment_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_deployment_properties_sysml_targ",
+      "golden_b64": "B8PzeUMmFqri7Britm8nEKp4h5O3ZLTBfbF64qqKgGA=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_memory_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Memory_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_memory_properties_sysml_targ",
+      "golden_b64": "N1FRwUAGbAF2uPsgNw9nE622a3WiGNjwB1wiEnhpDZE=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_programming_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Programming_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_programming_properties_sysml_targ",
+      "golden_b64": "p+kMFlnDqCkfMa2Lo7kjeaJTmN33LObsBZBhrJgH+iM=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_thread_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Thread_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_thread_properties_sysml_targ",
+      "golden_b64": "2dB0u4nRdcSTJ2p8n9Q4PzidywbNM7DP9LvWWPqHJNU=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_timing_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/Timing_Properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_timing_properties_sysml_targ",
+      "golden_b64": "WzkWFD//W8/rbIQGA9ciHKaS+Owb8z1W9t4/CujWj4c=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_behavior_properties_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/aadl.library/behavior_properties.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_behavior_properties_sysml_targ",
+      "golden_b64": "bHOZ2Z2hCAUKcJbFWNklVN4Ew4eg9Nsad+H3FrnwfUs=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_case_scheduling_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/CASE_Scheduling.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_case_scheduling_sysml_targ",
+      "golden_b64": "A5TkGV2pA5xlM89TJiVjKCybUWLFY5xRl65CAAYusig=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_hamr_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/HAMR.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_hamr_sysml_targ",
+      "golden_b64": "BJvBkk2uPxlJ0JNtU08qOuUvlQ4X1MF+rXhg8pvvbYk=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_hamr_aadl_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/HAMR_AADL.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_hamr_aadl_sysml_targ",
+      "golden_b64": "+FFPBYz3WK27ZykcUJAM+ZH3nQ3jNrIP8n+JLz6fviU=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_hamr_microkit_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/HAMR_Microkit.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_hamr_microkit_sysml_targ",
+      "golden_b64": "24rbVOoezMHlJEcb9SjLbboLwqTIc01Q1idH2DEXwFU=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_hamr_ros_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/HAMR_ROS.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_hamr_ros_sysml_targ",
+      "golden_b64": "a1Y5sxNv66xu2sasThAQFEabprHpIKDOlZrL5Z5Ckxs=",
+      "golden_ts": "2026-08-04 11:21:17"
+    },
+    "sysml_tool_sysml_libs_hamr_time_units_sysml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/sysml-aadl-libraries/hamr.aadl.library/HAMR_Time_Units.sysml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::sysml_libs",
+      "asp_targid": "sysml_tool_sysml_libs_hamr_time_units_sysml_targ",
+      "golden_b64": "HuiTh2GaLLNFnLlL8PVcNXaZjtdU28yCgqzHBC8BnXo=",
+      "golden_ts": "2026-08-04 11:21:17"
+    }
+  }
+}

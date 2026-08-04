@@ -1,1 +1,2 @@
-/hamr/microkit/crates/*/target
+sysml/.slang/
+hamr/microkit/crates/*/target/

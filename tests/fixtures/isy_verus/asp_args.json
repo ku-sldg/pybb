@@ -7,7 +7,7 @@
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_cargo_verus_targ",
       "golden_b64": "fBUd3tk3Sb/Apw5lij5DyY2X1hNqeHLtBQLoEiihIII=",
-      "golden_ts": "2026-08-03 11:57:54"
+      "golden_ts": "2026-08-04 11:21:17"
     },
     "tool_cargo_verus_cargo_verus_2_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
@@ -16,7 +16,7 @@
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_cargo_verus_2_targ",
       "golden_b64": "8BsYQYkX23ppQblNgLvmb+bJ7pVQShsHqfN4mUuLHzY=",
-      "golden_ts": "2026-08-03 11:57:54"
+      "golden_ts": "2026-08-04 11:21:17"
     },
     "tool_cargo_verus_rust_verify_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
@@ -25,7 +25,7 @@
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_rust_verify_targ",
       "golden_b64": "0Rmu8+j69QSxFO0pWMVYkDVe+NVlnfCh2Bn0w3/NqN4=",
-      "golden_ts": "2026-08-03 11:57:54"
+      "golden_ts": "2026-08-04 11:21:17"
     },
     "tool_cargo_verus_verus_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
@@ -34,7 +34,7 @@
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_verus_targ",
       "golden_b64": "6YFdT4PzWgJhB5/Xc9I0tffcA5vn9HOU8YFaNqDYSu0=",
-      "golden_ts": "2026-08-03 11:57:54"
+      "golden_ts": "2026-08-04 11:21:17"
     }
   },
   "run_command_cargo_verus": {

@@ -86,3 +86,47 @@ frontends with an empty `halt("")` in
 SysML codegen is the natural follow-up; the regeneration-coherence
 story for the implemented crates (developer-owned app.rs) is the open
 piece.
+
+## Sanctioned change: `--promote` (SysML frontend exercised; AADL wired)
+
+Both artifacts the AM owns — the props blessing and the report-derived
+baseline — change only through `--promote` (or first-time bootstrap):
+an ordinary `--provision` re-blesses measurements but keeps the model
+blessing, so an unsanctioned model change followed by re-provisioning
+leaves a stale blessing that readiness refutes.
+
+The pipeline (gates before gold, two blackboard runs — no provision
+request exists until the promote outcome is known good):
+
+1. **Tool gate**: the HAMR toolchain and, for SysML, the pinned
+   `sysml-aadl-libraries` (codegen INPUT measured like a tool — 17
+   library files, `sysml_libs` protocol) hashed live against blessed
+   goldens immediately before use. Contract laundering through a
+   library edit is refused here, before any codegen runs.
+2. **Real codegen, in place**: `sireum hamr sysml codegen -p Microkit`
+   regenerates the tree AND the report — the one step re-provisioning
+   alone can never do. No OSATE. (The AADL frontend's phantom+codegen
+   path is wired for parity but its first supervised migration has not
+   been run.)
+3. **Proof gate**: the Verus tier must prove against the regenerated
+   contracts (interpreted exactly as an episode would).
+4. Report-driven target regeneration → gold moves → full provisioning
+   including the props re-blessing → verification episode.
+
+**The first supervised migration (2026-08-04)** brought the vendored
+tree from INSPECTA's generation to Sireum v4.20260720: two crates
+renamed (`domain_monitor`, `sys_nominal_proof`; orphaned old-name dirs
+removed), generated files regenerated, and — notably — codegen
+re-spliced contract MARKER REGIONS inside two developer-owned app.rs
+files (model/toolchain drift in a REQ_MRI_9 ensures clause; the
+implemented behavior still proves, 7/7 crates). The realization slices
+kept their positions, so the AADL/SysML report parity held; the AADL
+measurement baseline was re-provisioned over the migrated tree (its
+props blessing covers untouched files and stayed valid).
+
+The migration also surfaced — and forced the fix of — a latent
+appraiser bug: COLD cargo-verus builds pollute stdout ahead of the
+verification JSON, and the post-codegen proof gate is ALWAYS cold, so
+the gate refused spuriously on first run (fail-closed, wrong reason).
+`run_command_verus_appr` (asp-libs) now extracts the JSON robustly;
+verdicts depend only on verification results, never build temperature.

@@ -334,3 +334,72 @@ def test_sysml_detection_names_a_changed_sysml_contract():
     finally:
         regulate.write_text(orig)
     assert changed_contracts(protocols["isy_l2"], model_suffix=".sysml") == []
+
+
+# ── promotion (--promote): the sanctioning act ────────────────────────────────
+
+def _example():
+    import sys
+    sys.path.insert(0, str(REPO / "examples"))
+    import isolette_attestation as ex
+    return ex
+
+
+def test_provision_keeps_props_blessing_promote_reblesses(tmp_path, monkeypatch):
+    """Ownership split: an ordinary provision re-blesses measurements but
+    never the props blessing; only bless_props=True (the --promote path)
+    re-signs it. Scratch copies; both frontends share the code path."""
+    import json
+    import shutil
+
+    ex = _example()
+    fe = ex.FRONTENDS["sysml"]
+    golden_tmp = tmp_path / "golden"
+    shutil.copytree(GOLDEN_ROOT, golden_tmp)
+    protocols = {}
+    for pid in ("isy_l1a", "isy_l2", "isy_props"):
+        shutil.copytree(FIXTURES / pid, tmp_path / pid)
+        protocols[pid] = ProtocolDir.load(str(tmp_path / pid))
+    monkeypatch.setattr(ex, "GOLDEN_ROOT", golden_tmp)
+
+    bundle = golden_tmp / "_bundles" / "isy_props" / "provision_bundle.json"
+    blessed_args = (tmp_path / "isy_props" / "asp_args.json").read_text()
+    blessed_bundle = bundle.read_text()
+
+    ex.provision_flow(fe, protocols)  # ordinary: blessing untouched
+    assert (tmp_path / "isy_props" / "asp_args.json").read_text() == blessed_args
+    assert bundle.read_text() == blessed_bundle
+
+    ex.provision_flow(fe, protocols, bless_props=True)  # the sanctioning act
+    rearmed = json.loads((tmp_path / "isy_props" / "asp_args.json").read_text())
+    # content unchanged -> same goldens, but the blessing was re-signed
+    for targ, args in rearmed["readfile"].items():
+        assert args["golden_b64"] == json.loads(blessed_args)["readfile"][targ]["golden_b64"]
+    assert bundle.read_text() != blessed_bundle
+
+
+@pytest.mark.skipif(
+    not (Path.home() / "Claude_workspace" / "sysml-aadl-libraries").is_dir(),
+    reason="requires the pinned sysml-aadl-libraries clone")
+def test_promote_tool_gate_refuses_tampered_library():
+    """The sysml-aadl-libraries are codegen INPUT measured like a tool: a
+    library edit after blessing fails the promote gate's live hashes —
+    before any codegen runs. Contract laundering through the libraries is
+    refused at the gate."""
+    ex = _example()
+    protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
+                 for pid in ("hamr_tools", "sysml_libs")}
+    client = CvmSubprocessClient()
+    gate = ex._combined_tool_gate(client, protocols, ex.TOOL_GATE_IDS["sysml"])
+    assert gate() is None
+
+    lib = Path(sorted(protocols["sysml_libs"].asp_args["hashfile"].values(),
+                      key=lambda a: a["filepath"])[0]["filepath"])
+    orig = lib.read_bytes()
+    lib.write_bytes(orig + b"\n// TAMPERED after blessing\n")
+    try:
+        error = gate()
+        assert error is not None and "sysml_libs" in error
+    finally:
+        lib.write_bytes(orig)
+    assert gate() is None

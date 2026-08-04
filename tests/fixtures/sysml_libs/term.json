@@ -1,0 +1,288 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "bseq",
+          "TERM_BODY": [
+            "both_paths",
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "bseq",
+                          "TERM_BODY": [
+                            "both_paths",
+                            {
+                              "TERM_CONSTRUCTOR": "bseq",
+                              "TERM_BODY": [
+                                "both_paths",
+                                {
+                                  "TERM_CONSTRUCTOR": "bseq",
+                                  "TERM_BODY": [
+                                    "both_paths",
+                                    {
+                                      "TERM_CONSTRUCTOR": "bseq",
+                                      "TERM_BODY": [
+                                        "both_paths",
+                                        {
+                                          "TERM_CONSTRUCTOR": "bseq",
+                                          "TERM_BODY": [
+                                            "both_paths",
+                                            {
+                                              "TERM_CONSTRUCTOR": "bseq",
+                                              "TERM_BODY": [
+                                                "both_paths",
+                                                {
+                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                  "TERM_BODY": [
+                                                    "both_paths",
+                                                    {
+                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                      "TERM_BODY": [
+                                                        "both_paths",
+                                                        {
+                                                          "TERM_CONSTRUCTOR": "bseq",
+                                                          "TERM_BODY": [
+                                                            "both_paths",
+                                                            {
+                                                              "TERM_CONSTRUCTOR": "bseq",
+                                                              "TERM_BODY": [
+                                                                "both_paths",
+                                                                {
+                                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                                  "TERM_BODY": [
+                                                                    "both_paths",
+                                                                    {
+                                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                                      "TERM_BODY": [
+                                                                        "both_paths",
+                                                                        {
+                                                                          "TERM_CONSTRUCTOR": "asp",
+                                                                          "TERM_BODY": {
+                                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                                            "ASP_BODY": {
+                                                                              "ASP_ID": "hashfile",
+                                                                              "ASP_TARG_ID": "sysml_tool_sysml_libs_aadl_sysml_targ"
+                                                                            }
+                                                                          }
+                                                                        },
+                                                                        {
+                                                                          "TERM_CONSTRUCTOR": "asp",
+                                                                          "TERM_BODY": {
+                                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                                            "ASP_BODY": {
+                                                                              "ASP_ID": "hashfile",
+                                                                              "ASP_TARG_ID": "sysml_tool_sysml_libs_aadl_project_sysml_targ"
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      ]
+                                                                    },
+                                                                    {
+                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                      "TERM_BODY": {
+                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                        "ASP_BODY": {
+                                                                          "ASP_ID": "hashfile",
+                                                                          "ASP_TARG_ID": "sysml_tool_sysml_libs_base_types_sysml_targ"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  ]
+                                                                },
+                                                                {
+                                                                  "TERM_CONSTRUCTOR": "asp",
+                                                                  "TERM_BODY": {
+                                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                                    "ASP_BODY": {
+                                                                      "ASP_ID": "hashfile",
+                                                                      "ASP_TARG_ID": "sysml_tool_sysml_libs_communication_properties_sysml_targ"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              ]
+                                                            },
+                                                            {
+                                                              "TERM_CONSTRUCTOR": "asp",
+                                                              "TERM_BODY": {
+                                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                                "ASP_BODY": {
+                                                                  "ASP_ID": "hashfile",
+                                                                  "ASP_TARG_ID": "sysml_tool_sysml_libs_data_model_sysml_targ"
+                                                                }
+                                                              }
+                                                            }
+                                                          ]
+                                                        },
+                                                        {
+                                                          "TERM_CONSTRUCTOR": "asp",
+                                                          "TERM_BODY": {
+                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                            "ASP_BODY": {
+                                                              "ASP_ID": "hashfile",
+                                                              "ASP_TARG_ID": "sysml_tool_sysml_libs_deployment_properties_sysml_targ"
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "TERM_CONSTRUCTOR": "asp",
+                                                      "TERM_BODY": {
+                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                        "ASP_BODY": {
+                                                          "ASP_ID": "hashfile",
+                                                          "ASP_TARG_ID": "sysml_tool_sysml_libs_memory_properties_sysml_targ"
+                                                        }
+                                                      }
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "TERM_CONSTRUCTOR": "asp",
+                                                  "TERM_BODY": {
+                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                    "ASP_BODY": {
+                                                      "ASP_ID": "hashfile",
+                                                      "ASP_TARG_ID": "sysml_tool_sysml_libs_programming_properties_sysml_targ"
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "TERM_CONSTRUCTOR": "asp",
+                                              "TERM_BODY": {
+                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                "ASP_BODY": {
+                                                  "ASP_ID": "hashfile",
+                                                  "ASP_TARG_ID": "sysml_tool_sysml_libs_thread_properties_sysml_targ"
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "TERM_CONSTRUCTOR": "asp",
+                                          "TERM_BODY": {
+                                            "ASP_CONSTRUCTOR": "ASPC",
+                                            "ASP_BODY": {
+                                              "ASP_ID": "hashfile",
+                                              "ASP_TARG_ID": "sysml_tool_sysml_libs_timing_properties_sysml_targ"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "TERM_CONSTRUCTOR": "asp",
+                                      "TERM_BODY": {
+                                        "ASP_CONSTRUCTOR": "ASPC",
+                                        "ASP_BODY": {
+                                          "ASP_ID": "hashfile",
+                                          "ASP_TARG_ID": "sysml_tool_sysml_libs_behavior_properties_sysml_targ"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "TERM_CONSTRUCTOR": "asp",
+                                  "TERM_BODY": {
+                                    "ASP_CONSTRUCTOR": "ASPC",
+                                    "ASP_BODY": {
+                                      "ASP_ID": "hashfile",
+                                      "ASP_TARG_ID": "sysml_tool_sysml_libs_case_scheduling_sysml_targ"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "hashfile",
+                                  "ASP_TARG_ID": "sysml_tool_sysml_libs_hamr_sysml_targ"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "sysml_tool_sysml_libs_hamr_aadl_sysml_targ"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "sysml_tool_sysml_libs_hamr_microkit_sysml_targ"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "sysml_tool_sysml_libs_hamr_ros_sysml_targ"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "hashfile",
+                  "ASP_TARG_ID": "sysml_tool_sysml_libs_hamr_time_units_sysml_targ"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

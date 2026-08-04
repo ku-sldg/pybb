@@ -7,7 +7,7 @@
         "KEY_TOOL_REPORT",
         {
           "type" : "ToolReport",
-          "commandLineArgs" : "",
+          "commandLineArgs" : "--sourcepath \/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml:\/Users\/adampetz\/Claude_workspace\/sysml-aadl-libraries --system-name Isolette::Isolette_Single_Sensor --runtime-monitoring --platform Microkit --output-dir ..\/hamr --package-name isolette --no-proyek-ive --sel4-output-dir \/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/hamr\/microkit --workspace-root-dir \/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml",
           "status" : {
             "type" : "Status",
             "value" : "Success"
@@ -23,7 +23,7 @@
                   "type" : "Position",
                   "uriOpt" : {
                     "type" : "Some",
-                    "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Isolette_Data_Model.sysml"
+                    "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Isolette_Data_Model.sysml"
                   },
                   "beginLine" : 19,
                   "beginColumn" : 4,
@@ -45,7 +45,7 @@
                   "type" : "Position",
                   "uriOpt" : {
                     "type" : "Some",
-                    "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Isolette_Data_Model.sysml"
+                    "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Isolette_Data_Model.sysml"
                   },
                   "beginLine" : 29,
                   "beginColumn" : 4,
@@ -67,7 +67,7 @@
                   "type" : "Position",
                   "uriOpt" : {
                     "type" : "Some",
-                    "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Isolette_Data_Model.sysml"
+                    "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Isolette_Data_Model.sysml"
                   },
                   "beginLine" : 7,
                   "beginColumn" : 4,
@@ -324,6 +324,16 @@
             },
             {
               "type" : "ResourceReport",
+              "path" : "types\/include\/sb_queue_Isolette_Data_Model_PhysicalTemp_i_1.h",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "types\/src\/sb_queue_Isolette_Data_Model_PhysicalTemp_i_1.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
               "path" : "types\/include\/sb_types.h",
               "overwrittenIfExists" : true
             },
@@ -570,6 +580,631 @@
             {
               "type" : "ResourceReport",
               "path" : "components\/pacer\/src\/pacer.c",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_udt_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ldt_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_heat_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/regulator_failsafe_latching\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_mode_alarm_off\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_ct_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_lat_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/invalid_uat_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/internal_failure_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/error_condition_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/failed_mode_alarm_on\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/normal_display_temp\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/mod.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/vc_init.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/vc_sequential.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/vc_post_pre.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/state_var_and_specialization_exercise_3\/vc_non_disabling.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/Cargo.toml",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/rust-toolchain.toml",
+              "overwrittenIfExists" : false
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/lib.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/system_state.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/contracts.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/assertions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/write_frames.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/actions.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/vc_commutativity.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/src\/vc_integration.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/sys_nominal_proof\/Makefile",
               "overwrittenIfExists" : true
             },
             {
@@ -824,17 +1459,17 @@
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/bridge\/extern_c_api.rs",
+              "path" : "crates\/domain_monitor\/src\/bridge\/extern_c_api.rs",
               "overwrittenIfExists" : true
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/bridge\/domain_monitor_process_domain_monitor_thread_api.rs",
+              "path" : "crates\/domain_monitor\/src\/bridge\/domain_monitor_process_domain_monitor_thread_api.rs",
               "overwrittenIfExists" : true
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/bridge\/mod.rs",
+              "path" : "crates\/domain_monitor\/src\/bridge\/mod.rs",
               "overwrittenIfExists" : true
             },
             {
@@ -1154,37 +1789,37 @@
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/lib.rs",
+              "path" : "crates\/domain_monitor\/src\/lib.rs",
               "overwrittenIfExists" : true
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/logging.rs",
+              "path" : "crates\/domain_monitor\/src\/logging.rs",
               "overwrittenIfExists" : false
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/component\/domain_monitor_process_domain_monitor_thread_app.rs",
+              "path" : "crates\/domain_monitor\/src\/component\/domain_monitor_process_domain_monitor_thread_app.rs",
+              "overwrittenIfExists" : true
+            },
+            {
+              "type" : "ResourceReport",
+              "path" : "crates\/domain_monitor\/src\/component\/mod.rs",
               "overwrittenIfExists" : false
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/component\/mod.rs",
+              "path" : "crates\/domain_monitor\/Cargo.toml",
               "overwrittenIfExists" : false
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/Cargo.toml",
+              "path" : "crates\/domain_monitor\/Makefile",
               "overwrittenIfExists" : false
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/Makefile",
-              "overwrittenIfExists" : false
-            },
-            {
-              "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/rust-toolchain.toml",
+              "path" : "crates\/domain_monitor\/rust-toolchain.toml",
               "overwrittenIfExists" : false
             },
             {
@@ -1414,31 +2049,6 @@
             },
             {
               "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/test\/mod.rs",
-              "overwrittenIfExists" : false
-            },
-            {
-              "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/test\/tests.rs",
-              "overwrittenIfExists" : false
-            },
-            {
-              "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/test\/util\/mod.rs",
-              "overwrittenIfExists" : true
-            },
-            {
-              "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/test\/util\/generators.rs",
-              "overwrittenIfExists" : true
-            },
-            {
-              "type" : "ResourceReport",
-              "path" : "crates\/domain_monitor_process_domain_monitor_thread\/src\/test\/util\/test_apis.rs",
-              "overwrittenIfExists" : true
-            },
-            {
-              "type" : "ResourceReport",
               "path" : "crates\/GUMBO_Library\/src\/lib.rs",
               "overwrittenIfExists" : false
             },
@@ -1605,7 +2215,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Regulate.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Regulate.sysml"
                       },
                       "beginLine" : 111,
                       "beginColumn" : 8,
@@ -3778,7 +4388,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Regulate.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Regulate.sysml"
                       },
                       "beginLine" : 406,
                       "beginColumn" : 8,
@@ -5187,7 +5797,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Regulate.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Regulate.sysml"
                       },
                       "beginLine" : 272,
                       "beginColumn" : 8,
@@ -6401,7 +7011,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Regulate.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Regulate.sysml"
                       },
                       "beginLine" : 524,
                       "beginColumn" : 8,
@@ -6682,7 +7292,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Monitor.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Monitor.sysml"
                       },
                       "beginLine" : 95,
                       "beginColumn" : 4,
@@ -8675,7 +9285,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Monitor.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Monitor.sysml"
                       },
                       "beginLine" : 390,
                       "beginColumn" : 4,
@@ -10100,7 +10710,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Monitor.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Monitor.sysml"
                       },
                       "beginLine" : 254,
                       "beginColumn" : 4,
@@ -11298,7 +11908,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Monitor.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Monitor.sysml"
                       },
                       "beginLine" : 539,
                       "beginColumn" : 4,
@@ -11579,7 +12189,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Operator_Interface.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Operator_Interface.sysml"
                       },
                       "beginLine" : 59,
                       "beginColumn" : 4,
@@ -13284,7 +13894,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Devices.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Devices.sysml"
                       },
                       "beginLine" : 26,
                       "beginColumn" : 4,
@@ -13522,7 +14132,7 @@
                       "type" : "Position",
                       "uriOpt" : {
                         "type" : "Some",
-                        "value" : "file:\/\/\/Users\/belt\/devel\/sireum\/kekinian\/hamr\/codegen\/jvm\/src\/test\/resources\/models\/INSPECTA-models\/isolette\/sysml\/Devices.sysml"
+                        "value" : "file:\/\/\/Users\/adampetz\/Claude_workspace\/pybb\/targets\/isolette-microkit\/sysml\/Devices.sysml"
                       },
                       "beginLine" : 64,
                       "beginColumn" : 4,
