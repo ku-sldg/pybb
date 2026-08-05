@@ -170,7 +170,7 @@ promotion predicate regenerates them from the fresh report after each
 real codegen run (`targets_fn` backend parameter). One trust question
 (`tcmk:files`) suffices: every slice lives inside a hashed file, and
 generated Rust is whole-file-immutable, so `WholeFileRestoreKS` is the
-repair class throughout. `examples/microkit_attestation.py` drives
+repair class throughout. `examples/temp_control_aadl_rust.py` drives
 provisioning, attestation, Verus-slice tamper/repair, and the full
 `--promote` lifecycle.
 
@@ -290,15 +290,15 @@ child processes see workspace-safe wrappers rather than TCC-restricted
 locations.
 
 ```sh
-./examples/run_gumbo_workflow.sh             # clean run (~1s)
-./examples/run_gumbo_workflow.sh --tamper    # l1 fail -> l2 report -> escalate
-./examples/run_gumbo_workflow.sh --validate  # clean + sireum confirmation (~min)
+./examples/run_temp_control_aadl_slang.sh             # clean run (~1s)
+./examples/run_temp_control_aadl_slang.sh --tamper    # l1 fail -> l2 report -> escalate
+./examples/run_temp_control_aadl_slang.sh --validate  # clean + sireum confirmation (~min)
 ```
 
 Or the Python example directly:
 
 ```sh
-python examples/gumbo_attestation.py --tamper [--validate]
+python examples/temp_control_aadl_slang.py --tamper [--validate]
 ```
 
 Tests:

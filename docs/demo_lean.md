@@ -8,9 +8,9 @@ backend (`derive_targets_from_lean`), and four protocol dirs. That is the
 architectural claim this example validates.
 
 The workflow itself lives in the shared driver `examples/lean_workflow.py`;
-`examples/lean_attestation.py` is a thin `LeanExampleConfig` over it. A
+`examples/temp_control_lean.py` is a thin `LeanExampleConfig` over it. A
 second Lean scenario is pure configuration — see `demo_gear.md`
-(landing-gear retraction interlock, `examples/gear_attestation.py`).
+(landing-gear retraction interlock, `examples/landing_gear_lean.py`).
 
 ## The target
 
@@ -54,14 +54,14 @@ Three always-run entries, three independent trust questions:
 ## Demo arcs
 
 ```sh
-python examples/lean_attestation.py                # clean episode
-python examples/lean_attestation.py --validate     # + proof & behavior tiers
-python examples/lean_attestation.py --provision    # regenerate + re-provision
-python examples/lean_attestation.py --tamper --repair
-python examples/lean_attestation.py --tamper-semantic
-python examples/lean_attestation.py --check        # AM: declaration diff
-python examples/lean_attestation.py --promote      # AM: sanction a change
-python examples/lean_attestation.py --promote --expect hot=fanCmd=Off
+python examples/temp_control_lean.py                # clean episode
+python examples/temp_control_lean.py --validate     # + proof & behavior tiers
+python examples/temp_control_lean.py --provision    # regenerate + re-provision
+python examples/temp_control_lean.py --tamper --repair
+python examples/temp_control_lean.py --tamper-semantic
+python examples/temp_control_lean.py --check        # AM: declaration diff
+python examples/temp_control_lean.py --promote      # AM: sanction a change
+python examples/temp_control_lean.py --promote --expect hot=fanCmd=Off
 ```
 
 **Structural tamper + repair** (`--tamper --repair`, log:

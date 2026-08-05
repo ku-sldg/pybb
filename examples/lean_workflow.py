@@ -5,8 +5,8 @@ and the out-of-band attestation-manager acts (--check / --promote) —
 parameterized by a per-package LeanExampleConfig.
 
 The architectural claim this module makes concrete: a second Lean scenario
-is PURE CONFIGURATION. examples/lean_attestation.py (temp-control) and
-examples/gear_attestation.py (landing gear) are thin config modules over
+is PURE CONFIGURATION. examples/temp_control_lean.py (temp-control) and
+examples/landing_gear_lean.py (landing gear) are thin config modules over
 this driver; nothing here knows either scenario. Per config the driver
 builds six protocols
 

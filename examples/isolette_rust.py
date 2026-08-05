@@ -1,5 +1,6 @@
 """
-Attestation-driven blackboard demo for the isolette — the INSPECTA
+isolette_AADL_Rust / isolette_SysMLv2_Rust (selected by --frontend) —
+attestation-driven blackboard demo for the isolette: the INSPECTA
 seL4/Microkit exemplar (targets/isolette-microkit), with the HAMR
 **attestation report** as the authoritative source of the measurement
 targets and golden slices.
@@ -43,7 +44,7 @@ blessing, so an unsanctioned model change followed by re-provisioning
 leaves a stale blessing that baseline verification refutes.
 
 Usage:
-    python examples/isolette_attestation.py [--frontend {aadl,sysml}]
+    python examples/isolette_rust.py [--frontend {aadl,sysml}]
         [--check] [--provision] [--promote] [--tamper-verus] [--repair]
         [--validate]
 

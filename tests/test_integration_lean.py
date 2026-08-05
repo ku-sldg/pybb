@@ -117,7 +117,7 @@ def _episode(repair: bool = True):
     return ctl.blackboard
 
 
-def test_clean_attestation_of_lean_package():
+def test_ctemp_control_lean_of_lean_package():
     bb = _episode()
     entry = bb.get_entry("lean:files")
     assert entry.good_standing and entry.result.protocol == "lean_l1a"
@@ -397,7 +397,7 @@ def test_exec_expecteds_are_am_config_with_promote_time_sanction():
     """The behavior gate compares against AM-owned expecteds; --expect is
     the only way to sanction a behavior change."""
     sys.path.insert(0, str(REPO / "examples"))
-    from lean_attestation import (EXEC_KEYS, resolved_exec_targets,
+    from temp_control_lean import (EXEC_KEYS, resolved_exec_targets,
                                   vector_failures)
 
     targets = resolved_exec_targets()
@@ -425,7 +425,7 @@ def test_sanctioned_spec_change_promoted_and_reblessed(tmp_path, sanctioned_edit
     from pybb.attestation.targetmap import derive_targets_from_lean
 
     sys.path.insert(0, str(REPO / "examples"))
-    from lean_attestation import make_codegen_fn, resolved_exec_targets
+    from temp_control_lean import make_codegen_fn, resolved_exec_targets
 
     golden_tmp = tmp_path / "golden"
     shutil.copytree(GOLDEN_ROOT, golden_tmp)

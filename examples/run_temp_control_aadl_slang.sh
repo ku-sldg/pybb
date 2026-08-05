@@ -13,10 +13,10 @@
 # Protocol dirs live in tests/fixtures (provisioned by the cvm-mcp dashboard).
 #
 # Usage:
-#   ./examples/run_gumbo_workflow.sh              # clean: l1 passes, done (~1s)
-#   ./examples/run_gumbo_workflow.sh --validate   # clean: l1 pass is provisional,
+#   ./examples/run_temp_control_aadl_slang.sh              # clean: l1 passes, done (~1s)
+#   ./examples/run_temp_control_aadl_slang.sh --validate   # clean: l1 pass is provisional,
 #                                                 # sireum confirmation (~min)
-#   ./examples/run_gumbo_workflow.sh --tamper     # live-tree tamper: l1 fails,
+#   ./examples/run_temp_control_aadl_slang.sh --tamper     # live-tree tamper: l1 fails,
 #                                                 # l2 attributes the contract,
 #                                                 # entry escalates with report;
 #                                                 # snapshot restores the tree
@@ -79,7 +79,7 @@ else
   echo "  Clean run against the provisioned tree."
 fi
 echo
-( cd "$PYBB" && "$PYTHON" examples/gumbo_attestation.py $ARGS \
+( cd "$PYBB" && "$PYTHON" examples/temp_control_aadl_slang.py $ARGS \
     2>/dev/null | sed 's/^/  /' )
 
 banner "Done"

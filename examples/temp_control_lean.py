@@ -1,5 +1,5 @@
 """
-Attestation-driven blackboard demo for the Lean pipeline: the temp-control
+temp-control_Lean — attestation-driven blackboard demo: the temp-control
 model ported to Lean 4 (targets/temp-control-lean) — a specification
 (TempControl/Spec.lean, the GUMBO compute contracts as theorems) over a
 proof-free implementation (TempControl/Impl.lean) that the executable
@@ -10,7 +10,7 @@ declaration, so attribution names the tampered theorem.
 This is a THIN CONFIG over examples/lean_workflow.py — the shared driver
 holds the whole workflow (protocols, provisioning, episodes, tamper
 demos, --check/--promote); a second Lean scenario is pure configuration
-(see examples/gear_attestation.py). The driver builds:
+(see examples/landing_gear_lean.py). The driver builds:
 
     lean_l1a   whole-file hashes: every .lean source + lakefile.toml +
                lean-toolchain (build config and toolchain pin are inside
@@ -43,7 +43,7 @@ lean_props blessing, and the exec expecteds (behavior vectors' expected
 outputs — sanctioned via --expect, e.g. --expect hot=fanCmd=Off).
 
 Usage:
-    python examples/lean_attestation.py [--check] [--provision]
+    python examples/temp_control_lean.py [--check] [--provision]
         [--promote [--expect KEY=VALUE ...]] [--tamper]
         [--tamper-semantic] [--repair] [--validate]
 

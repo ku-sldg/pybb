@@ -1,6 +1,6 @@
 """
 Landing-gear example end-to-end: the second Lean scenario, proving the
-shared-driver claim — examples/gear_attestation.py is pure configuration
+shared-driver claim — examples/landing_gear_lean.py is pure configuration
 over examples/lean_workflow.py, and the whole workflow (scan-derived
 targets, attestation, declaration-named attribution, repair, semantic
 tiers, AM detection) runs unchanged against targets/landing-gear-lean.
@@ -96,7 +96,7 @@ def _episode(repair: bool = True):
     return ctl.blackboard
 
 
-def test_clean_attestation_of_gear_package():
+def test_ctemp_control_lean_of_gear_package():
     bb = _episode()
     entry = bb.get_entry("gear:files")
     assert entry.good_standing and entry.result.protocol == "gear_l1a"
@@ -140,7 +140,7 @@ def test_am_detection_and_expecteds_are_config_driven():
     assert not changed_decls(protocols["gear_l2"], GEAR_ROOT, prefix="gear",
                              props_protocol=protocols["gear_props"])
     sys.path.insert(0, str(REPO / "examples"))
-    from gear_attestation import EXEC_KEYS, resolved_exec_targets, vector_failures
+    from landing_gear_lean import EXEC_KEYS, resolved_exec_targets, vector_failures
     targets = resolved_exec_targets()
     assert [targets[f"gear_exec_{k}_targ"]["expected"] for k in EXEC_KEYS] \
         == ["gearCmd=Hold", "gearCmd=Retract", "gearCmd=Extend"]

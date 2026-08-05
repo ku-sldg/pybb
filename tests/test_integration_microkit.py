@@ -87,7 +87,7 @@ def _episode(repair: bool = True):
     return ctl.blackboard
 
 
-def test_clean_attestation_of_rust_artifacts():
+def test_ctemp_control_lean_of_rust_artifacts():
     bb = _episode()
     entry = bb.get_entry("tcmk:files")
     assert entry.good_standing and entry.result.protocol == "tcmk_l1a"

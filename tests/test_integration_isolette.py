@@ -129,7 +129,7 @@ def _episode(repair: bool = True, validate: bool = False):
     return ctl.blackboard
 
 
-def test_clean_attestation_with_verified_baseline():
+def test_ctemp_control_lean_with_verified_baseline():
     bb = _episode()
     ready = bb.get_entry("isl:ready")
     assert ready.good_standing
@@ -299,7 +299,7 @@ def test_sysml_report_is_slice_parity_with_aadl_over_shared_crates():
     assert not {f for f in sysml_model if f.endswith(".aadl")}
 
 
-def test_sysml_clean_attestation_with_verified_baseline():
+def test_sysml_ctemp_control_lean_with_verified_baseline():
     protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
                  for pid in (*SYSML_PROTOCOL_IDS, "isy_props")}
     client = CvmSubprocessClient()
@@ -341,7 +341,7 @@ def test_sysml_detection_names_a_changed_sysml_contract():
 def _example():
     import sys
     sys.path.insert(0, str(REPO / "examples"))
-    import isolette_attestation as ex
+    import isolette_rust as ex
     return ex
 
 

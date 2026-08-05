@@ -1,5 +1,5 @@
 """
-Attestation-driven blackboard demo for the landing-gear pipeline: the
+landing-gear_Lean — attestation-driven blackboard demo: the
 classic avionics retraction interlock in Lean 4
 (targets/landing-gear-lean). The lever may command retraction, but the
 gear must never retract on the ground (weight-on-wheels) or below the
@@ -29,7 +29,7 @@ on-ground decide example) no longer prove, and the rebuilt binary answers
 Retract to the on-ground vector against expected Hold.
 
 Usage:
-    python examples/gear_attestation.py [--check] [--provision]
+    python examples/landing_gear_lean.py [--check] [--provision]
         [--promote [--expect KEY=VALUE ...]] [--tamper]
         [--tamper-semantic] [--repair] [--validate]
 

@@ -1,5 +1,6 @@
 """
-Attestation-driven blackboard demo for the Microkit/Rust/Verus pipeline:
+temp-control_AADL_Rust — attestation-driven blackboard demo for the
+Microkit/Rust/Verus pipeline:
 the temp-control model ported to seL4 Microkit (targets/temp-control-microkit),
 with the HAMR **attestation report** as the authoritative source of the
 measurement targets and golden slices.
@@ -23,7 +24,7 @@ whole-file-immutable):
                         episode 2 verifies
 
 Usage:
-    python examples/microkit_attestation.py [--check] [--provision]
+    python examples/temp_control_aadl_rust.py [--check] [--provision]
         [--promote] [--tamper-verus] [--repair] [--validate]
 
 --check      attestation-manager detection: compare the model's contract

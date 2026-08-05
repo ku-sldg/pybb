@@ -7,7 +7,7 @@ Lean 4 at `targets/landing-gear-lean` and attested by the same six-protocol
 workflow as the temp-control Lean example.
 
 The architectural claim this example validates: **the second scenario is
-pure configuration.** `examples/gear_attestation.py` is a
+pure configuration.** `examples/landing_gear_lean.py` is a
 `LeanExampleConfig` (~40 lines of data: package root, protocol prefix,
 spec file, binary name, behavior vectors, tamper spots) over the shared
 driver `examples/lean_workflow.py`, which was factored out of the
@@ -48,11 +48,11 @@ Entries: `gear:files` (fail → `gear_l2` refines → `--repair` restores),
 ## Demo arcs
 
 ```sh
-python examples/gear_attestation.py --validate
-python examples/gear_attestation.py --tamper --repair
-python examples/gear_attestation.py --tamper-semantic
-python examples/gear_attestation.py --check
-python examples/gear_attestation.py --promote
+python examples/landing_gear_lean.py --validate
+python examples/landing_gear_lean.py --tamper --repair
+python examples/landing_gear_lean.py --tamper-semantic
+python examples/landing_gear_lean.py --check
+python examples/landing_gear_lean.py --promote
 ```
 
 **Structural tamper + repair**: a corrupted proof line is attributed to

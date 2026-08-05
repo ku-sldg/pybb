@@ -24,7 +24,7 @@ contract realizations and `*_GUMBOX.rs` oracles, the microkit system
 description, and the attestation report).
 
 Regenerate with the standalone Sireum toolchain (see
-`examples/microkit_attestation.py --promote`):
+`examples/temp_control_aadl_rust.py --promote`):
 
     sireum hamr phantom -f air.json aadl
     sireum hamr codegen -p Microkit --workspace-root-dir aadl \

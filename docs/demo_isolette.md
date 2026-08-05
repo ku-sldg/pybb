@@ -26,7 +26,7 @@ Every episode's readiness gate verifies the three signed baselines before
 attestation (`signed baselines verified (isl_l1a, isl_l2, isl_props)`).
 
 ```sh
-python examples/isolette_attestation.py [--check] [--provision]
+python examples/isolette_rust.py [--check] [--provision]
     [--tamper-verus] [--repair] [--validate]
 ```
 
@@ -53,7 +53,7 @@ was fed, and INSPECTA ships BOTH reports over its single implemented
 tree. `targets/isolette-microkit` therefore vendors both frontends —
 the AADL workspace (`aadl/`) and the SysML v2 model (`sysml/`, textual,
 no OSATE/phantom required for codegen) — and
-`examples/isolette_attestation.py --frontend sysml` runs the identical
+`examples/isolette_rust.py --frontend sysml` runs the identical
 workflow off the SysML report under its own protocol namespace:
 
     isy_l1a (13 hashes) / isy_l2 (67 slices) / isy_props (5 blessed

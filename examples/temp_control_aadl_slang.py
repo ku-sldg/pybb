@@ -1,5 +1,6 @@
 """
-Attestation-driven blackboard demo: GUMBO contract integrity for the
+temp-control_AADL_Slang — attestation-driven blackboard demo: GUMBO
+contract integrity for the
 temp-control-jvm HAMR project, on the outcome-routed blackboard.
 
 Two always-run trust questions, each entry spending its one dispatch on
@@ -26,7 +27,7 @@ entries. A readiness failure escalates as a configuration failure and no
 attestation runs (--misconfigure demonstrates this).
 
 Usage:
-    python examples/gumbo_attestation.py [--protocols-root DIR]
+    python examples/temp_control_aadl_slang.py [--protocols-root DIR]
         [--tamper] [--tamper-block] [--repair] [--validate] [--misconfigure]
 
 --repair appends the repair rungs (whole-file restore after l2 refinement
