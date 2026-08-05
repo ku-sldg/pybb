@@ -175,3 +175,153 @@ class (the Lean family is the pilot; ids above reflect it):
   inputs. Build inputs without a source baseline self-anchor to the
   build bundle's own signed golden (model files still cross-link to the
   blessing).
+
+## End-to-end lifecycle: blessing to attested verdict
+
+The complete temp-control_Lean workflow (landing-gear_Lean is identical
+modulo names — the shared driver's guarantee), from the administrator's
+first blessing to a final attested verdict, with the specific Copland
+protocols and ASPs at each step.
+
+### Phase 0 — Derivation (configuration, no trust yet)
+
+`derive_targets_from_lean` syntax-scans the Lake package and emits the
+**contracts** target map: one `readfile_range` slice per top-level
+declaration, *named by declaration*
+(`temp_control_lean_spec_fanOn_when_hot_targ`, metadata
+`TempControl.Spec::fanOn_when_hot`). The **model** protocol is assembled
+from config (the spec file), the **verification/executable** tiers from
+AM-owned config (the check command, the behavior vectors), and the
+**build** protocol's inputs from `lean_package_files` (all sources +
+`lakefile.toml` + `lean-toolchain`). Nothing here is trusted — these are
+target *definitions*.
+
+### Phase 1 — Provisioning: the administrator's blessing
+
+`--provision` (bootstrap) or `--promote` (re-blessing) captures the
+watched files into `golden/` and runs each protocol's **measurement-only
+term (APPR stripped) against the golden copies**, signed by the CVM.
+Each signed response becomes
+`golden/_bundles/<pid>/provision_bundle.json`, and golden values are
+extracted **from the signed evidence** (via the `extract_golden_slice`
+ASP for slices) into the installed `asp_args.json` — goldens are born
+from blessings, never alongside them.
+
+Per protocol, at provisioning:
+
+- **`temp_control_lean_model`** —
+  `bseq(readfile⟨model_spec⟩, hashfile⟨model_spec_hash⟩) → SIG`. Signing
+  the whole-file `readfile` content **is the administrator's blessing**
+  of `Spec.lean`; the `hashfile` golden freezes with it under the same
+  signature. Promote-owned: ordinary re-provisioning skips this protocol
+  entirely, so laundering can never refresh it.
+- **`temp_control_lean_contracts`** — `bseq(readfile_range ×15) → SIG`:
+  the 15 declaration-slice goldens extracted from signed evidence.
+- **`temp_control_lean_build`** — the executable class's provenance
+  event, run *only* here: `bseq(hashfile ×6 toolchain) →
+  bseq(hashfile ×6 package inputs) → run_command_lean("build") →
+  hashfile(output binary) → SIG`. Evidence *order* witnesses
+  tools→inputs→build→output under one signature. The executable tier's
+  binary golden is then **cross-installed from this bundle's output
+  evidence** (`install_build_outputs`) — the pinned binary is anchored
+  to its build, not independently trusted.
+- **`temp_control_lean_verification` / `_executable`** — provisioning
+  hashes their six woven toolchain artifacts *measure-in-place* (live
+  `lake` wrapper → elan shim → pinned `lean`/`lake`/`leanchecker` →
+  `libleanshared.dylib`; no golden copies — the signed bundle protects
+  the hashes) and, because provisioning runs the full term, the blessing
+  bundle **contains an actual proof run and vector run** at signing
+  time.
+
+### Phase 2 — Readiness: every episode's gate
+
+Before any attestation entry runs, the `temp_control_lean:ready` entry
+(predicate `protocol_check`) validates config **and re-verifies every
+signed baseline** via `verify_bundle`: an *appraisal-only CVM run* per
+protocol — `TERM=APPR`, `EVIDENCE=` the stored bundle. The session's
+`ASP_Comps` dispatch the appraisers over the signed evidence:
+
+- **`sig_appr`** verifies the bundle signature over the raw evidence
+  bytes.
+- **`goldenbytes_appr`** anchors each installed golden (hashes, slices)
+  to the signed measurement it came from.
+- **`model_slices_appr`** does the deep check on the model blessing:
+  injected with the hash golden and *every contract slice golden the
+  contracts protocol installs for `Spec.lean`*, it re-extracts them with
+  `readfile_range`'s exact semantics from the **blessed bytes** —
+  proving all derived views are consequences of what the administrator
+  signed.
+- The **build bundle** verifies in cross-link mode: each event is
+  anchored against *another* protocol's golden by role — tools ↔ the
+  blessed toolchain hashes, the output ↔ the executable tier's enforced
+  golden, and inputs ↔ a source baseline where one exists (`Spec.lean` ↔
+  the model blessing) or the bundle's own signed golden otherwise.
+
+A stale blessing (unsanctioned model change + re-provision) fails here —
+*attestation never starts*.
+
+### Phase 3 — The attestation episode: four entries, the pipeline verbatim
+
+`StartAttestationKS` writes four entries; each runs its protocol through
+`CvmSubprocessClient`, and responses are interpreted by the **formally
+verified appraisal summary** (`copland_evidence_tools`'s
+`do_appraisal_summary`, with its Permutation and provenance theorems) —
+attribution is an `asp_targid` field read; every raw response is
+gzip-archived to `evidence/` before interpretation.
+
+1. **`temp_control_lean:model`** — runs the model term live: `hashfile`
+   appraised by `goldenbytes_appr` against the blessed hash, `readfile`
+   appraised by `model_slices_appr`'s content-equality check against the
+   blessed bytes. **On fail**: `TierKS` re-points the entry to
+   `temp_control_lean_contracts` — the slices name *which declaration*
+   drifted — then (with `--repair`) `WholeFileRestoreKS` restores
+   confirmed-violated files from golden, escalating as "repaired —
+   verification pending next episode" (repair never mints trust).
+2. **`temp_control_lean:contracts`** — the same contracts protocol as an
+   **always-run sentinel** (each `readfile_range` slice vs
+   `goldenbytes_appr`): contract-region tamper in developer-owned files
+   can't hide behind a passing model hash. Both roles share one memoized
+   CVM run.
+3. **`temp_control_lean:verification`** (`--validate`) —
+   measure-then-use: six toolchain `hashfile`s *sequenced before*
+   `run_command_lean` executes `lake lean TempControl/Spec.lean --
+   --json`; `run_command_lean_appr` (EXTEND-forwarded, so the tool's
+   output survives into the response) fails on any `error` diagnostic
+   **or `hasSorry`** — a `sorry` exits 0, so exit codes alone would
+   bless it. Every theorem must prove *against the live implementation*.
+4. **`temp_control_lean:executable`** (`--validate`) — hash-then-run:
+   toolchain hashes, then `hashfile` of the **pinned** binary vs its
+   build-anchored golden, then `run_command_lean` executes it directly
+   (`lake env <bin>`, never rebuilt) on one vector per GUMBO case;
+   `run_command_lean_appr` in expected-mode compares stdout to the
+   `expected` values — which are **AM config, not provisioned goldens**,
+   so laundering can't reach them.
+
+`trust_summary` then renders the verdict per entry — the passing case is
+the pipeline line by line: model, contracts, verification, executable
+all intact.
+
+### Phase 4 — Sanctioned change: `--check` / `--promote`
+
+`--check` diffs live declarations against the **blessed model bytes**
+(not the launderable contract goldens) via `changed_decls` —
+added/removed/modified/moved, by name. `--promote` runs gates before
+gold: `lake build` + behavior vectors vs sanctioned expecteds
+(`--expect` is the only way to change them) → the verification protocol
+must prove (interpreted exactly as an episode would) → contracts
+re-derived → gold moves → **everything re-provisioned including the
+model re-blessing** → a fresh verification episode. A refused gate
+leaves the old baseline fully intact — the promote request runs alone on
+the blackboard, and no provision request exists until its outcome is
+known good.
+
+### ASP roster
+
+Measurement — `readfile`, `hashfile`, `readfile_range`,
+`run_command_lean`, `sig`; appraisal — `sig_appr`, `goldenbytes_appr`,
+`model_slices_appr`, `run_command_lean_appr`; provisioning support —
+`extract_golden_slice`. The three independent trust questions never
+collapse: provability (`verification`, live elaboration), behavior
+(`executable`, pinned binary), and integrity (`model` + `contracts`,
+blessed baseline) can each fail alone — which is exactly what the
+tamper, sorry, and laundering demos exercise.
