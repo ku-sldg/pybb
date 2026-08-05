@@ -33,7 +33,8 @@ from pybb.autoverus import config as av_config
 from pybb.autoverus.shell import ShellError, to_wsl_path
 
 FIXTURES = Path(__file__).parent / "fixtures" / "autoverus"
-BROKEN = FIXTURES / "broken_proof.rs"
+BROKEN = FIXTURES / "broken_proof.rs"        # repairable: proof incomplete
+UNFIXABLE = FIXTURES / "unfixable_proof.rs"  # escalates: spec is false
 
 FAIL_OUT = "verification results:: 1 verified, 1 errors\n"
 PASS_OUT = "verification results:: 2 verified, 0 errors\n"
@@ -298,7 +299,7 @@ def test_predicate_memoizes_on_measurement(target):
     assert len(calls) == 1
 
 
-# --- the shipped fixture --------------------------------------------------
+# --- the shipped fixtures -------------------------------------------------
 
 
 def test_fixture_is_a_repair_task_not_a_generation_task():
@@ -311,6 +312,19 @@ def test_fixture_is_a_repair_task_not_a_generation_task():
     assert "invariant" in source
     assert "ensures" in source
     assert find_cheat(source) is None
+
+
+def test_unfixable_fixture_states_something_false():
+    """
+    The escalation fixture's proof is complete; its *specification* is what
+    is wrong, which is why no repair can converge. The strict `<` is the
+    whole point -- restore it to `<=` and this quietly becomes a second
+    success demo, with nothing to show that the escalation path still works.
+    """
+    source = UNFIXABLE.read_text()
+    assert "nums@[i] < ret" in source   # the unprovable claim
+    assert "invariant" in source        # the proof is present and complete...
+    assert find_cheat(source) is None   # ...and it does not cheat
 
 
 # --- the configured paths -------------------------------------------------
