@@ -317,40 +317,39 @@ def lean_decl_spans(text: str) -> List[Tuple[str, Optional[str], int, int]]:
     return spans
 
 
-def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[str, Dict[str, dict]]:
-    """
-    Lean/Lake-package backend: measurement targets by syntax scan of the
-    package's .lean sources (.lake build tree excluded). Same output shape
-    as the other backends:
-
-        {"<prefix>_l1a": {"hashfile": ...},        # every .lean source +
-                                                   #   lakefile + lean-toolchain
-         "<prefix>_l2":  {"readfile_range": ...}}  # every declaration span
-
-    Hashing lakefile* and lean-toolchain pins the build configuration and
-    the toolchain the proofs were checked under, not just the sources.
-
-    l2 targets are named by declaration (lean_spec_fanOn_when_hot_targ),
-    so a violated slice reads as the tampered theorem; anonymous
-    declarations fall back to positional names. metadata carries
-    Module.Path::decl for attribution.
-    """
+def lean_package_files(package_root: Path) -> List[str]:
+    """Every file that constitutes the Lake package: .lean sources (.lake
+    build tree excluded) plus the build configuration and toolchain pin —
+    the executable class's build-event input set."""
     package_root = Path(package_root)
     sources = sorted(p for p in package_root.rglob("*.lean")
                      if ".lake" not in p.parts)
     manifests = [p for p in (package_root / "lakefile.toml",
                              package_root / "lakefile.lean",
                              package_root / "lean-toolchain") if p.is_file()]
+    return [str(p) for p in (*sources, *manifests)]
 
-    l1a: Dict[str, dict] = {}
-    for p in [*sources, *manifests]:
-        targ, n = f"{prefix}_{_stem_slug(str(p))}_targ", 1
-        while targ in l1a:
-            n += 1
-            targ = f"{prefix}_{_stem_slug(str(p))}_{n}_targ"
-        l1a[targ] = {"filepath": str(p), "env_var": ""}
 
-    l2: Dict[str, dict] = {}
+def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[str, Dict[str, dict]]:
+    """
+    Lean/Lake-package backend: the CONTRACTS artifact class by syntax
+    scan of the package's .lean sources (.lake build tree excluded):
+
+        {"<prefix>_contracts": {"readfile_range": ...}}  # every declaration span
+
+    Targets are named by declaration (<prefix>_spec_fanOn_when_hot_targ),
+    so a violated slice reads as the tampered theorem; anonymous
+    declarations fall back to positional names. metadata carries
+    Module.Path::decl for attribution. The MODEL class (blessed spec +
+    hashes) is assembled by the driver from its config
+    (props.write_model_protocol_dir); build inputs come from
+    lean_package_files.
+    """
+    package_root = Path(package_root)
+    sources = sorted(p for p in package_root.rglob("*.lean")
+                     if ".lake" not in p.parts)
+
+    contracts: Dict[str, dict] = {}
     for p in sources:
         module = ".".join(p.relative_to(package_root).with_suffix("").parts)
         fslug = _stem_slug(str(p))
@@ -362,10 +361,10 @@ def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[s
                 base_id = f"{prefix}_{fslug}_{kind}_{start}_{end}"
                 meta = f"{module}::{kind}@{start}"
             targ, n = f"{base_id}_targ", 1
-            while targ in l2:
+            while targ in contracts:
                 n += 1
                 targ = f"{base_id}_{n}_targ"
-            l2[targ] = {
+            contracts[targ] = {
                 "filepath": str(p),
                 "start_index": start,
                 "end_index": end,
@@ -375,8 +374,7 @@ def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[s
     from .copland import with_asp_targids
 
     return {
-        f"{prefix}_l1a": {"hashfile": with_asp_targids(l1a)},
-        f"{prefix}_l2": {"readfile_range": with_asp_targids(l2)},
+        f"{prefix}_contracts": {"readfile_range": with_asp_targids(contracts)},
     }
 
 

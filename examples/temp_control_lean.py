@@ -12,14 +12,14 @@ holds the whole workflow (protocols, provisioning, episodes, tamper
 demos, --check/--promote); a second Lean scenario is pure configuration
 (see examples/landing_gear_lean.py). The driver builds:
 
-    temp_control_lean_l1a   whole-file hashes: every .lean source + lakefile.toml +
+    temp_control_lean_model   whole-file hashes: every .lean source + lakefile.toml +
                lean-toolchain (build config and toolchain pin are inside
                the trust boundary)
-    temp_control_lean_l2    readfile_range per top-level declaration (attribution)
-    temp_control_lean_check `lake lean TempControl/Spec.lean -- --json`: every theorem
+    temp_control_lean_contracts    readfile_range per top-level declaration (attribution)
+    temp_control_lean_verification `lake lean TempControl/Spec.lean -- --json`: every theorem
                must still PROVE (fails on error diagnostics and hasSorry —
                a sorry exits 0, so exit codes alone would bless it)
-    temp_control_lean_exec  hash-then-run of the PINNED built binary: its hash must
+    temp_control_lean_executable  hash-then-run of the PINNED built binary: its hash must
                match the build-anchored golden, then it is executed
                directly (lake env <binary>, never rebuilt) per GUMBO case;
                stdout must equal the expected command. Main imports only
@@ -27,19 +27,19 @@ demos, --check/--promote); a second Lean scenario is pure configuration
                independent measurements.
     temp_control_lean_build the build event, run at provisioning: toolchain -> input
                sources -> lake build -> output binary, one signature
-    temp_control_lean_props the administrator-blessed golden spec (Spec.lean signed
+    temp_control_lean_model the administrator-blessed golden spec (Spec.lean signed
                whole-file); re-blessed ONLY by --promote
 
 Three independent trust questions, three always-run entries:
 
-    temp_control_lean:files     eval temp_control_lean_l1a: fail -> temp_control_lean_l2 refines (which
+    temp_control_lean:model     eval temp_control_lean_model: fail -> temp_control_lean_contracts refines (which
                    declaration) -> [--repair] WholeFileRestoreKS
-    temp_control_lean:proofs    [--validate] eval temp_control_lean_check: fail escalates directly
-    temp_control_lean:behavior  [--validate] eval temp_control_lean_exec: fail escalates directly
+    temp_control_lean:verification    [--validate] eval temp_control_lean_verification: fail escalates directly
+    temp_control_lean:executable  [--validate] eval temp_control_lean_executable: fail escalates directly
 
 Two artifacts are owned by the out-of-band attestation manager and change
 ONLY through --promote (the administrator's sanctioning act): the
-temp_control_lean_props blessing, and the exec expecteds (behavior vectors' expected
+temp_control_lean_model blessing, and the exec expecteds (behavior vectors' expected
 outputs — sanctioned via --expect, e.g. --expect hot=fanCmd=Off).
 
 Usage:

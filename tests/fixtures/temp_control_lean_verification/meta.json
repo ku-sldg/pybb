@@ -1,0 +1,4 @@
+{
+  "name": "Lean Proof Verification (verification class)",
+  "description": "Runs `lake lean TempControl/Spec.lean -- --json`: every theorem must still PROVE. The appraiser fails on any error diagnostic or hasSorry warning. The lean toolchain is hashed in the same term, before the invocation (measure-then-use)."
+}

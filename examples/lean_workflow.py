@@ -4,24 +4,41 @@ protocol-dir generation, provisioning, attestation episodes, tamper demos,
 and the out-of-band attestation-manager acts (--check / --promote) —
 parameterized by a per-package LeanExampleConfig.
 
-The architectural claim this module makes concrete: a second Lean scenario
-is PURE CONFIGURATION. examples/temp_control_lean.py (temp-control) and
-examples/landing_gear_lean.py (landing gear) are thin config modules over
-this driver; nothing here knows either scenario. Per config the driver
-builds six protocols
+The protocols are organized by ARTIFACT CLASS — the common pipeline
+full model -> contracts -> verification -> executable — one protocol
+family per class:
 
-    <p>_l1a    whole-file hashes (.lean sources + lakefile + toolchain pin)
-    <p>_l2     readfile_range per top-level declaration (attribution)
-    <p>_props  the administrator-blessed spec (whole-file, signed)
-    <p>_check  `lake lean <spec> -- --json`: every theorem must PROVE
-    <p>_exec   hash-then-run of the pinned binary, one vector per contract
-    <p>_build  the build event (toolchain -> inputs -> lake build -> binary)
+    <p>_model         the blessed full model: per model file, readfile
+                      (whole-file content, signed at provisioning — the
+                      administrator's blessing) AND hashfile (the cheap
+                      episode check), one SIG. Promote-owned: ordinary
+                      re-provisioning never refreshes it.
+    <p>_contracts     every attributable contract region: one
+                      readfile_range per top-level declaration, named by
+                      declaration. Always-run — contract-region tamper
+                      must not hide behind a passing hash tier.
+                      (Realization files are NOT whole-file hashed: their
+                      attested property is that contract regions match
+                      the blessed baseline; the rest is developer-owned.)
+    <p>_verification  `lake lean <spec> -- --json`: every theorem must
+                      PROVE (error diagnostics and hasSorry refute).
+    <p>_build         the build event at provisioning: toolchain ->
+                      package files -> lake build -> output binary, one
+                      signature. Build config and toolchain pin are
+                      attested here, as build inputs.
+    <p>_executable    hash-then-run of the PINNED binary against its
+                      build-anchored golden, one vector per contract
+                      case; expecteds are AM config, sanctioned only via
+                      --promote --expect.
 
-and three always-run entries: <p>:files (fail -> <p>_l2 refines ->
-[--repair] restore), <p>:proofs and <p>:behavior (escalate directly).
-temp_control_lean_props and the exec expecteds are AM-owned and change only through
---promote. See the config modules' docstrings and docs/demo_lean.md /
-docs/demo_gear.md for the scenario-level stories.
+Four entries mirror the pipeline: <p>:model (fail -> <p>_contracts
+refines the attribution -> [--repair] restore), <p>:contracts always-run
+(fail -> [--repair] restore), and — under --validate —
+<p>:verification and <p>:executable (escalate directly).
+
+A second Lean scenario is PURE CONFIGURATION:
+examples/temp_control_lean.py and examples/landing_gear_lean.py are thin
+config modules over this driver; nothing here knows either scenario.
 """
 
 from __future__ import annotations
@@ -54,8 +71,12 @@ from pybb.attestation import (
 )
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
 from pybb.attestation.copland import with_asp_targids
-from pybb.attestation.props import write_props_protocol_dir
-from pybb.attestation.targetmap import build_term, derive_targets_from_lean
+from pybb.attestation.props import write_model_protocol_dir
+from pybb.attestation.targetmap import (
+    build_term,
+    derive_targets_from_lean,
+    lean_package_files,
+)
 from pybb.attestation.tools import (
     lean_artifacts,
     register_tool,
@@ -66,7 +87,7 @@ REPO = Path(__file__).parent.parent
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
-TEMPLATES = {"l1a": "temp_control_aadl_slang_l1a", "l2": "temp_control_aadl_slang_l2"}
+CONTRACTS_TEMPLATE = "temp_control_aadl_slang_l2"  # session/manifest shape
 LAKE = Path.home() / "Claude_workspace" / "bin" / "lake"
 
 # Just-in-time tool measurement: the lean toolchain (wrapper -> elan shim
@@ -107,10 +128,10 @@ class LeanExampleConfig:
 
     prefix: str            # protocol-id prefix and entry namespace
     package_root: Path     # the vendored Lake package
-    spec_rel: str          # blessed spec file, relative to package_root
+    spec_rel: str          # the model file (blessed spec), relative path
     bin_name: str          # the lean_exe target (.lake/build/bin/<name>)
     exec_vectors: dict     # key -> {"args": [...], "expected": "..."}
-    tamper_targ: str       # l2 slice whose proof line --tamper corrupts
+    tamper_targ: str       # contracts slice whose proof line --tamper corrupts
     tamper_semantic_spot: tuple  # (rel_file, old, new, message) for
                                  # --tamper-semantic's implementation flip
 
@@ -118,33 +139,35 @@ class LeanExampleConfig:
         self.package_root = Path(self.package_root)
         register_tool("lean", lambda: lean_artifacts(self.package_root))
 
-    # ── derived identity ──────────────────────────────────────────────────
+    # ── derived identity: one protocol per artifact class ─────────────────
     @property
-    def l1a(self) -> str: return f"{self.prefix}_l1a"
+    def model_id(self) -> str: return f"{self.prefix}_model"
 
     @property
-    def l2(self) -> str: return f"{self.prefix}_l2"
+    def contracts_id(self) -> str: return f"{self.prefix}_contracts"
 
     @property
-    def props_id(self) -> str: return f"{self.prefix}_props"
+    def verification_id(self) -> str: return f"{self.prefix}_verification"
 
     @property
-    def check_id(self) -> str: return f"{self.prefix}_check"
-
-    @property
-    def exec_id(self) -> str: return f"{self.prefix}_exec"
+    def executable_id(self) -> str: return f"{self.prefix}_executable"
 
     @property
     def build_id(self) -> str: return f"{self.prefix}_build"
 
     @property
-    def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
+    def protocol_ids(self) -> tuple:
+        return (self.model_id, self.contracts_id)
 
     @property
-    def tier_ids(self) -> tuple: return (self.check_id, self.exec_id)
+    def tier_ids(self) -> tuple:
+        return (self.verification_id, self.executable_id)
 
     @property
     def spec_file(self) -> Path: return self.package_root / self.spec_rel
+
+    @property
+    def model_files(self) -> list: return [str(self.spec_file)]
 
     @property
     def bin(self) -> Path:
@@ -159,15 +182,15 @@ class LeanExampleConfig:
     def exec_keys(self) -> tuple: return tuple(self.exec_vectors)
 
     def exec_targ(self, key: str) -> str:
-        return f"{self.prefix}_exec_{key}_targ"
+        return f"{self.prefix}_executable_{key}_targ"
 
     def entry(self, question: str) -> str:
         return f"{self.prefix}:{question}"
 
     # ── tier config (the AM-owned protocol definitions) ───────────────────
     @property
-    def check_targets(self) -> dict:
-        return {f"{self.prefix}_spec_check_targ": {
+    def verification_targets(self) -> dict:
+        return {f"{self.prefix}_spec_verification_targ": {
             "exe_args": ["lean", self.spec_rel, "--", "--json"],
             "cwd": str(self.package_root)}}
 
@@ -180,11 +203,10 @@ class LeanExampleConfig:
 
     @property
     def tier_meta(self) -> dict:
-        # display names carry no prefix — the protocol ids (temp_control_lean_check,
-        # landing_gear_lean_check) disambiguate
+        # display names carry no prefix — the protocol ids disambiguate
         return {
-            self.check_id: {
-                "name": "Lean Proof Check (semantic tier)",
+            self.verification_id: {
+                "name": "Lean Proof Verification (verification class)",
                 "description":
                     f"Runs `lake lean {self.spec_rel} -- --json`: every "
                     "theorem must still PROVE. The appraiser fails on any "
@@ -192,8 +214,8 @@ class LeanExampleConfig:
                     "toolchain is hashed in the same term, before the "
                     "invocation (measure-then-use).",
             },
-            self.exec_id: {
-                "name": "Lean Executable Behavior (exec tier)",
+            self.executable_id: {
+                "name": "Lean Executable Behavior (executable class)",
                 "description":
                     "Hashes the PINNED built binary against its "
                     "build-anchored golden, then executes it directly "
@@ -217,7 +239,7 @@ def resolved_exec_targets(cfg: LeanExampleConfig,
     never these.
     """
     targets = copy.deepcopy(cfg.exec_targets_default)
-    installed = FIXTURES / cfg.exec_id / "asp_args.json"
+    installed = FIXTURES / cfg.executable_id / "asp_args.json"
     if installed.is_file():
         current = json.loads(installed.read_text()).get("run_command_lean", {})
         for targ, args in targets.items():
@@ -289,20 +311,21 @@ def _tier_term(asp_id: str, targets: dict) -> dict:
 
 def build_tier_protocol_dirs(cfg: LeanExampleConfig,
                              exec_targets: dict | None = None) -> None:
-    """(Re)generate the semantic-tier dirs from the config, with tool
-    measurements woven in per TOOL_CADENCE. The exec tier additionally
-    hashes the pinned binary against its build-anchored golden BEFORE
-    running it (hash-then-run, same term). Exec expecteds are AM-owned:
-    unless a sanctioned set is passed in (--promote --expect), the
-    installed expecteds carry over (resolved_exec_targets)."""
-    tier_targets = {cfg.check_id: cfg.check_targets,
-                    cfg.exec_id: (exec_targets if exec_targets is not None
-                                  else resolved_exec_targets(cfg))}
+    """(Re)generate the verification/executable dirs from the config,
+    with tool measurements woven in per TOOL_CADENCE. The executable
+    tier additionally hashes the pinned binary against its build-anchored
+    golden BEFORE running it (hash-then-run, same term). Exec expecteds
+    are AM-owned: unless a sanctioned set is passed in
+    (--promote --expect), the installed expecteds carry over
+    (resolved_exec_targets)."""
+    tier_targets = {cfg.verification_id: cfg.verification_targets,
+                    cfg.executable_id: (exec_targets if exec_targets is not None
+                                        else resolved_exec_targets(cfg))}
     for pid, targets in tier_targets.items():
         targets = with_asp_targids(targets)
         asp_args = {"run_command_lean": dict(targets)}
         term = _tier_term("run_command_lean", targets)
-        if pid == cfg.exec_id:
+        if pid == cfg.executable_id:
             bin_targs = with_asp_targids({cfg.bin_targ: {
                 "filepath": str(cfg.bin), "env_var": "",
                 "measure_in_place": True,
@@ -333,51 +356,53 @@ def build_tier_protocol_dirs(cfg: LeanExampleConfig,
               + (f" + {n_tools} woven tool measurements" if n_tools else ""))
 
 
-def build_protocol_dirs(cfg: LeanExampleConfig, bless_props: bool = False,
+def build_protocol_dirs(cfg: LeanExampleConfig, bless_model: bool = False,
                         exec_targets: dict | None = None) -> dict:
-    """(Re)generate the measurement protocol dirs from the syntax scan.
-    The props definition is AM-owned: it is rewritten only under
-    --promote (bless_props) or when missing entirely (bootstrap) — an
-    ordinary --provision keeps the existing blessing untouched."""
+    """(Re)generate the artifact-class protocol dirs. The model class is
+    AM-owned: rewritten only under --promote (bless_model) or when
+    missing entirely (bootstrap) — an ordinary --provision keeps the
+    existing blessing untouched."""
     derived = derive_targets_from_lean(cfg.package_root, prefix=cfg.prefix)
     protocols = {}
-    for pid, template in ((cfg.l1a, TEMPLATES["l1a"]),
-                          (cfg.l2, TEMPLATES["l2"])):
-        d = FIXTURES / pid
-        d.mkdir(exist_ok=True)
-        for f in ("session.json", "manifest.json"):
-            shutil.copy2(FIXTURES / template / f, d / f)
-        (d / "asp_args.json").write_text(json.dumps(derived[pid], indent=2) + "\n")
-        (d / "term.json").write_text(json.dumps(build_term(derived[pid])) + "\n")
-        protocols[pid] = ProtocolDir.load(str(d))
-        print(f"  {pid}: {sum(len(t) for t in derived[pid].values())} targets from scan")
-    props_dir = FIXTURES / cfg.props_id
-    if bless_props or not (props_dir / "asp_args.json").is_file():
-        write_props_protocol_dir(
-            props_dir, cfg.prefix, [str(cfg.spec_file)],
-            "The administrator-blessed golden spec: whole-file signed "
-            f"evidence of {cfg.spec_rel} (the contract theorems). Baseline "
-            "verification checks that the spec's hash and declaration-slice "
-            "goldens are derivable from the blessed content.")
-        print(f"  {cfg.props_id}: 1 blessed spec file")
+    d = FIXTURES / cfg.contracts_id
+    d.mkdir(exist_ok=True)
+    for f in ("session.json", "manifest.json"):
+        shutil.copy2(FIXTURES / CONTRACTS_TEMPLATE / f, d / f)
+    asp_args = derived[cfg.contracts_id]
+    (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
+    (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
+    protocols[cfg.contracts_id] = ProtocolDir.load(str(d))
+    print(f"  {cfg.contracts_id}: "
+          f"{sum(len(t) for t in asp_args.values())} declaration slices from scan")
+    model_dir = FIXTURES / cfg.model_id
+    if bless_model or not (model_dir / "asp_args.json").is_file():
+        write_model_protocol_dir(
+            model_dir, cfg.prefix, cfg.model_files,
+            "The MODEL class: whole-file signed content (the "
+            f"administrator's blessing) and hash of {cfg.spec_rel} — the "
+            "contract theorems. Episodes check the live model against the "
+            "blessed content and hash; baseline verification checks that "
+            "every declaration-slice golden is derivable from the blessed "
+            "bytes.")
+        print(f"  {cfg.model_id}: {len(cfg.model_files)} blessed model file(s)")
     else:
-        print(f"  {cfg.props_id}: existing blessing kept "
-              "(only --promote re-blesses the spec)")
-    protocols[cfg.props_id] = ProtocolDir.load(str(props_dir))
+        print(f"  {cfg.model_id}: existing blessing kept "
+              "(only --promote re-blesses the model)")
+    protocols[cfg.model_id] = ProtocolDir.load(str(model_dir))
     build_tier_protocol_dirs(cfg, exec_targets)
     for pid in cfg.tier_ids:
         protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
-    inputs = [a["filepath"]
-              for a in derived[cfg.l1a]["hashfile"].values()]
+    inputs = lean_package_files(cfg.package_root)
     write_build_protocol_dir(
         FIXTURES / cfg.build_id, cfg.prefix, ["lean"], inputs,
         [str(cfg.bin)],
         "run_command_lean", "run_command_lean_appr",
         {"exe_args": ["build"], "cwd": str(cfg.package_root)},
-        "The build event: lake build as a signed term — toolchain, input "
-        "sources, the build, and the output binary under one signature. "
-        "The exec tier's binary golden is cross-installed from this "
-        "bundle's output evidence.")
+        "The build event: lake build as a signed term — toolchain, the "
+        "package files (sources, build config, toolchain pin), the build, "
+        "and the output binary under one signature. The executable "
+        "tier's binary golden is cross-installed from this bundle's "
+        "output evidence.")
     protocols[cfg.build_id] = ProtocolDir.load(str(FIXTURES / cfg.build_id))
     print(f"  {cfg.build_id}: {len(inputs)} inputs -> 1 output, "
           "toolchain-measured build event")
@@ -386,13 +411,13 @@ def build_protocol_dirs(cfg: LeanExampleConfig, bless_props: bool = False,
 
 def load_protocols(cfg: LeanExampleConfig, validate: bool = False) -> dict:
     if not all((FIXTURES / pid / "asp_args.json").is_file()
-               for pid in (*cfg.protocol_ids, cfg.props_id)):
+               for pid in cfg.protocol_ids):
         print(f"{cfg.prefix} protocol dirs missing — generating from the "
               "syntax scan")
         protocols = build_protocol_dirs(cfg)
     else:
         protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
-                     for pid in (*cfg.protocol_ids, cfg.props_id)}
+                     for pid in cfg.protocol_ids}
     if validate:
         for pid in (*cfg.tier_ids, cfg.build_id):
             protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
@@ -402,22 +427,22 @@ def load_protocols(cfg: LeanExampleConfig, validate: bool = False) -> dict:
 # ── provisioning ──────────────────────────────────────────────────────────────
 
 def provision_flow(cfg: LeanExampleConfig, protocols: dict,
-                   bless_props: bool = False) -> None:
-    """Capture golden and provision on the blackboard: measurement
-    protocols and — with woven tool measurements — the tier protocols,
-    whose tool hash goldens land measure-in-place (live artifacts, no
-    golden copies). The props blessing is provisioned ONLY under
-    --promote (bless_props) or when it has never been blessed (bootstrap):
-    re-signing the spec is the administrator's sanctioning act, so
+                   bless_model: bool = False) -> None:
+    """Capture golden and provision on the blackboard: the contracts
+    class and — with woven tool measurements — the tier protocols, whose
+    tool hash goldens land measure-in-place (live artifacts, no golden
+    copies). The MODEL class is provisioned ONLY under --promote
+    (bless_model) or when it has never been blessed (bootstrap):
+    re-signing the model is the administrator's sanctioning act, so
     ordinary re-provisioning — including a laundering pass — cannot
     refresh it."""
-    props = protocols.get(cfg.props_id)
-    props_unblessed = props is not None and not any(
+    model = protocols.get(cfg.model_id)
+    model_unblessed = model is not None and not any(
         a.get("golden_b64")
-        for a in props.asp_args.get("readfile", {}).values())
-    pids = list(cfg.protocol_ids)
-    if props is not None and (bless_props or props_unblessed):
-        pids.append(cfg.props_id)
+        for a in model.asp_args.get("readfile", {}).values())
+    pids = [cfg.contracts_id]
+    if model is not None and (bless_model or model_unblessed):
+        pids.append(cfg.model_id)
     measured = {pid: protocols[pid] for pid in pids}
     if cfg.build_id in protocols:
         measured[cfg.build_id] = protocols[cfg.build_id]  # build runs before tiers
@@ -449,11 +474,11 @@ def provision_flow(cfg: LeanExampleConfig, protocols: dict,
 
 def check_flow(cfg: LeanExampleConfig, protocols: dict) -> None:
     """AM detection: the declaration-level diff, matched by name. The
-    blessed spec bytes (props) are the authoritative baseline for the
-    spec file — l2 goldens are launderable, the blessing is not."""
-    diff = changed_decls(protocols[cfg.l2], cfg.package_root,
+    blessed model bytes are the authoritative baseline for the spec
+    file — contract goldens are launderable, the blessing is not."""
+    diff = changed_decls(protocols[cfg.contracts_id], cfg.package_root,
                          prefix=cfg.prefix,
-                         props_protocol=protocols.get(cfg.props_id))
+                         props_protocol=protocols.get(cfg.model_id))
     if not diff:
         print("No declaration changes since last blessing; "
               "promotion not needed.")
@@ -475,13 +500,13 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
       1. detection report (informational — what is being sanctioned)
       2. promotion request on the blackboard; its predicate runs the gates
          and moves gold: behavior gate (lake build + vectors vs the
-         sanctioned expecteds), proof gate (the check protocol must prove,
-         lean toolchain measured in the same term), syntax-scan target
-         regeneration, golden capture
+         sanctioned expecteds), proof gate (the verification class must
+         prove, lean toolchain measured in the same term), syntax-scan
+         contract regeneration, golden capture
       3. only after the promote outcome is good: regenerate the AM-owned
-         config (tier dirs with the sanctioned expecteds, the props
+         config (tier dirs with the sanctioned expecteds, the model
          blessing definition, the build event) and provision EVERYTHING,
-         props included — the re-blessing
+         model included — the re-blessing
       4. verification episode against the new baseline
 
     Steps 2 and 3 are deliberately two blackboard runs: a refused gate
@@ -497,9 +522,8 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
 
     print("\n=== promotion episode (gates, then gold moves) ===")
     client = CvmSubprocessClient()
-    gated = {pid: protocols[pid]
-             for pid in (*cfg.protocol_ids, cfg.props_id)}
-    gated[cfg.check_id] = protocols[cfg.check_id]
+    gated = {pid: protocols[pid] for pid in cfg.protocol_ids}
+    gated[cfg.verification_id] = protocols[cfg.verification_id]
     ctl = BlackboardController()
     ctl.register_predicate("promotion", make_promotion_predicate(
         gated, GOLDEN_ROOT,
@@ -507,7 +531,7 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
                                                     prefix=cfg.prefix),
         codegen_fn=make_codegen_fn(cfg, exec_targets),
         client=client,
-        validate_with=cfg.check_id,
+        validate_with=cfg.verification_id,
     ))
     ctl.blackboard.write_entry(
         key=f"promote:{cfg.prefix}", predicate="promotion",
@@ -520,11 +544,11 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
           f"targets regenerated={outcome.targets}; "
           f"{outcome.captured} files -> golden")
 
-    print("\n=== provisioning the new baseline (props re-blessed) ===")
-    fresh = build_protocol_dirs(cfg, bless_props=True,
+    print("\n=== provisioning the new baseline (model re-blessed) ===")
+    fresh = build_protocol_dirs(cfg, bless_model=True,
                                 exec_targets=exec_targets)
     protocols.update(fresh)
-    provision_flow(cfg, protocols, bless_props=True)
+    provision_flow(cfg, protocols, bless_model=True)
 
     print("\n=== verification episode (new baseline) ===")
     attest_episode(cfg, protocols, repair=False, validate=True)
@@ -534,7 +558,7 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
 
 def tamper(cfg: LeanExampleConfig, protocols: dict) -> None:
     """Corrupt the proof line of a named theorem slice."""
-    args = protocols[cfg.l2].asp_args["readfile_range"][cfg.tamper_targ]
+    args = protocols[cfg.contracts_id].asp_args["readfile_range"][cfg.tamper_targ]
     spec = Path(args["filepath"])
     lines = spec.read_text().splitlines(keepends=True)
     lines[args["end_index"] - 1] = "  -- TAMPERED: proof body removed\n"
@@ -568,21 +592,22 @@ def attest_episode(cfg: LeanExampleConfig, protocols: dict, repair: bool,
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,
                                       client=client))
-    fail_chain = [TierKS(protocol_id=cfg.l2)]
-    if repair:
-        fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                             refined_by=cfg.l2))
-    episodes = {cfg.entry("files"): cfg.l1a}
+    restore = [WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
+                                  refined_by=cfg.contracts_id)] if repair else []
+    model_fail = [TierKS(protocol_id=cfg.contracts_id), *restore]
+    episodes = {cfg.entry("model"): cfg.model_id,
+                cfg.entry("contracts"): cfg.contracts_id}
     if validate:
-        episodes[cfg.entry("proofs")] = cfg.check_id
-        episodes[cfg.entry("behavior")] = cfg.exec_id
+        episodes[cfg.entry("verification")] = cfg.verification_id
+        episodes[cfg.entry("executable")] = cfg.executable_id
     starter = StartAttestationKS(episodes=episodes)
-    for ks in (*fail_chain, starter):
+    for ks in (*model_fail, starter):
         controller.add_ks(ks)
-    controller.route(cfg.entry("files"), on_pass=[], on_fail=fail_chain)
+    controller.route(cfg.entry("model"), on_pass=[], on_fail=model_fail)
+    controller.route(cfg.entry("contracts"), on_pass=[], on_fail=restore)
     if validate:
-        controller.route(cfg.entry("proofs"), on_pass=[], on_fail=[])
-        controller.route(cfg.entry("behavior"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("verification"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("executable"), on_pass=[], on_fail=[])
     controller.blackboard.write_entry(
         key=cfg.entry("ready"), predicate="protocol_check",
         measurement=readiness_request(list(protocols)))
@@ -641,7 +666,8 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
         print("\n=== laundering: re-provisioning over the tampered tree ===")
         provision_flow(cfg, protocols)
         try:
-            print("\n=== attestation episode (hashes bless the laundered change) ===")
+            print("\n=== attestation episode (contract goldens bless the "
+                  "laundered change) ===")
             attest_episode(cfg, protocols, repair=False, validate=True)
         finally:
             for path, data in clean.items():

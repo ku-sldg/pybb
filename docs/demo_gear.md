@@ -30,10 +30,10 @@ toolchain pin as temp-control, so the blessed tool set is shared):
 
 ## Protocols and entries
 
-`landing_gear_lean_l1a` (6 whole-file hashes) / `landing_gear_lean_l2` (18 declaration slices, named
+`landing_gear_lean_model` (6 whole-file hashes) / `landing_gear_lean_contracts` (18 declaration slices, named
 — attribution reads `LandingGear.Spec::no_retract_on_ground`) /
-`landing_gear_lean_props` (the blessed spec) / `landing_gear_lean_check` (proofs must prove) /
-`landing_gear_lean_exec` (hash-then-run, one vector per contract case) / `landing_gear_lean_build`
+`landing_gear_lean_model` (the blessed spec) / `landing_gear_lean_verification` (proofs must prove) /
+`landing_gear_lean_executable` (hash-then-run, one vector per contract case) / `landing_gear_lean_build`
 (the build event; the exec binary golden is born from its bundle).
 
 Behavior vectors (`expected` is AM config — laundering cannot reach it):
@@ -42,8 +42,8 @@ Behavior vectors (`expected` is AM config — laundering cannot reach it):
     airborne  180 140 Up air -> gearCmd=Retract
     extend    200 140 Down air -> gearCmd=Extend
 
-Entries: `landing_gear_lean:files` (fail → `landing_gear_lean_l2` refines → `--repair` restores),
-`landing_gear_lean:proofs`, `landing_gear_lean:behavior`.
+Entries: `landing_gear_lean:model` (fail → `landing_gear_lean_contracts` refines → `--repair` restores),
+`landing_gear_lean:verification`, `landing_gear_lean:executable`.
 
 ## Demo arcs
 
@@ -74,7 +74,7 @@ readiness, four times over by proof and once by behavior:
 
 **Sanctioned change** (`--check`/`--promote`): identical machinery to the
 temp-control example (see `demo_lean.md`) — declaration-name diffs against
-the blessed spec bytes, promotion gates before gold, `landing_gear_lean_props` and the
+the blessed spec bytes, promotion gates before gold, `landing_gear_lean_model` and the
 exec expecteds change only through `--promote`.
 
 ## Tests

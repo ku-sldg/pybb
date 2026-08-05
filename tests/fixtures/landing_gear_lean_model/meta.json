@@ -1,0 +1,5 @@
+{
+  "name": "landing_gear_lean model (blessed full model)",
+  "description": "The MODEL class: whole-file signed content (the administrator's blessing) and hash of LandingGear/Spec.lean \u2014 the contract theorems. Episodes check the live model against the blessed content and hash; baseline verification checks that every declaration-slice golden is derivable from the blessed bytes.",
+  "copland": "lseq( lseq( bseq( [readfile,hashfile]\u00d71 ), SIG ), APPR )"
+}

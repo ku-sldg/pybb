@@ -109,6 +109,101 @@ def write_props_protocol_dir(proto_dir: Path, prefix: str,
     }, indent=2) + "\n")
 
 
+MODEL_SESSION = {
+    "Session_Plc": "P0",
+    "Plc_Mapping": {},
+    "PubKey_Mapping": {},
+    "Session_Context": {
+        "ASP_Types": {
+            "readfile": {
+                "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                "ATTRS": []},
+            "hashfile": {
+                "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                "ATTRS": []},
+            "sig": {
+                "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "ALL"},
+                "ATTRS": []},
+            "sig_appr": {
+                "FWD": {"FWD": "REPLACE", "_BODY": 1},
+                "ATTRS": []},
+            "model_slices_appr": {
+                "FWD": {"FWD": "REPLACE", "_BODY": 1},
+                "ATTRS": []},
+            "goldenbytes_appr": {
+                "FWD": {"FWD": "REPLACE", "_BODY": 1},
+                "ATTRS": []},
+        },
+        "ASP_Comps": {"readfile": "model_slices_appr",
+                      "hashfile": "goldenbytes_appr",
+                      "sig": "sig_appr"},
+    },
+}
+
+MODEL_MANIFEST = {"ASPS": ["readfile", "hashfile", "sig", "sig_appr",
+                           "model_slices_appr", "goldenbytes_appr"],
+                  "ASP_FS_MAP": {}, "POLICY": []}
+
+
+def model_targets(prefix: str, filepaths: List[str]) -> tuple:
+    """(readfile_targets, hashfile_targets) for the model class."""
+    readfile: Dict[str, dict] = {}
+    hashfile: Dict[str, dict] = {}
+    for fp in sorted(filepaths):
+        base, n = f"{prefix}_model_{_stem_slug(fp)}", 1
+        while f"{base}_targ" in readfile:
+            n += 1
+            base = f"{prefix}_model_{_stem_slug(fp)}_{n}"
+        readfile[f"{base}_targ"] = {"env_var": "", "filepath": str(fp),
+                                    "asp_targid": f"{base}_targ"}
+        hashfile[f"{base}_hash_targ"] = {"env_var": "", "filepath": str(fp),
+                                         "asp_targid": f"{base}_hash_targ"}
+    return readfile, hashfile
+
+
+def write_model_protocol_dir(proto_dir: Path, prefix: str,
+                             filepaths: List[str], description: str) -> None:
+    """
+    The MODEL artifact class as one protocol: per model file, readfile
+    (whole-file content — the administrator's blessing when signed at
+    provisioning) AND hashfile (the episode-cheap integrity check), under
+    one SIG. Goldens are NOT set — a provisioning request must follow,
+    and that provisioning IS the blessing: the model class is promote-
+    owned, never refreshed by ordinary re-provisioning. Episodes re-run
+    the same term: hashes appraise against the blessed hash goldens and
+    content appraises against the blessed bytes (model_slices_appr's
+    golden_b64 check); baseline verification additionally anchors every
+    derived slice golden to the blessed content at readiness.
+    """
+    proto_dir = Path(proto_dir)
+    proto_dir.mkdir(exist_ok=True)
+    readfile, hashfile = model_targets(prefix, filepaths)
+    nodes = []
+    for r_targ, h_targ in zip(readfile, hashfile):
+        nodes.append({"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": "readfile", "ASP_TARG_ID": r_targ}}})
+        nodes.append({"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": "hashfile", "ASP_TARG_ID": h_targ}}})
+    acc = nodes[0]
+    for node in nodes[1:]:
+        acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [acc, _SIG]}, _APPR]}
+    (proto_dir / "session.json").write_text(json.dumps(MODEL_SESSION, indent=2) + "\n")
+    (proto_dir / "manifest.json").write_text(json.dumps(MODEL_MANIFEST, indent=2) + "\n")
+    (proto_dir / "asp_args.json").write_text(
+        json.dumps({"readfile": readfile, "hashfile": hashfile}, indent=2) + "\n")
+    (proto_dir / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+    (proto_dir / "meta.json").write_text(json.dumps({
+        "name": f"{prefix} model (blessed full model)",
+        "description": description,
+        "copland": f"lseq( lseq( bseq( [readfile,hashfile]×{len(readfile)} ), "
+                   "SIG ), APPR )",
+    }, indent=2) + "\n")
+
+
 def model_files_from_report(report_path: Path,
                             suffix: str = "") -> List[str]:
     """The model files: every file the report's Model-kind slices live in.

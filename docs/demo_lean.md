@@ -37,19 +37,19 @@ names the tampered theorem.
 
 | Protocol | Measures | How |
 |---|---|---|
-| `temp_control_lean_l1a` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
-| `temp_control_lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
-| `temp_control_lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
-| `temp_control_lean_exec` | Behavior of the **pinned** built binary: hash vs the build-anchored golden, then one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | hash-then-run: `hashfile(binary)` then `lake env <binary> <vector>` (never rebuilt); appraiser compares stdout to `expected` in the measurement args |
+| `temp_control_lean_model` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
+| `temp_control_lean_contracts` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
+| `temp_control_lean_verification` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
+| `temp_control_lean_executable` | Behavior of the **pinned** built binary: hash vs the build-anchored golden, then one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | hash-then-run: `hashfile(binary)` then `lake env <binary> <vector>` (never rebuilt); appraiser compares stdout to `expected` in the measurement args |
 | `temp_control_lean_build` | Executable provenance: toolchain → input sources → `lake build` → output binary, one signature; the exec tier's binary golden is born from this bundle (see `signed_baselines.md`) | build event at provisioning; cross-linked baseline verification at every readiness gate |
-| `temp_control_lean_props` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
+| `temp_control_lean_model` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
 
 Three always-run entries, three independent trust questions:
 
-    temp_control_lean:files     eval temp_control_lean_l1a: fail -> temp_control_lean_l2 refines (which declaration)
+    temp_control_lean:model     eval temp_control_lean_model: fail -> temp_control_lean_contracts refines (which declaration)
                                        -> [--repair] WholeFileRestoreKS
-    temp_control_lean:proofs    [--validate] eval temp_control_lean_check: fail escalates directly
-    temp_control_lean:behavior  [--validate] eval temp_control_lean_exec:  fail escalates directly
+    temp_control_lean:verification    [--validate] eval temp_control_lean_verification: fail escalates directly
+    temp_control_lean:executable  [--validate] eval temp_control_lean_executable:  fail escalates directly
 
 ## Demo arcs
 
@@ -66,7 +66,7 @@ python examples/temp_control_lean.py --promote --expect hot=fanCmd=Off
 
 **Structural tamper + repair** (`--tamper --repair`, log:
 `demo_runs/2026-07-30_lean_tamper_repair.log`): a corrupted proof line makes
-`temp_control_lean_l1a` fail on exactly `temp_control_lean_spec_targ`; `TierKS(temp_control_lean_l2)` refines to
+`temp_control_lean_model` fail on exactly `temp_control_lean_spec_targ`; `TierKS(temp_control_lean_contracts)` refines to
 `temp_control_lean_spec_fanOn_when_hot_targ` (metadata `TempControl.Spec::fanOn_when_hot`
 — the violated *theorem*, by name); `WholeFileRestoreKS` restores from
 golden; the episode ends escalated as "repaired from golden — verification
@@ -77,10 +77,10 @@ pending next episode"; episode 2 attests clean. Repair cannot mint trust.
 `computeFanCmd` is flipped `.On -> .Off` and the tree **re-provisioned** —
 every hash measurement now blesses the tampered state:
 
-    temp_control_lean:files:    all attested components intact (temp_control_lean_l1a passed)
-    temp_control_lean:proofs:   integrity violation — temp_control_lean_check failed;
+    temp_control_lean:model:    all attested components intact (temp_control_lean_model passed)
+    temp_control_lean:verification:   integrity violation — temp_control_lean_verification failed;
                    failing components: temp_control_lean_spec_check_targ
-    temp_control_lean:behavior: integrity violation — temp_control_lean_exec failed;
+    temp_control_lean:executable: integrity violation — temp_control_lean_executable failed;
                    failing components: temp_control_lean_exec_hot_targ
 
 The laundered change is refuted **twice, independently**: `fanOn_when_hot`
@@ -95,7 +95,7 @@ manager): the system is intent-blind — a provable, well-meant spec addition
 fails episodes exactly like tamper until the administrator sanctions it.
 Two artifacts change ONLY through `--promote`:
 
-- the **`temp_control_lean_props` blessing**: ordinary provisioning (including a
+- the **`temp_control_lean_model` blessing**: ordinary provisioning (including a
   laundering pass) never re-signs it, so a spec change without promotion
   leaves a stale blessing that baseline verification refutes at readiness
   ("hash golden not derivable from blessed content") — attestation never
@@ -114,7 +114,7 @@ blessing is not (`changed_decls(props_protocol=...)`,
 `tests/test_integration_lean.py::test_check_sees_through_laundered_l2_goldens`).
 
 `--promote` is the sanctioning pipeline, gates before gold: behavior gate
-(`lake build` + vectors vs sanctioned expecteds) → proof gate (`temp_control_lean_check`
+(`lake build` + vectors vs sanctioned expecteds) → proof gate (`temp_control_lean_verification`
 must prove, toolchain measured in the same term) → syntax-scan target
 regeneration (a new theorem becomes a new *named* l2 target) → gold moves →
 full provisioning including the props re-blessing → verification episode.
@@ -152,3 +152,26 @@ lean invocation chain (wrapper → elan shim → pinned binaries →
 elaborator library, 6 artifacts) in the same term, before invoking lake —
 a tampered artifact anywhere on the chain fails both tiers attributed to
 the `tool::` target, regardless of the tool's output.
+
+## Artifact-class scheme (2026-08-04 restructure)
+
+The protocol family was reorganized onto the common pipeline **full model
+-> contracts -> verification -> executable**, one protocol per artifact
+class (the Lean family is the pilot; ids above reflect it):
+
+- `_model` merges the old props blessing and the model-file hash into ONE
+  promote-owned protocol: per model file, readfile (blessed content) +
+  hashfile (cheap episode check) under one SIG. Episodes re-run it; the
+  provisioning bundle is the blessing.
+- `_contracts` is the old l2 (declaration slices), now an ALWAYS-RUN
+  entry as well as the refinement rung under `:model` — contract-region
+  tamper cannot hide behind a passing hash tier.
+- Realization files are NOT whole-file hashed anymore (design ruling):
+  their attested property is that contract regions match the blessed
+  baseline; the rest is developer-owned. Non-contract drift is caught
+  where it matters — proofs run over live code, the binary is pinned.
+- `_verification` and `_build`/`_executable` are the old check/build/exec
+  renamed; build config and the toolchain pin are attested as build
+  inputs. Build inputs without a source baseline self-anchor to the
+  build bundle's own signed golden (model files still cross-link to the
+  blessing).

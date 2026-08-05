@@ -141,8 +141,19 @@ def _build_anchors(anchor_protocols: Dict[str, Any],
     return anchors
 
 
-def _match_record(args: dict, records: List[dict]) -> Optional[dict]:
+def _match_record(args: dict, records: List[dict],
+                  asp_id: Optional[str] = None) -> Optional[dict]:
+    # the self-identifying targ id is authoritative when present — two
+    # records may legitimately share every identity key (e.g. the model
+    # class measures the same file with readfile AND hashfile)
+    targ = args.get("asp_targid")
+    if targ:
+        for rec in records:
+            if rec["targ_id"] == targ or rec["args"].get("asp_targid") == targ:
+                return rec
     for rec in records:
+        if asp_id is not None and rec["asp_id"] != asp_id:
+            continue
         keys = [k for k in _MATCH_KEYS if k in rec["args"]]
         if keys and all(args.get(k) == rec["args"].get(k) for k in keys):
             return rec
@@ -203,6 +214,14 @@ def _cross_link(rec: dict, anchors: Dict[str, dict], linked: Dict[str, str],
         return None
     golden = anchor.get("hash_golden_b64")
     if not golden:
+        if role == "build_in" and rec["golden_b64"]:
+            # no source baseline covers this input — under the artifact-
+            # class scheme implementation files are not whole-file
+            # hashed; their attested integrity is contract regions plus
+            # this very build event, so the build bundle's own signed
+            # input golden is the authority (model files still cross-
+            # link to the blessing when one exists)
+            return rec["golden_b64"]
         problems.append(
             f"{rec['targ_id']}: {_ROLE_MISSING[role]} "
             f"({rec['live_filepath']})")
@@ -240,7 +259,7 @@ def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
         asp_id = params.get("ASP_ID", "")
         if asp_id in golden_ids:
             args = params.get("ASP_ARGS") or {}
-            rec = _match_record(args, records)
+            rec = _match_record(args, records, asp_id=asp_id)
             if rec is None:
                 problems.append(
                     f"bundle event not in current target map: "

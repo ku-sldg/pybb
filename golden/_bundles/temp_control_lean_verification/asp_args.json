@@ -1,0 +1,58 @@
+{
+  "hashfile": {
+    "tool_lean_lake_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_targ"
+    },
+    "tool_lean_lake_2_targ": {
+      "filepath": "/Users/adampetz/.elan/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_2_targ"
+    },
+    "tool_lean_lean_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lean_targ"
+    },
+    "tool_lean_lake_3_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_3_targ"
+    },
+    "tool_lean_leanchecker_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_leanchecker_targ"
+    },
+    "tool_lean_libleanshared_dylib_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_libleanshared_dylib_targ"
+    }
+  },
+  "run_command_lean": {
+    "temp_control_lean_spec_verification_targ": {
+      "exe_args": [
+        "lean",
+        "TempControl/Spec.lean",
+        "--",
+        "--json"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+      "asp_targid": "temp_control_lean_spec_verification_targ"
+    }
+  }
+}

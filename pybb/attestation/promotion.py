@@ -122,7 +122,7 @@ def changed_decls(l2_protocol: Any, package_root: Path,
         return "".join(s.split())
 
     live = derive_targets_from_lean(
-        Path(package_root), prefix=prefix)[f"{prefix}_l2"]["readfile_range"]
+        Path(package_root), prefix=prefix)[f"{prefix}_contracts"]["readfile_range"]
     files: Dict[str, List[str]] = {}
 
     def segment(args: dict) -> str:

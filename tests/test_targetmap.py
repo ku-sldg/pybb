@@ -255,23 +255,26 @@ def test_lean_spans_shift_with_content():
 def test_lean_derived_targets_live_tree():
     from pybb.attestation.targetmap import derive_targets_from_lean
 
+    from pybb.attestation.targetmap import lean_package_files
+
     derived = derive_targets_from_lean(LEAN_ROOT, prefix="temp_control_lean")
+    assert set(derived) == {"temp_control_lean_contracts"}
 
-    l1a = derived["temp_control_lean_l1a"]["hashfile"]
-    # sources AND build configuration: lakefile + toolchain pin are hashed
-    assert {"temp_control_lean_impl_targ", "temp_control_lean_spec_targ", "temp_control_lean_main_targ",
-            "temp_control_lean_tempcontrol_targ", "temp_control_lean_lakefile_targ",
-            "temp_control_lean_lean_toolchain_targ"} <= set(l1a)
-    for args in l1a.values():
-        assert Path(args["filepath"]).is_file()
-        assert ".lake" not in Path(args["filepath"]).parts
+    # the executable class's build-input set: sources AND build
+    # configuration (lakefile + toolchain pin)
+    inputs = lean_package_files(LEAN_ROOT)
+    names = {Path(p).name for p in inputs}
+    assert {"Impl.lean", "Spec.lean", "Main.lean", "TempControl.lean",
+            "lakefile.toml", "lean-toolchain"} <= names
+    for p in inputs:
+        assert Path(p).is_file()
+        assert ".lake" not in Path(p).parts
 
-    l2 = derived["temp_control_lean_l2"]["readfile_range"]
-    # every l2 slice lives inside an l1a-hashed file (tcmk-style: one
-    # trust question, l2 is pure refinement)
-    hashed = {a["filepath"] for a in l1a.values()}
+    l2 = derived["temp_control_lean_contracts"]["readfile_range"]
+    # every contract slice lives inside a package file
+    sources = set(inputs)
     for targ, args in l2.items():
-        assert args["filepath"] in hashed, targ
+        assert args["filepath"] in sources, targ
         assert 0 < args["start_index"] <= args["end_index"]
         assert "::" in args["metadata"]
 
@@ -295,7 +298,7 @@ def test_lean_derived_targets_live_tree():
     assert "temp_control_lean_main_main_targ" in l2
 
     # derived maps feed straight into term construction
-    term = build_term(derived["temp_control_lean_l2"])
+    term = build_term(derived["temp_control_lean_contracts"])
     assert len(list(iter_aspc_bodies(term))) == len(l2)
 
 

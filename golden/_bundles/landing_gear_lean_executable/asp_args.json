@@ -1,0 +1,94 @@
+{
+  "hashfile": {
+    "tool_lean_lake_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_targ"
+    },
+    "tool_lean_lake_2_targ": {
+      "filepath": "/Users/adampetz/.elan/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_2_targ"
+    },
+    "tool_lean_lean_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lean_targ"
+    },
+    "tool_lean_lake_3_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_3_targ"
+    },
+    "tool_lean_leanchecker_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_leanchecker_targ"
+    },
+    "tool_lean_libleanshared_dylib_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_libleanshared_dylib_targ"
+    },
+    "landing_gear_lean_bin_landing_gear_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/.lake/build/bin/landing-gear",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "binary::landing-gear",
+      "asp_targid": "landing_gear_lean_bin_landing_gear_targ"
+    }
+  },
+  "run_command_lean": {
+    "landing_gear_lean_executable_ground_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/.lake/build/bin/landing-gear",
+        "80",
+        "140",
+        "Up",
+        "wow"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean",
+      "expected": "gearCmd=Hold",
+      "asp_targid": "landing_gear_lean_executable_ground_targ"
+    },
+    "landing_gear_lean_executable_airborne_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/.lake/build/bin/landing-gear",
+        "180",
+        "140",
+        "Up",
+        "air"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean",
+      "expected": "gearCmd=Retract",
+      "asp_targid": "landing_gear_lean_executable_airborne_targ"
+    },
+    "landing_gear_lean_executable_extend_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/.lake/build/bin/landing-gear",
+        "200",
+        "140",
+        "Down",
+        "air"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean",
+      "expected": "gearCmd=Extend",
+      "asp_targid": "landing_gear_lean_executable_extend_targ"
+    }
+  }
+}

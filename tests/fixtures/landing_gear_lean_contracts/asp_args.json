@@ -1,0 +1,166 @@
+{
+  "readfile_range": {
+    "landing_gear_lean_impl_GearLever_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "start_index": 15,
+      "end_index": 18,
+      "metadata": "LandingGear.Impl::GearLever",
+      "asp_targid": "landing_gear_lean_impl_GearLever_targ",
+      "golden_b64": "aW5kdWN0aXZlIEdlYXJMZXZlciB3aGVyZSAgfCBVcCAgfCBEb3duZGVyaXZpbmcgUmVwciwgRGVjaWRhYmxlRXE=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_impl_GearCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "start_index": 20,
+      "end_index": 24,
+      "metadata": "LandingGear.Impl::GearCmd",
+      "asp_targid": "landing_gear_lean_impl_GearCmd_targ",
+      "golden_b64": "aW5kdWN0aXZlIEdlYXJDbWQgd2hlcmUgIHwgUmV0cmFjdCAgfCBFeHRlbmQgIHwgSG9sZGRlcml2aW5nIFJlcHIsIERlY2lkYWJsZUVx",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_impl_instance_26_30_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "start_index": 26,
+      "end_index": 30,
+      "metadata": "LandingGear.Impl::instance@26",
+      "asp_targid": "landing_gear_lean_impl_instance_26_30_targ",
+      "golden_b64": "aW5zdGFuY2UgOiBUb1N0cmluZyBHZWFyQ21kIHdoZXJlICB0b1N0cmluZyAgICB8IC5SZXRyYWN0ID0+ICJSZXRyYWN0IiAgICB8IC5FeHRlbmQgPT4gIkV4dGVuZCIgICAgfCAuSG9sZCA9PiAiSG9sZCI=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_impl_Config_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "start_index": 32,
+      "end_index": 34,
+      "metadata": "LandingGear.Impl::Config",
+      "asp_targid": "landing_gear_lean_impl_Config_targ",
+      "golden_b64": "c3RydWN0dXJlIENvbmZpZyB3aGVyZSAgcmV0cmFjdFNwZWVkIDogSW50ZGVyaXZpbmcgUmVwcg==",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_impl_computeGearCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Impl.lean",
+      "start_index": 38,
+      "end_index": 44,
+      "metadata": "LandingGear.Impl::computeGearCmd",
+      "asp_targid": "landing_gear_lean_impl_computeGearCmd_targ",
+      "golden_b64": "ZGVmIGNvbXB1dGVHZWFyQ21kIChzcGVlZCA6IEludCkgKGNmZyA6IENvbmZpZykgKGxldmVyIDogR2VhckxldmVyKSAgICAod293IDogQm9vbCkgOiBHZWFyQ21kIDo9ICBtYXRjaCBsZXZlciwgd293IHdpdGggIHwgLkRvd24sIF8gPT4gLkV4dGVuZCAgfCAuVXAsIHRydWUgPT4gLkhvbGQgIHwgLlVwLCBmYWxzZSA9PiAgICBpZiBzcGVlZCA8IGNmZy5yZXRyYWN0U3BlZWQgdGhlbiAuSG9sZCBlbHNlIC5SZXRyYWN0",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_Config_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 14,
+      "end_index": 15,
+      "metadata": "LandingGear.Spec::Config.valid",
+      "asp_targid": "landing_gear_lean_spec_Config_valid_targ",
+      "golden_b64": "ZGVmIENvbmZpZy52YWxpZCAoY2ZnIDogQ29uZmlnKSA6IFByb3AgOj0gIDAgPCBjZmcucmV0cmFjdFNwZWVkIOKIpyBjZmcucmV0cmFjdFNwZWVkIOKJpCAzMDA=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_extend_when_commanded_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 19,
+      "end_index": 21,
+      "metadata": "LandingGear.Spec::extend_when_commanded",
+      "asp_targid": "landing_gear_lean_spec_extend_when_commanded_targ",
+      "golden_b64": "dGhlb3JlbSBleHRlbmRfd2hlbl9jb21tYW5kZWQgKHNwZWVkIDogSW50KSAoY2ZnIDogQ29uZmlnKSAod293IDogQm9vbCkgOiAgICBjb21wdXRlR2VhckNtZCBzcGVlZCBjZmcgLkRvd24gd293ID0gLkV4dGVuZCA6PSBieSAgY2FzZXMgd293IDw7PiByZmw=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_no_retract_on_ground_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 24,
+      "end_index": 26,
+      "metadata": "LandingGear.Spec::no_retract_on_ground",
+      "asp_targid": "landing_gear_lean_spec_no_retract_on_ground_targ",
+      "golden_b64": "dGhlb3JlbSBub19yZXRyYWN0X29uX2dyb3VuZCAoc3BlZWQgOiBJbnQpIChjZmcgOiBDb25maWcpIChsZXZlciA6IEdlYXJMZXZlcikgOiAgICBjb21wdXRlR2VhckNtZCBzcGVlZCBjZmcgbGV2ZXIgdHJ1ZSDiiaAgLlJldHJhY3QgOj0gYnkgIGNhc2VzIGxldmVyIDw7PiBzaW1wIFtjb21wdXRlR2VhckNtZF0=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_no_retract_below_speed_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 30,
+      "end_index": 33,
+      "metadata": "LandingGear.Spec::no_retract_below_speed",
+      "asp_targid": "landing_gear_lean_spec_no_retract_below_speed_targ",
+      "golden_b64": "dGhlb3JlbSBub19yZXRyYWN0X2JlbG93X3NwZWVkIChzcGVlZCA6IEludCkgKGNmZyA6IENvbmZpZykgICAgKGxldmVyIDogR2VhckxldmVyKSAod293IDogQm9vbCkgKGggOiBzcGVlZCA8IGNmZy5yZXRyYWN0U3BlZWQpIDogICAgY29tcHV0ZUdlYXJDbWQgc3BlZWQgY2ZnIGxldmVyIHdvdyDiiaAgLlJldHJhY3QgOj0gYnkgIGNhc2VzIGxldmVyIDw7PiBjYXNlcyB3b3cgPDs+IHNpbXAgW2NvbXB1dGVHZWFyQ21kLCBoXQ==",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_retract_when_safe_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 37,
+      "end_index": 41,
+      "metadata": "LandingGear.Spec::retract_when_safe",
+      "asp_targid": "landing_gear_lean_spec_retract_when_safe_targ",
+      "golden_b64": "dGhlb3JlbSByZXRyYWN0X3doZW5fc2FmZSAoc3BlZWQgOiBJbnQpIChjZmcgOiBDb25maWcpICAgIChoIDogY2ZnLnJldHJhY3RTcGVlZCDiiaQgc3BlZWQpIDogICAgY29tcHV0ZUdlYXJDbWQgc3BlZWQgY2ZnIC5VcCBmYWxzZSA9IC5SZXRyYWN0IDo9IGJ5ICBoYXZlIGhuIDogwqwgKHNwZWVkIDwgY2ZnLnJldHJhY3RTcGVlZCkgOj0gYnkgb21lZ2EgIHNpbXAgW2NvbXB1dGVHZWFyQ21kLCBobl0=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_retract_only_when_safe_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 45,
+      "end_index": 58,
+      "metadata": "LandingGear.Spec::retract_only_when_safe",
+      "asp_targid": "landing_gear_lean_spec_retract_only_when_safe_targ",
+      "golden_b64": "dGhlb3JlbSByZXRyYWN0X29ubHlfd2hlbl9zYWZlIChzcGVlZCA6IEludCkgKGNmZyA6IENvbmZpZykgICAgKGxldmVyIDogR2VhckxldmVyKSAod293IDogQm9vbCkgOiAgICBjb21wdXRlR2VhckNtZCBzcGVlZCBjZmcgbGV2ZXIgd293ID0gLlJldHJhY3Qg4oaSICAgIGxldmVyID0gLlVwIOKIpyB3b3cgPSBmYWxzZSDiiKcgY2ZnLnJldHJhY3RTcGVlZCDiiaQgc3BlZWQgOj0gYnkgIGNhc2VzIGxldmVyIHdpdGggIHwgRG93biA9PiBjYXNlcyB3b3cgPDs+IHNpbXAgW2NvbXB1dGVHZWFyQ21kXSAgfCBVcCA9PiAgICBjYXNlcyB3b3cgd2l0aCAgICB8IHRydWUgPT4gc2ltcCBbY29tcHV0ZUdlYXJDbWRdICAgIHwgZmFsc2UgPT4gICAgICBzaW1wIG9ubHkgW2NvbXB1dGVHZWFyQ21kXSAgICAgIHNwbGl0ICAgICAgbmV4dCA9PiBzaW1wICAgICAgbmV4dCBoZ2UgPT4gc2ltcDsgb21lZ2E=",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_example_61_61_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 61,
+      "end_index": 61,
+      "metadata": "LandingGear.Spec::example@61",
+      "asp_targid": "landing_gear_lean_spec_example_61_61_targ",
+      "golden_b64": "ZXhhbXBsZSA6IGNvbXB1dGVHZWFyQ21kIDgwIOKfqDE0MOKfqSAuVXAgdHJ1ZSA9IC5Ib2xkIDo9IGJ5IGRlY2lkZQ==",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_example_62_62_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 62,
+      "end_index": 62,
+      "metadata": "LandingGear.Spec::example@62",
+      "asp_targid": "landing_gear_lean_spec_example_62_62_targ",
+      "golden_b64": "ZXhhbXBsZSA6IGNvbXB1dGVHZWFyQ21kIDE4MCDin6gxNDDin6kgLlVwIGZhbHNlID0gLlJldHJhY3QgOj0gYnkgZGVjaWRl",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_spec_example_63_63_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
+      "start_index": 63,
+      "end_index": 63,
+      "metadata": "LandingGear.Spec::example@63",
+      "asp_targid": "landing_gear_lean_spec_example_63_63_targ",
+      "golden_b64": "ZXhhbXBsZSA6IGNvbXB1dGVHZWFyQ21kIDIwMCDin6gxNDDin6kgLkRvd24gZmFsc2UgPSAuRXh0ZW5kIDo9IGJ5IGRlY2lkZQ==",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_main_parseLever_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "start_index": 16,
+      "end_index": 19,
+      "metadata": "Main::parseLever",
+      "asp_targid": "landing_gear_lean_main_parseLever_targ",
+      "golden_b64": "ZGVmIHBhcnNlTGV2ZXIgOiBTdHJpbmcg4oaSIE9wdGlvbiBHZWFyTGV2ZXIgIHwgIlVwIiAgID0+IHNvbWUgLlVwICB8ICJEb3duIiA9PiBzb21lIC5Eb3duICB8IF8gICAgICA9PiBub25l",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_main_parseWow_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "start_index": 21,
+      "end_index": 24,
+      "metadata": "Main::parseWow",
+      "asp_targid": "landing_gear_lean_main_parseWow_targ",
+      "golden_b64": "ZGVmIHBhcnNlV293IDogU3RyaW5nIOKGkiBPcHRpb24gQm9vbCAgfCAid293IiA9PiBzb21lIHRydWUgIHwgImFpciIgPT4gc29tZSBmYWxzZSAgfCBfICAgICA9PiBub25l",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_main_usage_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "start_index": 26,
+      "end_index": 27,
+      "metadata": "Main::usage",
+      "asp_targid": "landing_gear_lean_main_usage_targ",
+      "golden_b64": "ZGVmIHVzYWdlIDogU3RyaW5nIDo9ICAidXNhZ2U6IGxhbmRpbmctZ2VhciA8c3BlZWQ+IDxyZXRyYWN0U3BlZWQ+IDxVcHxEb3duPiA8d293fGFpcj4i",
+      "golden_ts": "2026-08-05 10:38:41"
+    },
+    "landing_gear_lean_main_main_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/Main.lean",
+      "start_index": 29,
+      "end_index": 41,
+      "metadata": "Main::main",
+      "asp_targid": "landing_gear_lean_main_main_targ",
+      "golden_b64": "ZGVmIG1haW4gKGFyZ3MgOiBMaXN0IFN0cmluZykgOiBJTyBVSW50MzIgOj0gZG8gIG1hdGNoIGFyZ3Mgd2l0aCAgfCBbcywgcnMsIGxldmVyLCB3b3ddID0+ICAgIG1hdGNoIHMudG9JbnQ/LCBycy50b0ludD8sIHBhcnNlTGV2ZXIgbGV2ZXIsIHBhcnNlV293IHdvdyB3aXRoICAgIHwgc29tZSBzcGVlZCwgc29tZSByZXRyYWN0U3BlZWQsIHNvbWUgbCwgc29tZSB3ID0+ICAgICAgSU8ucHJpbnRsbiBzISJnZWFyQ21kPXtjb21wdXRlR2VhckNtZCBzcGVlZCDin6hyZXRyYWN0U3BlZWTin6kgbCB3fSIgICAgICByZXR1cm4gMCAgICB8IF8sIF8sIF8sIF8gPT4gICAgICBJTy5lcHJpbnRsbiB1c2FnZSAgICAgIHJldHVybiAxICB8IF8gPT4gICAgSU8uZXByaW50bG4gdXNhZ2UgICAgcmV0dXJuIDE=",
+      "golden_ts": "2026-08-05 10:38:41"
+    }
+  }
+}

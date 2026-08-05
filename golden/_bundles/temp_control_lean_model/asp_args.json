@@ -1,0 +1,16 @@
+{
+  "readfile": {
+    "temp_control_lean_model_spec_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "asp_targid": "temp_control_lean_model_spec_targ"
+    }
+  },
+  "hashfile": {
+    "temp_control_lean_model_spec_hash_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "asp_targid": "temp_control_lean_model_spec_hash_targ"
+    }
+  }
+}

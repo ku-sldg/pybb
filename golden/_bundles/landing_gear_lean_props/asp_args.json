@@ -1,9 +1,0 @@
-{
-  "readfile": {
-    "landing_gear_lean_props_spec_targ": {
-      "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean/LandingGear/Spec.lean",
-      "asp_targid": "landing_gear_lean_props_spec_targ"
-    }
-  }
-}

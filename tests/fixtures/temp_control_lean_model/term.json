@@ -1,0 +1,48 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "bseq",
+          "TERM_BODY": [
+            "both_paths",
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "readfile",
+                  "ASP_TARG_ID": "temp_control_lean_model_spec_targ"
+                }
+              }
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "hashfile",
+                  "ASP_TARG_ID": "temp_control_lean_model_spec_hash_targ"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

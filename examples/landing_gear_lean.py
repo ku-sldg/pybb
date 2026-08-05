@@ -15,12 +15,12 @@ certification basis states in some form.
                            no_retract_below_speed, retract_when_safe, and
                            the safety converse retract_only_when_safe;
                            three kernel-evaluated decide examples
-    Main.lean              imports ONLY Impl — provability (landing_gear_lean_check)
-                           and behavior (landing_gear_lean_exec) stay independent
+    Main.lean              imports ONLY Impl — provability (landing_gear_lean_verification)
+                           and behavior (landing_gear_lean_executable) stay independent
 
 This is a THIN CONFIG over examples/lean_workflow.py — the entire
-workflow (landing_gear_lean_l1a/l2/props/check/exec/build protocols, provisioning,
-episodes landing_gear_lean:files/proofs/behavior, tamper demos, --check/--promote) is
+workflow (landing_gear_lean_model/l2/props/check/exec/build protocols, provisioning,
+episodes landing_gear_lean:model/proofs/behavior, tamper demos, --check/--promote) is
 the shared driver; this scenario is pure configuration. The
 --tamper-semantic arc removes the weight-on-wheels interlock (the Up/wow
 arm flips Hold -> Retract) and launders every hash measurement by
