@@ -19,3 +19,8 @@ build/
 # Generated artifacts
 history.txt
 /evidence/
+
+# Secrets (OPENAI_API_KEY for the AutoVerus rung is read from the env)
+.env
+.env.*
+secrets*
