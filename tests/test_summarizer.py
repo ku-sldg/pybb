@@ -43,7 +43,7 @@ def _run(pid: str):
 def test_replace_shape_parity_with_legacy_parser():
     """On a plain REPLACE protocol the verified summary and the legacy
     walker must agree on every verdict and attribution."""
-    proto, resp = _run("lean_l1a")
+    proto, resp = _run("temp_control_lean_l1a")
     verified = summarizer.summarize_response(resp, proto.session)
     legacy = parse_appraisal(resp, proto.target_records())
     assert [(c.targ_id, c.passed) for c in verified] == \
@@ -52,21 +52,21 @@ def test_replace_shape_parity_with_legacy_parser():
 
 
 def test_extend_shape_lifts_retained_evidence():
-    proto, resp = _run("lean_exec")
+    proto, resp = _run("temp_control_lean_exec")
     comps = summarizer.summarize_response(resp, proto.session)
     runs = {c.targ_id: c for c in comps
             if c.appr_asp == "run_command_lean_appr"}
     import base64
-    assert base64.b64decode(runs["lean_exec_hot_targ"].measured_b64) == \
+    assert base64.b64decode(runs["temp_control_lean_exec_hot_targ"].measured_b64) == \
         b"fanCmd=On\n"
-    assert base64.b64decode(runs["lean_exec_cold_targ"].measured_b64) == \
+    assert base64.b64decode(runs["temp_control_lean_exec_cold_targ"].measured_b64) == \
         b"fanCmd=Off\n"
     # every entry attributed or legitimately targless (sig)
     assert all(c.targ_id or c.appr_asp == "sig_appr" for c in comps)
 
 
 def test_summarizer_refuses_fabricated_evidence():
-    proto = ProtocolDir.load(str(FIXTURES / "lean_l1a"))
+    proto = ProtocolDir.load(str(FIXTURES / "temp_control_lean_l1a"))
     fake = {"SUCCESS": True, "PAYLOAD": [{"RawEv": ["", ""]},
             {"EvidenceT_CONSTRUCTOR": "mt_evt"}]}
     with pytest.raises(summarizer.SummaryError):
@@ -76,10 +76,10 @@ def test_summarizer_refuses_fabricated_evidence():
 def test_archived_response_replays_to_the_same_verdicts(tmp_path):
     """The episode archive is a durable evidence artifact: gunzip and
     re-summarize years later, get the same per-target verdicts."""
-    proto = ProtocolDir.load(str(FIXTURES / "lean_l1a"))
+    proto = ProtocolDir.load(str(FIXTURES / "temp_control_lean_l1a"))
     predicate = make_attestation_predicate(
-        CvmSubprocessClient(), {"lean_l1a": proto}, archive_dir=tmp_path)
-    verdict = predicate(attestation_request("lean_l1a"))
+        CvmSubprocessClient(), {"temp_control_lean_l1a": proto}, archive_dir=tmp_path)
+    verdict = predicate(attestation_request("temp_control_lean_l1a"))
     assert verdict.passed and verdict.evidence_ref
     with gzip.open(verdict.evidence_ref, "rt") as f:
         archived = json.load(f)

@@ -58,7 +58,7 @@ def _spec(aadl, comp):
 
 def _protocols(tmp_path, aadl, comp):
     protocols = {}
-    for pid in ("gumbo_l1a", "gumbo_l1b", "gumbo_l2"):
+    for pid in ("temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2"):
         proto_dir = tmp_path / "protos" / pid
         proto_dir.mkdir(parents=True)
         protocols[pid] = ProtocolDir(
@@ -83,13 +83,13 @@ def test_promotion_regenerates_targets_and_moves_gold(tmp_path):
 
     assert outcome and calls == ["codegen"]
     # targets regenerated from content: 1 hash, 1 block, 1 contract range
-    assert outcome.targets == {"gumbo_l1a": 1, "gumbo_l1b": 1, "gumbo_l2": 1}
-    l2_args = protocols["gumbo_l2"].asp_args["readfile_range"]
+    assert outcome.targets == {"temp_control_aadl_slang_l1a": 1, "temp_control_aadl_slang_l1b": 1, "temp_control_aadl_slang_l2": 1}
+    l2_args = protocols["temp_control_aadl_slang_l2"].asp_args["readfile_range"]
     assert l2_args["sys_aadl_3_4_targ"]["start_index"] == 3
     assert "golden_b64" not in l2_args["sys_aadl_3_4_targ"]  # provisioning fills
     # protocol dirs written through
     on_disk = json.loads(
-        (Path(protocols["gumbo_l2"].path) / "asp_args.json").read_text())
+        (Path(protocols["temp_control_aadl_slang_l2"].path) / "asp_args.json").read_text())
     assert "sys_aadl_3_4_targ" in on_disk["readfile_range"]
     # gold moved: the watched files now have golden copies
     assert outcome.captured >= 1
@@ -107,7 +107,7 @@ def test_promotion_tracks_shifted_contract(tmp_path):
     outcome = predicate(promotion_request("sys"))
 
     assert outcome
-    assert "sys_aadl_4_5_targ" in protocols["gumbo_l2"].asp_args["readfile_range"]
+    assert "sys_aadl_4_5_targ" in protocols["temp_control_aadl_slang_l2"].asp_args["readfile_range"]
 
 
 def test_codegen_failure_stops_the_pipeline(tmp_path):
@@ -123,7 +123,7 @@ def test_codegen_failure_stops_the_pipeline(tmp_path):
 
     assert not outcome and "phantom exploded" in outcome.error
     assert not (tmp_path / "golden").exists()  # gold never moved
-    assert "readfile_range" not in protocols["gumbo_l2"].asp_args  # targets untouched
+    assert "readfile_range" not in protocols["temp_control_aadl_slang_l2"].asp_args  # targets untouched
 
 
 class _GateClient(AttestationClient):
@@ -142,7 +142,7 @@ class _GateClient(AttestationClient):
 def test_validation_gate_blocks_promotion(tmp_path):
     aadl, comp = _model_tree(tmp_path)
     protocols = _protocols(tmp_path, aadl, comp)
-    protocols["val"] = protocols["gumbo_l1a"].model_copy()
+    protocols["val"] = protocols["temp_control_aadl_slang_l1a"].model_copy()
     predicate = make_promotion_predicate(
         protocols, tmp_path / "golden", _spec(aadl, comp),
         codegen_fn=lambda: "ran", client=_GateClient(ok=False),
@@ -158,7 +158,7 @@ def test_validation_gate_blocks_promotion(tmp_path):
 def test_validation_gate_passes_when_project_verifies(tmp_path):
     aadl, comp = _model_tree(tmp_path)
     protocols = _protocols(tmp_path, aadl, comp)
-    protocols["val"] = protocols["gumbo_l1a"].model_copy()
+    protocols["val"] = protocols["temp_control_aadl_slang_l1a"].model_copy()
     predicate = make_promotion_predicate(
         protocols, tmp_path / "golden", _spec(aadl, comp),
         codegen_fn=lambda: "ran", client=_GateClient(ok=True),
@@ -179,10 +179,10 @@ def test_promotion_runs_before_provisioning_in_partition_order(tmp_path):
                            {"ok": True})
     ctl.register_predicate("provision", lambda m: order.append(f"provision:{m['protocol']}") or
                            {"ok": True})
-    request_promotion(ctl.blackboard, "sys", ["gumbo_l1a", "gumbo_l2"])
+    request_promotion(ctl.blackboard, "sys", ["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l2"])
     ctl.run()
 
-    assert order[:3] == ["promote", "provision:gumbo_l1a", "provision:gumbo_l2"]
+    assert order[:3] == ["promote", "provision:temp_control_aadl_slang_l1a", "provision:temp_control_aadl_slang_l2"]
     assert "promote:sys" in ctl.blackboard.provision  # rests as the record
 
 

@@ -22,9 +22,9 @@ CAPTURE     TargetSnapshot.capture: live files -> golden/ mirror.
 
 PROVISION   one CVM run per protocol, against the golden COPIES:
             the attestation term with APPR stripped and SIG KEPT.
-              isl_l1a:   hashfile x13        -> SIG over the hashes
-              isl_l2:    readfile_range x67  -> SIG over the slice bytes
-              isl_props: readfile x5 (whole model files, raw bytes)
+              isolette_aadl_rust_l1a:   hashfile x13        -> SIG over the hashes
+              isolette_aadl_rust_l2:    readfile_range x67  -> SIG over the slice bytes
+              isolette_aadl_rust_props: readfile x5 (whole model files, raw bytes)
                                              -> SIG over the file contents
             Each run's signed evidence package is stored as
             golden/_bundles/<pid>/provision_bundle.json, and each
@@ -106,8 +106,8 @@ constitutes each tool's identity):
 
 | Tool | Artifacts | Measured when |
 |---|---|---|
-| `lean` | 6: workspace wrapper → elan shim → pinned toolchain binaries → `libleanshared.dylib` (the pin is read from the package's `lean-toolchain`, itself hash-anchored) | woven into `lean_check` / `lean_exec` |
-| `cargo-verus` | 4: wrapper + distro `cargo-verus`, `rust_verify`, `verus` | woven into `isl_verus` / `tcmk_verus` |
+| `lean` | 6: workspace wrapper → elan shim → pinned toolchain binaries → `libleanshared.dylib` (the pin is read from the package's `lean-toolchain`, itself hash-anchored) | woven into `temp_control_lean_check` / `temp_control_lean_exec` |
+| `cargo-verus` | 4: wrapper + distro `cargo-verus`, `rust_verify`, `verus` | woven into `isolette_aadl_rust_verus` / `temp_control_aadl_rust_verus` |
 | `hamr` | 9: `sireum.jar` + the 8 `org.sireum` OSATE plugins | promotion gate, immediately before codegen |
 
 **Weaving** (`weave_tool_measurements`): the tool's artifacts are hashed
@@ -150,7 +150,7 @@ to the evidence of its production** (`pybb/attestation/build.py`). A build
 protocol makes the build itself an attested event — one term, one
 signature:
 
-    lean_build = lseq( lseq( lseq( lseq( bseq(hashfile: lean toolchain ×6),
+    temp_control_lean_build = lseq( lseq( lseq( lseq( bseq(hashfile: lean toolchain ×6),
                                          bseq(hashfile: input sources ×6) ),
                                    run_command_lean(lake build) ),
                              bseq(hashfile: output binary) ),
@@ -166,7 +166,7 @@ build evidence at birth.
 **Cross-link verification** (build-mode in verify_bundle, selected by the
 events' provenance roles `tool::` / `build_in::` / `build_out::`): each
 build-bundle event is anchored against ANOTHER protocol's golden — inputs
-against the source baseline (lean_l1a, itself blessed via props), tools
+against the source baseline (temp_control_lean_l1a, itself blessed via props), tools
 against the blessed toolchain goldens, the output against the runtime
 protocol that enforces it. Failures are precise: an input outside the
 measured set, an unenforced output, anchor protocols disagreeing on a
@@ -176,7 +176,7 @@ licenses: *the binary the exec tier runs is byte-identical to the output
 of a signed build event whose inputs were the blessed sources and whose
 builder was the blessed toolchain.*
 
-**Hash-then-run**: lean_exec hashes the PINNED artifact against its
+**Hash-then-run**: temp_control_lean_exec hashes the PINNED artifact against its
 build-anchored golden in the same term that then executes it directly
 (`lake env <binary>` — no rebuild). A swapped binary fails at the binary
 target regardless of what the replacement prints. Consequence worth
@@ -229,7 +229,7 @@ response reproduces its verdicts (audit replay, tested).
 **Evidence size (measured)**: raw evidence bytes are tiny (<1KB); 95-99%
 of a response is the evidence-TYPE tree, which grows O(events²) because
 every appraiser — REPLACE and EXTEND alike — embeds a full provenance
-copy of the pre-appraisal tree (lean_l2, plain REPLACE, is the largest
+copy of the pre-appraisal tree (temp_control_lean_l2, plain REPLACE, is the largest
 measured response at 177KB/257 nodes for 15 events). EXTEND's marginal
 cost is small (per-branch retained incoming evidence + the measured
 outputs themselves). The trees are highly self-similar: gzip compresses

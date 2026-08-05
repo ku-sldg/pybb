@@ -76,7 +76,7 @@ def test_whole_file_restores_only_confirmed_violations(tmp_path):
 
     l1a = _verdict("l1a", [_component(False, {"filepath": str(benign)}),
                            _component(False, {"filepath": str(violated)})])
-    l2 = _verdict("gumbo_l2", [
+    l2 = _verdict("temp_control_aadl_slang_l2", [
         _component(True, {"filepath": str(benign), "start_index": 1, "end_index": 1}),
         _component(False, {"filepath": str(violated), "start_index": 1, "end_index": 1}),
     ])
@@ -176,7 +176,7 @@ def test_chain_flow_ends_repaired_pending(tmp_path):
     protocols = {
         pid: ProtocolDir(protocol_id=pid, path="/nowhere", term={},
                          session={"Session_Plc": "P0"}, manifest={"ASPS": []})
-        for pid in ("l1a", "gumbo_l2")
+        for pid in ("l1a", "temp_control_aadl_slang_l2")
     }
 
     class Client(AttestationClient):
@@ -187,7 +187,7 @@ def test_chain_flow_ends_repaired_pending(tmp_path):
     ctl = BlackboardController()
     ctl.register_predicate("attestation",
                            make_attestation_predicate(Client(), protocols))
-    chain = [TierKS(protocol_id="gumbo_l2"),
+    chain = [TierKS(protocol_id="temp_control_aadl_slang_l2"),
              WholeFileRestoreKS(golden_root=tmp_path / "golden")]
     for ks in chain:
         ctl.add_ks(ks)
@@ -201,7 +201,7 @@ def test_chain_flow_ends_repaired_pending(tmp_path):
     # ...but repair cannot mint trust: escalated, with the repair on record
     assert "sys" in bb.escalate
     history = bb.escalate["sys"].ks_history
-    assert history == {"tier:gumbo_l2": 1, "repair:whole-file": 1}
+    assert history == {"tier:temp_control_aadl_slang_l2": 1, "repair:whole-file": 1}
     summary = trust_summary(bb)
     assert "repaired from golden — verification pending next episode" in summary
     assert "user intervention required" not in summary

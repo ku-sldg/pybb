@@ -2,7 +2,7 @@
 Semantic tier for the Microkit/Rust pipeline: cargo-verus verification of
 the generated Verus contracts, run as a CVM protocol (run_command_cargo_verus
 ASP, appraised by run_command_verus_appr on the JSON error count) and
-routed as the on_pass confirmation of the tcmk:files entry.
+routed as the on_pass confirmation of the temp_control_aadl_rust:files entry.
 
 Also the scenario only this tier can catch: a behavior change laundered
 through re-provisioning — attestation sees matching gold, Verus proves the
@@ -48,7 +48,7 @@ pytestmark = [
 
 def _protocols() -> dict:
     return {pid: ProtocolDir.load(str(FIXTURES / pid))
-            for pid in ("tcmk_l1a", "tcmk_l2", "tcmk_verus")}
+            for pid in ("temp_control_aadl_rust_l1a", "temp_control_aadl_rust_l2", "temp_control_aadl_rust_verus")}
 
 
 def test_l1a_pass_confirmed_by_verus():
@@ -56,24 +56,24 @@ def test_l1a_pass_confirmed_by_verus():
     ctl = BlackboardController()
     ctl.register_predicate(
         "attestation", make_attestation_predicate(CvmSubprocessClient(), protocols))
-    confirm = TierKS(protocol_id="tcmk_verus")
+    confirm = TierKS(protocol_id="temp_control_aadl_rust_verus")
     ctl.add_ks(confirm)
-    ctl.blackboard.write_entry(key="tcmk:files", predicate="attestation",
-                               measurement=attestation_request("tcmk_l1a"))
-    ctl.route("tcmk:files", on_pass=[confirm])
+    ctl.blackboard.write_entry(key="temp_control_aadl_rust:files", predicate="attestation",
+                               measurement=attestation_request("temp_control_aadl_rust_l1a"))
+    ctl.route("temp_control_aadl_rust:files", on_pass=[confirm])
     bb = ctl.run()
 
-    entry = bb.get_entry("tcmk:files")
+    entry = bb.get_entry("temp_control_aadl_rust:files")
     assert entry is not None and entry.good_standing, entry
-    assert entry.result.protocol == "tcmk_verus"
+    assert entry.result.protocol == "temp_control_aadl_rust_verus"
     targs = {c.targ_id for c in entry.result.components}
     assert {"tc_verus_targ", "ts_verus_targ"} <= targs
     # the verus toolchain was measured in the same term, before the uses
     tools = {c.targ_id for c in entry.result.components
              if (c.args.get("metadata") or "").startswith("tool::cargo-verus")}
     assert len(tools) == 4
-    assert "tcmk_l1a passed; confirmed by tcmk_verus" in \
-        trust_summary(bb, semantic=["tcmk_verus"])
+    assert "temp_control_aadl_rust_l1a passed; confirmed by temp_control_aadl_rust_verus" in \
+        trust_summary(bb, semantic=["temp_control_aadl_rust_verus"])
 
 
 def test_laundered_behavior_change_refuted_by_verus():
@@ -86,7 +86,7 @@ def test_laundered_behavior_change_refuted_by_verus():
     try:
         protocols = _protocols()
         verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
-            attestation_request("tcmk_verus"))
+            attestation_request("temp_control_aadl_rust_verus"))
         assert not verdict.passed
         assert "tc_verus_targ" in {c.targ_id for c in verdict.failing()}
     finally:

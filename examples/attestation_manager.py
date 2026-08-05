@@ -61,13 +61,13 @@ from pybb.attestation.targetmap import TEMP_CONTROL_SPEC
 FIXTURES = Path(__file__).parent.parent / "tests" / "fixtures"
 GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
-PROTOCOL_IDS = ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
+PROTOCOL_IDS = ("temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2")
 
 
 def changed_contracts(protocols: dict) -> list[str]:
     """Detection via the shared helper: model-slice goldens vs current AADL."""
     from pybb.attestation import changed_contracts as _changed
-    return _changed(protocols["gumbo_l2"])
+    return _changed(protocols["temp_control_aadl_slang_l2"])
 
 
 def sanctioned_demo_edit() -> None:
@@ -152,17 +152,17 @@ def cmd_promote(protocols, golden_root, cli) -> None:
     client = CvmSubprocessClient()
     controller = BlackboardController()
     if cli.validate:
-        protocols["gumbo_validation"] = ProtocolDir.load(
-            str(FIXTURES / "gumbo_validation"))
+        protocols["temp_control_aadl_slang_validation"] = ProtocolDir.load(
+            str(FIXTURES / "temp_control_aadl_slang_validation"))
     controller.register_predicate("promotion", make_promotion_predicate(
         protocols, golden_root, TEMP_CONTROL_SPEC,
         codegen_fn=make_codegen_fn(cli.codegen_cmd),
         client=client,
-        validate_with="gumbo_validation" if cli.validate else None,
+        validate_with="temp_control_aadl_slang_validation" if cli.validate else None,
     ))
     controller.register_predicate("provision", make_provision_predicate(
         client, protocols, golden_root))
-    request_promotion(controller.blackboard, "gumbo", list(PROTOCOL_IDS))
+    request_promotion(controller.blackboard, "temp_control_aadl_slang", list(PROTOCOL_IDS))
     controller.run()
     bb = controller.blackboard
 
@@ -185,17 +185,17 @@ def cmd_promote(protocols, golden_root, cli) -> None:
                                 make_attestation_predicate(client, protocols))
     verifier.register_predicate("protocol_check",
                                 make_readiness_predicate(protocols))
-    starter = StartAttestationKS(episodes={"gumbo:files": "gumbo_l1a",
-                                           "gumbo:contracts": "gumbo_l1b"})
-    refine = TierKS(protocol_id="gumbo_l2")
+    starter = StartAttestationKS(episodes={"temp_control_aadl_slang:files": "temp_control_aadl_slang_l1a",
+                                           "temp_control_aadl_slang:contracts": "temp_control_aadl_slang_l1b"})
+    refine = TierKS(protocol_id="temp_control_aadl_slang_l2")
     for ks in (starter, refine):
         verifier.add_ks(ks)
-    verifier.route("gumbo:files", on_fail=[refine])
-    verifier.route("gumbo:contracts", on_fail=[])
+    verifier.route("temp_control_aadl_slang:files", on_fail=[refine])
+    verifier.route("temp_control_aadl_slang:contracts", on_fail=[])
     verifier.blackboard.write_entry(
-        key="gumbo:ready", predicate="protocol_check",
+        key="temp_control_aadl_slang:ready", predicate="protocol_check",
         measurement=readiness_request(list(PROTOCOL_IDS)))
-    verifier.route("gumbo:ready", on_pass=[starter], on_fail=[])
+    verifier.route("temp_control_aadl_slang:ready", on_pass=[starter], on_fail=[])
     verifier.run()
     print("  " + trust_summary(verifier.blackboard).replace("\n", "\n  "))
 

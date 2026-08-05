@@ -1,6 +1,6 @@
 """
 Microkit/Rust example end-to-end: the HAMR attestation report is the
-authoritative source of targets and golden slices (tcmk_l1a/tcmk_l2 are
+authoritative source of targets and golden slices (temp_control_aadl_rust_l1a/temp_control_aadl_rust_l2 are
 generated from it, never hand-curated); attestation runs against the
 vendored targets/temp-control-microkit tree; a tampered Verus contract
 slice is detected, attributed, whole-file repaired from golden, and
@@ -33,7 +33,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 REPORT = (REPO / "targets" / "temp-control-microkit" / "hamr" / "microkit"
           / "attestation" / "aadl_attestation_report.json")
-PROTOCOL_IDS = ("tcmk_l1a", "tcmk_l2")
+PROTOCOL_IDS = ("temp_control_aadl_rust_l1a", "temp_control_aadl_rust_l2")
 
 pytestmark = [
     pytest.mark.cvm,
@@ -50,7 +50,7 @@ def _protocols() -> dict:
 
 def test_committed_fixtures_derive_from_the_report():
     """The report is the authority: committed target maps must equal it."""
-    derived = derive_targets_from_report(REPORT, prefix="tcmk")
+    derived = derive_targets_from_report(REPORT, prefix="temp_control_aadl_rust")
     for pid in PROTOCOL_IDS:
         committed = ProtocolDir.load(str(FIXTURES / pid)).asp_args
         for asp_id, targets in derived[pid].items():
@@ -74,29 +74,29 @@ def _episode(repair: bool = True):
     ctl = BlackboardController()
     ctl.register_predicate(
         "attestation", make_attestation_predicate(CvmSubprocessClient(), protocols))
-    chain = [TierKS(protocol_id="tcmk_l2")]
+    chain = [TierKS(protocol_id="temp_control_aadl_rust_l2")]
     if repair:
         chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                        refined_by="tcmk_l2"))
+                                        refined_by="temp_control_aadl_rust_l2"))
     for ks in chain:
         ctl.add_ks(ks)
-    ctl.blackboard.write_entry(key="tcmk:files", predicate="attestation",
-                               measurement=attestation_request("tcmk_l1a"))
-    ctl.route("tcmk:files", on_fail=chain)
+    ctl.blackboard.write_entry(key="temp_control_aadl_rust:files", predicate="attestation",
+                               measurement=attestation_request("temp_control_aadl_rust_l1a"))
+    ctl.route("temp_control_aadl_rust:files", on_fail=chain)
     ctl.run()
     return ctl.blackboard
 
 
 def test_ctemp_control_lean_of_rust_artifacts():
     bb = _episode()
-    entry = bb.get_entry("tcmk:files")
-    assert entry.good_standing and entry.result.protocol == "tcmk_l1a"
+    entry = bb.get_entry("temp_control_aadl_rust:files")
+    assert entry.good_standing and entry.result.protocol == "temp_control_aadl_rust_l1a"
     assert len(entry.result.components) == 5  # 4 hashfile + sig
     assert "all attested components intact" in trust_summary(bb)
 
 
 def test_verus_slice_tamper_attributed_repaired_verified(live_snapshot):
-    l2 = _protocols()["tcmk_l2"].asp_args["readfile_range"]
+    l2 = _protocols()["temp_control_aadl_rust_l2"].asp_args["readfile_range"]
     targ, args = next((t, a) for t, a in sorted(l2.items())
                       if a["filepath"].endswith("tcproc_tempControl_app.rs"))
     rs = Path(args["filepath"])
@@ -106,16 +106,16 @@ def test_verus_slice_tamper_attributed_repaired_verified(live_snapshot):
 
     bb1 = _episode()
 
-    escalated = bb1.escalate["tcmk:files"]
-    assert escalated.ks_history == {"tier:tcmk_l2": 1, "repair:whole-file": 1}
+    escalated = bb1.escalate["temp_control_aadl_rust:files"]
+    assert escalated.ks_history == {"tier:temp_control_aadl_rust_l2": 1, "repair:whole-file": 1}
     l2v = next(e.result for k, e in bb1.get_history()
-               if k == "tcmk:files" and e.result is not None
-               and e.result.protocol == "tcmk_l2")
+               if k == "temp_control_aadl_rust:files" and e.result is not None
+               and e.result.protocol == "temp_control_aadl_rust_l2")
     assert targ in {c.targ_id for c in l2v.failing()}
     from pybb.attestation.snapshot import mirror_path
     assert rs.read_bytes() == mirror_path(GOLDEN_ROOT, rs).read_bytes()
     assert "repaired from golden — verification pending" in trust_summary(bb1)
 
     bb2 = _episode()
-    assert bb2.entries["tcmk:files"].good_standing
+    assert bb2.entries["temp_control_aadl_rust:files"].good_standing
     assert not bb2.escalate

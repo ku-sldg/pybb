@@ -20,14 +20,14 @@ report, before any attestation runs — instead of surfacing mid-episode
 disguised as an integrity failure. Wiring (each entry spends its one
 dispatch on its own branch point):
 
-    controller.route("gumbo:files", on_pass=[...], on_fail=[...])      # pre-registered
-    controller.route("gumbo:contracts", on_fail=[...])
-    controller.route("gumbo:ready",
-        on_pass=[StartAttestationKS(episodes={"gumbo:files": "gumbo_l1a",
-                                              "gumbo:contracts": "gumbo_l1b"})],
+    controller.route("temp_control_aadl_slang:files", on_pass=[...], on_fail=[...])      # pre-registered
+    controller.route("temp_control_aadl_slang:contracts", on_fail=[...])
+    controller.route("temp_control_aadl_slang:ready",
+        on_pass=[StartAttestationKS(episodes={"temp_control_aadl_slang:files": "temp_control_aadl_slang_l1a",
+                                              "temp_control_aadl_slang:contracts": "temp_control_aadl_slang_l1b"})],
         on_fail=[])                                           # config failure -> escalate
-    blackboard.write_entry(key="gumbo:ready", predicate="protocol_check",
-        measurement=readiness_request(["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]))
+    blackboard.write_entry(key="temp_control_aadl_slang:ready", predicate="protocol_check",
+        measurement=readiness_request(["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2"]))
 """
 
 from __future__ import annotations

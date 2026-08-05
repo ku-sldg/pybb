@@ -1,5 +1,0 @@
-{
-  "name": "lean build event (executable provenance)",
-  "description": "The build event: lake build as a signed term \u2014 toolchain, input sources, the build, and the output binary under one signature. The exec tier's binary golden is cross-installed from this bundle's output evidence.",
-  "copland": "lseq( lseq( lseq( lseq( bseq(hashfile: tools), bseq(hashfile: inputs) ), build ), bseq(hashfile: outputs) ), SIG )"
-}

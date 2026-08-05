@@ -1,0 +1,94 @@
+{
+  "hashfile": {
+    "tool_lean_lake_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_targ"
+    },
+    "tool_lean_lake_2_targ": {
+      "filepath": "/Users/adampetz/.elan/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_2_targ"
+    },
+    "tool_lean_lean_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lean_targ"
+    },
+    "tool_lean_lake_3_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_3_targ"
+    },
+    "tool_lean_leanchecker_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_leanchecker_targ"
+    },
+    "tool_lean_libleanshared_dylib_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_libleanshared_dylib_targ"
+    },
+    "temp_control_lean_bin_temp_control_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "binary::temp-control",
+      "asp_targid": "temp_control_lean_bin_temp_control_targ"
+    }
+  },
+  "run_command_lean": {
+    "temp_control_lean_exec_hot_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+        "101",
+        "70",
+        "90",
+        "Off"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+      "expected": "fanCmd=On",
+      "asp_targid": "temp_control_lean_exec_hot_targ"
+    },
+    "temp_control_lean_exec_cold_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+        "60",
+        "70",
+        "90",
+        "On"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+      "expected": "fanCmd=Off",
+      "asp_targid": "temp_control_lean_exec_cold_targ"
+    },
+    "temp_control_lean_exec_hold_targ": {
+      "exe_args": [
+        "env",
+        "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+        "80",
+        "70",
+        "90",
+        "On"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+      "expected": "fanCmd=On",
+      "asp_targid": "temp_control_lean_exec_hold_targ"
+    }
+  }
+}

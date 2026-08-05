@@ -1,0 +1,116 @@
+{
+  "readfile_range": {
+    "temp_control_aadl_rust_tempsensor_53_54_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempSensor.aadl",
+      "start_index": 53,
+      "end_index": 54,
+      "metadata": "TempControlSystem_i_Instance_tsproc_tempSensor::currentTempInitialVal",
+      "asp_targid": "temp_control_aadl_rust_tempsensor_53_54_targ"
+    },
+    "temp_control_aadl_rust_tsproc_tempsensor_app_26_27_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor/src/component/tsproc_tempSensor_app.rs",
+      "start_index": 26,
+      "end_index": 27,
+      "metadata": "TempControlSystem_i_Instance_tsproc_tempSensor::currentTempInitialVal",
+      "asp_targid": "temp_control_aadl_rust_tsproc_tempsensor_app_26_27_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_173_174_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 173,
+      "end_index": 174,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initLatestFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_173_174_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_165_165_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 165,
+      "end_index": 165,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initLatestFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_165_165_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_30_32_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 30,
+      "end_index": 32,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initLatestFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_30_32_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_11_11_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 11,
+      "end_index": 11,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initLatestFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_11_11_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_176_177_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 176,
+      "end_index": 177,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_176_177_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_33_35_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 33,
+      "end_index": 35,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::initFanCmd",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_33_35_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_182_183_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 182,
+      "end_index": 183,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::validSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_182_183_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_48_50_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 48,
+      "end_index": 50,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::validSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_48_50_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_185_188_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 185,
+      "end_index": 188,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_185_188_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_54_59_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 54,
+      "end_index": 59,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempLTSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_54_59_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_190_193_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 190,
+      "end_index": 193,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempGTSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_190_193_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_60_65_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 60,
+      "end_index": 65,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempGTSetPoint",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_60_65_targ"
+    },
+    "temp_control_aadl_rust_tempcontrolsystem_195_199_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "start_index": 195,
+      "end_index": 199,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempInRange",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_195_199_targ"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_66_73_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "start_index": 66,
+      "end_index": 73,
+      "metadata": "TempControlSystem_i_Instance_tcproc_tempControl::altCurrentTempInRange",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_66_73_targ"
+    }
+  }
+}

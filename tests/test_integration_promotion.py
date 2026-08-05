@@ -38,7 +38,7 @@ from attestation_manager import changed_contracts  # noqa: E402
 FIXTURES = Path(__file__).parent / "fixtures"
 GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 TC_ROOT = Path("/Users/adampetz/Claude_workspace/temp-control-jvm")
-PROTOCOL_IDS = ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
+PROTOCOL_IDS = ("temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2")
 
 pytestmark = [
     pytest.mark.cvm,
@@ -88,17 +88,17 @@ def test_sanctioned_change_promoted_to_new_baseline(tmp_path, sanctioned_edit):
         protocols, golden_tmp, TEMP_CONTROL_SPEC, codegen_fn=lambda: "noop"))
     ctl.register_predicate("provision", make_provision_predicate(
         client, protocols, golden_tmp))
-    request_promotion(ctl.blackboard, "gumbo", list(PROTOCOL_IDS))
+    request_promotion(ctl.blackboard, "temp_control_aadl_slang", list(PROTOCOL_IDS))
     bb = ctl.run()
 
-    promo = bb.provision["promote:gumbo"]
+    promo = bb.provision["promote:temp_control_aadl_slang"]
     assert promo.good_standing, promo.result
     outcome = promo.result
     assert outcome.captured == 6
     # derived maps are complete supersets of the old curated ones
-    assert outcome.targets["gumbo_l1a"] == 4
-    assert outcome.targets["gumbo_l1b"] == 6
-    assert outcome.targets["gumbo_l2"] > 22
+    assert outcome.targets["temp_control_aadl_slang_l1a"] == 4
+    assert outcome.targets["temp_control_aadl_slang_l1b"] == 6
+    assert outcome.targets["temp_control_aadl_slang_l2"] > 22
     for pid in PROTOCOL_IDS:
         entry = bb.provision[f"provision:{pid}"]
         assert entry.good_standing, entry.result
@@ -110,14 +110,14 @@ def test_sanctioned_change_promoted_to_new_baseline(tmp_path, sanctioned_edit):
     verifier = BlackboardController()
     verifier.register_predicate(
         "attestation", make_attestation_predicate(client, protocols))
-    for key, start in (("gumbo:files", "gumbo_l1a"),
-                       ("gumbo:contracts", "gumbo_l1b")):
+    for key, start in (("temp_control_aadl_slang:files", "temp_control_aadl_slang_l1a"),
+                       ("temp_control_aadl_slang:contracts", "temp_control_aadl_slang_l1b")):
         verifier.blackboard.write_entry(key=key, predicate="attestation",
                                         measurement=attestation_request(start))
         verifier.route(key, on_fail=[])
     bb2 = verifier.run()
-    assert bb2.entries["gumbo:files"].good_standing
-    assert bb2.entries["gumbo:contracts"].good_standing
+    assert bb2.entries["temp_control_aadl_slang:files"].good_standing
+    assert bb2.entries["temp_control_aadl_slang:contracts"].good_standing
     assert not bb2.escalate
 
     # and the AM's check now reports no pending changes against the new gold

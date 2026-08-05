@@ -7,18 +7,18 @@ measurement targets and golden slices.
 
 Protocols (generated from the report, never hand-curated):
 
-    tcmk_l1a  whole-file hashes of every file the report names
+    temp_control_aadl_rust_l1a  whole-file hashes of every file the report names
               (2 AADL models + 2 contract-bearing Rust files)
-    tcmk_l2   readfile_range of every report slice: Model (GUMBO
+    temp_control_aadl_rust_l2   readfile_range of every report slice: Model (GUMBO
               contracts in AADL) + Verus/Rust realizations in the
               generated crates
 
-One trust question — tcmk:files — since every l2 slice lives inside an
+One trust question — temp_control_aadl_rust:files — since every l2 slice lives inside an
 l1a-hashed file (no safe-to-edit component class here; generated Rust is
 whole-file-immutable):
 
-    eval tcmk_l1a: pass = intact
-      fail -> tcmk_l2 refines (which contract slice, model or Verus)
+    eval temp_control_aadl_rust_l1a: pass = intact
+      fail -> temp_control_aadl_rust_l2 refines (which contract slice, model or Verus)
                 fail -> [--repair] WholeFileRestoreKS restores the
                         violated files from golden -> repaired, pending;
                         episode 2 verifies
@@ -31,8 +31,8 @@ Usage:
              content against the provisioned golden slices (position-
              independent); reports whether HAMR codegen is needed
 
---validate   semantic tier: a passing tcmk_l1a is provisional until
-             tcmk_verus confirms — cargo-verus verify must PROVE the
+--validate   semantic tier: a passing temp_control_aadl_rust_l1a is provisional until
+             temp_control_aadl_rust_verus confirms — cargo-verus verify must PROVE the
              generated Verus contracts against the implemented behavior
              of both crates (requires the Verus toolchain and rust)
 
@@ -86,11 +86,11 @@ TCMK_ROOT = REPO / "targets" / "temp-control-microkit"
 REPORT = TCMK_ROOT / "hamr" / "microkit" / "attestation" / "aadl_attestation_report.json"
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
-PROTOCOL_IDS = ("tcmk_l1a", "tcmk_l2")
-TEMPLATES = {"tcmk_l1a": "gumbo_l1a", "tcmk_l2": "gumbo_l2"}
+PROTOCOL_IDS = ("temp_control_aadl_rust_l1a", "temp_control_aadl_rust_l2")
+TEMPLATES = {"temp_control_aadl_rust_l1a": "temp_control_aadl_slang_l1a", "temp_control_aadl_rust_l2": "temp_control_aadl_slang_l2"}
 SIREUM_STANDALONE = Path.home() / "Applications/Sireum/bin/sireum"
 
-# Just-in-time tool measurement: verus toolchain hashed in the tcmk_verus
+# Just-in-time tool measurement: verus toolchain hashed in the temp_control_aadl_rust_verus
 # term before the use; HAMR toolchain measured by the promotion gate
 # immediately before codegen runs (make_tool_gate).
 TOOL_CADENCE = "per_use"
@@ -104,8 +104,8 @@ VERUS_ARGS = [
 
 
 def build_verus_protocol() -> ProtocolDir:
-    """tcmk_verus regenerated with verus toolchain measurements woven in."""
-    d = FIXTURES / "tcmk_verus"
+    """temp_control_aadl_rust_verus regenerated with verus toolchain measurements woven in."""
+    d = FIXTURES / "temp_control_aadl_rust_verus"
     targets = with_asp_targids({
         f"{'tc' if c.startswith('tcproc') else 'ts'}_verus_targ": {
             "exe_args": VERUS_ARGS,
@@ -135,7 +135,7 @@ def build_verus_protocol() -> ProtocolDir:
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
     (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
-    print(f"  tcmk_verus: {len(targets)} crates"
+    print(f"  temp_control_aadl_rust_verus: {len(targets)} crates"
           + (f" + {len(asp_args.get('hashfile', {}))} woven tool measurements"
              if "hashfile" in asp_args else ""))
     return ProtocolDir.load(str(d))
@@ -143,7 +143,7 @@ def build_verus_protocol() -> ProtocolDir:
 
 def derive_report_targets():
     """The report is the authority on targets and golden slices."""
-    return derive_targets_from_report(REPORT, prefix="tcmk")
+    return derive_targets_from_report(REPORT, prefix="temp_control_aadl_rust")
 
 
 def build_protocol_dirs() -> dict:
@@ -159,7 +159,7 @@ def build_protocol_dirs() -> dict:
         (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in asp_args.values())} targets from report")
-    protocols["tcmk_verus"] = build_verus_protocol()
+    protocols["temp_control_aadl_rust_verus"] = build_verus_protocol()
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
         "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
@@ -229,7 +229,7 @@ def promote_flow(protocols: dict) -> None:
     ))
     ctl.register_predicate("provision",
                            make_provision_predicate(client, protocols, GOLDEN_ROOT))
-    request_promotion(ctl.blackboard, "tcmk", list(PROTOCOL_IDS))
+    request_promotion(ctl.blackboard, "temp_control_aadl_rust", list(PROTOCOL_IDS))
     bb = ctl.run()
     for key, entry in bb.get_provision().items():
         o = entry.result
@@ -244,7 +244,7 @@ def promote_flow(protocols: dict) -> None:
 
 def tamper_verus(protocols: dict) -> None:
     """Corrupt a line inside a Verus contract slice of the generated Rust."""
-    l2 = protocols["tcmk_l2"].asp_args["readfile_range"]
+    l2 = protocols["temp_control_aadl_rust_l2"].asp_args["readfile_range"]
     targ, args = next((t, a) for t, a in sorted(l2.items())
                       if a["filepath"].endswith("tcproc_tempControl_app.rs"))
     rs = Path(args["filepath"])
@@ -264,22 +264,22 @@ def attest_episode(protocols: dict, repair: bool,
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,
                                       client=client))
-    fail_chain = [TierKS(protocol_id="tcmk_l2")]
+    fail_chain = [TierKS(protocol_id="temp_control_aadl_rust_l2")]
     if repair:
         fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                             refined_by="tcmk_l2"))
-    confirm = [TierKS(protocol_id="tcmk_verus")] if validate else []
-    starter = StartAttestationKS(episodes={"tcmk:files": "tcmk_l1a"})
+                                             refined_by="temp_control_aadl_rust_l2"))
+    confirm = [TierKS(protocol_id="temp_control_aadl_rust_verus")] if validate else []
+    starter = StartAttestationKS(episodes={"temp_control_aadl_rust:files": "temp_control_aadl_rust_l1a"})
     for ks in (*confirm, *fail_chain, starter):
         controller.add_ks(ks)
-    controller.route("tcmk:files", on_pass=confirm, on_fail=fail_chain)
-    checked = list(PROTOCOL_IDS) + (["tcmk_verus"] if validate else [])
+    controller.route("temp_control_aadl_rust:files", on_pass=confirm, on_fail=fail_chain)
+    checked = list(PROTOCOL_IDS) + (["temp_control_aadl_rust_verus"] if validate else [])
     controller.blackboard.write_entry(
-        key="tcmk:ready", predicate="protocol_check",
+        key="temp_control_aadl_rust:ready", predicate="protocol_check",
         measurement=readiness_request(checked))
-    controller.route("tcmk:ready", on_pass=[starter], on_fail=[])
+    controller.route("temp_control_aadl_rust:ready", on_pass=[starter], on_fail=[])
     controller.run()
-    print(trust_summary(controller.blackboard, semantic=["tcmk_verus"]))
+    print(trust_summary(controller.blackboard, semantic=["temp_control_aadl_rust_verus"]))
     return controller
 
 
@@ -295,7 +295,7 @@ def main() -> None:
 
     if cli.check:
         protocols = load_protocols()
-        changed = changed_contracts(protocols["tcmk_l2"])
+        changed = changed_contracts(protocols["temp_control_aadl_rust_l2"])
         if changed:
             print("HAMR codegen needed — model contracts changed since "
                   "last provisioning:")
@@ -311,7 +311,7 @@ def main() -> None:
         return
     protocols = load_protocols()
     if cli.validate:
-        protocols["tcmk_verus"] = ProtocolDir.load(str(FIXTURES / "tcmk_verus"))
+        protocols["temp_control_aadl_rust_verus"] = ProtocolDir.load(str(FIXTURES / "temp_control_aadl_rust_verus"))
     if cli.promote:
         promote_flow(protocols)
         print("\n=== verification episode (new baseline) ===")

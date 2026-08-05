@@ -6,21 +6,21 @@ temp-control-jvm HAMR project, on the outcome-routed blackboard.
 Two always-run trust questions, each entry spending its one dispatch on
 its own branch point:
 
-    gumbo:files      starts at gumbo_l1a — whole-file hashes of the
+    temp_control_aadl_slang:files      starts at temp_control_aadl_slang_l1a — whole-file hashes of the
                      baseline-immutable artifacts (AADL models + GumboX
                      oracles, ~1s)
-                       pass -> on_pass: gumbo_validation (--validate)
-                       fail -> on_fail: gumbo_l2 (22 contract-range
+                       pass -> on_pass: temp_control_aadl_slang_validation (--validate)
+                       fail -> on_fail: temp_control_aadl_slang_l2 (22 contract-range
                                slices) refines the drift — pass = benign
                                drift (tolerated; re-provision to bless),
                                fail = contract violation -> escalate
 
-    gumbo:contracts  starts at gumbo_l1b — the codegen-managed BEGIN/END
+    temp_control_aadl_slang:contracts  starts at temp_control_aadl_slang_l1b — the codegen-managed BEGIN/END
                      contract blocks inside the developer-owned component
                      files (~1s). Already block-granular: no deeper dive;
                      a failure escalates with the violated blocks.
 
-The episode opens with a protocol-readiness verdict: "gumbo:ready" checks
+The episode opens with a protocol-readiness verdict: "temp_control_aadl_slang:ready" checks
 every protocol in both trees (ids resolve, goldens provisioned, CVM and
 ASP binaries present); its on_pass starter writes both attestation
 entries. A readiness failure escalates as a configuration failure and no
@@ -31,18 +31,18 @@ Usage:
         [--tamper] [--tamper-block] [--repair] [--validate] [--misconfigure]
 
 --repair appends the repair rungs (whole-file restore after l2 refinement
-on gumbo:files; block splice on gumbo:contracts) and runs a SECOND
+on temp_control_aadl_slang:files; block splice on temp_control_aadl_slang:contracts) and runs a SECOND
 episode: repair cannot mint trust, so episode 1 ends "repaired from
 golden — verification pending", and episode 2 (fresh predicates, fresh
 measurements) provides the verifying evidence.
 
 --tamper corrupts one GUMBO contract line in a live AADL model: the
-gumbo:files tree walks l1a -> l2 -> escalate with per-contract
-attribution, while gumbo:contracts stays clean.
+temp_control_aadl_slang:files tree walks l1a -> l2 -> escalate with per-contract
+attribution, while temp_control_aadl_slang:contracts stays clean.
 
 --tamper-block corrupts a line inside a component file's contract block —
 undetectable by the old single-tree design (whole-file hashing cannot
-watch safe-to-edit files): gumbo:files passes while gumbo:contracts
+watch safe-to-edit files): temp_control_aadl_slang:files passes while temp_control_aadl_slang:contracts
 escalates with the violated block.
 
 Either way the golden directory (provisioned out-of-band by
@@ -135,30 +135,30 @@ def build_controller(protocols: dict, cli) -> BlackboardController:
 
     # the two decision trees, pre-registered (their entries are written by
     # the readiness chain's starter rung)
-    files_fail = [TierKS(protocol_id="gumbo_l2")]
+    files_fail = [TierKS(protocol_id="temp_control_aadl_slang_l2")]
     contracts_fail = []
     if cli.repair:
         files_fail.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT))
         contracts_fail.append(SliceRestoreKS(golden_root=GOLDEN_ROOT))
-    confirm = [TierKS(protocol_id="gumbo_validation")] if cli.validate else []
+    confirm = [TierKS(protocol_id="temp_control_aadl_slang_validation")] if cli.validate else []
     starter = StartAttestationKS(episodes={
-        "gumbo:files": "gumbo_l1a",
-        "gumbo:contracts": "gumbo_l1b",
+        "temp_control_aadl_slang:files": "temp_control_aadl_slang_l1a",
+        "temp_control_aadl_slang:contracts": "temp_control_aadl_slang_l1b",
     })
     for ks in [*confirm, *files_fail, *contracts_fail, starter]:
         controller.add_ks(ks)
-    controller.route("gumbo:files", on_pass=confirm, on_fail=files_fail)
-    controller.route("gumbo:contracts", on_pass=confirm, on_fail=contracts_fail)
+    controller.route("temp_control_aadl_slang:files", on_pass=confirm, on_fail=files_fail)
+    controller.route("temp_control_aadl_slang:contracts", on_pass=confirm, on_fail=contracts_fail)
 
     # the first verdict: does every protocol in both trees exist and run?
     checked = list(protocols)
     if cli.misconfigure:
-        checked.append("gumbo_l9")
+        checked.append("temp_control_aadl_slang_l9")
     controller.blackboard.write_entry(
-        key="gumbo:ready", predicate="protocol_check",
+        key="temp_control_aadl_slang:ready", predicate="protocol_check",
         measurement=readiness_request(checked),
     )
-    controller.route("gumbo:ready", on_pass=[starter], on_fail=[])
+    controller.route("temp_control_aadl_slang:ready", on_pass=[starter], on_fail=[])
     return controller
 
 
@@ -176,9 +176,9 @@ def main() -> None:
                              "escalates, attestation never starts")
     cli = parser.parse_args()
 
-    protocol_ids = ["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]
+    protocol_ids = ["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2"]
     if cli.validate:
-        protocol_ids.append("gumbo_validation")
+        protocol_ids.append("temp_control_aadl_slang_validation")
     protocols = {
         pid: ProtocolDir.load(str(Path(cli.protocols_root) / pid))
         for pid in protocol_ids
@@ -200,13 +200,13 @@ def main() -> None:
     try:
         controller = build_controller(protocols, cli)
         controller.run()
-        print_report(controller, semantic=["gumbo_validation"])
+        print_report(controller, semantic=["temp_control_aadl_slang_validation"])
 
         if cli.repair:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
             episode2 = build_controller(protocols, cli)
             episode2.run()
-            print_report(episode2, semantic=["gumbo_validation"])
+            print_report(episode2, semantic=["temp_control_aadl_slang_validation"])
     finally:
         restored = golden.restore()
         if restored:

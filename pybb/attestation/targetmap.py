@@ -6,13 +6,13 @@ so re-provisioning must regenerate the *target definitions* (ranges,
 markers), not just golden values. This module derives them by syntax scan:
 
 - AADL GUMBO clauses (`assume` / `guarantee` / `inv` inside `annex GUMBO`
-  blocks, clause keyword line through the terminating `;`) -> gumbo_l2
+  blocks, clause keyword line through the terminating `;`) -> temp_control_aadl_slang_l2
   line-range targets for the model files
 - GumboX `@strictpure def` spans (def line through the last line of the
-  contiguous block) -> gumbo_l2 line-range targets for the oracle files
-- component-file `// BEGIN X` / `// END X` pairs -> gumbo_l1b
+  contiguous block) -> temp_control_aadl_slang_l2 line-range targets for the oracle files
+- component-file `// BEGIN X` / `// END X` pairs -> temp_control_aadl_slang_l1b
   marker-range targets
-- whole watched files -> gumbo_l1a hashfile targets
+- whole watched files -> temp_control_aadl_slang_l1a hashfile targets
 
 Derived maps are complete over their syntax, so they may be SUPERSETS of a
 historically hand-curated provisioned map (verified: every provisioned
@@ -136,9 +136,9 @@ def derive_targets(spec: dict) -> Dict[str, Dict[str, dict]]:
     Derive fresh asp_args maps (no golden values — provisioning fills them)
     for the three measurement protocols from current file content:
 
-        {"gumbo_l1a": {"hashfile": {...}},
-         "gumbo_l1b": {"readfile_marker_range": {...}},
-         "gumbo_l2":  {"readfile_range": {...}}}
+        {"temp_control_aadl_slang_l1a": {"hashfile": {...}},
+         "temp_control_aadl_slang_l1b": {"readfile_marker_range": {...}},
+         "temp_control_aadl_slang_l2":  {"readfile_range": {...}}}
     """
     l1a = {}
     for filepath in spec["hash_files"]:
@@ -167,9 +167,9 @@ def derive_targets(spec: dict) -> Dict[str, Dict[str, dict]]:
     from .copland import with_asp_targids
 
     return {
-        "gumbo_l1a": {"hashfile": with_asp_targids(l1a)},
-        "gumbo_l1b": {"readfile_marker_range": with_asp_targids(l1b)},
-        "gumbo_l2": {"readfile_range": with_asp_targids(l2)},
+        "temp_control_aadl_slang_l1a": {"hashfile": with_asp_targids(l1a)},
+        "temp_control_aadl_slang_l1b": {"readfile_marker_range": with_asp_targids(l1b)},
+        "temp_control_aadl_slang_l2": {"readfile_range": with_asp_targids(l2)},
     }
 
 

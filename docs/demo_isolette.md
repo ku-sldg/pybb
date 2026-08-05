@@ -12,18 +12,18 @@ the first carrier of the signed golden-spec (props) design.
 The report is the authority (13 files, 67 slices: 40 Model / 23 Verus /
 4 Rust; a fixtures-consistency test enforces committed == derived):
 
-    isl_l1a    13 whole-file hashes (AADL packages + contract-bearing Rust)
-    isl_l2     67 slices: GUMBO contracts in AADL + Verus/Rust realizations
-    isl_props  5 blessed model files — the AADL packages the 40 Model
+    isolette_aadl_rust_l1a    13 whole-file hashes (AADL packages + contract-bearing Rust)
+    isolette_aadl_rust_l2     67 slices: GUMBO contracts in AADL + Verus/Rust realizations
+    isolette_aadl_rust_props  5 blessed model files — the AADL packages the 40 Model
                slices live in, signed whole-file at provisioning
-    isl_verus  [--validate] cargo-verus verify of the 7 contract-bearing
+    isolette_aadl_rust_verus  [--validate] cargo-verus verify of the 7 contract-bearing
                crates: the generated contracts must PROVE (91 verified /
                0 errors on the implemented tree; a freshly generated
                SKELETON is correctly refuted — postconditions unprovable
                with empty developer regions)
 
 Every episode's readiness gate verifies the three signed baselines before
-attestation (`signed baselines verified (isl_l1a, isl_l2, isl_props)`).
+attestation (`signed baselines verified (isolette_aadl_rust_l1a, isolette_aadl_rust_l2, isolette_aadl_rust_props)`).
 
 ```sh
 python examples/isolette_rust.py [--check] [--provision]
@@ -39,7 +39,7 @@ negative — re-provisioning the measurement baselines over a tampered
 golden tree, refuted only by the administrator's blessing — is an
 automated test; see `signed_baselines.md`.
 
-Toolchain identity (see `signed_baselines.md`): `isl_verus` hashes the
+Toolchain identity (see `signed_baselines.md`): `isolette_aadl_rust_verus` hashes the
 verus toolchain in the same term, before the verifications; `hamr_tools`
 (sireum.jar + OSATE plugins) is blessed measure-in-place and re-measured
 by the promotion gate immediately before codegen.
@@ -56,8 +56,8 @@ no OSATE/phantom required for codegen) — and
 `examples/isolette_rust.py --frontend sysml` runs the identical
 workflow off the SysML report under its own protocol namespace:
 
-    isy_l1a (13 hashes) / isy_l2 (67 slices) / isy_props (5 blessed
-    model files) / isy_verus (7 crates) — entries isy:files / isy:ready
+    isolette_sysmlv2_rust_l1a (13 hashes) / isolette_sysmlv2_rust_l2 (67 slices) / isolette_sysmlv2_rust_props (5 blessed
+    model files) / isolette_sysmlv2_rust_verus (7 crates) — entries isolette_sysmlv2_rust:files / isolette_sysmlv2_rust:ready
 
 Verified properties:
 
@@ -73,7 +73,7 @@ Verified properties:
   names a revised GUMBO guarantee in `Regulate.sysml`
   position-independently.
 - The default (`--frontend aadl`, implied) is byte-identical to the
-  pre-SysML behavior — regeneration reproduces the committed `isl_*`
+  pre-SysML behavior — regeneration reproduces the committed `isolette_aadl_rust_*`
   fixtures exactly.
 
 Codegen from SysML (not needed for attestation; the committed report is

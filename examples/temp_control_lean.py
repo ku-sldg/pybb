@@ -12,34 +12,34 @@ holds the whole workflow (protocols, provisioning, episodes, tamper
 demos, --check/--promote); a second Lean scenario is pure configuration
 (see examples/landing_gear_lean.py). The driver builds:
 
-    lean_l1a   whole-file hashes: every .lean source + lakefile.toml +
+    temp_control_lean_l1a   whole-file hashes: every .lean source + lakefile.toml +
                lean-toolchain (build config and toolchain pin are inside
                the trust boundary)
-    lean_l2    readfile_range per top-level declaration (attribution)
-    lean_check `lake lean TempControl/Spec.lean -- --json`: every theorem
+    temp_control_lean_l2    readfile_range per top-level declaration (attribution)
+    temp_control_lean_check `lake lean TempControl/Spec.lean -- --json`: every theorem
                must still PROVE (fails on error diagnostics and hasSorry —
                a sorry exits 0, so exit codes alone would bless it)
-    lean_exec  hash-then-run of the PINNED built binary: its hash must
+    temp_control_lean_exec  hash-then-run of the PINNED built binary: its hash must
                match the build-anchored golden, then it is executed
                directly (lake env <binary>, never rebuilt) per GUMBO case;
                stdout must equal the expected command. Main imports only
                TempControl.Impl, so provability and behavior stay
                independent measurements.
-    lean_build the build event, run at provisioning: toolchain -> input
+    temp_control_lean_build the build event, run at provisioning: toolchain -> input
                sources -> lake build -> output binary, one signature
-    lean_props the administrator-blessed golden spec (Spec.lean signed
+    temp_control_lean_props the administrator-blessed golden spec (Spec.lean signed
                whole-file); re-blessed ONLY by --promote
 
 Three independent trust questions, three always-run entries:
 
-    lean:files     eval lean_l1a: fail -> lean_l2 refines (which
+    temp_control_lean:files     eval temp_control_lean_l1a: fail -> temp_control_lean_l2 refines (which
                    declaration) -> [--repair] WholeFileRestoreKS
-    lean:proofs    [--validate] eval lean_check: fail escalates directly
-    lean:behavior  [--validate] eval lean_exec: fail escalates directly
+    temp_control_lean:proofs    [--validate] eval temp_control_lean_check: fail escalates directly
+    temp_control_lean:behavior  [--validate] eval temp_control_lean_exec: fail escalates directly
 
 Two artifacts are owned by the out-of-band attestation manager and change
 ONLY through --promote (the administrator's sanctioning act): the
-lean_props blessing, and the exec expecteds (behavior vectors' expected
+temp_control_lean_props blessing, and the exec expecteds (behavior vectors' expected
 outputs — sanctioned via --expect, e.g. --expect hot=fanCmd=Off).
 
 Usage:
@@ -60,7 +60,7 @@ from lean_workflow import LeanExampleConfig
 REPO = Path(__file__).parent.parent
 
 CONFIG = LeanExampleConfig(
-    prefix="lean",
+    prefix="temp_control_lean",
     package_root=REPO / "targets" / "temp-control-lean",
     spec_rel="TempControl/Spec.lean",
     bin_name="temp-control",
@@ -71,7 +71,7 @@ CONFIG = LeanExampleConfig(
         "cold": {"args": ["60", "70", "90", "On"], "expected": "fanCmd=Off"},
         "hold": {"args": ["80", "70", "90", "On"], "expected": "fanCmd=On"},
     },
-    tamper_targ="lean_spec_fanOn_when_hot_targ",
+    tamper_targ="temp_control_lean_spec_fanOn_when_hot_targ",
     tamper_semantic_spot=(
         "TempControl/Impl.lean",
         "if temp > sp.high then .On",

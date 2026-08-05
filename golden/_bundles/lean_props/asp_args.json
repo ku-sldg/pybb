@@ -1,9 +1,0 @@
-{
-  "readfile": {
-    "lean_props_spec_targ": {
-      "env_var": "",
-      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
-      "asp_targid": "lean_props_spec_targ"
-    }
-  }
-}

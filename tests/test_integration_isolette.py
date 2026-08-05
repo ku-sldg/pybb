@@ -1,7 +1,7 @@
 """
 Isolette example end-to-end: the INSPECTA seL4/Microkit exemplar, vendored
 at targets/isolette-microkit with its HAMR attestation report as the
-authoritative source of targets and golden slices (isl_l1a/isl_l2/isl_verus
+authoritative source of targets and golden slices (isolette_aadl_rust_l1a/isolette_aadl_rust_l2/isolette_aadl_rust_verus
 are generated from it, never hand-curated). Readiness verifies the SIGNED
 golden baseline bundles before any attestation; a tampered Verus contract
 slice is detected, attributed, whole-file repaired from golden, and
@@ -38,7 +38,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 ISL_ROOT = REPO / "targets" / "isolette-microkit"
 REPORT = ISL_ROOT / "hamr" / "microkit" / "attestation" / "aadl_attestation_report.json"
-PROTOCOL_IDS = ("isl_l1a", "isl_l2")
+PROTOCOL_IDS = ("isolette_aadl_rust_l1a", "isolette_aadl_rust_l2")
 
 pytestmark = [
     pytest.mark.cvm,
@@ -60,7 +60,7 @@ def _protocols(*extra: str) -> dict:
 
 def test_committed_fixtures_derive_from_the_report():
     """The report is the authority: committed target maps must equal it."""
-    derived = derive_targets_from_report(REPORT, prefix="isl")
+    derived = derive_targets_from_report(REPORT, prefix="isolette_aadl_rust")
     for pid in PROTOCOL_IDS:
         committed = ProtocolDir.load(str(FIXTURES / pid)).asp_args
         for asp_id, targets in derived[pid].items():
@@ -73,7 +73,7 @@ def test_committed_fixtures_derive_from_the_report():
     crates = {s["filepath"].split("/crates/")[1].split("/")[0]
               for s in report_slices(REPORT)
               if s["kind"] in ("Verus", "Rust") and "/crates/" in s["filepath"]}
-    verus = ProtocolDir.load(str(FIXTURES / "isl_verus")).asp_args
+    verus = ProtocolDir.load(str(FIXTURES / "isolette_aadl_rust_verus")).asp_args
     committed_crates = {Path(a["cwd"]).name
                         for a in verus["run_command_cargo_verus"].values()}
     assert committed_crates == crates
@@ -88,7 +88,7 @@ def test_report_covers_model_and_generated_artifacts():
 
 def test_signed_baselines_verify():
     client = CvmSubprocessClient()
-    for pid, n in (("isl_l1a", 13), ("isl_l2", 67)):
+    for pid, n in (("isolette_aadl_rust_l1a", 13), ("isolette_aadl_rust_l2", 67)):
         report = verify_bundle(client, ProtocolDir.load(str(FIXTURES / pid)),
                                GOLDEN_ROOT)
         assert report, report.problems
@@ -105,43 +105,43 @@ def live_snapshot():
 
 
 def _episode(repair: bool = True, validate: bool = False):
-    protocols = _protocols(*(["isl_verus"] if validate else []))
+    protocols = _protocols(*(["isolette_aadl_rust_verus"] if validate else []))
     ctl = BlackboardController()
     client = CvmSubprocessClient()
     ctl.register_predicate(
         "attestation", make_attestation_predicate(client, protocols))
     ctl.register_predicate("protocol_check", make_readiness_predicate(
         protocols, baseline_root=GOLDEN_ROOT, client=client))
-    chain = [TierKS(protocol_id="isl_l2")]
+    chain = [TierKS(protocol_id="isolette_aadl_rust_l2")]
     if repair:
         chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                        refined_by="isl_l2"))
-    confirm = [TierKS(protocol_id="isl_verus")] if validate else []
+                                        refined_by="isolette_aadl_rust_l2"))
+    confirm = [TierKS(protocol_id="isolette_aadl_rust_verus")] if validate else []
     for ks in (*confirm, *chain):
         ctl.add_ks(ks)
-    ctl.blackboard.write_entry(key="isl:files", predicate="attestation",
-                               measurement=attestation_request("isl_l1a"))
-    ctl.route("isl:files", on_pass=confirm, on_fail=chain)
-    ctl.blackboard.write_entry(key="isl:ready", predicate="protocol_check",
+    ctl.blackboard.write_entry(key="isolette_aadl_rust:files", predicate="attestation",
+                               measurement=attestation_request("isolette_aadl_rust_l1a"))
+    ctl.route("isolette_aadl_rust:files", on_pass=confirm, on_fail=chain)
+    ctl.blackboard.write_entry(key="isolette_aadl_rust:ready", predicate="protocol_check",
                                measurement=readiness_request(list(protocols)))
-    ctl.route("isl:ready", on_pass=[], on_fail=[])
+    ctl.route("isolette_aadl_rust:ready", on_pass=[], on_fail=[])
     ctl.run()
     return ctl.blackboard
 
 
 def test_ctemp_control_lean_with_verified_baseline():
     bb = _episode()
-    ready = bb.get_entry("isl:ready")
+    ready = bb.get_entry("isolette_aadl_rust:ready")
     assert ready.good_standing
-    assert ready.result.baseline_verified == ["isl_l1a", "isl_l2"]
-    entry = bb.get_entry("isl:files")
-    assert entry.good_standing and entry.result.protocol == "isl_l1a"
+    assert ready.result.baseline_verified == ["isolette_aadl_rust_l1a", "isolette_aadl_rust_l2"]
+    entry = bb.get_entry("isolette_aadl_rust:files")
+    assert entry.good_standing and entry.result.protocol == "isolette_aadl_rust_l1a"
     assert len(entry.result.components) == 14  # 13 hashfile + sig
-    assert "signed baselines verified (isl_l1a, isl_l2)" in trust_summary(bb)
+    assert "signed baselines verified (isolette_aadl_rust_l1a, isolette_aadl_rust_l2)" in trust_summary(bb)
 
 
 def test_verus_slice_tamper_attributed_repaired_verified(live_snapshot):
-    l2 = _protocols()["isl_l2"].asp_args["readfile_range"]
+    l2 = _protocols()["isolette_aadl_rust_l2"].asp_args["readfile_range"]
     targ, args = next((t, a) for t, a in sorted(l2.items())
                       if "thermostat_rt_mhs" in a["filepath"]
                       and a["filepath"].endswith(".rs"))
@@ -152,36 +152,36 @@ def test_verus_slice_tamper_attributed_repaired_verified(live_snapshot):
 
     bb1 = _episode()
 
-    escalated = bb1.escalate["isl:files"]
-    assert escalated.ks_history == {"tier:isl_l2": 1, "repair:whole-file": 1}
+    escalated = bb1.escalate["isolette_aadl_rust:files"]
+    assert escalated.ks_history == {"tier:isolette_aadl_rust_l2": 1, "repair:whole-file": 1}
     l2v = next(e.result for k, e in bb1.get_history()
-               if k == "isl:files" and e.result is not None
-               and e.result.protocol == "isl_l2")
+               if k == "isolette_aadl_rust:files" and e.result is not None
+               and e.result.protocol == "isolette_aadl_rust_l2")
     assert targ in {c.targ_id for c in l2v.failing()}
     from pybb.attestation.snapshot import mirror_path
     assert rs.read_bytes() == mirror_path(GOLDEN_ROOT, rs).read_bytes()
 
     bb2 = _episode()
-    assert bb2.entries["isl:files"].good_standing
+    assert bb2.entries["isolette_aadl_rust:files"].good_standing
     assert not bb2.escalate
 
 
 @needs_verus
 def test_isl_l1a_pass_confirmed_by_verus():
     bb = _episode(repair=False, validate=True)
-    entry = bb.get_entry("isl:files")
+    entry = bb.get_entry("isolette_aadl_rust:files")
     assert entry is not None and entry.good_standing, entry
-    assert entry.result.protocol == "isl_verus"
+    assert entry.result.protocol == "isolette_aadl_rust_verus"
     crates = {c.targ_id for c in entry.result.components
-              if c.targ_id and c.targ_id.startswith("isl_")
+              if c.targ_id and c.targ_id.startswith("isolette_aadl_rust_")
               and c.targ_id.endswith("_verus_targ")}
     assert len(crates) == 7  # every contract-bearing crate
     # the verus toolchain was measured in the same term, before the uses
     tools = {c.targ_id for c in entry.result.components
              if (c.args.get("metadata") or "").startswith("tool::cargo-verus")}
     assert len(tools) == 4
-    assert "isl_l1a passed; confirmed by isl_verus" in \
-        trust_summary(bb, semantic=["isl_verus"])
+    assert "isolette_aadl_rust_l1a passed; confirmed by isolette_aadl_rust_verus" in \
+        trust_summary(bb, semantic=["isolette_aadl_rust_verus"])
 
 
 # ── signed golden spec (props): the administrator-blessed model files ─────────
@@ -189,7 +189,7 @@ def test_isl_l1a_pass_confirmed_by_verus():
 def test_props_covers_every_model_file_with_blessed_content():
     from pybb.attestation.props import model_files_from_report
 
-    committed = ProtocolDir.load(str(FIXTURES / "isl_props")).asp_args["readfile"]
+    committed = ProtocolDir.load(str(FIXTURES / "isolette_aadl_rust_props")).asp_args["readfile"]
     assert sorted(a["filepath"] for a in committed.values()) == \
         model_files_from_report(REPORT)
     for args in committed.values():
@@ -199,14 +199,14 @@ def test_props_covers_every_model_file_with_blessed_content():
 def test_props_baseline_anchors_hashes_and_slices_not_vacuously():
     from pybb.attestation.baseline import _build_anchors
 
-    protocols = _protocols("isl_props")
+    protocols = _protocols("isolette_aadl_rust_props")
     # every blessed model file has BOTH a hash golden and Model slices to
     # anchor — the appraisal below is not a vacuous signature check
     anchors = _build_anchors(protocols)
-    for args in protocols["isl_props"].asp_args["readfile"].values():
+    for args in protocols["isolette_aadl_rust_props"].asp_args["readfile"].values():
         assert anchors[args["filepath"]].get("hash_golden_b64")
         assert anchors[args["filepath"]]["slices"]
-    report = verify_bundle(CvmSubprocessClient(), protocols["isl_props"],
+    report = verify_bundle(CvmSubprocessClient(), protocols["isolette_aadl_rust_props"],
                            GOLDEN_ROOT, anchor_protocols=protocols)
     assert report, report.problems
     assert len(report.anchored) == 5
@@ -223,11 +223,11 @@ def test_laundered_measurement_baselines_refuted_by_blessing():
                                   make_readiness_predicate, readiness_request,
                                   request_provision)
 
-    pids = ["isl_l1a", "isl_l2", "isl_props"]
+    pids = ["isolette_aadl_rust_l1a", "isolette_aadl_rust_l2", "isolette_aadl_rust_props"]
     protocols = {p: ProtocolDir.load(str(FIXTURES / p)) for p in pids}
     client = CvmSubprocessClient()
 
-    l2 = protocols["isl_l2"].asp_args["readfile_range"]
+    l2 = protocols["isolette_aadl_rust_l2"].asp_args["readfile_range"]
     targ, args = next((t, a) for t, a in sorted(l2.items())
                       if a["filepath"].endswith(".aadl") and a.get("metadata"))
     gold = Path("golden" + args["filepath"])
@@ -235,7 +235,7 @@ def test_laundered_measurement_baselines_refuted_by_blessing():
 
     def reprovision():
         ctl = BlackboardController()
-        sub = {p: protocols[p] for p in ("isl_l1a", "isl_l2")}
+        sub = {p: protocols[p] for p in ("isolette_aadl_rust_l1a", "isolette_aadl_rust_l2")}
         ctl.register_predicate("provision",
                                make_provision_predicate(client, sub, GOLDEN_ROOT))
         for p in sub:
@@ -253,9 +253,9 @@ def test_laundered_measurement_baselines_refuted_by_blessing():
             client=CvmSubprocessClient())(readiness_request(pids))
         assert not report
         # the laundered baselines are self-consistent and verify...
-        assert report.baseline_verified == ["isl_l1a", "isl_l2"]
+        assert report.baseline_verified == ["isolette_aadl_rust_l1a", "isolette_aadl_rust_l2"]
         # ...but the blessing refutes them, naming the file and the cause
-        assert any("isl_props" in p and "not derivable from blessed content" in p
+        assert any("isolette_aadl_rust_props" in p and "not derivable from blessed content" in p
                    for p in report.baseline_problems)
     finally:
         gold.write_bytes(orig)
@@ -269,12 +269,12 @@ def test_laundered_measurement_baselines_refuted_by_blessing():
 # ── SysML frontend (--frontend sysml): same tree, second report ───────────────
 
 SYSML_REPORT = ISL_ROOT / "hamr" / "microkit" / "attestation" / "sysml_attestation_report.json"
-SYSML_PROTOCOL_IDS = ("isy_l1a", "isy_l2")
+SYSML_PROTOCOL_IDS = ("isolette_sysmlv2_rust_l1a", "isolette_sysmlv2_rust_l2")
 
 
 def test_sysml_committed_fixtures_derive_from_the_sysml_report():
-    """The SysML report is the authority for the isy_* protocol set."""
-    derived = derive_targets_from_report(SYSML_REPORT, prefix="isy")
+    """The SysML report is the authority for the isolette_sysmlv2_rust_* protocol set."""
+    derived = derive_targets_from_report(SYSML_REPORT, prefix="isolette_sysmlv2_rust")
     for pid in SYSML_PROTOCOL_IDS:
         committed = ProtocolDir.load(str(FIXTURES / pid)).asp_args
         for asp_id, targets in derived[pid].items():
@@ -301,7 +301,7 @@ def test_sysml_report_is_slice_parity_with_aadl_over_shared_crates():
 
 def test_sysml_ctemp_control_lean_with_verified_baseline():
     protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
-                 for pid in (*SYSML_PROTOCOL_IDS, "isy_props")}
+                 for pid in (*SYSML_PROTOCOL_IDS, "isolette_sysmlv2_rust_props")}
     client = CvmSubprocessClient()
     report = make_readiness_predicate(
         protocols, baseline_root=GOLDEN_ROOT,
@@ -309,7 +309,7 @@ def test_sysml_ctemp_control_lean_with_verified_baseline():
     assert report, (report.problems, report.baseline_problems)
     assert set(report.baseline_verified) == set(protocols)
     verdict = make_attestation_predicate(client, protocols)(
-        attestation_request("isy_l1a"))
+        attestation_request("isolette_sysmlv2_rust_l1a"))
     assert verdict.passed, verdict
     assert len(verdict.components) == 14  # 13 hashes + sig
 
@@ -321,7 +321,7 @@ def test_sysml_detection_names_a_changed_sysml_contract():
 
     protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
                  for pid in SYSML_PROTOCOL_IDS}
-    assert changed_contracts(protocols["isy_l2"], model_suffix=".sysml") == []
+    assert changed_contracts(protocols["isolette_sysmlv2_rust_l2"], model_suffix=".sysml") == []
     regulate = ISL_ROOT / "sysml" / "Regulate.sysml"
     orig = regulate.read_text()
     assert "regulator_status == Isolette_Data_Model::Status.Init_Status" in orig
@@ -329,11 +329,11 @@ def test_sysml_detection_names_a_changed_sysml_contract():
         "regulator_status == Isolette_Data_Model::Status.Init_Status",
         "regulator_status == Isolette_Data_Model::Status.On_Status", 1))
     try:
-        changed = changed_contracts(protocols["isy_l2"], model_suffix=".sysml")
+        changed = changed_contracts(protocols["isolette_sysmlv2_rust_l2"], model_suffix=".sysml")
         assert any("regulate" in t for t in changed), changed
     finally:
         regulate.write_text(orig)
-    assert changed_contracts(protocols["isy_l2"], model_suffix=".sysml") == []
+    assert changed_contracts(protocols["isolette_sysmlv2_rust_l2"], model_suffix=".sysml") == []
 
 
 # ── promotion (--promote): the sanctioning act ────────────────────────────────
@@ -357,21 +357,21 @@ def test_provision_keeps_props_blessing_promote_reblesses(tmp_path, monkeypatch)
     golden_tmp = tmp_path / "golden"
     shutil.copytree(GOLDEN_ROOT, golden_tmp)
     protocols = {}
-    for pid in ("isy_l1a", "isy_l2", "isy_props"):
+    for pid in ("isolette_sysmlv2_rust_l1a", "isolette_sysmlv2_rust_l2", "isolette_sysmlv2_rust_props"):
         shutil.copytree(FIXTURES / pid, tmp_path / pid)
         protocols[pid] = ProtocolDir.load(str(tmp_path / pid))
     monkeypatch.setattr(ex, "GOLDEN_ROOT", golden_tmp)
 
-    bundle = golden_tmp / "_bundles" / "isy_props" / "provision_bundle.json"
-    blessed_args = (tmp_path / "isy_props" / "asp_args.json").read_text()
+    bundle = golden_tmp / "_bundles" / "isolette_sysmlv2_rust_props" / "provision_bundle.json"
+    blessed_args = (tmp_path / "isolette_sysmlv2_rust_props" / "asp_args.json").read_text()
     blessed_bundle = bundle.read_text()
 
     ex.provision_flow(fe, protocols)  # ordinary: blessing untouched
-    assert (tmp_path / "isy_props" / "asp_args.json").read_text() == blessed_args
+    assert (tmp_path / "isolette_sysmlv2_rust_props" / "asp_args.json").read_text() == blessed_args
     assert bundle.read_text() == blessed_bundle
 
     ex.provision_flow(fe, protocols, bless_props=True)  # the sanctioning act
-    rearmed = json.loads((tmp_path / "isy_props" / "asp_args.json").read_text())
+    rearmed = json.loads((tmp_path / "isolette_sysmlv2_rust_props" / "asp_args.json").read_text())
     # content unchanged -> same goldens, but the blessing was re-signed
     for targ, args in rearmed["readfile"].items():
         assert args["golden_b64"] == json.loads(blessed_args)["readfile"][targ]["golden_b64"]

@@ -1,0 +1,32 @@
+{
+  "hashfile": {
+    "temp_control_aadl_rust_tempcontrolsystem_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempControlSystem.aadl",
+      "env_var": "",
+      "asp_targid": "temp_control_aadl_rust_tempcontrolsystem_targ",
+      "golden_b64": "VFUXAp4hcWtNbINf2b7qhLKvSdt4DNmZVCcu1LgwcZw=",
+      "golden_ts": "2026-08-05 09:57:54"
+    },
+    "temp_control_aadl_rust_tempsensor_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/aadl/packages/TempSensor.aadl",
+      "env_var": "",
+      "asp_targid": "temp_control_aadl_rust_tempsensor_targ",
+      "golden_b64": "4XDckFAJGdGoJrpSuTernsJ2+99NNEDuwN7siZzlXVc=",
+      "golden_ts": "2026-08-05 09:57:54"
+    },
+    "temp_control_aadl_rust_tcproc_tempcontrol_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tcproc_tempControl/src/component/tcproc_tempControl_app.rs",
+      "env_var": "",
+      "asp_targid": "temp_control_aadl_rust_tcproc_tempcontrol_app_targ",
+      "golden_b64": "eY+YSITSo37Wd5gA5eASVaRI83X08NsDKDJ2vvwBOAs=",
+      "golden_ts": "2026-08-05 09:57:54"
+    },
+    "temp_control_aadl_rust_tsproc_tempsensor_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-microkit/hamr/microkit/crates/tsproc_tempSensor/src/component/tsproc_tempSensor_app.rs",
+      "env_var": "",
+      "asp_targid": "temp_control_aadl_rust_tsproc_tempsensor_app_targ",
+      "golden_b64": "P+wOUXImgoGrkB7ep+g+Ov712aswl0dmJ69dbVjrC1Y=",
+      "golden_ts": "2026-08-05 09:57:54"
+    }
+  }
+}

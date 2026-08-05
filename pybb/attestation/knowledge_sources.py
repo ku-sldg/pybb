@@ -18,9 +18,9 @@ re-pointing its measurement at this rung's protocol, so the controller's
 next evaluation attests at the new tier. The decision tree is encoded in
 the route's outcome chains:
 
-    route("gumbo",
-          on_pass=[TierKS(protocol_id="gumbo_validation")],
-          on_fail=[TierKS(protocol_id="gumbo_l2")])
+    route("temp_control_aadl_slang",
+          on_pass=[TierKS(protocol_id="temp_control_aadl_slang_validation")],
+          on_fail=[TierKS(protocol_id="temp_control_aadl_slang_l2")])
 
 reads: a passing l1 verdict is provisional until semantic validation
 confirms it; a failing l1 verdict is attributed per-contract at l2. Either

@@ -1,0 +1,130 @@
+{
+  "hashfile": {
+    "tool_lean_lake_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_targ",
+      "golden_b64": "Ud6ydlKLplK1kojcLNAh5CbdbB+XbnAOLGRLL23pR4I=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "tool_lean_lake_2_targ": {
+      "filepath": "/Users/adampetz/.elan/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_2_targ",
+      "golden_b64": "h1SFi2VJqbBvSgGecUWl4eGfkzmDc0OIkgoQeBp1N9s=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "tool_lean_lean_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lean_targ",
+      "golden_b64": "GzcM/L9E6A0bAEqxsauaTHOVH598JCFAvP+bxXdXZVQ=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "tool_lean_lake_3_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_3_targ",
+      "golden_b64": "WCYaGi+ho2I3bHHgLKhUoJPnHMXm6mSyh6kxyyVlJz0=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "tool_lean_leanchecker_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_leanchecker_targ",
+      "golden_b64": "HgtertZgqPLGHZvQ8DxX4q620ofzbgw+OE6pNF2zSD4=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "tool_lean_libleanshared_dylib_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_libleanshared_dylib_targ",
+      "golden_b64": "ppWpqmhIHEK5lhngEDU35rQzxvpwIZJ7GE4ZpobQOYk=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_main_lean_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/Main.lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::Main.lean",
+      "asp_targid": "temp_control_lean_in_main_lean_targ",
+      "golden_b64": "N3Ap3soY5t8y81BqYDsQZ665svezc4wwXpPU9e95afk=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_tempcontrol_lean_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl.lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::TempControl.lean",
+      "asp_targid": "temp_control_lean_in_tempcontrol_lean_targ",
+      "golden_b64": "1hRh9V6PPsayG//8ZuZT3U/mTcGlW0o9wMN0wkxI6U8=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_impl_lean_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Impl.lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::Impl.lean",
+      "asp_targid": "temp_control_lean_in_impl_lean_targ",
+      "golden_b64": "aC0BKVa3IojMfvxe2lNoUogdQkqSWfAuyO4isd03bJE=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_spec_lean_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/TempControl/Spec.lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::Spec.lean",
+      "asp_targid": "temp_control_lean_in_spec_lean_targ",
+      "golden_b64": "wOyeFf4Zct2DS55flcz+dxJkDyZkGibdfgrw5JmjDXo=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_lakefile_toml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lakefile.toml",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::lakefile.toml",
+      "asp_targid": "temp_control_lean_in_lakefile_toml_targ",
+      "golden_b64": "a0a64sJYiFQAcl+lBqnDP5tcGT3EDHn48NPrnjrA/BE=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_in_lean_toolchain_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/lean-toolchain",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_in::lean-toolchain",
+      "asp_targid": "temp_control_lean_in_lean_toolchain_targ",
+      "golden_b64": "76wLlJI7LYtoQM01vpF3rQ/FqyMy9PQxHJhxLO6S/e4=",
+      "golden_ts": "2026-08-05 09:58:10"
+    },
+    "temp_control_lean_out_temp_control_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean/.lake/build/bin/temp-control",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "build_out::temp-control",
+      "asp_targid": "temp_control_lean_out_temp_control_targ",
+      "golden_b64": "3PRJZRp2xSs4eXaE3/524sGmAbX1Z8mjQojyfxQXaqo=",
+      "golden_ts": "2026-08-05 09:58:10"
+    }
+  },
+  "run_command_lean": {
+    "temp_control_lean_build_cmd_targ": {
+      "exe_args": [
+        "build"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-lean",
+      "asp_targid": "temp_control_lean_build_cmd_targ"
+    }
+  }
+}

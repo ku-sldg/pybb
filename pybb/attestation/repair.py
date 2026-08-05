@@ -2,14 +2,14 @@
 Repair on the routed blackboard: converge live targets back to gold.
 
 Repair unit = measurement unit. `WholeFileRestoreKS` pairs with whole-file
-hash tiers (gumbo_l1a): it restores entire files — the only repair that
+hash tiers (temp_control_aadl_slang_l1a): it restores entire files — the only repair that
 can return a whole-file hash to its golden value. `SliceRestoreKS` pairs
-with block tiers (gumbo_l1b): it splices only the violated BEGIN/END
+with block tiers (temp_control_aadl_slang_l1b): it splices only the violated BEGIN/END
 block, mandatory in developer-owned files where everything around the
 block is legitimately in motion.
 
 Scope discipline: whole-file repair restores only files the refinement
-tier (gumbo_l2) confirmed violated — benign drift (l1a failed, every l2
+tier (temp_control_aadl_slang_l2) confirmed violated — benign drift (l1a failed, every l2
 slice passed) is never repaired. Tolerated drift is blessed by
 re-provisioning, not laundered by repair.
 
@@ -60,7 +60,7 @@ class WholeFileRestoreKS(KnowledgeSource):
     partition: List[str] = []
     max_attempts: int = 1
     golden_root: Path
-    refined_by: str = "gumbo_l2"
+    refined_by: str = "temp_control_aadl_slang_l2"
 
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:

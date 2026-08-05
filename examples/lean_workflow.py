@@ -19,7 +19,7 @@ builds six protocols
 
 and three always-run entries: <p>:files (fail -> <p>_l2 refines ->
 [--repair] restore), <p>:proofs and <p>:behavior (escalate directly).
-lean_props and the exec expecteds are AM-owned and change only through
+temp_control_lean_props and the exec expecteds are AM-owned and change only through
 --promote. See the config modules' docstrings and docs/demo_lean.md /
 docs/demo_gear.md for the scenario-level stories.
 """
@@ -66,7 +66,7 @@ REPO = Path(__file__).parent.parent
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
-TEMPLATES = {"l1a": "gumbo_l1a", "l2": "gumbo_l2"}
+TEMPLATES = {"l1a": "temp_control_aadl_slang_l1a", "l2": "temp_control_aadl_slang_l2"}
 LAKE = Path.home() / "Claude_workspace" / "bin" / "lake"
 
 # Just-in-time tool measurement: the lean toolchain (wrapper -> elan shim
@@ -180,8 +180,8 @@ class LeanExampleConfig:
 
     @property
     def tier_meta(self) -> dict:
-        # display names carry no prefix — the protocol ids (lean_check,
-        # gear_check) disambiguate
+        # display names carry no prefix — the protocol ids (temp_control_lean_check,
+        # landing_gear_lean_check) disambiguate
         return {
             self.check_id: {
                 "name": "Lean Proof Check (semantic tier)",

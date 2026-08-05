@@ -1,0 +1,70 @@
+{
+  "hashfile": {
+    "tool_lean_lake_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_targ",
+      "golden_b64": "Ud6ydlKLplK1kojcLNAh5CbdbB+XbnAOLGRLL23pR4I=",
+      "golden_ts": "2026-08-05 09:58:13"
+    },
+    "tool_lean_lake_2_targ": {
+      "filepath": "/Users/adampetz/.elan/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_2_targ",
+      "golden_b64": "h1SFi2VJqbBvSgGecUWl4eGfkzmDc0OIkgoQeBp1N9s=",
+      "golden_ts": "2026-08-05 09:58:13"
+    },
+    "tool_lean_lean_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lean_targ",
+      "golden_b64": "GzcM/L9E6A0bAEqxsauaTHOVH598JCFAvP+bxXdXZVQ=",
+      "golden_ts": "2026-08-05 09:58:13"
+    },
+    "tool_lean_lake_3_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/lake",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_lake_3_targ",
+      "golden_b64": "WCYaGi+ho2I3bHHgLKhUoJPnHMXm6mSyh6kxyyVlJz0=",
+      "golden_ts": "2026-08-05 09:58:13"
+    },
+    "tool_lean_leanchecker_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/bin/leanchecker",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_leanchecker_targ",
+      "golden_b64": "HgtertZgqPLGHZvQ8DxX4q620ofzbgw+OE6pNF2zSD4=",
+      "golden_ts": "2026-08-05 09:58:13"
+    },
+    "tool_lean_libleanshared_dylib_targ": {
+      "filepath": "/Users/adampetz/.elan/toolchains/leanprover--lean4---v4.31.0/lib/lean/libleanshared.dylib",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::lean",
+      "asp_targid": "tool_lean_libleanshared_dylib_targ",
+      "golden_b64": "ppWpqmhIHEK5lhngEDU35rQzxvpwIZJ7GE4ZpobQOYk=",
+      "golden_ts": "2026-08-05 09:58:13"
+    }
+  },
+  "run_command_lean": {
+    "landing_gear_lean_spec_check_targ": {
+      "exe_args": [
+        "lean",
+        "LandingGear/Spec.lean",
+        "--",
+        "--json"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/landing-gear-lean",
+      "asp_targid": "landing_gear_lean_spec_check_targ"
+    }
+  }
+}

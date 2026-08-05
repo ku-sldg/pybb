@@ -1,0 +1,154 @@
+{
+  "hashfile": {
+    "tool_cargo_verus_cargo_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_targ",
+      "golden_b64": "fBUd3tk3Sb/Apw5lij5DyY2X1hNqeHLtBQLoEiihIII=",
+      "golden_ts": "2026-08-05 09:58:03"
+    },
+    "tool_cargo_verus_cargo_verus_2_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_cargo_verus_2_targ",
+      "golden_b64": "8BsYQYkX23ppQblNgLvmb+bJ7pVQShsHqfN4mUuLHzY=",
+      "golden_ts": "2026-08-05 09:58:03"
+    },
+    "tool_cargo_verus_rust_verify_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_rust_verify_targ",
+      "golden_b64": "0Rmu8+j69QSxFO0pWMVYkDVe+NVlnfCh2Bn0w3/NqN4=",
+      "golden_ts": "2026-08-05 09:58:03"
+    },
+    "tool_cargo_verus_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::cargo-verus",
+      "asp_targid": "tool_cargo_verus_verus_targ",
+      "golden_b64": "6YFdT4PzWgJhB5/Xc9I0tffcA5vn9HOU8YFaNqDYSu0=",
+      "golden_ts": "2026-08-05 09:58:03"
+    }
+  },
+  "run_command_cargo_verus": {
+    "isolette_aadl_rust_operator_interface_oip_oit_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+      "asp_targid": "isolette_aadl_rust_operator_interface_oip_oit_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_ma_ma_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_ma_ma_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_mmi_mmi_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_mmi_mmi_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_mmm_mmm_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_mmm_mmm_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mhs_mhs_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mhs_mhs_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mri_mri_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mri_mri_verus_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mrm_mrm_verus_targ": {
+      "exe_args": [
+        "verify",
+        "-Z",
+        "build-std=core,alloc,compiler_builtins",
+        "-Z",
+        "build-std-features=compiler-builtins-mem",
+        "--target",
+        "aarch64-unknown-none",
+        "--",
+        "--output-json",
+        "--time"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mrm_mrm_verus_targ"
+    }
+  }
+}

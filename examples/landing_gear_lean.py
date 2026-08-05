@@ -15,12 +15,12 @@ certification basis states in some form.
                            no_retract_below_speed, retract_when_safe, and
                            the safety converse retract_only_when_safe;
                            three kernel-evaluated decide examples
-    Main.lean              imports ONLY Impl — provability (gear_check)
-                           and behavior (gear_exec) stay independent
+    Main.lean              imports ONLY Impl — provability (landing_gear_lean_check)
+                           and behavior (landing_gear_lean_exec) stay independent
 
 This is a THIN CONFIG over examples/lean_workflow.py — the entire
-workflow (gear_l1a/l2/props/check/exec/build protocols, provisioning,
-episodes gear:files/proofs/behavior, tamper demos, --check/--promote) is
+workflow (landing_gear_lean_l1a/l2/props/check/exec/build protocols, provisioning,
+episodes landing_gear_lean:files/proofs/behavior, tamper demos, --check/--promote) is
 the shared driver; this scenario is pure configuration. The
 --tamper-semantic arc removes the weight-on-wheels interlock (the Up/wow
 arm flips Hold -> Retract) and launders every hash measurement by
@@ -45,7 +45,7 @@ from lean_workflow import LeanExampleConfig
 REPO = Path(__file__).parent.parent
 
 CONFIG = LeanExampleConfig(
-    prefix="gear",
+    prefix="landing_gear_lean",
     package_root=REPO / "targets" / "landing-gear-lean",
     spec_rel="LandingGear/Spec.lean",
     bin_name="landing-gear",
@@ -60,7 +60,7 @@ CONFIG = LeanExampleConfig(
         "extend": {"args": ["200", "140", "Down", "air"],
                    "expected": "gearCmd=Extend"},
     },
-    tamper_targ="gear_spec_no_retract_on_ground_targ",
+    tamper_targ="landing_gear_lean_spec_no_retract_on_ground_targ",
     tamper_semantic_spot=(
         "LandingGear/Impl.lean",
         "| .Up, true => .Hold",

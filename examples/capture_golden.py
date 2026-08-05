@@ -19,7 +19,7 @@ from pybb.attestation import ProtocolDir, TargetSnapshot
 
 GOLDEN_ROOT = Path(__file__).parent.parent / "golden"
 DEFAULT_PROTOCOLS_ROOT = Path(__file__).parent.parent / "tests" / "fixtures"
-PROTOCOL_IDS = ["gumbo_l1a", "gumbo_l1b", "gumbo_l2", "gumbo_validation"]
+PROTOCOL_IDS = ["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2", "temp_control_aadl_slang_validation"]
 
 
 def main() -> None:

@@ -1,11 +1,11 @@
 """
-End-to-end gumbo_validation runs: the CVM forks run_command_hamr five times
+End-to-end temp_control_aadl_slang_validation runs: the CVM forks run_command_hamr five times
 (sireum proyek tipe, logika x2, test x2 against temp-control-jvm/slang),
 appraised by exit code.
 
 Covers both ways validation participates: requested directly as a
 single-tier entry, and as the on_pass confirmation chain after a passing
-gumbo_l1a (the "L1 succeeds, try L3" edge of the decision tree).
+temp_control_aadl_slang_l1a (the "L1 succeeds, try L3" edge of the decision tree).
 
 Takes minutes per run. Gated behind RUN_SIREUM=1 in addition to the cvm
 marker so a plain `pytest` stays fast.
@@ -44,9 +44,9 @@ pytestmark = [
 ]
 
 
-def test_gumbo_validation_clean_pass():
+def test_temp_control_aadl_slang_validation_clean_pass():
     protocols = {
-        "gumbo_validation": ProtocolDir.load(str(FIXTURES / "gumbo_validation"))
+        "temp_control_aadl_slang_validation": ProtocolDir.load(str(FIXTURES / "temp_control_aadl_slang_validation"))
     }
     ctl = BlackboardController()
     ctl.register_predicate(
@@ -54,13 +54,13 @@ def test_gumbo_validation_clean_pass():
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
     ctl.blackboard.write_entry(
-        key="gumbo_validation", predicate="attestation",
-        measurement=attestation_request("gumbo_validation"),
+        key="temp_control_aadl_slang_validation", predicate="attestation",
+        measurement=attestation_request("temp_control_aadl_slang_validation"),
     )
     ctl.run()
     bb = ctl.blackboard
 
-    entry = bb.get_entry("gumbo_validation")
+    entry = bb.get_entry("temp_control_aadl_slang_validation")
     assert entry is not None and entry.good_standing, entry
     verdict = entry.result
     assert len(verdict.components) == 5
@@ -77,27 +77,27 @@ def test_l1_pass_confirmed_by_validation():
     """Clean tree: l1 passes provisionally, the on_pass chain confirms at l3."""
     protocols = {
         pid: ProtocolDir.load(str(FIXTURES / pid))
-        for pid in ("gumbo_l1a", "gumbo_l2", "gumbo_validation")
+        for pid in ("temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l2", "temp_control_aadl_slang_validation")
     }
     ctl = BlackboardController()
     ctl.register_predicate(
         "attestation",
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
-    confirm = TierKS(protocol_id="gumbo_validation")
-    attribute = TierKS(protocol_id="gumbo_l2")
+    confirm = TierKS(protocol_id="temp_control_aadl_slang_validation")
+    attribute = TierKS(protocol_id="temp_control_aadl_slang_l2")
     for ks in (confirm, attribute):
         ctl.add_ks(ks)
     ctl.blackboard.write_entry(
-        key="gumbo", predicate="attestation",
-        measurement=attestation_request("gumbo_l1a"),
+        key="temp_control_aadl_slang", predicate="attestation",
+        measurement=attestation_request("temp_control_aadl_slang_l1a"),
     )
-    ctl.route("gumbo", on_pass=[confirm], on_fail=[attribute])
+    ctl.route("temp_control_aadl_slang", on_pass=[confirm], on_fail=[attribute])
     ctl.run()
     bb = ctl.blackboard
 
-    entry = bb.get_entry("gumbo")
+    entry = bb.get_entry("temp_control_aadl_slang")
     assert entry is not None and entry.good_standing, entry
-    assert entry.result.protocol == "gumbo_validation"
-    assert entry.ks_history == {"tier:gumbo_validation": 1}  # l2 never fired
-    assert "gumbo_l1a passed; confirmed by gumbo_validation" in trust_summary(bb)
+    assert entry.result.protocol == "temp_control_aadl_slang_validation"
+    assert entry.ks_history == {"tier:temp_control_aadl_slang_validation": 1}  # l2 never fired
+    assert "temp_control_aadl_slang_l1a passed; confirmed by temp_control_aadl_slang_validation" in trust_summary(bb)

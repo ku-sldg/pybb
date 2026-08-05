@@ -44,14 +44,14 @@ present — deeper checks via CVM tooling are the documented extension
 point) and spends its dispatch on that verdict:
 
 ```python
-controller.route("gumbo:files", on_pass=[...], on_fail=[...])   # pre-registered
-controller.route("gumbo:contracts", on_fail=[...])              # (entries not yet written)
-controller.route("gumbo:ready",
-    on_pass=[StartAttestationKS(episodes={"gumbo:files": "gumbo_l1a",
-                                          "gumbo:contracts": "gumbo_l1b"})],
+controller.route("temp_control_aadl_slang:files", on_pass=[...], on_fail=[...])   # pre-registered
+controller.route("temp_control_aadl_slang:contracts", on_fail=[...])              # (entries not yet written)
+controller.route("temp_control_aadl_slang:ready",
+    on_pass=[StartAttestationKS(episodes={"temp_control_aadl_slang:files": "temp_control_aadl_slang_l1a",
+                                          "temp_control_aadl_slang:contracts": "temp_control_aadl_slang_l1b"})],
     on_fail=[])                                           # config failure -> escalate
-blackboard.write_entry(key="gumbo:ready", predicate="protocol_check",
-    measurement=readiness_request(["gumbo_l1a", "gumbo_l1b", "gumbo_l2"]))
+blackboard.write_entry(key="temp_control_aadl_slang:ready", predicate="protocol_check",
+    measurement=readiness_request(["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2"]))
 ```
 
 A passing check's on_pass starter writes every attestation entry seeded at
@@ -68,36 +68,36 @@ decision trees chain further entries the same way.
 
 | tier | question | measures | granularity | runs | repair unit |
 |---|---|---|---|---|---|
-| `gumbo_l1a` | baseline drifted? | whole-file hashes: 2 AADL models + 2 GumboX oracles | file | always | whole file |
-| `gumbo_l1b` | contract blocks intact? | 6 codegen-managed BEGIN/END blocks in the developer-owned component files | block | always | block splice |
-| `gumbo_l2` | *where* in the l1a files — invariant content or benign? | 22 contract-range slices, all inside l1a files | contract clause | on l1a failure | (guides l1a repair) |
-| `gumbo_validation` | does it still *verify*? | tool exit codes: tipe / logika / GumboX tests | semantic | on pass, `--validate` | none |
+| `temp_control_aadl_slang_l1a` | baseline drifted? | whole-file hashes: 2 AADL models + 2 GumboX oracles | file | always | whole file |
+| `temp_control_aadl_slang_l1b` | contract blocks intact? | 6 codegen-managed BEGIN/END blocks in the developer-owned component files | block | always | block splice |
+| `temp_control_aadl_slang_l2` | *where* in the l1a files — invariant content or benign? | 22 contract-range slices, all inside l1a files | contract clause | on l1a failure | (guides l1a repair) |
+| `temp_control_aadl_slang_validation` | does it still *verify*? | tool exit codes: tipe / logika / GumboX tests | semantic | on pass, `--validate` | none |
 
 The split follows the HAMR paradigm: GumboX oracles are generated
 ("do not edit"), AADL models are baseline-immutable by policy, and
 component files are "safe to edit" *except* their codegen-managed contract
-blocks — which is why whole-file hashing cannot watch them and `gumbo_l1b`
+blocks — which is why whole-file hashing cannot watch them and `temp_control_aadl_slang_l1b`
 exists as an always-run sentinel at terminal granularity.
 
 ```python
-controller.route("gumbo:files",                        # the baseline question
-    on_pass=[TierKS(protocol_id="gumbo_validation")],  # --validate
-    on_fail=[TierKS(protocol_id="gumbo_l2"),
+controller.route("temp_control_aadl_slang:files",                        # the baseline question
+    on_pass=[TierKS(protocol_id="temp_control_aadl_slang_validation")],  # --validate
+    on_fail=[TierKS(protocol_id="temp_control_aadl_slang_l2"),
              WholeFileRestoreKS(golden_root=GOLDEN_ROOT)])
-controller.route("gumbo:contracts",                    # the living-code question
-    on_pass=[TierKS(protocol_id="gumbo_validation")],
+controller.route("temp_control_aadl_slang:contracts",                    # the living-code question
+    on_pass=[TierKS(protocol_id="temp_control_aadl_slang_validation")],
     on_fail=[SliceRestoreKS(golden_root=GOLDEN_ROOT)])
 ```
 
-    gumbo:files   eval gumbo_l1a (whole-file hashes, ~1s)
-      pass -> gumbo_validation (~min): pass = confirmed, fail = escalate
-      fail -> gumbo_l2 (contract slices, ~1s)
+    temp_control_aadl_slang:files   eval temp_control_aadl_slang_l1a (whole-file hashes, ~1s)
+      pass -> temp_control_aadl_slang_validation (~min): pass = confirmed, fail = escalate
+      fail -> temp_control_aadl_slang_l2 (contract slices, ~1s)
                 pass = benign drift, tolerated (re-provision to bless it)
-                fail -> WholeFileRestoreKS restores the files gumbo_l2
+                fail -> WholeFileRestoreKS restores the files temp_control_aadl_slang_l2
                         confirmed violated -> repaired, pending
 
-    gumbo:contracts   eval gumbo_l1b (contract blocks, ~1s)
-      pass -> done (or gumbo_validation with --validate)
+    temp_control_aadl_slang:contracts   eval temp_control_aadl_slang_l1b (contract blocks, ~1s)
+      pass -> done (or temp_control_aadl_slang_validation with --validate)
       fail -> SliceRestoreKS splices the violated blocks from golden,
               touching nothing else -> repaired, pending
 
@@ -135,7 +135,7 @@ partition, followed by the per-protocol provision requests
 (`request_promotion`; the partition evaluates in write order):
 
 ```python
-request_promotion(blackboard, "gumbo", ["gumbo_l1a", "gumbo_l1b", "gumbo_l2"])
+request_promotion(blackboard, "gumbo", ["temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2"])
 ```
 
 The `"promotion"` predicate IS the pipeline: re-run HAMR codegen on the
@@ -162,22 +162,22 @@ after promotion, the derived map is the baseline.
 `targets/temp-control-microkit` is the same model ported to the seL4
 Microkit / Rust / Verus pipeline (see its README for the porting ledger).
 There the **HAMR attestation report** — emitted by Microkit codegen — is
-the authoritative source of targets and golden slices: `tcmk_l1a`
-(whole-file hashes of every reported file) and `tcmk_l2` (every report
+the authoritative source of targets and golden slices: `temp_control_aadl_rust_l1a`
+(whole-file hashes of every reported file) and `temp_control_aadl_rust_l2` (every report
 slice: GUMBO model contracts + their Verus/Rust realizations) are
 generated by `derive_targets_from_report`, never hand-curated, and the
 promotion predicate regenerates them from the fresh report after each
 real codegen run (`targets_fn` backend parameter). One trust question
-(`tcmk:files`) suffices: every slice lives inside a hashed file, and
+(`temp_control_aadl_rust:files`) suffices: every slice lives inside a hashed file, and
 generated Rust is whole-file-immutable, so `WholeFileRestoreKS` is the
 repair class throughout. `examples/temp_control_aadl_rust.py` drives
 provisioning, attestation, Verus-slice tamper/repair, and the full
 `--promote` lifecycle.
 
-The pipeline has a **semantic tier**: `tcmk_verus` runs `cargo-verus
+The pipeline has a **semantic tier**: `temp_control_aadl_rust_verus` runs `cargo-verus
 verify` over both contract-bearing crates (run_command_cargo_verus ASP,
 appraised on the JSON error count) as the on_pass confirmation of
-`tcmk:files` (`--validate`). Text attestation says the contracts are the
+`temp_control_aadl_rust:files` (`--validate`). Text attestation says the contracts are the
 provisioned ones; Verus says the implementation PROVES them — it catches
 the one scenario integrity measurement cannot: a behavior change
 laundered through re-provisioning. Getting the proof to close required a
@@ -217,7 +217,7 @@ updates files in `golden/` and writes a request into the blackboard's
 ```python
 controller.register_predicate("provision",
     make_provision_predicate(client, protocols, GOLDEN_ROOT))
-request_provision(blackboard, "gumbo_l1a")         # key "provision:gumbo_l1a"
+request_provision(blackboard, "temp_control_aadl_slang_l1a")         # key "provision:temp_control_aadl_slang_l1a"
 ```
 
 The `"provision"` predicate IS the provisioning, mirroring the attestation

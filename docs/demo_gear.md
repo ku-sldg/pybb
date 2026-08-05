@@ -30,10 +30,10 @@ toolchain pin as temp-control, so the blessed tool set is shared):
 
 ## Protocols and entries
 
-`gear_l1a` (6 whole-file hashes) / `gear_l2` (18 declaration slices, named
+`landing_gear_lean_l1a` (6 whole-file hashes) / `landing_gear_lean_l2` (18 declaration slices, named
 — attribution reads `LandingGear.Spec::no_retract_on_ground`) /
-`gear_props` (the blessed spec) / `gear_check` (proofs must prove) /
-`gear_exec` (hash-then-run, one vector per contract case) / `gear_build`
+`landing_gear_lean_props` (the blessed spec) / `landing_gear_lean_check` (proofs must prove) /
+`landing_gear_lean_exec` (hash-then-run, one vector per contract case) / `landing_gear_lean_build`
 (the build event; the exec binary golden is born from its bundle).
 
 Behavior vectors (`expected` is AM config — laundering cannot reach it):
@@ -42,8 +42,8 @@ Behavior vectors (`expected` is AM config — laundering cannot reach it):
     airborne  180 140 Up air -> gearCmd=Retract
     extend    200 140 Down air -> gearCmd=Extend
 
-Entries: `gear:files` (fail → `gear_l2` refines → `--repair` restores),
-`gear:proofs`, `gear:behavior`.
+Entries: `landing_gear_lean:files` (fail → `landing_gear_lean_l2` refines → `--repair` restores),
+`landing_gear_lean:proofs`, `landing_gear_lean:behavior`.
 
 ## Demo arcs
 
@@ -56,7 +56,7 @@ python examples/landing_gear_lean.py --promote
 ```
 
 **Structural tamper + repair**: a corrupted proof line is attributed to
-`gear_spec_no_retract_on_ground_targ` — the violated safety theorem, by
+`landing_gear_lean_spec_no_retract_on_ground_targ` — the violated safety theorem, by
 name — restored from golden, verified clean by episode 2.
 
 **Laundered interlock removal** (`--tamper-semantic`): the Up/wow arm of
@@ -74,7 +74,7 @@ readiness, four times over by proof and once by behavior:
 
 **Sanctioned change** (`--check`/`--promote`): identical machinery to the
 temp-control example (see `demo_lean.md`) — declaration-name diffs against
-the blessed spec bytes, promotion gates before gold, `gear_props` and the
+the blessed spec bytes, promotion gates before gold, `landing_gear_lean_props` and the
 exec expecteds change only through `--promote`.
 
 ## Tests

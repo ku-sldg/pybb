@@ -50,7 +50,7 @@ pytestmark = [
 def _protocols() -> dict:
     return {
         pid: ProtocolDir.load(str(FIXTURES / pid))
-        for pid in ("gumbo_l1a", "gumbo_l1b", "gumbo_l2")
+        for pid in ("temp_control_aadl_slang_l1a", "temp_control_aadl_slang_l1b", "temp_control_aadl_slang_l2")
     }
 
 
@@ -71,21 +71,21 @@ def _episode():
         "attestation",
         make_attestation_predicate(CvmSubprocessClient(), protocols),
     )
-    files_fail = [TierKS(protocol_id="gumbo_l2"),
+    files_fail = [TierKS(protocol_id="temp_control_aadl_slang_l2"),
                   WholeFileRestoreKS(golden_root=GOLDEN_ROOT)]
     contracts_fail = [SliceRestoreKS(golden_root=GOLDEN_ROOT)]
     for ks in [*files_fail, *contracts_fail]:
         ctl.add_ks(ks)
     ctl.blackboard.write_entry(
-        key="gumbo:files", predicate="attestation",
-        measurement=attestation_request("gumbo_l1a"),
+        key="temp_control_aadl_slang:files", predicate="attestation",
+        measurement=attestation_request("temp_control_aadl_slang_l1a"),
     )
     ctl.blackboard.write_entry(
-        key="gumbo:contracts", predicate="attestation",
-        measurement=attestation_request("gumbo_l1b"),
+        key="temp_control_aadl_slang:contracts", predicate="attestation",
+        measurement=attestation_request("temp_control_aadl_slang_l1b"),
     )
-    ctl.route("gumbo:files", on_fail=files_fail)
-    ctl.route("gumbo:contracts", on_fail=contracts_fail)
+    ctl.route("temp_control_aadl_slang:files", on_fail=files_fail)
+    ctl.route("temp_control_aadl_slang:contracts", on_fail=contracts_fail)
     ctl.run()
     return ctl.blackboard
 
@@ -100,16 +100,16 @@ def test_aadl_tamper_whole_file_repair_verified_next_episode(live_snapshot):
     bb1 = _episode()
 
     # episode 1: attributed, repaired, escalated as repaired-pending
-    escalated = bb1.escalate["gumbo:files"]
-    assert escalated.ks_history == {"tier:gumbo_l2": 1, "repair:whole-file": 1}
+    escalated = bb1.escalate["temp_control_aadl_slang:files"]
+    assert escalated.ks_history == {"tier:temp_control_aadl_slang_l2": 1, "repair:whole-file": 1}
     assert aadl.read_bytes() == golden_copy.read_bytes()  # converged to gold
     assert "repaired from golden — verification pending" in trust_summary(bb1)
-    assert bb1.entries["gumbo:contracts"].good_standing
+    assert bb1.entries["temp_control_aadl_slang:contracts"].good_standing
 
     # episode 2: fresh caches provide the verifying evidence
     bb2 = _episode()
-    assert bb2.entries["gumbo:files"].good_standing
-    assert bb2.entries["gumbo:files"].result.protocol == "gumbo_l1a"
+    assert bb2.entries["temp_control_aadl_slang:files"].good_standing
+    assert bb2.entries["temp_control_aadl_slang:files"].result.protocol == "temp_control_aadl_slang_l1a"
     assert not bb2.escalate
 
 
@@ -125,12 +125,12 @@ def test_block_tamper_slice_repair_verified_next_episode(live_snapshot):
 
     bb1 = _episode()
 
-    escalated = bb1.escalate["gumbo:contracts"]
+    escalated = bb1.escalate["temp_control_aadl_slang:contracts"]
     assert escalated.ks_history == {"repair:slice": 1}
     assert comp.read_bytes() == golden_copy.read_bytes()  # block spliced back
     assert "repaired from golden — verification pending" in trust_summary(bb1)
-    assert bb1.entries["gumbo:files"].good_standing  # baseline never saw it
+    assert bb1.entries["temp_control_aadl_slang:files"].good_standing  # baseline never saw it
 
     bb2 = _episode()
-    assert bb2.entries["gumbo:contracts"].good_standing
+    assert bb2.entries["temp_control_aadl_slang:contracts"].good_standing
     assert not bb2.escalate

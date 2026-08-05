@@ -32,24 +32,24 @@ needs_tree = pytest.mark.skipif(not TC_ROOT.is_dir(),
 def test_derived_map_covers_every_provisioned_target():
     derived = derive_targets(TEMP_CONTROL_SPEC)
 
-    l2 = json.loads((FIXTURES / "gumbo_l2" / "asp_args.json").read_text())
+    l2 = json.loads((FIXTURES / "temp_control_aadl_slang_l2" / "asp_args.json").read_text())
     derived_ranges = {
         (a["filepath"], a["start_index"], a["end_index"])
-        for a in derived["gumbo_l2"]["readfile_range"].values()
+        for a in derived["temp_control_aadl_slang_l2"]["readfile_range"].values()
     }
     for targ, args in l2["readfile_range"].items():
         key = (args["filepath"], args["start_index"], args["end_index"])
         assert key in derived_ranges, f"provisioned {targ} not derivable"
 
-    l1b = json.loads((FIXTURES / "gumbo_l1b" / "asp_args.json").read_text())
-    derived_blocks = derived["gumbo_l1b"]["readfile_marker_range"]
+    l1b = json.loads((FIXTURES / "temp_control_aadl_slang_l1b" / "asp_args.json").read_text())
+    derived_blocks = derived["temp_control_aadl_slang_l1b"]["readfile_marker_range"]
     for targ, args in l1b["readfile_marker_range"].items():
         assert targ in derived_blocks, f"provisioned {targ} not derived by name"
         assert derived_blocks[targ]["begin_marker"] == args["begin_marker"]
         assert derived_blocks[targ]["end_marker"] == args["end_marker"]
 
-    l1a = json.loads((FIXTURES / "gumbo_l1a" / "asp_args.json").read_text())
-    assert set(derived["gumbo_l1a"]["hashfile"]) == set(l1a["hashfile"])
+    l1a = json.loads((FIXTURES / "temp_control_aadl_slang_l1a" / "asp_args.json").read_text())
+    assert set(derived["temp_control_aadl_slang_l1a"]["hashfile"]) == set(l1a["hashfile"])
 
 
 def test_spans_shift_with_content():
@@ -107,9 +107,9 @@ def test_marker_blocks_and_slugs():
 @needs_tree
 def test_built_term_matches_target_count_and_structure():
     derived = derive_targets(TEMP_CONTROL_SPEC)
-    term = build_term(derived["gumbo_l2"])
+    term = build_term(derived["temp_control_aadl_slang_l2"])
     bodies = list(iter_aspc_bodies(term))
-    assert len(bodies) == len(derived["gumbo_l2"]["readfile_range"])
+    assert len(bodies) == len(derived["temp_control_aadl_slang_l2"]["readfile_range"])
     assert {b["ASP_ID"] for b in bodies} == {"readfile_range"}
     # structure: lseq(lseq(chain, SIG), APPR)
     assert term["TERM_CONSTRUCTOR"] == "lseq"
@@ -255,18 +255,18 @@ def test_lean_spans_shift_with_content():
 def test_lean_derived_targets_live_tree():
     from pybb.attestation.targetmap import derive_targets_from_lean
 
-    derived = derive_targets_from_lean(LEAN_ROOT)
+    derived = derive_targets_from_lean(LEAN_ROOT, prefix="temp_control_lean")
 
-    l1a = derived["lean_l1a"]["hashfile"]
+    l1a = derived["temp_control_lean_l1a"]["hashfile"]
     # sources AND build configuration: lakefile + toolchain pin are hashed
-    assert {"lean_impl_targ", "lean_spec_targ", "lean_main_targ",
-            "lean_tempcontrol_targ", "lean_lakefile_targ",
-            "lean_lean_toolchain_targ"} <= set(l1a)
+    assert {"temp_control_lean_impl_targ", "temp_control_lean_spec_targ", "temp_control_lean_main_targ",
+            "temp_control_lean_tempcontrol_targ", "temp_control_lean_lakefile_targ",
+            "temp_control_lean_lean_toolchain_targ"} <= set(l1a)
     for args in l1a.values():
         assert Path(args["filepath"]).is_file()
         assert ".lake" not in Path(args["filepath"]).parts
 
-    l2 = derived["lean_l2"]["readfile_range"]
+    l2 = derived["temp_control_lean_l2"]["readfile_range"]
     # every l2 slice lives inside an l1a-hashed file (tcmk-style: one
     # trust question, l2 is pure refinement)
     hashed = {a["filepath"] for a in l1a.values()}
@@ -277,8 +277,8 @@ def test_lean_derived_targets_live_tree():
 
     # declaration-named attribution: the implementation function and the
     # GUMBO-mirror theorems are targets, in their split-out modules
-    named = {"lean_impl_computeFanCmd_targ": ("computeFanCmd", "TempControl.Impl"),
-             **{f"lean_spec_{n}_targ": (n, "TempControl.Spec")
+    named = {"temp_control_lean_impl_computeFanCmd_targ": ("computeFanCmd", "TempControl.Impl"),
+             **{f"temp_control_lean_spec_{n}_targ": (n, "TempControl.Spec")
                 for n in ("fanOn_when_hot", "fanOff_when_cold",
                           "fanHold_in_band", "fanOn_only_if_hot_or_held")}}
     for targ, (name, module) in named.items():
@@ -292,10 +292,10 @@ def test_lean_derived_targets_live_tree():
     assert not any("cannot" in t for t in l2)
 
     # the executable's entry point is attributable too
-    assert "lean_main_main_targ" in l2
+    assert "temp_control_lean_main_main_targ" in l2
 
     # derived maps feed straight into term construction
-    term = build_term(derived["lean_l2"])
+    term = build_term(derived["temp_control_lean_l2"])
     assert len(list(iter_aspc_bodies(term))) == len(l2)
 
 
@@ -303,7 +303,7 @@ def test_lean_derived_targets_live_tree():
 
 def test_every_fixture_target_is_self_identifying():
     """Derivation-time injection: every committed target's args carry
-    asp_targid equal to its key (gumbo_validation predates the target
+    asp_targid equal to its key (temp_control_aadl_slang_validation predates the target
     convention and has no targets to stamp)."""
     for proto_dir in sorted(FIXTURES.iterdir()):
         aa = proto_dir / "asp_args.json"

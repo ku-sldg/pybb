@@ -1,0 +1,29 @@
+{
+  "readfile": {
+    "isolette_aadl_rust_props_gumbo_library_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/GUMBO_Library.aadl",
+      "asp_targid": "isolette_aadl_rust_props_gumbo_library_targ"
+    },
+    "isolette_aadl_rust_props_monitor_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Monitor.aadl",
+      "asp_targid": "isolette_aadl_rust_props_monitor_targ"
+    },
+    "isolette_aadl_rust_props_operator_interface_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Operator_Interface.aadl",
+      "asp_targid": "isolette_aadl_rust_props_operator_interface_targ"
+    },
+    "isolette_aadl_rust_props_regulate_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Regulate.aadl",
+      "asp_targid": "isolette_aadl_rust_props_regulate_targ"
+    },
+    "isolette_aadl_rust_props_operator_interface_oip_oit_app_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "asp_targid": "isolette_aadl_rust_props_operator_interface_oip_oit_app_targ"
+    }
+  }
+}

@@ -13,10 +13,10 @@ same frontend-agnostic reporter; the reports differ only in where their
 Model-kind slices live (.aadl vs .sysml) — the Verus/Rust realization
 slices cover the same implemented crates. `--frontend` selects which
 report drives the workflow; each frontend has its own protocol set
-(isl_* / isy_*) and blessing, so both baselines coexist.
+(isolette_aadl_rust_* / isolette_sysmlv2_rust_*) and blessing, so both baselines coexist.
 
 Protocols (generated from the selected report, never hand-curated;
-prefix isl_ for AADL, isy_ for SysML):
+prefix isolette_aadl_rust_ for AADL, isolette_sysmlv2_rust_ for SysML):
 
     <p>_l1a    whole-file hashes of every file the report names
                (model files + contract-bearing Rust files)
@@ -128,7 +128,7 @@ class Frontend:
     """One model frontend: its report and the protocol namespace it owns."""
 
     name: str           # "aadl" | "sysml"
-    prefix: str         # protocol-id prefix (isl_ / isy_)
+    prefix: str         # protocol-id prefix (isolette_aadl_rust_ / isolette_sysmlv2_rust_)
     model_suffix: str   # model-language extension (--check, props scope)
     model_label: str    # human phrase for the props blessing description
 
@@ -153,9 +153,9 @@ class Frontend:
 
 
 FRONTENDS = {
-    "aadl": Frontend(name="aadl", prefix="isl", model_suffix=".aadl",
+    "aadl": Frontend(name="aadl", prefix="isolette_aadl_rust", model_suffix=".aadl",
                      model_label="AADL model file"),
-    "sysml": Frontend(name="sysml", prefix="isy", model_suffix=".sysml",
+    "sysml": Frontend(name="sysml", prefix="isolette_sysmlv2_rust", model_suffix=".sysml",
                       model_label="SysML v2 model file"),
 }
 
@@ -268,7 +268,7 @@ def verus_crates(fe: Frontend) -> list:
 
 
 def build_verus_protocol(fe: Frontend) -> ProtocolDir:
-    """<p>_verus: report-derived crate list, tcmk_verus session/manifest,
+    """<p>_verus: report-derived crate list, temp_control_aadl_rust_verus session/manifest,
     verus toolchain measurements woven in per TOOL_CADENCE."""
     d = FIXTURES / fe.verus_id
     d.mkdir(exist_ok=True)
@@ -292,8 +292,8 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
         acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
     term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
         acc, {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
-    session = json.loads((FIXTURES / "tcmk_verus" / "session.json").read_text())
-    manifest = json.loads((FIXTURES / "tcmk_verus" / "manifest.json").read_text())
+    session = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "session.json").read_text())
+    manifest = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "manifest.json").read_text())
     n_tools = 0
     if TOOL_CADENCE == "per_use":
         asp_args, term, session, manifest = weave_tool_measurements(
@@ -327,7 +327,7 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
     for pid, asp_args in derived.items():
         d = FIXTURES / pid
         d.mkdir(exist_ok=True)
-        template = "gumbo_l1a" if pid.endswith("_l1a") else "gumbo_l2"
+        template = "temp_control_aadl_slang_l1a" if pid.endswith("_l1a") else "temp_control_aadl_slang_l2"
         for f in ("session.json", "manifest.json"):
             shutil.copy2(FIXTURES / template / f, d / f)
         (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")

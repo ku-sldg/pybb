@@ -3,9 +3,9 @@
 # Gumbo (temp-control-jvm) attestation workflow: the outcome-routed decision
 # tree on the blackboard.
 #
-#   eval    gumbo_l1a+l1b     hashes + contract blocks          ~1s
-#   on pass gumbo_validation  sireum tipe/logika/test    ~min  (--validate)
-#   on fail gumbo_l2          per-contract slices        ~1s
+#   eval    temp_control_aadl_slang_l1a+l1b     hashes + contract blocks          ~1s
+#   on pass temp_control_aadl_slang_validation  sireum tipe/logika/test    ~min  (--validate)
+#   on fail temp_control_aadl_slang_l2          per-contract slices        ~1s
 #
 # The chosen tier's pass ends the run in good standing; its failure moves
 # the entry to the escalate segment with that tier's failure report.

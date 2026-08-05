@@ -37,19 +37,19 @@ names the tampered theorem.
 
 | Protocol | Measures | How |
 |---|---|---|
-| `lean_l1a` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
-| `lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
-| `lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
-| `lean_exec` | Behavior of the **pinned** built binary: hash vs the build-anchored golden, then one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | hash-then-run: `hashfile(binary)` then `lake env <binary> <vector>` (never rebuilt); appraiser compares stdout to `expected` in the measurement args |
-| `lean_build` | Executable provenance: toolchain → input sources → `lake build` → output binary, one signature; the exec tier's binary golden is born from this bundle (see `signed_baselines.md`) | build event at provisioning; cross-linked baseline verification at every readiness gate |
-| `lean_props` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
+| `temp_control_lean_l1a` | 6 whole-file hashes: 4 `.lean` sources + `lakefile.toml` + `lean-toolchain` — the toolchain the proofs were checked under is inside the trust boundary | `hashfile` vs provisioned goldens |
+| `temp_control_lean_l2` | 15 declaration slices (Impl: 4, Spec: 8, Main: 3) | `readfile_range` vs provisioned goldens |
+| `temp_control_lean_check` | Provability: every theorem must still prove | `lake lean TempControl/Spec.lean -- --json` (builds imports first); appraiser fails on any `error` diagnostic **or `hasSorry` warning** — a `sorry` exits 0, so exit codes alone would bless it |
+| `temp_control_lean_exec` | Behavior of the **pinned** built binary: hash vs the build-anchored golden, then one vector per GUMBO case — `(101, 70–90, Off)→On`, `(60, 70–90, On)→Off`, `(80, 70–90, On)→On` | hash-then-run: `hashfile(binary)` then `lake env <binary> <vector>` (never rebuilt); appraiser compares stdout to `expected` in the measurement args |
+| `temp_control_lean_build` | Executable provenance: toolchain → input sources → `lake build` → output binary, one signature; the exec tier's binary golden is born from this bundle (see `signed_baselines.md`) | build event at provisioning; cross-linked baseline verification at every readiness gate |
+| `temp_control_lean_props` | The administrator-blessed golden spec: `Spec.lean` signed whole-file at provisioning; the spec's hash and declaration-slice goldens must be derivable from blessed content (see `signed_baselines.md`) | `readfile` + SIG at provisioning; `model_slices_appr` at every readiness gate |
 
 Three always-run entries, three independent trust questions:
 
-    lean:files     eval lean_l1a: fail -> lean_l2 refines (which declaration)
+    temp_control_lean:files     eval temp_control_lean_l1a: fail -> temp_control_lean_l2 refines (which declaration)
                                        -> [--repair] WholeFileRestoreKS
-    lean:proofs    [--validate] eval lean_check: fail escalates directly
-    lean:behavior  [--validate] eval lean_exec:  fail escalates directly
+    temp_control_lean:proofs    [--validate] eval temp_control_lean_check: fail escalates directly
+    temp_control_lean:behavior  [--validate] eval temp_control_lean_exec:  fail escalates directly
 
 ## Demo arcs
 
@@ -66,8 +66,8 @@ python examples/temp_control_lean.py --promote --expect hot=fanCmd=Off
 
 **Structural tamper + repair** (`--tamper --repair`, log:
 `demo_runs/2026-07-30_lean_tamper_repair.log`): a corrupted proof line makes
-`lean_l1a` fail on exactly `lean_spec_targ`; `TierKS(lean_l2)` refines to
-`lean_spec_fanOn_when_hot_targ` (metadata `TempControl.Spec::fanOn_when_hot`
+`temp_control_lean_l1a` fail on exactly `temp_control_lean_spec_targ`; `TierKS(temp_control_lean_l2)` refines to
+`temp_control_lean_spec_fanOn_when_hot_targ` (metadata `TempControl.Spec::fanOn_when_hot`
 — the violated *theorem*, by name); `WholeFileRestoreKS` restores from
 golden; the episode ends escalated as "repaired from golden — verification
 pending next episode"; episode 2 attests clean. Repair cannot mint trust.
@@ -77,11 +77,11 @@ pending next episode"; episode 2 attests clean. Repair cannot mint trust.
 `computeFanCmd` is flipped `.On -> .Off` and the tree **re-provisioned** —
 every hash measurement now blesses the tampered state:
 
-    lean:files:    all attested components intact (lean_l1a passed)
-    lean:proofs:   integrity violation — lean_check failed;
-                   failing components: lean_spec_check_targ
-    lean:behavior: integrity violation — lean_exec failed;
-                   failing components: lean_exec_hot_targ
+    temp_control_lean:files:    all attested components intact (temp_control_lean_l1a passed)
+    temp_control_lean:proofs:   integrity violation — temp_control_lean_check failed;
+                   failing components: temp_control_lean_spec_check_targ
+    temp_control_lean:behavior: integrity violation — temp_control_lean_exec failed;
+                   failing components: temp_control_lean_exec_hot_targ
 
 The laundered change is refuted **twice, independently**: `fanOn_when_hot`
 (and the kernel-evaluated `decide` example) no longer prove, and the binary
@@ -95,7 +95,7 @@ manager): the system is intent-blind — a provable, well-meant spec addition
 fails episodes exactly like tamper until the administrator sanctions it.
 Two artifacts change ONLY through `--promote`:
 
-- the **`lean_props` blessing**: ordinary provisioning (including a
+- the **`temp_control_lean_props` blessing**: ordinary provisioning (including a
   laundering pass) never re-signs it, so a spec change without promotion
   leaves a stale blessing that baseline verification refutes at readiness
   ("hash golden not derivable from blessed content") — attestation never
@@ -114,7 +114,7 @@ blessing is not (`changed_decls(props_protocol=...)`,
 `tests/test_integration_lean.py::test_check_sees_through_laundered_l2_goldens`).
 
 `--promote` is the sanctioning pipeline, gates before gold: behavior gate
-(`lake build` + vectors vs sanctioned expecteds) → proof gate (`lean_check`
+(`lake build` + vectors vs sanctioned expecteds) → proof gate (`temp_control_lean_check`
 must prove, toolchain measured in the same term) → syntax-scan target
 regeneration (a new theorem becomes a new *named* l2 target) → gold moves →
 full provisioning including the props re-blessing → verification episode.

@@ -1,6 +1,0 @@
-{
-  "name": "GUMBO Contract Attribution (Level 2)",
-  "description": "Refinement of a gumbo_l1a failure: per-contract range measurements of the GUMBO clauses in the AADL models and the GumboX oracle predicates. Attributes baseline drift to declared-invariant content, or clears it as benign (drift outside every measured range). Every target refines a gumbo_l1a file.",
-  "copland": "lseq( lseq( bseq_chain( readfile_range\u00d722 ), SIG ), APPR )",
-  "dynamic": true
-}

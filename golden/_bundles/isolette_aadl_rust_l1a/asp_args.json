@@ -1,0 +1,69 @@
+{
+  "hashfile": {
+    "isolette_aadl_rust_gumbo_library_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/GUMBO_Library.aadl",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_gumbo_library_targ"
+    },
+    "isolette_aadl_rust_monitor_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Monitor.aadl",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_monitor_targ"
+    },
+    "isolette_aadl_rust_operator_interface_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Operator_Interface.aadl",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_operator_interface_targ"
+    },
+    "isolette_aadl_rust_regulate_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/aadl/aadl/packages/Regulate.aadl",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_regulate_targ"
+    },
+    "isolette_aadl_rust_operator_interface_oip_oit_api_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/bridge/operator_interface_oip_oit_api.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_operator_interface_oip_oit_api_targ"
+    },
+    "isolette_aadl_rust_operator_interface_oip_oit_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_operator_interface_oip_oit_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_ma_ma_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_ma_ma_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_mmi_mmi_api_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/bridge/thermostat_mt_mmi_mmi_api.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_mmi_mmi_api_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_mmi_mmi_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_mmi_mmi_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_mt_mmm_mmm_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_mt_mmm_mmm_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mhs_mhs_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mhs_mhs_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mri_mri_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mri_mri_app_targ"
+    },
+    "isolette_aadl_rust_thermostat_rt_mrm_mrm_app_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "env_var": "",
+      "asp_targid": "isolette_aadl_rust_thermostat_rt_mrm_mrm_app_targ"
+    }
+  }
+}
