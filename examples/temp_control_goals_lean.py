@@ -162,6 +162,9 @@ CONFIG = LeanExampleConfig(
     witness_rel=PROOFS_REL,
     proofs_targ="temp_control_goals_lean_proofs_verification_targ",
     binding_targ="temp_control_goals_lean_acceptance_verification_targ",
+    # --repair is judged by fresh measurement IN-SESSION (restart-episode
+    # primitive): tamper -> attribution -> repair -> re-attest, one run
+    restart_budget=1,
 )
 
 # test-facing API (tests/test_integration_goals.py)

@@ -148,6 +148,58 @@ readiness): it is a *progress* signal and says so in its header. The
 `--ready` variant verifies every signed baseline first and labels the
 checklist accordingly.
 
+## In-session re-attestation (`--repair`, the restart-episode primitive)
+
+Step 3 of the roadmap. In the classic scenarios repair ends escalated —
+"repaired from golden — verification pending next episode" — because the
+attestation model is episodic: predicates memoize per measurement, and
+dispatch latches once per key. The goals scenario's repair chains instead
+end in a `RestartEpisodeKS`: after the repair, the chain *requests a
+fresh episode*, and the controller (top of the next cycle) forgets the
+memoized verdicts for the entry's episode measurements, reseeds the entry
+with a fresh KS budget, clears the dispatch latch, and re-evaluates — a
+genuinely fresh CVM run judging the repaired state, in the same session:
+
+    python examples/temp_control_goals_lean.py --tamper --repair
+    ...
+    temp_control_goals_lean:model: all attested components intact
+        (temp_control_goals_lean_model passed) — repaired and re-attested
+        clean in-session (episode 2)
+
+Trust semantics are unchanged: the repair's word is still worthless, and
+only the fresh measurement re-establishes standing — the process
+boundary was an implementation artifact, not the trust argument. Halting
+is preserved twice over: the chain's `budget` is policy (an exhausted
+budget ends the chain, and end-of-route escalation reports "repaired but
+re-attestation failed — restart budget exhausted" with the last failing
+verdict), and the controller's `max_restarts_per_key` is law, bounding
+every requester regardless of politeness.
+
+### Design commitments for the synthesis layer (step 4)
+
+Recorded here because the synthesis KSs inherit them:
+
+- **Restarts are pull-only.** Nothing watches files; mutable-file writes
+  change no measurement, so between restarts the memoized verdict makes
+  every re-evaluation a free cache hit. A synthesis KS iterates with
+  BARE LEAN TOOLS inside its `execute()` — any number of candidate
+  writes and local `lake lean` checks (untrusted senses) — and requests
+  a restart only for a candidate that locally elaborates. Attestation
+  cost is O(1) per accepted candidate, never O(candidates tried); the
+  attested run measures the toolchain in the same term
+  (measure-then-use), so the judgment is protected regardless of what
+  the local loop used.
+- **Cross-entry requests.** `request_restart(key, reason)` is callable
+  by any KS for any key: an implementation write stales the
+  verification verdict, and the sibling entry must be re-measurable.
+- **No provisioning from the loop.** During synthesis, the proofs are
+  the primary attested judge of the implementation (verification
+  elaborates the LIVE `Impl.lean`); behavior vectors are a local,
+  unattested guardrail; *attested* behavior of a binary arrives only at
+  the human `--promote` gate (rebuild + vectors + re-bless). The rule
+  that provisioning is never triggerable from failure handling survives
+  intact, and `:executable` is simply off the board mid-synthesis.
+
 ## Sanctioned change
 
 `--check` diffs the **blessed files only** (`changed_decls(files=...)`)
@@ -157,13 +209,15 @@ precisely. `--promote` is the sanctioning pipeline unchanged: gates
 (build + vectors, proofs must prove) → gold moves → full re-blessing —
 including the lint — → verification episode.
 
-## Where this leads (steps 3–4)
+## Where this leads (step 4)
 
 The encoding gives the synthesis workflow its contract: a synthesis KS
 may write anything in the mutable files, and *cannot* touch the goals —
 not by policy but by measurement (any blessed-byte drift fails `:model`
 / `:contracts`; a dodged obligation fails Acceptance). "Done" is
 already judged by the existing tiers: verification clean (no errors, no
-sorry) + acceptance clean + vectors green, and the checklist above is
-the loop's work queue. What remains: the restart-episode primitive to
-re-attest candidates in-session, and the synthesis KSs themselves.
+sorry) + acceptance clean + vectors green. The checklist is the loop's
+work queue, and the restart-episode primitive is its judge-on-demand.
+What remains is the synthesis KSs themselves — engines (tactic search,
+LLM, human escalation) as chain rungs, iterating freely on bare tools
+and spending a restart per accepted candidate.

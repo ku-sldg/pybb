@@ -22,6 +22,12 @@ class Route(BaseModel):
 class BlackboardController(BaseModel):
     """
     for each cycle:
+      0. process restart requests (restart-episode primitive): each requested
+         key gets a FRESH episode — predicate memo forgotten for its episode
+         measurements, entry reset to its original measurement with a fresh KS
+         budget, dispatch latch and chain partitions cleared. requests are
+         written by knowledge sources (pull-only; the controller never
+         initiates) and capped per key by max_restarts_per_key
       1. eval all entries: provision partition FIRST, then certify
         a. run predicate (or component conditions) from registry
         b. set good_standing based on result
@@ -47,6 +53,7 @@ class BlackboardController(BaseModel):
     routes: dict[str, Route] = {} # entry key -> outcome-routed KS chains (controller-owned)
     dispatched: dict[str, list[KnowledgeSource]] = {} # entry key -> chain chosen by first evaluated outcome
     max_cycles: int = 100
+    max_restarts_per_key: int = 10 # halting safety net for restart requests; requesters' own budgets are policy, this cap is law
     cycle_count: int = 0
 
     model_config = {"arbitrary_types_allowed": True}
@@ -71,6 +78,46 @@ class BlackboardController(BaseModel):
         for ks in [*route.on_pass, *route.on_fail]:
             if key in ks.partition:
                 ks.partition.remove(key)
+
+    def _process_restarts(self) -> None:
+        """open a fresh episode for each requested key (restart-episode primitive):
+        forget the predicate's memoized verdicts for the entry's episode measurements,
+        reset the entry to its original measurement with a fresh KS budget, clear the
+        dispatch latch and chain partitions, and count the restart. runs at the TOP of
+        the cycle so the fresh entry evaluates (re-attests) the same cycle. requests
+        are PULL-ONLY (written by knowledge sources; the controller never initiates),
+        capped per key by max_restarts_per_key regardless of who asks, and dropped
+        stale when the entry has escalated or vanished"""
+        for key, reason in list(self.blackboard.restart_requests.items()):
+            del self.blackboard.restart_requests[key]
+            entry = self.blackboard.entries.get(key)
+            if entry is None:
+                print(f"Cycle {self.cycle_count}: restart request for '{key}' dropped - no live certify entry")
+                continue
+            used = self.blackboard.restarts.get(key, 0)
+            if used >= self.max_restarts_per_key:
+                print(f"Cycle {self.cycle_count}: restart request for '{key}' dropped - max_restarts_per_key ({self.max_restarts_per_key}) reached")
+                continue
+            # memo invalidation: every measurement this entry used during the episode
+            measurements = [entry.measurement, entry.original_measurement]
+            measurements += [e.measurement for k, e in self.blackboard.history if k == key]
+            fn = self.predicate_registry.get(entry.predicate) if entry.predicate else None
+            forget = getattr(fn, "forget", None)
+            if forget is not None:
+                seen = set()
+                for m in measurements:
+                    marker = repr(m)
+                    if marker not in seen:
+                        seen.add(marker)
+                        forget(m)
+            self.blackboard.reset_entry(key)
+            self.dispatched.pop(key, None)
+            for ks in self.knowledge_sources:
+                if key in ks.partition:
+                    ks.partition.remove(key)
+            self.blackboard.restarts[key] = used + 1
+            note = f" ({reason})" if reason else ""
+            print(f"Cycle {self.cycle_count}: restarting episode for '{key}'{note} - fresh measurement, fresh KS budget (episode {used + 2})")
 
     def _dispatch(self) -> None:
         """place each routed key onto a chain once its first verdict exists: failing ->
@@ -177,6 +224,7 @@ class BlackboardController(BaseModel):
     def run(self) -> Blackboard:
         for i in range(self.max_cycles):
             self.cycle_count = i + 1
+            self._process_restarts()
             self._evaluate_all()
             self._escalate_failed_provision()
             self._dispatch()

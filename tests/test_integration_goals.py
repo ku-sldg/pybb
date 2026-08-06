@@ -98,7 +98,9 @@ def test_committed_fixtures_derive_from_the_scoped_scan():
                     f"mutable file measured structurally: {args['filepath']}"
 
 
-def _episode(repair: bool = True):
+def _episode(repair: bool = True, restart_budget: int = 0):
+    from pybb.attestation import RestartEpisodeKS
+
     protocols = _protocols()
     ctl = BlackboardController()
     ctl.register_predicate(
@@ -107,6 +109,8 @@ def _episode(repair: bool = True):
     if repair:
         chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
                                         refined_by=f"{PREFIX}_contracts"))
+    if restart_budget:
+        chain.append(RestartEpisodeKS(budget=restart_budget))
     for ks in chain:
         ctl.add_ks(ks)
     ctl.blackboard.write_entry(key=f"{PREFIX}:model", predicate="attestation",
@@ -149,6 +153,35 @@ def test_blessed_prop_tamper_attributed_by_name_repaired_verified():
         bb2 = _episode()
         assert bb2.entries[f"{PREFIX}:model"].good_standing
         assert not bb2.escalate
+    finally:
+        snapshot.restore()
+
+
+def test_repair_reattested_clean_in_session_via_restart():
+    """The restart-episode primitive against the real CVM: tamper a
+    blessed statement, run ONE episode with a restart-terminated repair
+    chain — the entry ends in GOOD STANDING (no 'pending next episode'
+    escalation), and the pass provably came from a fresh measurement, not
+    the memo: the history retains episode 1's failing model verdict."""
+    snapshot = TargetSnapshot.load(_protocols(), GOLDEN_ROOT)
+    targ = f"{PREFIX}_props_fanOn_when_hot_prop_targ"
+    args = _protocols()[f"{PREFIX}_contracts"].asp_args["readfile_range"][targ]
+    lines = PROPS.read_text().splitlines(keepends=True)
+    lines[args["end_index"] - 1] = "  -- TAMPERED: blessed statement weakened\n"
+    PROPS.write_text("".join(lines))
+    try:
+        bb = _episode(repair=True, restart_budget=1)
+        entry = bb.entries[f"{PREFIX}:model"]
+        assert entry.good_standing and not bb.escalate
+        assert bb.restarts == {f"{PREFIX}:model": 1}
+        verdicts = [e.result for k, e in bb.get_history()
+                    if k == f"{PREFIX}:model" and e.result is not None
+                    and e.result.protocol == f"{PREFIX}_model"]
+        outcomes = [bool(v) for v in verdicts]  # one per evaluation cycle
+        assert not outcomes[0] and outcomes[-1], \
+            "episode 1 failed, the restarted episode re-measured and passed"
+        assert "repaired and re-attested clean in-session (episode 2)" \
+            in trust_summary(bb)
     finally:
         snapshot.restore()
 

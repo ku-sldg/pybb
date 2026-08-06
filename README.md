@@ -15,6 +15,9 @@
 10. If all knowledge sources in the route fail and there are no more available knowledge sources in the route, move the bad entry to the "escalate partition"
 11. The program will halt if all the entries are in good standing
 
+### Restart-episode primitive
+A knowledge source may call `request_restart(key, reason)` — for its own key or any other — to ask for a **fresh episode**: at the top of the next cycle the Controller forgets the predicate's memoized results for that entry's episode measurements (predicates expose an optional `forget` hook), resets the entry to its original measurement with a fresh `ks_history`, clears the dispatch latch and chain partitions, and re-evaluates — so memoized predicates (e.g. attestation) genuinely re-measure. Restarts are **pull-only** (nothing watches for state changes; re-evaluation happens only on request) and capped per key by the Controller's `max_restarts_per_key` regardless of who asks, so halting never depends on requester politeness. Completed restarts are counted in `blackboard.restarts` (outside the entry — a reset must not erase budget accounting).
+
 ### Component-wise entries (success-driven handoff)
 An entry can instead hold a dict measurement (e.g. a pair `{"x": 5, "y": -2}`) with per-component `conditions` (e.g. `{"x": "less_than_3", "y": "is_positive"}`). The entry is in good standing only when every component's condition passes. Knowledge sources declare a `component` they may operate on and write repairs through `write_component`, so KS1 can only touch x and KS2 can only touch y. This enables a second advancement mode alongside failure handoff:
 * **success handoff:** when the current knowledge source's component passes its condition, the Controller advances the key to the next knowledge source in the route *without* restoring anything - the fix is preserved (e.g. KS1 fixes x, then KS2 works on y)

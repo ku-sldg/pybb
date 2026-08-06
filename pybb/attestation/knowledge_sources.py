@@ -30,10 +30,17 @@ carrying that tier's failing Verdict as the report.
 
 The controller re-evaluates every entry each cycle, so the predicate
 memoizes on the measurement: each protocol attests at most once per
-predicate lifetime, and a fresh workflow run (fresh predicates, fresh
-caches) re-attests everything. In-session re-attestation — e.g. verifying
-a repair — is deliberately unsupported for now; it will arrive as an
-explicit restart-episode primitive, not as a field on the measurement.
+EPISODE, and a fresh workflow run (fresh predicates, fresh caches)
+re-attests everything. In-session re-attestation is the RESTART-EPISODE
+primitive (not a measurement field): a chain rung — RestartEpisodeKS
+after repair, or any knowledge source via request_restart — asks the
+controller for a fresh episode; the controller forgets the memoized
+verdicts for that entry's episode measurements (the predicate's `forget`
+hook), reseeds the entry, and the next evaluation is a genuinely fresh
+CVM run. Restarts are pull-only and controller-capped: iterating on the
+live tree with bare tools between restarts costs nothing, because
+mutable-file writes change no measurement and nothing re-measures until
+asked.
 """
 
 from __future__ import annotations
@@ -108,6 +115,10 @@ def make_attestation_predicate(
             d.mkdir(parents=True, exist_ok=True)
             episode_dir[0] = d
         path = episode_dir[0] / f"{protocol_id}.response.json.gz"
+        seq = 1
+        while path.exists():  # restarted protocols archive alongside, never over
+            seq += 1
+            path = episode_dir[0] / f"{protocol_id}.response.{seq}.json.gz"
         with gzip.open(path, "wt") as f:
             json.dump(response, f)
         return str(path)
@@ -118,6 +129,13 @@ def make_attestation_predicate(
             cache[key] = _attest(client, protocols, measurement, _archive)
         return cache[key]
 
+    def forget(measurement: dict) -> None:
+        """Restart-episode hook: drop the memoized verdict for one
+        measurement so the next evaluation re-attests (a fresh CVM run).
+        Called by the controller's _process_restarts."""
+        cache.pop(json.dumps(measurement, sort_keys=True), None)
+
+    predicate.forget = forget
     return predicate
 
 
@@ -219,3 +237,34 @@ class TierKS(KnowledgeSource):
                 measurement=attestation_request(self.protocol_id),
                 result=None,  # controller re-evaluates (attests) next cycle
             )
+
+
+class RestartEpisodeKS(KnowledgeSource):
+    """
+    The budgeted chain rung of the restart-episode primitive: placed after
+    repair (or synthesis), it requests a fresh episode so the fix is judged
+    by fresh measurement IN-SESSION — "verification pending next episode"
+    becomes something the session does itself. Trust semantics unchanged:
+    the repair's word is still worthless; only the fresh attestation that
+    the restart triggers re-establishes standing.
+
+    budget = restarts this rung may request per key (chain-level POLICY;
+    the controller's max_restarts_per_key stays the halting LAW). When the
+    budget is exhausted the rung does nothing, so the chain ends and normal
+    end-of-route escalation reports the entry with its last failing
+    verdict.
+    """
+
+    name: str = ""
+    partition: List[str] = []
+    max_attempts: int = 1
+    budget: int = 1
+
+    def model_post_init(self, __context) -> None:
+        if not self.name:
+            self.name = f"restart:budget{self.budget}"
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            if blackboard.restarts.get(key, 0) < self.budget:
+                blackboard.request_restart(key, "re-attest after repair")

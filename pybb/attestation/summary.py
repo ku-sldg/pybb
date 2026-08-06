@@ -61,11 +61,20 @@ def _summarize_key(
         repaired = entry is not None and any(
             ks.startswith("repair:") for ks in entry.ks_history
         )
-        terminal = (
-            "repaired from golden — verification pending next episode "
-            "(re-run the workflow)"
-            if repaired else "user intervention required"
-        )
+        restarted = blackboard.restarts.get(key, 0)
+        if repaired and restarted:
+            terminal = (
+                f"repaired but re-attestation failed after {restarted} "
+                "in-session restart(s) — restart budget exhausted; "
+                "user intervention required"
+            )
+        elif repaired:
+            terminal = (
+                "repaired from golden — verification pending next episode "
+                "(re-run the workflow)"
+            )
+        else:
+            terminal = "user intervention required"
         if passed:
             return (
                 f"{key}: {', '.join(passed)} passed but confirmation failed "
@@ -79,6 +88,15 @@ def _summarize_key(
     final = trail[-1] if trail else None
     if final is None or not final.passed:
         return f"{key}: attestation failed ({_attribution(trail)})"
+    restarted = blackboard.restarts.get(key, 0)
+    if restarted:
+        # earlier episodes' verdicts remain in the trail; the standing
+        # comes from the FRESH episode's measurement
+        return (
+            f"{key}: all attested components intact ({final.protocol} "
+            f"passed) — repaired and re-attested clean in-session "
+            f"(episode {restarted + 1})"
+        )
     if not failed:
         if len(passed) > 1:
             return (

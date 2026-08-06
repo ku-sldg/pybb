@@ -55,6 +55,7 @@ from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
+    RestartEpisodeKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
@@ -152,6 +153,11 @@ class LeanExampleConfig:
                                   # proofs-file diagnostics
     binding_targ: str = None      # verification component whose verdict is
                                   # the "Spec bound (acceptance)" row
+    restart_budget: int = None    # when set, --repair chains end in a
+                                  # RestartEpisodeKS: the repair is judged by
+                                  # fresh measurement IN-SESSION (one run,
+                                  # no manual episode 2). Unset = classic
+                                  # "verification pending next episode"
 
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
@@ -676,6 +682,10 @@ def attest_episode(cfg: LeanExampleConfig, protocols: dict, repair: bool,
                                       client=client))
     restore = [WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
                                   refined_by=cfg.contracts_id)] if repair else []
+    if repair and cfg.restart_budget:
+        # judged-by-fresh-measurement repair: the chain ends by requesting a
+        # fresh episode instead of escalating "pending next episode"
+        restore = [*restore, RestartEpisodeKS(budget=cfg.restart_budget)]
     model_fail = [TierKS(protocol_id=cfg.contracts_id), *restore]
     episodes = {cfg.entry("model"): cfg.model_id,
                 cfg.entry("contracts"): cfg.contracts_id}
@@ -773,7 +783,8 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
         tamper(cfg, protocols)
     try:
         attest_episode(cfg, protocols, repair=cli.repair, validate=cli.validate)
-        if cli.repair:
+        if cli.repair and not cfg.restart_budget:
+            # classic scenarios: verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
             attest_episode(cfg, protocols, repair=cli.repair,
                            validate=cli.validate)

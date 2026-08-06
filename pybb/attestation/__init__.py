@@ -8,6 +8,7 @@ from .client import (
     ProtocolDir,
 )
 from .knowledge_sources import (
+    RestartEpisodeKS,
     StartAttestationKS,
     TierKS,
     Verdict,
@@ -48,6 +49,7 @@ __all__ = [
     "CvmError",
     "CvmSubprocessClient",
     "ProtocolDir",
+    "RestartEpisodeKS",
     "StartAttestationKS",
     "TierKS",
     "Verdict",

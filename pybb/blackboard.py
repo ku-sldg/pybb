@@ -29,6 +29,8 @@ class Blackboard(BaseModel):
     provision: dict[str, BlackboardEntry] = {} # provisioning requests, written by external events; evaluated before certify, no KS chains
     history: list[tuple[str, BlackboardEntry]] = []
     escalate: dict[str, BlackboardEntry] = {} # escalate segment of blackboard
+    restart_requests: dict[str, str] = {} # entry key -> reason. processed by the controller at the top of each cycle
+    restarts: dict[str, int] = {} # entry key -> completed restart count. OUTSIDE the entry: resets must not erase budget accounting
 
     def _segment(self, partition: str) -> dict[str, BlackboardEntry]:
         segments = {"certify": self.entries, "provision": self.provision, "escalate": self.escalate}
@@ -90,6 +92,33 @@ class Blackboard(BaseModel):
             new_hist = dict(entry.ks_history)
             new_hist[ks_name] = new_hist.get(ks_name, 0) + 1 # initializes ks entry to 0 if doesn't exist, adds 1
             self.set_entry(key, entry.model_copy(update={"ks_history": new_hist}))
+
+    def request_restart(self, key: str, reason: str = "") -> None:
+        """Ask the controller to open a fresh episode for `key` (processed at the
+        top of the next cycle). Restarts are PULL-ONLY: nothing observes file or
+        state changes — re-attestation happens only when someone asks. Callable
+        by any knowledge source for ANY key (a repair to one entry's subject may
+        stale a sibling entry's verdict)."""
+        self.restart_requests[key] = reason
+
+    def reset_entry(self, key: str) -> Optional[BlackboardEntry]:
+        """Fresh-episode entry version: measurement re-seeded from
+        original_measurement (the episode seed, preserved across tier rewrites),
+        standing and result cleared, ks_history RESET (each episode gets a fresh
+        KS budget; restart accounting lives in `restarts`, not the entry)."""
+        entry = self.entries.get(key)
+        if entry is None:
+            return None
+        fresh = entry.model_copy(update={
+            "measurement": dict(entry.original_measurement)
+            if isinstance(entry.original_measurement, dict)
+            else entry.original_measurement,
+            "result": None,
+            "good_standing": False,
+            "ks_history": {},
+        })
+        self.entries[key] = fresh # result=None: pre-eval state, not a history event
+        return fresh
 
     def restore_original(self, key: str) -> None:
         entry = self.entries.get(key)
