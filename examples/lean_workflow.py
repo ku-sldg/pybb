@@ -59,6 +59,7 @@ from pybb.attestation import (
     TargetSnapshot,
     TierKS,
     WholeFileRestoreKS,
+    attestation_request,
     changed_decls,
     make_attestation_predicate,
     make_promotion_predicate,
@@ -69,6 +70,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.proof_status import goal_checklist, render_checklist
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
 from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import write_model_protocol_dir
@@ -144,6 +146,12 @@ class LeanExampleConfig:
                                   # spec-elaboration target when set
     bless_lint: object = None     # callable(cfg), invoked before the model
                                   # class is (re)blessed; raises to refuse
+    # --status (the goals checklist) is available when these are set:
+    witness_rel: str = None       # mutable proofs file scanned for witnesses
+    proofs_targ: str = None       # verification component carrying the
+                                  # proofs-file diagnostics
+    binding_targ: str = None      # verification component whose verdict is
+                                  # the "Spec bound (acceptance)" row
 
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
@@ -581,6 +589,53 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
     attest_episode(cfg, protocols, repair=False, validate=True)
 
 
+# ── the progress view (--status / --ready) ────────────────────────────────────
+
+def _blessed_text(cfg: LeanExampleConfig, protocols: dict) -> str:
+    import base64
+    for args in protocols[cfg.model_id].asp_args.get("readfile", {}).values():
+        if args.get("filepath") == str(cfg.spec_file) and args.get("golden_b64"):
+            return base64.b64decode(args["golden_b64"]).decode()
+    raise SystemExit(f"{cfg.model_id}: {cfg.spec_rel} is not blessed — "
+                     "run --provision first")
+
+
+def status_flow(cfg: LeanExampleConfig, protocols: dict, ready: bool,
+                status: bool) -> None:
+    """The goals progress view. QUICK by default: one verification run;
+    the checklist rows come from the blessed Spec (signed bytes), the
+    cells from the verdict, downgrade-only (proof_status module).
+    --ready additionally runs the readiness gate first — alone it just
+    prints the report; combined with --status a failure poisons every
+    cell to '?' (a progress report over an untrusted baseline is
+    labeled untrusted)."""
+    report = None
+    if ready:
+        report = make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT,
+            client=CvmSubprocessClient())(readiness_request(list(protocols)))
+        print(f"readiness: {'PASS' if report else 'FAIL'} "
+              f"(checked: {', '.join(report.checked)})")
+        if report.baseline_verified:
+            print("  signed baselines verified: "
+                  + ", ".join(report.baseline_verified))
+        for p in (*report.problems, *report.baseline_problems):
+            print(f"  problem: {p}")
+    if not status:
+        return
+    verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
+        attestation_request(cfg.verification_id))
+    checklist = goal_checklist(
+        _blessed_text(cfg, protocols), verdict, cfg.proofs_targ,
+        cfg.binding_targ, cfg.package_root / cfg.witness_rel)
+    if ready and not report:
+        problems = "; ".join((*report.problems, *report.baseline_problems))
+        checklist = checklist.poison(f"readiness failed: {problems[:200]}")
+    elif ready:
+        checklist = checklist.model_copy(update={"trusted": True})
+    print(render_checklist(checklist))
+
+
 # ── tamper demos ──────────────────────────────────────────────────────────────
 
 def tamper(cfg: LeanExampleConfig, protocols: dict) -> None:
@@ -657,11 +712,20 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
     parser.add_argument("--tamper-semantic", action="store_true")
     parser.add_argument("--repair", action="store_true")
     parser.add_argument("--validate", action="store_true")
+    parser.add_argument("--status", action="store_true")
+    parser.add_argument("--ready", action="store_true")
     cli = parser.parse_args()
 
     if cli.expect and not cli.promote:
         parser.error("--expect is the promote-time sanctioning knob; "
                      "use it with --promote")
+    if cli.status or cli.ready:
+        if cli.status and cfg.witness_rel is None:
+            parser.error("--status: this scenario has no goals checklist "
+                         "(witness_rel/proofs_targ/binding_targ unset)")
+        status_flow(cfg, load_protocols(cfg, validate=True),
+                    ready=cli.ready, status=cli.status)
+        return
     if cli.check:
         check_flow(cfg, load_protocols(cfg))
         return

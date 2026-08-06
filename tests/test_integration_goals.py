@@ -356,6 +356,79 @@ def test_sorry_fails_proofs_but_not_behavior():
         PROOFS.write_text(orig)
 
 
+# ── the progress view (step 2: per-declaration proof status) ──────────────────
+
+def _checklist():
+    """The goals checklist exactly as status_flow assembles it: rows from
+    the BLESSED Spec bytes (model fixture golden), cells from a live
+    verification verdict."""
+    import base64
+
+    from pybb.attestation.proof_status import goal_checklist
+
+    model = ProtocolDir.load(str(FIXTURES / f"{PREFIX}_model"))
+    blessed = next(
+        base64.b64decode(a["golden_b64"]).decode()
+        for a in model.asp_args["readfile"].values()
+        if a["filepath"] == str(PROPS) and a.get("golden_b64"))
+    verdict = _tier_verdict(f"{PREFIX}_verification")
+    return goal_checklist(
+        blessed, verdict,
+        f"{PREFIX}_proofs_verification_targ",
+        f"{PREFIX}_acceptance_verification_targ", PROOFS)
+
+
+@needs_lean
+def test_status_clean_tree_all_goals_proved_with_witnesses():
+    rows = {r.label: r for r in _checklist().rows}
+    assert rows["fanOn_when_hot_prop"].witnesses == ["fanOn_when_hot"]
+    assert rows["fanHold_in_band_prop"].witnesses == ["fanHold_in_band"]
+    assert all(r.status.state == "proved" for r in rows.values()), rows
+
+
+@needs_lean
+def test_status_sorried_proof_refines_to_exactly_that_goal():
+    """The progress signal: a sorried witness marks ITS goal failing
+    (hasSorry mapped into the declaration span); the other goals stay
+    proved (every diagnostic mapped -> derived ✓), and the binding still
+    elaborates through the sorry axiom."""
+    orig = PROOFS.read_text()
+    sorried = orig.replace(
+        "  have hnl : ¬ (temp < sp.low) := by omega\n"
+        "  simp [computeFanCmd, hnh, hnl]",
+        "  sorry")
+    assert sorried != orig
+    PROOFS.write_text(sorried)
+    try:
+        rows = {r.label: r for r in _checklist().rows}
+        assert rows["fanHold_in_band_prop"].status.state == "failing"
+        assert "sorry" in rows["fanHold_in_band_prop"].status.detail
+        for label in ("fanOn_when_hot_prop", "fanOff_when_cold_prop",
+                      "fanOn_only_if_hot_or_held_prop",
+                      "Spec bound (acceptance)"):
+            assert rows[label].status.state == "proved", label
+    finally:
+        PROOFS.write_text(orig)
+
+
+@needs_lean
+def test_status_weakened_binding_fails_only_the_spec_row():
+    orig = PROOFS.read_text()
+    weakened = orig.replace(
+        "theorem spec_holds : Spec computeFanCmd := by",
+        "theorem spec_holds : True := trivial\n\n"
+        "theorem spec_holds_unbound : Spec computeFanCmd := by")
+    assert weakened != orig
+    PROOFS.write_text(weakened)
+    try:
+        rows = {r.label: r for r in _checklist().rows}
+        assert rows["Spec bound (acceptance)"].status.state == "failing"
+        assert all(rows[p].status.state == "proved"
+                   for p in rows if p != "Spec bound (acceptance)")
+    finally:
+        PROOFS.write_text(orig)
+
+
 @needs_lean
 def test_bless_lint_refuses_proofs_and_noncanonical_binding():
     """The blessing gate: a statements file containing a theorem, and an

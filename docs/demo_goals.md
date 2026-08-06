@@ -104,6 +104,50 @@ The arcs the encoding adds over the classic scenarios
   non-canonical acceptance binding, is refused before anything is
   signed.
 
+## The progress view (`--status` / `--ready`)
+
+Step 2 of the roadmap: the per-declaration proof status the synthesis
+loop will consume, surfaced as the **goals checklist**:
+
+```sh
+python examples/temp_control_goals_lean.py --status           # quick view
+python examples/temp_control_goals_lean.py --status --ready   # baselines verified first
+python examples/temp_control_goals_lean.py --ready            # readiness report only
+```
+
+```
+goal properties (derived progress view — quick: baselines not verified this run):
+  fanOn_when_hot_prop             ✓  (witness: fanOn_when_hot)
+  fanOff_when_cold_prop           ✓  (witness: fanOff_when_cold)
+  fanHold_in_band_prop            ✗  (fanHold_in_band: declaration uses `sorry`)
+  fanOn_only_if_hot_or_held_prop  ✓  (witness: fanOn_only_if_hot_or_held)
+  Spec bound (acceptance)         ✓
+```
+
+The mechanism (`pybb/attestation/proof_status.py`): the verification
+class's EXTEND appraiser retains the `lake lean --json` diagnostic
+stream it judged, the verified appraisal summary lifts it per component
+(`measured_b64`), and the diagnostics' positions are mapped onto the
+proofs file's declaration spans. **Rows come from the blessed bytes**
+(the Spec conjuncts, scanned from the model protocol's signed golden —
+the changed_decls principle: goldens are launderable, the blessing is
+not); witnesses are live declarations whose *statement* references the
+prop (an `unfold <prop>` in a proof body does not count).
+
+Four cell states, downgrade-only and fail-closed (the per-contract-join
+guardrails): `✓` requires the appraiser's PASS — or, on a FAIL, that
+every refuting diagnostic mapped into some *other* declaration's span
+(labeled derived); `✗` a refutation mapped into this goal's witness;
+`?` unknown — a failed `tool::` hash in the same term, a protocol
+error, unmappable diagnostics, or (`--status --ready`) a failed
+readiness gate poison every cell rather than guess; `–` no witness
+declaration yet (legal mid-synthesis — the binding row still governs).
+
+The quick view is deliberately cheap (one verification run, no
+readiness): it is a *progress* signal and says so in its header. The
+`--ready` variant verifies every signed baseline first and labels the
+checklist accordingly.
+
 ## Sanctioned change
 
 `--check` diffs the **blessed files only** (`changed_decls(files=...)`)
@@ -113,13 +157,13 @@ precisely. `--promote` is the sanctioning pipeline unchanged: gates
 (build + vectors, proofs must prove) → gold moves → full re-blessing —
 including the lint — → verification episode.
 
-## Where this leads (steps 2–4)
+## Where this leads (steps 3–4)
 
 The encoding gives the synthesis workflow its contract: a synthesis KS
 may write anything in the mutable files, and *cannot* touch the goals —
 not by policy but by measurement (any blessed-byte drift fails `:model`
 / `:contracts`; a dodged obligation fails Acceptance). "Done" is
 already judged by the existing tiers: verification clean (no errors, no
-sorry) + acceptance clean + vectors green. What remains is the loop:
-per-declaration proof status as the progress signal, restart-episode to
+sorry) + acceptance clean + vectors green, and the checklist above is
+the loop's work queue. What remains: the restart-episode primitive to
 re-attest candidates in-session, and the synthesis KSs themselves.

@@ -156,6 +156,12 @@ CONFIG = LeanExampleConfig(
             "cwd": str(PACKAGE)},
     },
     bless_lint=bless_lint,
+    # --status: the goals checklist (rows = blessed Spec conjuncts;
+    # witnesses scanned from the mutable proofs file; the binding row =
+    # the acceptance component's verdict)
+    witness_rel=PROOFS_REL,
+    proofs_targ="temp_control_goals_lean_proofs_verification_targ",
+    binding_targ="temp_control_goals_lean_acceptance_verification_targ",
 )
 
 # test-facing API (tests/test_integration_goals.py)
