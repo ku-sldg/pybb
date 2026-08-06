@@ -462,6 +462,52 @@ def test_status_weakened_binding_fails_only_the_spec_row():
         PROOFS.write_text(orig)
 
 
+# ── goal-directed synthesis (step 4) ──────────────────────────────────────────
+
+def _lean_workflow():
+    sys.path.insert(0, str(REPO / "examples"))
+    import lean_workflow
+    return lean_workflow
+
+
+@needs_lean
+def test_synthesis_proves_all_goals_from_sorries():
+    """THE HEADLINE: stub every seed proof to sorry (goals blessed,
+    nothing proved) and let the workflow take over — the tactic
+    portfolio proves every goal, each locally-clean state is judged by
+    fresh measurement (restart), and the run ends in good standing with
+    the checklist all proved. The portfolio-adequacy contract."""
+    goals, lw = _goals_example(), _lean_workflow()
+    committed = PROOFS.read_bytes()
+    protocols = lw.load_protocols(goals.CONFIG, validate=True)
+    ctl = lw.synthesize_flow(goals.CONFIG, protocols, keep=False)
+    entry = ctl.blackboard.entries[f"{PREFIX}:verification"]
+    assert entry.good_standing and not ctl.blackboard.escalate
+    assert ctl.blackboard.restarts.get(f"{PREFIX}:verification", 0) >= 1
+    assert PROOFS.read_bytes() == committed  # seeds restored (no --keep)
+
+
+@needs_lean
+def test_synthesis_without_engines_escalates_as_the_human_rung():
+    """No engine can act: the verification entry escalates with its
+    failing verdict (every sorried goal refuted) — the human handoff —
+    and no restart was ever spent."""
+    import dataclasses
+
+    goals, lw = _goals_example(), _lean_workflow()
+    committed = PROOFS.read_bytes()
+    cfg = dataclasses.replace(goals.CONFIG, synthesis_engines=[])
+    protocols = lw.load_protocols(cfg, validate=True)
+    ctl = lw.synthesize_flow(cfg, protocols, keep=False)
+    assert f"{PREFIX}:verification" in ctl.blackboard.escalate
+    entry = ctl.blackboard.escalate[f"{PREFIX}:verification"]
+    assert not entry.result.passed
+    failing = {c.targ_id for c in entry.result.failing()}
+    assert f"{PREFIX}_proofs_verification_targ" in failing
+    assert ctl.blackboard.restarts == {}
+    assert PROOFS.read_bytes() == committed
+
+
 @needs_lean
 def test_bless_lint_refuses_proofs_and_noncanonical_binding():
     """The blessing gate: a statements file containing a theorem, and an

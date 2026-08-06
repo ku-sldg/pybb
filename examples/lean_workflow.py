@@ -71,7 +71,9 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation import ProofSynthesisKS
 from pybb.attestation.proof_status import goal_checklist, render_checklist
+from pybb.attestation.synthesis import splice_proof
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
 from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import write_model_protocol_dir
@@ -158,6 +160,10 @@ class LeanExampleConfig:
                                   # fresh measurement IN-SESSION (one run,
                                   # no manual episode 2). Unset = classic
                                   # "verification pending next episode"
+    synthesis_engines: list = None  # --synthesize's engine ladder (callables,
+                                  # GoalContext -> candidate proofs); None =
+                                  # --synthesize unavailable
+    impl_name: str = ""           # the implementation the goals quantify over
 
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
@@ -642,6 +648,89 @@ def status_flow(cfg: LeanExampleConfig, protocols: dict, ready: bool,
     print(render_checklist(checklist))
 
 
+# ── goal-directed synthesis (--synthesize) ────────────────────────────────────
+
+def _stub_proofs(cfg: LeanExampleConfig) -> bytes:
+    """Snapshot the live proofs file, then stub every named theorem's
+    proof body to sorry (statements kept — the goal-directed starting
+    state: goals blessed, nothing proved). Returns the snapshot."""
+    path = cfg.package_root / cfg.witness_rel
+    original = path.read_bytes()
+    text = original.decode()
+    names = [n for k, n, _s, _e in derive_spans(text)
+             if k in ("theorem", "lemma") and n]
+    for n in names:
+        text = splice_proof(text, n, "by\n  sorry")
+    path.write_text(text)
+    print(f"Stubbed {len(names)} proofs to sorry in {cfg.witness_rel}")
+    return original
+
+
+def derive_spans(text: str):
+    from pybb.attestation.targetmap import lean_decl_spans
+    return lean_decl_spans(text)
+
+
+def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
+                    keep: bool) -> BlackboardController:
+    """The step-4 loop: stub the seeds, put :model/:contracts/:verification
+    on the board (:executable stays OFF — attested behavior arrives only at
+    the human promote gate), and let ProofSynthesisKS work the failing
+    goals: engines splice candidates, bare `lake lean` judges locally
+    (free), and each locally-clean state spends ONE restart to be judged by
+    fresh measurement. Ends in good standing or escalates with the
+    checklist of what remains."""
+    proofs_path = cfg.package_root / cfg.witness_rel
+    original = _stub_proofs(cfg)
+    try:
+        controller = BlackboardController()
+        client = CvmSubprocessClient()
+        controller.register_predicate(
+            "attestation", make_attestation_predicate(client, protocols,
+                                                      archive_dir=EVIDENCE_DIR))
+        controller.register_predicate(
+            "protocol_check", make_readiness_predicate(
+                protocols, baseline_root=GOLDEN_ROOT, client=client))
+        synth = ProofSynthesisKS(
+            engines=cfg.synthesis_engines,
+            blessed=lambda: _blessed_text(cfg, protocols),
+            package_root=str(cfg.package_root),
+            proofs_rel=cfg.witness_rel,
+            acceptance_rel=cfg.verification_targets[cfg.binding_targ]["exe_args"][1],
+            proofs_targ=cfg.proofs_targ,
+            impl_name=cfg.impl_name,
+            lake=str(LAKE))
+        episodes = {cfg.entry("model"): cfg.model_id,
+                    cfg.entry("contracts"): cfg.contracts_id,
+                    cfg.entry("verification"): cfg.verification_id}
+        starter = StartAttestationKS(episodes=episodes)
+        for ks in (synth, starter):
+            controller.add_ks(ks)
+        controller.route(cfg.entry("model"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("contracts"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("verification"), on_pass=[], on_fail=[synth])
+        controller.blackboard.write_entry(
+            key=cfg.entry("ready"), predicate="protocol_check",
+            measurement=readiness_request(list(protocols)))
+        controller.route(cfg.entry("ready"), on_pass=[starter], on_fail=[])
+        controller.run()
+        print(trust_summary(controller.blackboard,
+                            semantic=[cfg.verification_id]))
+        entry = controller.blackboard.entries.get(cfg.entry("verification")) \
+            or controller.blackboard.escalate.get(cfg.entry("verification"))
+        if entry is not None and entry.result is not None:
+            print(render_checklist(goal_checklist(
+                _blessed_text(cfg, protocols), entry.result,
+                cfg.proofs_targ, cfg.binding_targ, proofs_path)))
+        return controller
+    finally:
+        if keep:
+            print(f"\n--keep: synthesized proofs left in {cfg.witness_rel}")
+        else:
+            proofs_path.write_bytes(original)
+            print(f"\nRestored seed proofs in {cfg.witness_rel}")
+
+
 # ── tamper demos ──────────────────────────────────────────────────────────────
 
 def tamper(cfg: LeanExampleConfig, protocols: dict) -> None:
@@ -724,11 +813,21 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--ready", action="store_true")
+    parser.add_argument("--synthesize", action="store_true")
+    parser.add_argument("--keep", action="store_true")
     cli = parser.parse_args()
 
     if cli.expect and not cli.promote:
         parser.error("--expect is the promote-time sanctioning knob; "
                      "use it with --promote")
+    if cli.keep and not cli.synthesize:
+        parser.error("--keep retains --synthesize's proofs; use them together")
+    if cli.synthesize:
+        if cfg.synthesis_engines is None:
+            parser.error("--synthesize: this scenario has no synthesis "
+                         "engines configured")
+        synthesize_flow(cfg, load_protocols(cfg, validate=True), keep=cli.keep)
+        return
     if cli.status or cli.ready:
         if cli.status and cfg.witness_rel is None:
             parser.error("--status: this scenario has no goals checklist "

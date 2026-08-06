@@ -21,6 +21,15 @@ from .readiness import (
     readiness_request,
 )
 from .repair import SliceRestoreKS, WholeFileRestoreKS
+from .synthesis import (
+    BlackBoxRepairKS,
+    GoalContext,
+    LlmEngine,
+    ProofSynthesisKS,
+    RepairContext,
+    TacticPortfolioEngine,
+    splice_proof,
+)
 from .promotion import (
     DeclDiff,
     PromotionOutcome,
@@ -61,6 +70,13 @@ __all__ = [
     "make_readiness_predicate",
     "readiness_request",
     "SliceRestoreKS",
+    "BlackBoxRepairKS",
+    "GoalContext",
+    "LlmEngine",
+    "ProofSynthesisKS",
+    "RepairContext",
+    "TacticPortfolioEngine",
+    "splice_proof",
     "WholeFileRestoreKS",
     "ProvisionOutcome",
     "make_provision_predicate",

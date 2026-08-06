@@ -200,6 +200,64 @@ Recorded here because the synthesis KSs inherit them:
   that provisioning is never triggerable from failure handling survives
   intact, and `:executable` is simply off the board mid-synthesis.
 
+## Synthesis (`--synthesize`, step 4 — the workflow takes over)
+
+The workers. `--synthesize` stubs every seed proof to `sorry` (the
+goal-directed starting state: goals blessed, nothing proved), puts
+`:model` / `:contracts` / `:verification` on the board (`:executable`
+stays off — attested behavior arrives only at the human `--promote`
+gate), and routes the failing verification entry to `ProofSynthesisKS`:
+
+    Stubbed 6 proofs to sorry in TempControl/Proofs.lean
+    ...
+      synthesis:proofs: 'fanOn_when_hot' proved (TacticPortfolioEngine)
+      synthesis:proofs: 'fanOff_when_cold' proved (TacticPortfolioEngine)
+      ...
+      synthesis:proofs: 'spec_holds' proved (TacticPortfolioEngine)
+    Cycle 3: restarting episode for 'temp_control_goals_lean:verification'
+        (synthesis:proofs: locally clean) - fresh measurement ... (episode 2)
+    temp_control_goals_lean:verification: all attested components intact
+        (...) — repaired and re-attested clean in-session (episode 2)
+
+The step-3 commitments, exercised: the KS iterates with bare `lake lean`
+inside `execute()` — engines (a ladder of plain callables: deterministic
+`TacticPortfolioEngine` first, the `LlmEngine` slot next, end-of-route
+escalation as the human rung) yield candidate proofs per failing goal,
+each spliced in (statement kept, proof replaced) and judged locally,
+reverted on failure, kept on acceptance. Only a locally-clean state
+spends a restart; the fresh episode's measurement is the ONLY thing that
+flips standing. The synthesized proofs are ordinary mutable content —
+`--keep` retains them, and a plain `--validate` episode passes on them.
+
+Engines never touch the blessed files — and would gain nothing by it:
+the model/contracts sentinels and the acceptance obligation judge every
+state by measurement. `LlmEngine` ships without a backend (plug
+`complete=` in to arm it); an LLM's candidates are untrusted senses like
+any other engine's.
+
+### Black-box repair (the AutoVerus shape)
+
+`ProofSynthesisKS` is a specialization of the generic
+**`BlackBoxRepairKS`**: a chain rung wrapping an OPAQUE external repair
+tool — e.g. AutoVerus for Verus/Rust proof repair. The tool gets a
+`RepairContext` (the failing verdict with per-component reasons and
+retained measured output, the working file set) and may rewrite files
+however it likes; its claim of success is never trusted. The blackboard
+machinery is the re-appraisal between its attempts: the KS requests a
+restart (`per_attempt`, or `on_local_clean` behind an untrusted local
+check), the fresh episode re-measures, and the tool's next attempt sees
+the new failure context. A black box needs zero trust — repair cannot
+mint trust, and even a rogue edit to blessed files is caught by the
+sentinels. Wiring one is pure configuration:
+
+    route(":verus-verification",
+          on_fail=[BlackBoxRepairKS(tool=autoverus_adapter,
+                                    restart_policy="per_attempt")])
+
+The Verus scenarios (temp-control-microkit, isolette) can adopt this
+today with a thin adapter — the worked AutoVerus integration is the
+natural follow-up.
+
 ## Sanctioned change
 
 `--check` diffs the **blessed files only** (`changed_decls(files=...)`)
@@ -209,15 +267,21 @@ precisely. `--promote` is the sanctioning pipeline unchanged: gates
 (build + vectors, proofs must prove) → gold moves → full re-blessing —
 including the lint — → verification episode.
 
-## Where this leads (step 4)
+## The complete arc, and what follows
 
-The encoding gives the synthesis workflow its contract: a synthesis KS
-may write anything in the mutable files, and *cannot* touch the goals —
-not by policy but by measurement (any blessed-byte drift fails `:model`
-/ `:contracts`; a dodged obligation fails Acceptance). "Done" is
-already judged by the existing tiers: verification clean (no errors, no
-sorry) + acceptance clean + vectors green. The checklist is the loop's
-work queue, and the restart-episode primitive is its judge-on-demand.
-What remains is the synthesis KSs themselves — engines (tactic search,
-LLM, human escalation) as chain rungs, iterating freely on bare tools
-and spending a restart per accepted candidate.
+All four steps are landed: the admin blesses abstract goal properties
+(`--provision`, lint-gated), the progress view names what remains
+(`--status`), the workflow takes over proving them (`--synthesize`:
+engines iterate freely on bare tools, restarts judge each accepted
+state by fresh measurement), and the invariant — blessed properties
+untouched — is enforced by measurement throughout. A final `--promote`
+is the administrator's sanction of the synthesized result (rebuild,
+vectors, re-blessing): trust begins and ends with the human.
+
+Natural follow-ups, in rough order of leverage: an armed `LlmEngine`
+backend; the AutoVerus adapter on a Verus scenario (the BlackBoxRepairKS
+recipe above); implementation synthesis (enumerative candidates over a
+small expression grammar — comparisons of `temp` against `sp.low` /
+`sp.high`, branches to `On`/`Off`/`latest` — judged by local vectors
+then live proofs, with cross-entry restarts because an impl write stales
+the verification verdict).

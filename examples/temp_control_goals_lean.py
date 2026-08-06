@@ -61,6 +61,8 @@ from pathlib import Path
 import lean_workflow
 from lean_workflow import LeanExampleConfig
 
+from pybb.attestation import LlmEngine, TacticPortfolioEngine
+
 REPO = Path(__file__).parent.parent
 PACKAGE = REPO / "targets" / "temp-control-goals"
 
@@ -165,6 +167,11 @@ CONFIG = LeanExampleConfig(
     # --repair is judged by fresh measurement IN-SESSION (restart-episode
     # primitive): tamper -> attribution -> repair -> re-attest, one run
     restart_budget=1,
+    # --synthesize: the engine ladder (cheap deterministic tactic search
+    # first; the LLM slot ships with no backend — plug complete= in to arm
+    # it; end-of-route escalation is the human rung)
+    synthesis_engines=[TacticPortfolioEngine(), LlmEngine()],
+    impl_name="computeFanCmd",
 )
 
 # test-facing API (tests/test_integration_goals.py)
