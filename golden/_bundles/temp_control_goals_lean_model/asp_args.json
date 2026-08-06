@@ -1,0 +1,26 @@
+{
+  "readfile": {
+    "temp_control_goals_lean_model_acceptance_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Acceptance.lean",
+      "asp_targid": "temp_control_goals_lean_model_acceptance_targ"
+    },
+    "temp_control_goals_lean_model_props_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "asp_targid": "temp_control_goals_lean_model_props_targ"
+    }
+  },
+  "hashfile": {
+    "temp_control_goals_lean_model_acceptance_hash_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Acceptance.lean",
+      "asp_targid": "temp_control_goals_lean_model_acceptance_hash_targ"
+    },
+    "temp_control_goals_lean_model_props_hash_targ": {
+      "env_var": "",
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "asp_targid": "temp_control_goals_lean_model_props_hash_targ"
+    }
+  }
+}

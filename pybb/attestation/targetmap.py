@@ -330,7 +330,8 @@ def lean_package_files(package_root: Path) -> List[str]:
     return [str(p) for p in (*sources, *manifests)]
 
 
-def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[str, Dict[str, dict]]:
+def derive_targets_from_lean(package_root: Path, prefix: str = "lean",
+                             files: Optional[List[str]] = None) -> Dict[str, Dict[str, dict]]:
     """
     Lean/Lake-package backend: the CONTRACTS artifact class by syntax
     scan of the package's .lean sources (.lake build tree excluded):
@@ -344,10 +345,17 @@ def derive_targets_from_lean(package_root: Path, prefix: str = "lean") -> Dict[s
     hashes) is assembled by the driver from its config
     (props.write_model_protocol_dir); build inputs come from
     lean_package_files.
+
+    `files` (optional, absolute paths) restricts the scan to those
+    sources — the goal-directed scenarios scope contracts to the BLESSED
+    files only, since mutable files carry no structural goldens.
     """
     package_root = Path(package_root)
-    sources = sorted(p for p in package_root.rglob("*.lean")
-                     if ".lake" not in p.parts)
+    if files is not None:
+        sources = sorted(Path(f) for f in files)
+    else:
+        sources = sorted(p for p in package_root.rglob("*.lean")
+                         if ".lake" not in p.parts)
 
     contracts: Dict[str, dict] = {}
     for p in sources:

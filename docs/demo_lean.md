@@ -11,6 +11,9 @@ The workflow itself lives in the shared driver `examples/lean_workflow.py`;
 `examples/temp_control_lean.py` is a thin `LeanExampleConfig` over it. A
 second Lean scenario is pure configuration — see `demo_gear.md`
 (landing-gear retraction interlock, `examples/landing_gear_lean.py`).
+A third scenario pilots the GOAL-DIRECTED encoding — blessed statements,
+workflow-owned proofs — see `demo_goals.md`
+(`examples/temp_control_goals_lean.py`).
 
 ## The target
 

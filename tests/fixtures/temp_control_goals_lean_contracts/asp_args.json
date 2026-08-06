@@ -1,0 +1,94 @@
+{
+  "readfile_range": {
+    "temp_control_goals_lean_acceptance_example_6_6_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Acceptance.lean",
+      "start_index": 6,
+      "end_index": 6,
+      "metadata": "TempControl.Acceptance::example@6",
+      "asp_targid": "temp_control_goals_lean_acceptance_example_6_6_targ",
+      "golden_b64": "ZXhhbXBsZSA6IFRlbXBDb250cm9sLlNwZWMgVGVtcENvbnRyb2wuY29tcHV0ZUZhbkNtZCA6PSBUZW1wQ29udHJvbC5zcGVjX2hvbGRz",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_FanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 13,
+      "end_index": 16,
+      "metadata": "TempControl.Props::FanCmd",
+      "asp_targid": "temp_control_goals_lean_props_FanCmd_targ",
+      "golden_b64": "aW5kdWN0aXZlIEZhbkNtZCB3aGVyZSAgfCBPbiAgfCBPZmZkZXJpdmluZyBSZXByLCBEZWNpZGFibGVFcQ==",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_SetPoint_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 18,
+      "end_index": 21,
+      "metadata": "TempControl.Props::SetPoint",
+      "asp_targid": "temp_control_goals_lean_props_SetPoint_targ",
+      "golden_b64": "c3RydWN0dXJlIFNldFBvaW50IHdoZXJlICBsb3cgIDogSW50ICBoaWdoIDogSW50ZGVyaXZpbmcgUmVwcg==",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_SetPoint_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 25,
+      "end_index": 26,
+      "metadata": "TempControl.Props::SetPoint.valid",
+      "asp_targid": "temp_control_goals_lean_props_SetPoint_valid_targ",
+      "golden_b64": "ZGVmIFNldFBvaW50LnZhbGlkIChzcCA6IFNldFBvaW50KSA6IFByb3AgOj0gIDUwIOKJpCBzcC5sb3cg4oinIHNwLmxvdyDiiaQgc3AuaGlnaCDiiKcgc3AuaGlnaCDiiaQgMTEw",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_Step_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 30,
+      "end_index": 30,
+      "metadata": "TempControl.Props::Step",
+      "asp_targid": "temp_control_goals_lean_props_Step_targ",
+      "golden_b64": "YWJicmV2IFN0ZXAgOj0gSW50IOKGkiBTZXRQb2ludCDihpIgRmFuQ21kIOKGkiBGYW5DbWQ=",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_fanOn_when_hot_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 33,
+      "end_index": 35,
+      "metadata": "TempControl.Props::fanOn_when_hot_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOn_when_hot_prop_targ",
+      "golden_b64": "ZGVmIGZhbk9uX3doZW5faG90X3Byb3AgKGYgOiBTdGVwKSA6IFByb3AgOj0gIOKIgCAodGVtcCA6IEludCkgKHNwIDogU2V0UG9pbnQpIChsYXRlc3QgOiBGYW5DbWQpLCAgICBzcC5oaWdoIDwgdGVtcCDihpIgZiB0ZW1wIHNwIGxhdGVzdCA9IC5Pbg==",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_fanOff_when_cold_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 38,
+      "end_index": 40,
+      "metadata": "TempControl.Props::fanOff_when_cold_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOff_when_cold_prop_targ",
+      "golden_b64": "ZGVmIGZhbk9mZl93aGVuX2NvbGRfcHJvcCAoZiA6IFN0ZXApIDogUHJvcCA6PSAg4oiAICh0ZW1wIDogSW50KSAoc3AgOiBTZXRQb2ludCkgKGxhdGVzdCA6IEZhbkNtZCksICAgIHNwLnZhbGlkIOKGkiB0ZW1wIDwgc3AubG93IOKGkiBmIHRlbXAgc3AgbGF0ZXN0ID0gLk9mZg==",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_fanHold_in_band_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 43,
+      "end_index": 45,
+      "metadata": "TempControl.Props::fanHold_in_band_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanHold_in_band_prop_targ",
+      "golden_b64": "ZGVmIGZhbkhvbGRfaW5fYmFuZF9wcm9wIChmIDogU3RlcCkgOiBQcm9wIDo9ICDiiIAgKHRlbXAgOiBJbnQpIChzcCA6IFNldFBvaW50KSAobGF0ZXN0IDogRmFuQ21kKSwgICAgc3AubG93IOKJpCB0ZW1wIOKGkiB0ZW1wIOKJpCBzcC5oaWdoIOKGkiBmIHRlbXAgc3AgbGF0ZXN0ID0gbGF0ZXN0",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_fanOn_only_if_hot_or_held_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 49,
+      "end_index": 51,
+      "metadata": "TempControl.Props::fanOn_only_if_hot_or_held_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOn_only_if_hot_or_held_prop_targ",
+      "golden_b64": "ZGVmIGZhbk9uX29ubHlfaWZfaG90X29yX2hlbGRfcHJvcCAoZiA6IFN0ZXApIDogUHJvcCA6PSAg4oiAICh0ZW1wIDogSW50KSAoc3AgOiBTZXRQb2ludCkgKGxhdGVzdCA6IEZhbkNtZCksICAgIGYgdGVtcCBzcCBsYXRlc3QgPSAuT24g4oaSIHNwLmhpZ2ggPCB0ZW1wIOKIqCBsYXRlc3QgPSAuT24=",
+      "golden_ts": "2026-08-06 10:22:29"
+    },
+    "temp_control_goals_lean_props_Spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 55,
+      "end_index": 57,
+      "metadata": "TempControl.Props::Spec",
+      "asp_targid": "temp_control_goals_lean_props_Spec_targ",
+      "golden_b64": "ZGVmIFNwZWMgKGYgOiBTdGVwKSA6IFByb3AgOj0gIGZhbk9uX3doZW5faG90X3Byb3AgZiDiiKcgZmFuT2ZmX3doZW5fY29sZF9wcm9wIGYg4oinICBmYW5Ib2xkX2luX2JhbmRfcHJvcCBmIOKIpyBmYW5Pbl9vbmx5X2lmX2hvdF9vcl9oZWxkX3Byb3AgZg==",
+      "golden_ts": "2026-08-06 10:22:29"
+    }
+  }
+}

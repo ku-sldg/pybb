@@ -92,7 +92,8 @@ class DeclDiff(BaseModel):
 
 def changed_decls(l2_protocol: Any, package_root: Path,
                   prefix: str = "lean",
-                  props_protocol: Any = None) -> DeclDiff:
+                  props_protocol: Any = None,
+                  files: Any = None) -> DeclDiff:
     """
     Attestation-manager detection for a Lean package: the declaration-level
     diff between the baseline and a fresh syntax scan of the live sources.
@@ -113,6 +114,10 @@ def changed_decls(l2_protocol: Any, package_root: Path,
     A truthy result means the baseline no longer describes the live spec:
     a sanctioned change should be promoted (--promote), an unsanctioned
     one investigated.
+
+    `files` (optional, absolute paths) restricts the live scan — the
+    goal-directed scenarios diff the blessed files only, since their
+    mutable files (proofs, implementation) change by design.
     """
     import base64
 
@@ -122,7 +127,8 @@ def changed_decls(l2_protocol: Any, package_root: Path,
         return "".join(s.split())
 
     live = derive_targets_from_lean(
-        Path(package_root), prefix=prefix)[f"{prefix}_contracts"]["readfile_range"]
+        Path(package_root), prefix=prefix,
+        files=files)[f"{prefix}_contracts"]["readfile_range"]
     files: Dict[str, List[str]] = {}
 
     def segment(args: dict) -> str:

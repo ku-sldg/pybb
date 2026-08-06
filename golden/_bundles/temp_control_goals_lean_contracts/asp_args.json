@@ -1,0 +1,74 @@
+{
+  "readfile_range": {
+    "temp_control_goals_lean_acceptance_example_6_6_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Acceptance.lean",
+      "start_index": 6,
+      "end_index": 6,
+      "metadata": "TempControl.Acceptance::example@6",
+      "asp_targid": "temp_control_goals_lean_acceptance_example_6_6_targ"
+    },
+    "temp_control_goals_lean_props_FanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 13,
+      "end_index": 16,
+      "metadata": "TempControl.Props::FanCmd",
+      "asp_targid": "temp_control_goals_lean_props_FanCmd_targ"
+    },
+    "temp_control_goals_lean_props_SetPoint_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 18,
+      "end_index": 21,
+      "metadata": "TempControl.Props::SetPoint",
+      "asp_targid": "temp_control_goals_lean_props_SetPoint_targ"
+    },
+    "temp_control_goals_lean_props_SetPoint_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 25,
+      "end_index": 26,
+      "metadata": "TempControl.Props::SetPoint.valid",
+      "asp_targid": "temp_control_goals_lean_props_SetPoint_valid_targ"
+    },
+    "temp_control_goals_lean_props_Step_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 30,
+      "end_index": 30,
+      "metadata": "TempControl.Props::Step",
+      "asp_targid": "temp_control_goals_lean_props_Step_targ"
+    },
+    "temp_control_goals_lean_props_fanOn_when_hot_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 33,
+      "end_index": 35,
+      "metadata": "TempControl.Props::fanOn_when_hot_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOn_when_hot_prop_targ"
+    },
+    "temp_control_goals_lean_props_fanOff_when_cold_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 38,
+      "end_index": 40,
+      "metadata": "TempControl.Props::fanOff_when_cold_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOff_when_cold_prop_targ"
+    },
+    "temp_control_goals_lean_props_fanHold_in_band_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 43,
+      "end_index": 45,
+      "metadata": "TempControl.Props::fanHold_in_band_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanHold_in_band_prop_targ"
+    },
+    "temp_control_goals_lean_props_fanOn_only_if_hot_or_held_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 49,
+      "end_index": 51,
+      "metadata": "TempControl.Props::fanOn_only_if_hot_or_held_prop",
+      "asp_targid": "temp_control_goals_lean_props_fanOn_only_if_hot_or_held_prop_targ"
+    },
+    "temp_control_goals_lean_props_Spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-goals/TempControl/Props.lean",
+      "start_index": 55,
+      "end_index": 57,
+      "metadata": "TempControl.Props::Spec",
+      "asp_targid": "temp_control_goals_lean_props_Spec_targ"
+    }
+  }
+}

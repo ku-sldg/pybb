@@ -135,6 +135,16 @@ class LeanExampleConfig:
     tamper_semantic_spot: tuple  # (rel_file, old, new, message) for
                                  # --tamper-semantic's implementation flip
 
+    # ── goal-directed scenario knobs (default None = classic behavior) ─────
+    model_rels: list = None       # blessed files, relative (default [spec_rel])
+    contracts_files: list = None  # relative paths scoping the contracts scan
+                                  # (goal-directed: blessed files only —
+                                  # mutable files carry no structural goldens)
+    verification_targets_override: dict = None  # replaces the single
+                                  # spec-elaboration target when set
+    bless_lint: object = None     # callable(cfg), invoked before the model
+                                  # class is (re)blessed; raises to refuse
+
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
         register_tool("lean", lambda: lean_artifacts(self.package_root))
@@ -167,7 +177,17 @@ class LeanExampleConfig:
     def spec_file(self) -> Path: return self.package_root / self.spec_rel
 
     @property
-    def model_files(self) -> list: return [str(self.spec_file)]
+    def model_files(self) -> list:
+        rels = self.model_rels if self.model_rels is not None else [self.spec_rel]
+        return [str(self.package_root / r) for r in rels]
+
+    @property
+    def contracts_abs(self) -> list:
+        """Absolute-path scoping for the contracts scan, or None (= whole
+        package, classic behavior)."""
+        if self.contracts_files is None:
+            return None
+        return [str(self.package_root / r) for r in self.contracts_files]
 
     @property
     def bin(self) -> Path:
@@ -190,6 +210,8 @@ class LeanExampleConfig:
     # ── tier config (the AM-owned protocol definitions) ───────────────────
     @property
     def verification_targets(self) -> dict:
+        if self.verification_targets_override is not None:
+            return self.verification_targets_override
         return {f"{self.prefix}_spec_verification_targ": {
             "exe_args": ["lean", self.spec_rel, "--", "--json"],
             "cwd": str(self.package_root)}}
@@ -362,7 +384,8 @@ def build_protocol_dirs(cfg: LeanExampleConfig, bless_model: bool = False,
     AM-owned: rewritten only under --promote (bless_model) or when
     missing entirely (bootstrap) — an ordinary --provision keeps the
     existing blessing untouched."""
-    derived = derive_targets_from_lean(cfg.package_root, prefix=cfg.prefix)
+    derived = derive_targets_from_lean(cfg.package_root, prefix=cfg.prefix,
+                                       files=cfg.contracts_abs)
     protocols = {}
     d = FIXTURES / cfg.contracts_id
     d.mkdir(exist_ok=True)
@@ -376,14 +399,14 @@ def build_protocol_dirs(cfg: LeanExampleConfig, bless_model: bool = False,
           f"{sum(len(t) for t in asp_args.values())} declaration slices from scan")
     model_dir = FIXTURES / cfg.model_id
     if bless_model or not (model_dir / "asp_args.json").is_file():
+        blessed = ", ".join(Path(f).name for f in cfg.model_files)
         write_model_protocol_dir(
             model_dir, cfg.prefix, cfg.model_files,
             "The MODEL class: whole-file signed content (the "
-            f"administrator's blessing) and hash of {cfg.spec_rel} — the "
-            "contract theorems. Episodes check the live model against the "
-            "blessed content and hash; baseline verification checks that "
-            "every declaration-slice golden is derivable from the blessed "
-            "bytes.")
+            f"administrator's blessing) and hash of {blessed}. Episodes "
+            "check the live model against the blessed content and hash; "
+            "baseline verification checks that every declaration-slice "
+            "golden is derivable from the blessed bytes.")
         print(f"  {cfg.model_id}: {len(cfg.model_files)} blessed model file(s)")
     else:
         print(f"  {cfg.model_id}: existing blessing kept "
@@ -442,6 +465,8 @@ def provision_flow(cfg: LeanExampleConfig, protocols: dict,
         for a in model.asp_args.get("readfile", {}).values())
     pids = [cfg.contracts_id]
     if model is not None and (bless_model or model_unblessed):
+        if cfg.bless_lint is not None:
+            cfg.bless_lint(cfg)  # raises to refuse the blessing
         pids.append(cfg.model_id)
     measured = {pid: protocols[pid] for pid in pids}
     if cfg.build_id in protocols:
@@ -478,7 +503,8 @@ def check_flow(cfg: LeanExampleConfig, protocols: dict) -> None:
     file — contract goldens are launderable, the blessing is not."""
     diff = changed_decls(protocols[cfg.contracts_id], cfg.package_root,
                          prefix=cfg.prefix,
-                         props_protocol=protocols.get(cfg.model_id))
+                         props_protocol=protocols.get(cfg.model_id),
+                         files=cfg.contracts_abs)
     if not diff:
         print("No declaration changes since last blessing; "
               "promotion not needed.")
@@ -528,7 +554,8 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
     ctl.register_predicate("promotion", make_promotion_predicate(
         gated, GOLDEN_ROOT,
         targets_fn=lambda: derive_targets_from_lean(cfg.package_root,
-                                                    prefix=cfg.prefix),
+                                                    prefix=cfg.prefix,
+                                                    files=cfg.contracts_abs),
         codegen_fn=make_codegen_fn(cfg, exec_targets),
         client=client,
         validate_with=cfg.verification_id,
