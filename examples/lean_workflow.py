@@ -164,6 +164,10 @@ class LeanExampleConfig:
                                   # GoalContext -> candidate proofs); None =
                                   # --synthesize unavailable
     impl_name: str = ""           # the implementation the goals quantify over
+    impl_rel: str = ""            # the implementation source file (handed to
+                                  # LLM engines as context alongside spec_rel)
+    break_proof_decl: str = ""    # --break-proof's target: the seed theorem
+                                  # whose proof body gets corrupted
 
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
@@ -671,8 +675,23 @@ def derive_spans(text: str):
     return lean_decl_spans(text)
 
 
+def _break_proof(cfg: LeanExampleConfig) -> bytes:
+    """Snapshot the proofs file, then corrupt ONE seed proof body with a
+    wrong-but-well-formed tactic (statement untouched, no sorry) — the
+    repair starting state: verification fails with real error
+    diagnostics. Returns the snapshot."""
+    path = cfg.package_root / cfg.witness_rel
+    original = path.read_bytes()
+    path.write_text(splice_proof(original.decode(), cfg.break_proof_decl,
+                                 "by\n  intros\n  rfl"))
+    print(f"Broke the proof of '{cfg.break_proof_decl}' in "
+          f"{cfg.witness_rel} (wrong tactic — statement untouched)")
+    return original
+
+
 def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
-                    keep: bool) -> BlackboardController:
+                    keep: bool, engines: list = None,
+                    stub: str = "sorries") -> BlackboardController:
     """The step-4 loop: stub the seeds, put :model/:contracts/:verification
     on the board (:executable stays OFF — attested behavior arrives only at
     the human promote gate), and let ProofSynthesisKS work the failing
@@ -681,7 +700,8 @@ def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
     fresh measurement. Ends in good standing or escalates with the
     checklist of what remains."""
     proofs_path = cfg.package_root / cfg.witness_rel
-    original = _stub_proofs(cfg)
+    original = _break_proof(cfg) if stub == "break" else _stub_proofs(cfg)
+    context_rels = [r for r in (cfg.spec_rel, cfg.impl_rel) if r]
     try:
         controller = BlackboardController()
         client = CvmSubprocessClient()
@@ -692,13 +712,14 @@ def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
             "protocol_check", make_readiness_predicate(
                 protocols, baseline_root=GOLDEN_ROOT, client=client))
         synth = ProofSynthesisKS(
-            engines=cfg.synthesis_engines,
+            engines=engines if engines is not None else cfg.synthesis_engines,
             blessed=lambda: _blessed_text(cfg, protocols),
             package_root=str(cfg.package_root),
             proofs_rel=cfg.witness_rel,
             acceptance_rel=cfg.verification_targets[cfg.binding_targ]["exe_args"][1],
             proofs_targ=cfg.proofs_targ,
             impl_name=cfg.impl_name,
+            context_rels=context_rels,
             lake=str(LAKE))
         episodes = {cfg.entry("model"): cfg.model_id,
                     cfg.entry("contracts"): cfg.contracts_id,
@@ -815,18 +836,100 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
     parser.add_argument("--ready", action="store_true")
     parser.add_argument("--synthesize", action="store_true")
     parser.add_argument("--keep", action="store_true")
+    parser.add_argument("--llm", choices=("anthropic", "openai"),
+                        help="explicit confirmation: arm the LLM engine "
+                             "against this provider (keys from the "
+                             "environment only)")
+    parser.add_argument("--llm-only", action="store_true",
+                        help="leave the tactic portfolio off the ladder so "
+                             "the LLM genuinely does the proving")
+    parser.add_argument("--llm-model", metavar="ID",
+                        help="override the provider's default model "
+                             "(e.g. gpt-5.1)")
+    parser.add_argument("--llm-max-tokens", type=int, metavar="N",
+                        help="per-call completion budget (reasoning models "
+                             "spend most of it on reasoning tokens)")
+    parser.add_argument("--llm-effort",
+                        choices=("none", "low", "medium", "high"),
+                        help="OpenAI reasoning_effort: gpt-5* models do NOT "
+                             "reason on this endpoint unless it is set — "
+                             "this is the knob that buys thinking, and the "
+                             "one that drives cost")
+    parser.add_argument("--llm-dry-run", action="store_true",
+                        help="predict the spend: run the flow with a "
+                             "no-network stand-in that records every prompt "
+                             "and yields no candidate, so the reported call "
+                             "count is the worst-case ceiling")
+    parser.add_argument("--break-proof", action="store_true",
+                        help="repair arc: corrupt one seed proof body "
+                             "(implies a synthesis episode)")
     cli = parser.parse_args()
 
     if cli.expect and not cli.promote:
         parser.error("--expect is the promote-time sanctioning knob; "
                      "use it with --promote")
+    if cli.break_proof:
+        cli.synthesize = True
     if cli.keep and not cli.synthesize:
         parser.error("--keep retains --synthesize's proofs; use them together")
+    if cli.llm_only and not cli.llm:
+        parser.error("--llm-only requires --llm (the explicit LLM opt-in)")
+    for flag in ("llm_model", "llm_max_tokens", "llm_dry_run", "llm_effort"):
+        if getattr(cli, flag) and not cli.llm:
+            parser.error(f"--{flag.replace('_', '-')} tunes the armed LLM "
+                         "engine; use it with --llm")
+    if cli.llm and not cli.synthesize:
+        parser.error("--llm arms the synthesis engines; use it with "
+                     "--synthesize or --break-proof")
     if cli.synthesize:
         if cfg.synthesis_engines is None:
             parser.error("--synthesize: this scenario has no synthesis "
                          "engines configured")
-        synthesize_flow(cfg, load_protocols(cfg, validate=True), keep=cli.keep)
+        engines = None
+        backend = None
+        if cli.llm:
+            from pybb.attestation.llm_backends import (BACKENDS, ANTHROPIC_MODEL,
+                                                       DryRunComplete,
+                                                       LlmBackendError,
+                                                       OPENAI_MODEL)
+            from pybb.attestation.synthesis import LlmEngine
+            model = cli.llm_model or (ANTHROPIC_MODEL if cli.llm == "anthropic"
+                                      else OPENAI_MODEL)
+            if cli.llm_dry_run:
+                backend = DryRunComplete(model, provider=cli.llm)
+            else:
+                kwargs = {"model": model, "max_tokens": cli.llm_max_tokens}
+                if cli.llm_effort:  # openai-only knob
+                    kwargs["effort"] = cli.llm_effort
+                try:
+                    backend = BACKENDS[cli.llm](**kwargs)
+                except LlmBackendError as e:
+                    raise SystemExit(f"--llm {cli.llm}: {e}")
+                except TypeError as e:
+                    raise SystemExit(
+                        f"--llm-effort is not supported by "
+                        f"--llm {cli.llm}: {e}")
+            print("LLM engine armed (explicit --llm flag is the "
+                  "confirmation):")
+            print(f"  {backend.describe}")
+            print("  key policy: environment/`ant` profile only — never "
+                  "stored or logged")
+            print("  cost: a few thousand tokens per goal attempt"
+                  if not cli.llm_dry_run else
+                  "  cost: none — this run predicts the ceiling instead")
+            armed = LlmEngine(complete=backend, attempts=3)
+            non_llm = [e for e in (cfg.synthesis_engines or [])
+                       if not isinstance(e, LlmEngine)]
+            engines = [armed] if cli.llm_only else [*non_llm, armed]
+        try:
+            synthesize_flow(cfg, load_protocols(cfg, validate=True),
+                            keep=cli.keep, engines=engines,
+                            stub="break" if cli.break_proof else "sorries")
+        finally:
+            report = getattr(backend, "report", None) or getattr(
+                getattr(backend, "usage", None), "report", None)
+            if report is not None:
+                print(f"\n{report()}")
         return
     if cli.status or cli.ready:
         if cli.status and cfg.witness_rel is None:

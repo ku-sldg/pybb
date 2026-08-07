@@ -195,4 +195,13 @@ def test_llm_engine_prompt_and_stub_backend():
     assert "theorem w : hot_prop f" in prompts[0]
     assert "def hot_prop ..." in prompts[0]
     assert "declaration uses sorry" in prompts[0]
-    assert "Previous attempt" in prompts[0]
+    # a STUBBED seed is not guidance: _stub_proofs overwrote the body, so
+    # forwarding `by sorry` as a "previous attempt" only wastes prompt
+    # space telling the model what the failure detail already says
+    assert "Previous attempt" not in prompts[0]
+    # a real seed (the --break-proof arc, where the body is corrupted
+    # rather than stubbed) still reaches the prompt as guidance
+    seeded = ctx.model_copy(update={"seed": "by\n  intros\n  rfl"})
+    assert list(LlmEngine(complete=complete, attempts=1)(seeded))
+    assert "Previous attempt" in prompts[-1]
+    assert "intros" in prompts[-1]

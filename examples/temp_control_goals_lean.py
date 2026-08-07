@@ -172,6 +172,9 @@ CONFIG = LeanExampleConfig(
     # it; end-of-route escalation is the human rung)
     synthesis_engines=[TacticPortfolioEngine(), LlmEngine()],
     impl_name="computeFanCmd",
+    # LLM-engine context + the --break-proof repair arc's target
+    impl_rel="TempControl/Impl.lean",
+    break_proof_decl="fanHold_in_band",
 )
 
 # test-facing API (tests/test_integration_goals.py)

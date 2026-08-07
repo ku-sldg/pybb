@@ -123,6 +123,9 @@ class GoalContext(BaseModel):
     witnesses: List[str] = [] # binding: the goal witnesses, checklist order
     helpers: List[str] = []   # blessed Prop-valued helper defs (e.g. .valid)
     impl_name: str = ""
+    context_files: Dict[str, str] = {}  # rel path -> contents (the blessed
+                              # statements + the implementation the proofs
+                              # are about — an LLM cannot prove without them)
 
 
 class TacticPortfolioEngine:
@@ -163,36 +166,77 @@ class TacticPortfolioEngine:
 
 class LlmEngine:
     """The pluggable LLM slot: builds a prompt from the goal context
-    (blessed statement, diagnostics, the seed proof as guidance) and
-    calls `complete(prompt) -> str` for candidate proofs. Ships with no
-    backend (complete=None yields nothing); candidates are judged
-    exactly like any other engine's — the LLM is an untrusted sense."""
+    (context source files, blessed statement, diagnostics, the seed
+    proof as guidance) and calls `complete(prompt) -> str` for candidate
+    proofs. Ships with no backend (complete=None yields nothing);
+    candidates are judged exactly like any other engine's — the LLM is
+    an untrusted sense.
+
+    Iterative feedback rides the generator protocol: the KS resumes the
+    engine's iterator ONLY when the previous candidate failed the local
+    check (acceptance breaks out of the loop), so on resume the next
+    round's prompt carries the failed candidate and a failure note."""
 
     def __init__(self, complete=None, attempts: int = 1):
         self.complete = complete
         self.attempts = attempts
 
-    def prompt(self, ctx: GoalContext) -> str:
+    @staticmethod
+    def _is_stub(seed: str) -> bool:
+        """True when a seed carries no guidance because `_stub_proofs`
+        overwrote the body. Passing `by sorry` along as a 'previous
+        attempt' is worse than passing nothing — it spends prompt space
+        to tell the model only that the goal is unproved, which it was
+        already told."""
+        return "".join(seed.split()) in ("", "sorry", "bysorry")
+
+    @staticmethod
+    def _strip_fences(text: str) -> str:
+        text = text.strip()
+        if text.startswith("```"):
+            first_newline = text.find("\n")
+            if first_newline != -1:
+                text = text[first_newline + 1:]
+            if text.rstrip().endswith("```"):
+                text = text.rstrip()[:-3]
+        return text.strip()
+
+    def prompt(self, ctx: GoalContext, failed: list = None) -> str:
         lines = [
-            "Complete this Lean 4 proof. Reply with ONLY the proof term "
-            "or tactic block (the text after `:=`).",
-            f"Declaration to prove:\n{ctx.statement.strip()} := ...",
+            "You are completing a Lean 4 proof (core Lean only — no "
+            "Mathlib). Reply with ONLY the proof term or tactic block "
+            "that replaces the text after `:=` (typically starting with "
+            "`by`). No explanations, no markdown fences.",
         ]
+        for rel, contents in ctx.context_files.items():
+            lines.append(f"Context — {rel}:\n```lean\n{contents}\n```")
+        lines.append(
+            f"Declaration to prove:\n{ctx.statement.strip()} := ...")
         if ctx.blessed_statement:
-            lines.append(f"The blessed goal property:\n{ctx.blessed_statement}")
+            lines.append(
+                f"The blessed goal property:\n{ctx.blessed_statement}")
         if ctx.detail:
             lines.append(f"Current failure: {ctx.detail}")
-        if ctx.seed.strip():
+        if not self._is_stub(ctx.seed):
             lines.append(f"Previous attempt (may be wrong):\n{ctx.seed}")
+        for i, candidate in enumerate(failed or [], 1):
+            lines.append(
+                f"Rejected attempt {i} (failed to check — do not repeat "
+                f"it):\n{candidate}")
         return "\n\n".join(lines)
 
     def __call__(self, ctx: GoalContext) -> Iterable[str]:
         if self.complete is None:
             return
+        failed: list = []
         for _ in range(self.attempts):
-            candidate = self.complete(self.prompt(ctx))
-            if candidate and candidate.strip():
-                yield candidate.strip()
+            candidate = self._strip_fences(
+                self.complete(self.prompt(ctx, failed)) or "")
+            if not candidate:
+                continue
+            yield candidate
+            # resumed => the KS rejected this candidate (acceptance breaks)
+            failed.append(candidate)
 
 
 def splice_proof(text: str, name: str, candidate: str) -> str:
@@ -250,6 +294,8 @@ class ProofSynthesisKS(BlackBoxRepairKS):
     binding_witness: str = "spec_holds"
     impl_name: str = ""
     lake: str = ""
+    context_rels: List[str] = []  # source files handed to engines as
+                                  # context (blessed statements + impl)
 
     def model_post_init(self, __context) -> None:
         self.tool = self._synthesize
@@ -266,6 +312,24 @@ class ProofSynthesisKS(BlackBoxRepairKS):
     def _locally_clean(self) -> bool:
         return not self._refuting(self.proofs_rel) \
             and not self._refuting(self.acceptance_rel)
+
+    def _live_failing(self) -> set:
+        """Declarations actually refuted in the proofs file RIGHT NOW,
+        from one bare `lake lean`.
+
+        The verdict handed to the KS is the episode's measurement, and it
+        goes stale the moment a candidate is accepted — a restart is only
+        spent once the WHOLE file is clean, so within an episode the
+        verdict keeps naming goals that have since been proved. Without
+        this intersection the engines are asked to re-prove solved goals,
+        burning attempts that the still-failing ones need."""
+        text = (Path(self.package_root) / self.proofs_rel).read_text()
+        spans = [(n, s, e) for _k, n, s, e in lean_decl_spans(text) if n]
+        names = set()
+        for diag in self._refuting(self.proofs_rel):
+            line = (diag.get("pos") or {}).get("line", 0)
+            names.update(n for n, s, e in spans if s <= line <= e)
+        return names
 
     def _decl_refutations(self, rel: str, name: str):
         """(refutations inside `name`'s span, total refutation count)."""
@@ -284,9 +348,24 @@ class ProofSynthesisKS(BlackBoxRepairKS):
         failing = [n for n, st in statuses.items() if st.state == FAILING]
         if not failing:
             return False
+        live = self._live_failing()
+        already = [n for n in failing if n not in live]
+        failing = [n for n in failing if n in live]
+        if already:
+            print(f"  {self.name}: {len(already)} already proved this "
+                  f"episode, not re-attempted ({', '.join(sorted(already))})")
+        if not failing:
+            # the verdict is stale and nothing is left to prove: ask for a
+            # fresh measurement rather than idling into escalation
+            return self._locally_clean()
         blessed_text = self.blessed()
         conjuncts = spec_conjuncts(blessed_text)
         helpers = _prop_helpers(blessed_text, conjuncts)
+        context_files: Dict[str, str] = {}
+        for rel in self.context_rels:
+            source = Path(self.package_root) / rel
+            if source.is_file():
+                context_files[rel] = source.read_text()
         blessed_lines = blessed_text.splitlines()
         blessed_defs = {n: "\n".join(blessed_lines[s - 1:e])
                         for _k, n, s, e in lean_decl_spans(blessed_text) if n}
@@ -330,7 +409,8 @@ class ProofSynthesisKS(BlackBoxRepairKS):
                 blessed_statement=blessed_defs.get(prop, ""),
                 binding=(name == self.binding_witness),
                 witnesses=witnesses() if name == self.binding_witness else [],
-                helpers=helpers, impl_name=self.impl_name)
+                helpers=helpers, impl_name=self.impl_name,
+                context_files=context_files)
             before = proofs_path.read_text()
             _, baseline_total = self._decl_refutations(self.proofs_rel, name)
             accepted = False

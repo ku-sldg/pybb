@@ -235,6 +235,43 @@ state by measurement. `LlmEngine` ships without a backend (plug
 `complete=` in to arm it); an LLM's candidates are untrusted senses like
 any other engine's.
 
+### Arming the LLM engine (`--llm`, `--llm-only`, `--break-proof`)
+
+The `LlmEngine` slot ships unarmed; a live backend is an explicit,
+per-run opt-in (the shared LLM-safety policy — same as AutoVerus):
+
+```sh
+python examples/temp_control_goals_lean.py --synthesize --llm openai --llm-only
+python examples/temp_control_goals_lean.py --break-proof --llm anthropic
+```
+
+- **`--llm {anthropic,openai}`** is the confirmation. `anthropic` =
+  `claude-opus-5` via the official SDK (credentials resolve from
+  `ANTHROPIC_API_KEY` or an existing `ant auth login` profile — our code
+  never touches the value; safety refusals simply yield no candidate);
+  `openai` = `gpt-4o` via stdlib HTTP (`OPENAI_API_KEY` from the
+  environment at call time). A confirmation block (provider, model, key
+  source, cost note) prints before the first call. Keys are never
+  stored, logged, or passed through our data structures (pinned by
+  test). No flag → the slot yields nothing, byte-identical to before.
+- **`--llm-only`** leaves the tactic portfolio off the ladder so the LLM
+  genuinely does the proving — the honest live exercise (the portfolio
+  otherwise solves every committed goal before the LLM fires).
+- **`--break-proof`** is the repair arc: one seed proof BODY is
+  corrupted with a wrong-but-well-formed tactic (statement untouched, no
+  sorry) — verification fails with real error diagnostics, and the
+  engines repair it. Works with the portfolio alone or with `--llm`.
+- The prompt carries the blessed statements and the implementation
+  source (an LLM cannot prove without its subject), the failure
+  diagnostics, and the seed proof as guidance; on each retry the failed
+  candidate is fed back ("rejected attempt — do not repeat it"). Every
+  candidate is judged exactly like a portfolio candidate: local
+  `lake lean`, then a restart-judged fresh attested episode. The LLM is
+  an untrusted sense; nothing it says mints trust.
+- LLM success is nondeterministic: escalation (the human rung) is a
+  valid outcome, and the tactic portfolio remains the deterministic CI
+  story. Live tests are triple-gated (`RUN_LLM=1` + credentials + CVM).
+
 ### Black-box repair (the AutoVerus shape)
 
 `ProofSynthesisKS` is a specialization of the generic
