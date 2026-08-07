@@ -1,0 +1,49 @@
+{
+  "hashfile": {
+    "tool_verus_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::verus",
+      "asp_targid": "tool_verus_verus_targ",
+      "golden_b64": "zTYeFHy8vRMlfBu7Wv6M1lyMgp11U+zL8bur+BeBs8g=",
+      "golden_ts": "2026-08-07 09:42:23"
+    },
+    "tool_verus_verus_2_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::verus",
+      "asp_targid": "tool_verus_verus_2_targ",
+      "golden_b64": "6YFdT4PzWgJhB5/Xc9I0tffcA5vn9HOU8YFaNqDYSu0=",
+      "golden_ts": "2026-08-07 09:42:23"
+    },
+    "tool_verus_rust_verify_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::verus",
+      "asp_targid": "tool_verus_rust_verify_targ",
+      "golden_b64": "0Rmu8+j69QSxFO0pWMVYkDVe+NVlnfCh2Bn0w3/NqN4=",
+      "golden_ts": "2026-08-07 09:42:23"
+    },
+    "tool_verus_z3_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/z3",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::verus",
+      "asp_targid": "tool_verus_z3_targ",
+      "golden_b64": "u7JLj+0nVS9/t8/fDtkQHm4k/QzAuc+5RSM7Py7TM8U=",
+      "golden_ts": "2026-08-07 09:42:23"
+    }
+  },
+  "run_command_verus": {
+    "find_max_verus_check_targ": {
+      "exe_args": [
+        "/Users/adampetz/Claude_workspace/pybb/targets/find-max-verus/find_max.rs",
+        "--output-json"
+      ],
+      "asp_targid": "find_max_verus_check_targ"
+    }
+  }
+}

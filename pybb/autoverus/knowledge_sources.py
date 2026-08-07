@@ -182,6 +182,27 @@ class AutoVerusRepairKS(KnowledgeSource):
 
     `repair_fn` defaults to the real AutoVerus bridge and exists as a seam
     for unit tests only; nothing ships a substitute.
+
+    ATTESTED MODE (both fields default off — the standalone flow above is
+    unchanged):
+
+    - `target`: the file to repair when the entry is an ATTESTATION entry
+      (its measurement is `{"protocol": ...}` and carries no file path).
+    - `reattest`: after writing the repaired source, the repaired state is
+      cheat-gated (`find_cheat` — a vacuous `assume(`/`admit()` "repair"
+      refuses re-attestation and leaves the entry to escalate, because the
+      attested Verus appraiser cannot see source cheats) and then judged by
+      `blackboard.request_restart(key, ...)`: the DEFINITIVE Verus run is
+      the fresh episode's CVM measurement (toolchain measured in the same
+      term, evidence signed and archived), not anything this KS believes.
+
+    LLM SAFETY LATCH: `allow_llm` defaults to False, and without it this
+    rung REFUSES to invoke the real AutoVerus bridge (which calls an LLM
+    API) — the entry simply escalates with the refusal on record. Arm it
+    only through an explicit, user-visible opt-in (the examples'
+    `--autoverus` flag). The `repair_fn` test seam involves no LLM and is
+    not gated. The OpenAI key is read from the environment by the bridge
+    at call time and is never accepted, stored, or logged here.
     """
 
     name: str = "repair:autoverus"
@@ -191,6 +212,16 @@ class AutoVerusRepairKS(KnowledgeSource):
     keep_intermediate: bool = False
     config: Optional[AutoVerusConfig] = None
     repair_fn: Optional[Callable] = None
+    target: str = ""          # attested mode: the file to repair
+    reattest: bool = False    # attested mode: judge via restart-episode
+    reattest_budget: int = 1  # attested mode: definitive re-verifications
+                              # this rung may request per key. A restart
+                              # RESETS ks_history (fresh episode, fresh KS
+                              # budget), so without this the rung would be
+                              # re-invoked every episode — checked BEFORE
+                              # any repair runs, so an exhausted key never
+                              # spends another AutoVerus (LLM) invocation
+    allow_llm: bool = False   # explicit opt-in for real LLM-backed repair
 
     model_config = {"arbitrary_types_allowed": True}
 
@@ -199,9 +230,25 @@ class AutoVerusRepairKS(KnowledgeSource):
             entry = blackboard.get_entry(key)
             if entry is None or not isinstance(entry.measurement, dict):
                 continue
-            path = entry.measurement.get("file")
+            path = self.target or entry.measurement.get("file")
             if not path:
                 continue
+            if self.reattest and \
+                    blackboard.restarts.get(key, 0) >= self.reattest_budget:
+                # already judged by a fresh episode and still failing:
+                # no further repair (no LLM spend) — escalation follows
+                print(f"  {self.name}: re-attestation budget "
+                      f"({self.reattest_budget}) exhausted for '{key}' — "
+                      "escalating")
+                continue
+            if self.repair_fn is None and not self.allow_llm:
+                # the LLM safety latch: the real bridge calls an LLM API,
+                # and nothing does that without an explicit opt-in
+                print(f"  {self.name}: refusing LLM-backed repair of "
+                      f"{Path(path).name} — allow_llm is not set (arm it "
+                      "via the example's --autoverus flag)")
+                continue
+            repaired_ok = False
             try:
                 if self.repair_fn is not None:
                     repaired = self.repair_fn(path, self.repair_steps)
@@ -213,6 +260,7 @@ class AutoVerusRepairKS(KnowledgeSource):
                 # would otherwise apply: the measurement hashes raw bytes,
                 # so a rewritten line ending is a different measurement.
                 Path(path).write_text(repaired, newline="")
+                repaired_ok = True
                 print(f"  {self.name}: repaired {Path(path).name}")
             except Exception as e:
                 # The controller does not wrap execute(), so anything that
@@ -221,8 +269,21 @@ class AutoVerusRepairKS(KnowledgeSource):
                 # against, so everything becomes a report instead.
                 print(f"  {self.name}: repair failed on "
                       f"{Path(path).name} - {e}")
-            blackboard.write_entry(
-                key=key, predicate=entry.predicate,
-                measurement=source_measurement(path),  # new hash => re-verify
-                result=None,
-            )
+            if self.reattest:
+                if not repaired_ok:
+                    continue  # nothing new to judge; escalation follows
+                cheat = find_cheat(Path(path).read_text())
+                if cheat:
+                    # the untrusted gate: a cheated proof would PASS the
+                    # attested verifier, so it must never reach it
+                    print(f"  {self.name}: refusing re-attestation — "
+                          f"repair contains {cheat!r} (vacuous proof)")
+                    continue
+                blackboard.request_restart(
+                    key, f"{self.name}: definitive attested re-verification")
+            else:
+                blackboard.write_entry(
+                    key=key, predicate=entry.predicate,
+                    measurement=source_measurement(path),  # new hash => re-verify
+                    result=None,
+                )

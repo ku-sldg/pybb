@@ -1,0 +1,60 @@
+{
+  "Session_Plc": "P0",
+  "Plc_Mapping": {},
+  "PubKey_Mapping": {},
+  "Session_Context": {
+    "ASP_Types": {
+      "run_command_verus": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "NONE"
+        },
+        "ATTRS": []
+      },
+      "run_command_verus_appr": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "NONE"
+        },
+        "ATTRS": []
+      },
+      "hashfile": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "NONE"
+        },
+        "ATTRS": []
+      },
+      "sig": {
+        "FWD": {
+          "FWD": "EXTEND",
+          "_BODY": 1,
+          "EvInSig": "ALL"
+        },
+        "ATTRS": []
+      },
+      "sig_appr": {
+        "FWD": {
+          "FWD": "REPLACE",
+          "_BODY": 1
+        },
+        "ATTRS": []
+      },
+      "goldenbytes_appr": {
+        "FWD": {
+          "FWD": "REPLACE",
+          "_BODY": 1
+        },
+        "ATTRS": []
+      }
+    },
+    "ASP_Comps": {
+      "run_command_verus": "run_command_verus_appr",
+      "hashfile": "goldenbytes_appr",
+      "sig": "sig_appr"
+    }
+  }
+}

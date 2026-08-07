@@ -28,12 +28,12 @@ from .shell import VIA_WSL, ShellError, run_shell, to_wsl_path
 
 # The Verus binary itself, not a directory. It does NOT need to be on PATH
 # -- this path is what puts it there for AutoVerus.
-VERUS = "/home/apkrishna/verus/source/target-verus/release/verus"
+VERUS = "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus"
 
 # Your verus-proof-synthesis checkout. Point at the checkout root; if
 # yours predates upstream's code/ -> autoverus/ rename, point at the
 # code/ directory instead.
-AUTOVERUS = "/home/apkrishna/verus-proof-synthesis"
+AUTOVERUS = "/Users/adampetz/Claude_workspace/verus-proof-synthesis"
 
 # The Python that has AutoVerus's dependencies installed. Leave blank to
 # use <checkout>/.venv/bin/python, which is where the setup instructions

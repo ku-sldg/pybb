@@ -53,7 +53,17 @@ def main() -> int:
     parser.add_argument("--keep", action="store_true",
                         help="keep the working copy and AutoVerus's "
                              "intermediate-*/ directories for inspection")
+    parser.add_argument("--autoverus", action="store_true",
+                        help="explicit confirmation: this run may call the "
+                             "OpenAI API via AutoVerus (key read from the "
+                             "OPENAI_API_KEY environment variable only)")
     cli = parser.parse_args()
+
+    if not cli.autoverus:
+        raise SystemExit(
+            "This example calls an LLM API (OpenAI, via AutoVerus). "
+            "Pass --autoverus to confirm; the key is read from "
+            "OPENAI_API_KEY and never stored.")
 
     config = AutoVerusConfig()
     print("preflight...")

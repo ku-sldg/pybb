@@ -1,0 +1,4 @@
+{
+  "name": "find_max attested Verus check",
+  "description": "Definitive Verus verification of the find-max-verus target: verus toolchain hashed measure-then-use, `verus <file> --output-json`, appraised by run_command_verus_appr (errors == 0), one SIG."
+}

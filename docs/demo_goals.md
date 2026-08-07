@@ -254,9 +254,12 @@ sentinels. Wiring one is pure configuration:
           on_fail=[BlackBoxRepairKS(tool=autoverus_adapter,
                                     restart_policy="per_attempt")])
 
-The Verus scenarios (temp-control-microkit, isolette) can adopt this
-today with a thin adapter — the worked AutoVerus integration is the
-natural follow-up.
+The worked AutoVerus integration LANDED via the `apk` branch merge —
+see `demo_autoverus.md`: `pybb/autoverus/AutoVerusRepairKS` (used
+directly, not through BlackBoxRepairKS) repairs with AutoVerus's
+internal iteration and is judged by a definitive attested Verus run in
+a fresh episode (`examples/find_max_verus.py`), behind an explicit
+`--autoverus` LLM opt-in.
 
 ## Sanctioned change
 

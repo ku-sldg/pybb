@@ -461,6 +461,11 @@ def test_preflight_reports_an_unusable_shell(monkeypatch):
 # --- WSL path translation -------------------------------------------------
 
 
+@pytest.mark.skipif(
+    os.name != "nt",
+    reason="drive detection uses os.path.splitdrive, which only recognizes "
+           "drive letters on Windows — on POSIX these paths pass through "
+           "unchanged (the documented no-op)")
 @pytest.mark.parametrize("windows,wsl", [
     # the space is the case worth pinning: it must survive translation
     # untouched rather than being quoted or escaped
@@ -490,8 +495,16 @@ needs_autoverus = pytest.mark.skipif(
 
 @needs_autoverus
 def test_live_repair_end_to_end(target):
-    """Real AutoVerus, real Verus, real API calls. Minutes, and real spend."""
-    controller = _controller(target, None, None)  # real bridge on both seams
+    """Real AutoVerus, real Verus, real API calls. Minutes, and real spend.
+    The triple gate above (RUN_AUTOVERUS=1 + preflight + key) is the
+    explicit opt-in; allow_llm arms the rung's safety latch to match."""
+    controller = BlackboardController()
+    rung = AutoVerusRepairKS(allow_llm=True)  # real bridge on both seams
+    controller.register_predicate("verus", make_verus_predicate())
+    controller.add_ks(rung)
+    controller.blackboard.write_entry(
+        key="proof", predicate="verus", measurement=source_measurement(target))
+    controller.route("proof", [rung])
     blackboard = controller.run()
     entry = blackboard.get_entry("proof")
     assert entry is not None and entry.good_standing, \
