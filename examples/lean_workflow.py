@@ -71,7 +71,7 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
-from pybb.attestation import ProofSynthesisKS
+from pybb.attestation import ImplSynthesisKS, ProofSynthesisKS
 from pybb.attestation.proof_status import goal_checklist, render_checklist
 from pybb.attestation.synthesis import splice_proof
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
@@ -675,6 +675,24 @@ def derive_spans(text: str):
     return lean_decl_spans(text)
 
 
+def _stub_impl(cfg: LeanExampleConfig) -> bytes:
+    """Snapshot the implementation file, then stub the implementation's
+    BODY to sorry (signature kept — it is the blessed `Step` shape the
+    goals quantify over). Returns the snapshot.
+
+    Paired with _stub_proofs this is the impl-first starting state: the
+    administrator has blessed WHAT MUST HOLD and nothing else exists —
+    no implementation, no proofs. Everything downstream has to be
+    derived from the blessed properties.
+    """
+    path = cfg.package_root / cfg.impl_rel
+    original = path.read_bytes()
+    path.write_text(splice_proof(original.decode(), cfg.impl_name, "sorry"))
+    print(f"Stubbed the implementation '{cfg.impl_name}' to sorry in "
+          f"{cfg.impl_rel} (signature kept)")
+    return original
+
+
 def _break_proof(cfg: LeanExampleConfig) -> bytes:
     """Snapshot the proofs file, then corrupt ONE seed proof body with a
     wrong-but-well-formed tactic (statement untouched, no sorry) — the
@@ -691,15 +709,24 @@ def _break_proof(cfg: LeanExampleConfig) -> bytes:
 
 def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
                     keep: bool, engines: list = None,
-                    stub: str = "sorries") -> BlackboardController:
+                    stub: str = "sorries",
+                    impl_engines: list = None) -> BlackboardController:
     """The step-4 loop: stub the seeds, put :model/:contracts/:verification
     on the board (:executable stays OFF — attested behavior arrives only at
     the human promote gate), and let ProofSynthesisKS work the failing
     goals: engines splice candidates, bare `lake lean` judges locally
     (free), and each locally-clean state spends ONE restart to be judged by
     fresh measurement. Ends in good standing or escalates with the
-    checklist of what remains."""
+    checklist of what remains.
+
+    stub="impl" is the IMPL-FIRST arc: the implementation body is stubbed
+    alongside the proofs, and ImplSynthesisKS is chained ahead of the proof
+    rung — the blessed properties alone must yield first an implementation,
+    then proofs about it. Ordinary failure handoff carries the entry from
+    one rung to the next."""
     proofs_path = cfg.package_root / cfg.witness_rel
+    impl_path = cfg.package_root / cfg.impl_rel if cfg.impl_rel else None
+    impl_original = _stub_impl(cfg) if stub == "impl" else None
     original = _break_proof(cfg) if stub == "break" else _stub_proofs(cfg)
     context_rels = [r for r in (cfg.spec_rel, cfg.impl_rel) if r]
     try:
@@ -721,15 +748,22 @@ def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
             impl_name=cfg.impl_name,
             context_rels=context_rels,
             lake=str(LAKE))
+        impl_synth = ImplSynthesisKS(
+            engines=impl_engines or [],
+            blessed=lambda: _blessed_text(cfg, protocols),
+            package_root=str(cfg.package_root),
+            impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
+            spec_rel=cfg.spec_rel, lake=str(LAKE)) if stub == "impl" else None
+        chain = [ks for ks in (impl_synth, synth) if ks is not None]
         episodes = {cfg.entry("model"): cfg.model_id,
                     cfg.entry("contracts"): cfg.contracts_id,
                     cfg.entry("verification"): cfg.verification_id}
         starter = StartAttestationKS(episodes=episodes)
-        for ks in (synth, starter):
+        for ks in (*chain, starter):
             controller.add_ks(ks)
         controller.route(cfg.entry("model"), on_pass=[], on_fail=[])
         controller.route(cfg.entry("contracts"), on_pass=[], on_fail=[])
-        controller.route(cfg.entry("verification"), on_pass=[], on_fail=[synth])
+        controller.route(cfg.entry("verification"), on_pass=[], on_fail=chain)
         controller.blackboard.write_entry(
             key=cfg.entry("ready"), predicate="protocol_check",
             measurement=readiness_request(list(protocols)))
@@ -747,9 +781,15 @@ def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
     finally:
         if keep:
             print(f"\n--keep: synthesized proofs left in {cfg.witness_rel}")
+            if impl_original is not None:
+                print(f"--keep: synthesized implementation left in "
+                      f"{cfg.impl_rel}")
         else:
             proofs_path.write_bytes(original)
             print(f"\nRestored seed proofs in {cfg.witness_rel}")
+            if impl_original is not None:
+                impl_path.write_bytes(impl_original)
+                print(f"Restored the seed implementation in {cfg.impl_rel}")
 
 
 # ── tamper demos ──────────────────────────────────────────────────────────────
@@ -863,6 +903,11 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
     parser.add_argument("--break-proof", action="store_true",
                         help="repair arc: corrupt one seed proof body "
                              "(implies a synthesis episode)")
+    parser.add_argument("--synthesize-impl", action="store_true",
+                        help="impl-first arc: stub the implementation body "
+                             "AND every proof, then derive the "
+                             "implementation from the blessed properties "
+                             "alone before proving anything about it")
     cli = parser.parse_args()
 
     if cli.expect and not cli.promote:
@@ -870,6 +915,14 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
                      "use it with --promote")
     if cli.break_proof:
         cli.synthesize = True
+    if cli.synthesize_impl:
+        cli.synthesize = True
+        if cli.break_proof:
+            parser.error("--synthesize-impl and --break-proof are different "
+                         "starting states; pick one")
+        if not (cfg.impl_rel and cfg.impl_name):
+            parser.error("--synthesize-impl: this scenario has no "
+                         "implementation file configured (impl_rel/impl_name)")
     if cli.keep and not cli.synthesize:
         parser.error("--keep retains --synthesize's proofs; use them together")
     if cli.llm_only and not cli.llm:
@@ -885,14 +938,18 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
         if cfg.synthesis_engines is None:
             parser.error("--synthesize: this scenario has no synthesis "
                          "engines configured")
+        if cli.synthesize_impl and not cli.llm:
+            parser.error("--synthesize-impl currently has only the LLM "
+                         "implementation engine; use it with --llm")
         engines = None
+        impl_engines = None
         backend = None
         if cli.llm:
             from pybb.attestation.llm_backends import (BACKENDS, ANTHROPIC_MODEL,
                                                        DryRunComplete,
                                                        LlmBackendError,
                                                        OPENAI_MODEL)
-            from pybb.attestation.synthesis import LlmEngine
+            from pybb.attestation.synthesis import LlmEngine, LlmImplEngine
             model = cli.llm_model or (ANTHROPIC_MODEL if cli.llm == "anthropic"
                                       else OPENAI_MODEL)
             if cli.llm_dry_run:
@@ -921,10 +978,13 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
             non_llm = [e for e in (cfg.synthesis_engines or [])
                        if not isinstance(e, LlmEngine)]
             engines = [armed] if cli.llm_only else [*non_llm, armed]
+            impl_engines = [LlmImplEngine(complete=backend, attempts=3)]
+        stub = ("impl" if cli.synthesize_impl
+                else "break" if cli.break_proof else "sorries")
         try:
             synthesize_flow(cfg, load_protocols(cfg, validate=True),
-                            keep=cli.keep, engines=engines,
-                            stub="break" if cli.break_proof else "sorries")
+                            keep=cli.keep, engines=engines, stub=stub,
+                            impl_engines=impl_engines)
         finally:
             report = getattr(backend, "report", None) or getattr(
                 getattr(backend, "usage", None), "report", None)

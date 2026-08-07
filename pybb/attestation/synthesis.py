@@ -128,6 +128,72 @@ class GoalContext(BaseModel):
                               # are about — an LLM cannot prove without them)
 
 
+class ImplContext(BaseModel):
+    """Everything an implementation engine sees. Deliberately THIN: the
+    blessed statements and the signature to fill, and nothing else — no
+    proofs, no prior implementation body, no behavior vectors. The point
+    of the impl-first arc is that the goal properties alone determine
+    the implementation."""
+
+    name: str                    # the declaration to implement
+    signature: str               # its statement part (before :=)
+    blessed_statement: str = ""  # the blessed Spec conjunction text
+    detail: str = ""             # elaboration failure detail, if any
+    context_files: Dict[str, str] = {}  # rel path -> contents (blessed
+                                 # statements ONLY, plus the impl file's
+                                 # own skeleton for imports/namespace)
+
+
+class LlmImplEngine:
+    """The implementation counterpart of LlmEngine: asks for a body for
+    one declaration given the blessed properties alone. Candidates are
+    untrusted exactly like proof candidates — an implementation that
+    elaborates has proved nothing; the goal proofs and the attested
+    episode are what judge it.
+
+    Same generator protocol as LlmEngine: the KS resumes the iterator
+    only when the previous candidate was rejected, so each retry's
+    prompt carries what failed."""
+
+    def __init__(self, complete=None, attempts: int = 1):
+        self.complete = complete
+        self.attempts = attempts
+
+    def prompt(self, ctx: ImplContext, failed: list = None) -> str:
+        lines = [
+            "You are writing a Lean 4 implementation (core Lean only — no "
+            "Mathlib). Reply with ONLY the term that replaces the text "
+            "after `:=`. No explanations, no markdown fences, no "
+            "restatement of the signature.",
+        ]
+        for rel, contents in ctx.context_files.items():
+            lines.append(f"Context — {rel}:\n```lean\n{contents}\n```")
+        lines.append(f"Declaration to implement:\n{ctx.signature.strip()} := ...")
+        if ctx.blessed_statement:
+            lines.append(
+                "It must satisfy every one of these blessed properties "
+                f"(they will be proved against it):\n{ctx.blessed_statement}")
+        if ctx.detail:
+            lines.append(f"Current failure: {ctx.detail}")
+        for i, candidate in enumerate(failed or [], 1):
+            lines.append(
+                f"Rejected attempt {i} (did not elaborate — do not repeat "
+                f"it):\n{candidate}")
+        return "\n\n".join(lines)
+
+    def __call__(self, ctx: ImplContext) -> Iterable[str]:
+        if self.complete is None:
+            return
+        failed: list = []
+        for _ in range(self.attempts):
+            candidate = LlmEngine._strip_fences(
+                self.complete(self.prompt(ctx, failed)) or "")
+            if not candidate:
+                continue
+            yield candidate
+            failed.append(candidate)  # resumed => rejected
+
+
 class TacticPortfolioEngine:
     """Deterministic candidate tactic scripts over core Lean, tuned
     against the goals scenario (every committed goal is solvable by at
@@ -272,6 +338,85 @@ def _prop_helpers(blessed_text: str, conjuncts: List[str]) -> List[str]:
         if ": Prop" in _statement_part("\n".join(lines[start - 1:end])):
             helpers.append(name)
     return helpers
+
+
+class ImplSynthesisKS(BlackBoxRepairKS):
+    """
+    The impl-first rung: fills a stubbed implementation from the BLESSED
+    STATEMENTS ALONE, then steps aside.
+
+    It is the weakest possible local judge on purpose — a candidate is
+    kept iff the implementation file elaborates with no error and no
+    `sorry`. Elaboration says the candidate is well-typed, nothing more;
+    whether it is the RIGHT implementation is decided downstream, by
+    proofs of the blessed goals and by the attested episode. A wrong
+    implementation therefore does not sneak through: the goals become
+    unprovable and the entry escalates.
+
+    Chained ahead of ProofSynthesisKS, it no-ops once the implementation
+    is clean, so ordinary failure handoff carries the entry on to the
+    proof rung.
+    """
+
+    name: str = "synthesis:impl"
+    max_attempts: int = 2
+    restart_policy: str = "on_local_clean"
+    engines: object = None        # list of engine callables (impl ladder)
+    blessed: object = None        # callable() -> blessed model bytes (str)
+    impl_rel: str = ""
+    impl_name: str = ""
+    spec_rel: str = ""
+    lake: str = ""
+
+    def model_post_init(self, __context) -> None:
+        self.tool = self._synthesize
+        self.local_check = self._locally_clean
+
+    def _refuting(self, rel: str) -> List[dict]:
+        out = subprocess.run(
+            [self.lake, "lean", rel, "--", "--json"],
+            cwd=self.package_root, capture_output=True, text=True)
+        return [d for d in parse_diagnostics(out.stdout.encode())
+                if d.get("severity") == "error" or d.get("kind") == "hasSorry"]
+
+    def _locally_clean(self) -> bool:
+        return not self._refuting(self.impl_rel)
+
+    def _synthesize(self, ctx: RepairContext) -> bool:
+        impl_path = Path(self.package_root) / self.impl_rel
+        refuting = self._refuting(self.impl_rel)
+        if not refuting:
+            return False  # already implemented — hand off to the proof rung
+        blessed_text = self.blessed()
+        spec = next((n for n in ("Spec",) if n in blessed_text), "")
+        blessed_lines = blessed_text.splitlines()
+        blessed_defs = {n: "\n".join(blessed_lines[s - 1:e])
+                        for _k, n, s, e in lean_decl_spans(blessed_text) if n}
+        before = impl_path.read_text()
+        lines = before.splitlines()
+        spans = {n: (s, e) for _k, n, s, e in lean_decl_spans(before) if n}
+        if self.impl_name not in spans:
+            return False  # nothing to fill; escalation's problem
+        start, end = spans[self.impl_name]
+        signature = _statement_part("\n".join(lines[start - 1:end]))
+        detail = " ".join(str(refuting[0].get("data", "")).split())[:200]
+        # the blessed statements ONLY — the proofs file is deliberately
+        # not context here, and neither is any prior implementation body
+        context_files = {self.spec_rel: blessed_text} if self.spec_rel else {}
+        ictx = ImplContext(
+            name=self.impl_name, signature=signature,
+            blessed_statement=blessed_defs.get(spec, ""), detail=detail,
+            context_files=context_files)
+        for engine in (self.engines or []):
+            for candidate in engine(ictx) or []:
+                impl_path.write_text(
+                    splice_proof(before, self.impl_name, candidate))
+                if not self._refuting(self.impl_rel):
+                    print(f"  {self.name}: '{self.impl_name}' implemented "
+                          f"({type(engine).__name__})")
+                    return True
+                impl_path.write_text(before)
+        return False
 
 
 class ProofSynthesisKS(BlackBoxRepairKS):
