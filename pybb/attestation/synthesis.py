@@ -126,6 +126,11 @@ class GoalContext(BaseModel):
     context_files: Dict[str, str] = {}  # rel path -> contents (the blessed
                               # statements + the implementation the proofs
                               # are about — an LLM cannot prove without them)
+    rejections: List[Dict[str, str]] = []  # rejected candidates paired with
+                              # their own refuting diagnostics, appended by
+                              # the KS as it judges — the resumed engine's
+                              # next prompt can then say WHY the last
+                              # candidate failed, not just that it did
 
 
 class ImplContext(BaseModel):
@@ -142,6 +147,9 @@ class ImplContext(BaseModel):
     context_files: Dict[str, str] = {}  # rel path -> contents (blessed
                                  # statements ONLY, plus the impl file's
                                  # own skeleton for imports/namespace)
+    rejections: List[Dict[str, str]] = []  # rejected candidates paired with
+                                 # their own refuting diagnostics (see
+                                 # GoalContext.rejections)
 
 
 class LlmImplEngine:
@@ -175,10 +183,14 @@ class LlmImplEngine:
                 f"(they will be proved against it):\n{ctx.blessed_statement}")
         if ctx.detail:
             lines.append(f"Current failure: {ctx.detail}")
-        for i, candidate in enumerate(failed or [], 1):
+        rejected = (ctx.rejections or
+                    [{"candidate": c} for c in (failed or [])])
+        for i, rej in enumerate(rejected[-4:], 1):
             lines.append(
                 f"Rejected attempt {i} (did not elaborate — do not repeat "
-                f"it):\n{candidate}")
+                f"it):\n{rej['candidate']}")
+            if rej.get("errors"):
+                lines.append(f"Why it failed:\n{rej['errors']}")
         return "\n\n".join(lines)
 
     def __call__(self, ctx: ImplContext) -> Iterable[str]:
@@ -285,10 +297,14 @@ class LlmEngine:
             lines.append(f"Current failure: {ctx.detail}")
         if not self._is_stub(ctx.seed):
             lines.append(f"Previous attempt (may be wrong):\n{ctx.seed}")
-        for i, candidate in enumerate(failed or [], 1):
+        rejected = (ctx.rejections or
+                    [{"candidate": c} for c in (failed or [])])
+        for i, rej in enumerate(rejected[-4:], 1):
             lines.append(
                 f"Rejected attempt {i} (failed to check — do not repeat "
-                f"it):\n{candidate}")
+                f"it):\n{rej['candidate']}")
+            if rej.get("errors"):
+                lines.append(f"Why it failed:\n{rej['errors']}")
         return "\n\n".join(lines)
 
     def __call__(self, ctx: GoalContext) -> Iterable[str]:
@@ -303,6 +319,19 @@ class LlmEngine:
             yield candidate
             # resumed => the KS rejected this candidate (acceptance breaks)
             failed.append(candidate)
+
+
+def _render_errors(diags: List[dict], limit: int = 3) -> str:
+    """Digest of a rejected candidate's refuting diagnostics, rendered
+    into the engine's next prompt. The message text (`data`) is the
+    valuable part — for `unsolved goals` it carries the goal state."""
+    parts = []
+    for d in diags[:limit]:
+        msg = " ".join(str(d.get("data", "")).split()) or d.get("kind", "error")
+        parts.append(f"- {msg[:600]}")
+    if len(diags) > limit:
+        parts.append(f"- (+{len(diags) - limit} more)")
+    return "\n".join(parts)
 
 
 def splice_proof(text: str, name: str, candidate: str) -> str:
@@ -411,10 +440,13 @@ class ImplSynthesisKS(BlackBoxRepairKS):
             for candidate in engine(ictx) or []:
                 impl_path.write_text(
                     splice_proof(before, self.impl_name, candidate))
-                if not self._refuting(self.impl_rel):
+                bad = self._refuting(self.impl_rel)
+                if not bad:
                     print(f"  {self.name}: '{self.impl_name}' implemented "
                           f"({type(engine).__name__})")
                     return True
+                ictx.rejections.append({"candidate": candidate,
+                                        "errors": _render_errors(bad)})
                 impl_path.write_text(before)
         return False
 
@@ -572,6 +604,12 @@ class ProofSynthesisKS(BlackBoxRepairKS):
                         print(f"  {self.name}: '{name}' proved "
                               f"({type(engine).__name__})")
                         break
+                    gctx.rejections.append({
+                        "candidate": candidate,
+                        "errors": _render_errors(mine) if mine else (
+                            "- the declaration itself elaborates, but the "
+                            f"candidate introduced {total - baseline_total} "
+                            "new error(s) elsewhere in the file")})
                     proofs_path.write_text(before)
                 if accepted:
                     break

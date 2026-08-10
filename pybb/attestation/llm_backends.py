@@ -175,6 +175,11 @@ def make_openai_complete(model: str = OPENAI_MODEL,
         raise LlmBackendError(
             "OPENAI_API_KEY is not set — export it in the environment "
             "(never pass keys as arguments)")
+    if effort and not _is_reasoning(model):
+        raise LlmBackendError(
+            f"reasoning_effort is a reasoning-family knob (gpt-5*, o*); "
+            f"'{model}' rejects it with a 400 — pass a reasoning model "
+            "(e.g. --llm-model gpt-5.1) or drop --llm-effort")
 
     endpoint = "https://api.openai.com/v1/chat/completions"
     budget = max_tokens if max_tokens is not None else _default_max_tokens(model)
