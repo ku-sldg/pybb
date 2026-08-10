@@ -1,0 +1,71 @@
+{
+  "hashfile": {
+    "tool_rocq_rocq_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/rocq",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::rocq",
+      "asp_targid": "tool_rocq_rocq_targ",
+      "golden_b64": "guUjjaCY74Tu0SqIimJfZnvjF+o4Uf9ICILW5+6RZyw=",
+      "golden_ts": "2026-08-10 11:01:05"
+    },
+    "tool_rocq_dune_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/bin/dune",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::rocq",
+      "asp_targid": "tool_rocq_dune_targ",
+      "golden_b64": "vBu3/2neiGqdePGUAdQ/rQc/o7jtai+HVXqqN3Pr+VQ=",
+      "golden_ts": "2026-08-10 11:01:05"
+    },
+    "tool_rocq_rocq_2_targ": {
+      "filepath": "/Users/adampetz/.opam/5.2/bin/rocq",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::rocq",
+      "asp_targid": "tool_rocq_rocq_2_targ",
+      "golden_b64": "3jWFwkM8RvVSnbK+g4RzxVc4dqv356M5zH4ZTEU1REA=",
+      "golden_ts": "2026-08-10 11:01:05"
+    },
+    "tool_rocq_dune_2_targ": {
+      "filepath": "/Users/adampetz/.opam/5.2/bin/dune",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::rocq",
+      "asp_targid": "tool_rocq_dune_2_targ",
+      "golden_b64": "f4wv68clsVSaGD6xldSQCptnZBDvPA99S97bBwKyW18=",
+      "golden_ts": "2026-08-10 11:01:05"
+    }
+  },
+  "run_command_dune": {
+    "temp_control_rocq_build_verification_targ": {
+      "exe_args": [
+        "build"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
+      "asp_targid": "temp_control_rocq_build_verification_targ"
+    }
+  },
+  "run_command_rocq": {
+    "temp_control_rocq_assumptions_verification_targ": {
+      "exe_args": [
+        "compile",
+        "-R",
+        "_build/default/TempControl",
+        "TempControl",
+        "Assumptions.v"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
+      "goals": [
+        "hot_means_not_cold",
+        "fanOn_when_hot",
+        "fanOff_when_cold",
+        "fanHold_in_band",
+        "fanOn_only_if_hot_or_held",
+        "spec_holds",
+        "acceptance"
+      ],
+      "asp_targid": "temp_control_rocq_assumptions_verification_targ"
+    }
+  }
+}

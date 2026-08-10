@@ -1,0 +1,138 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "lseq",
+          "TERM_BODY": [
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "tool_rocq_rocq_targ"
+                            }
+                          }
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "tool_rocq_dune_targ"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "tool_rocq_rocq_2_targ"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "tool_rocq_dune_2_targ"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "run_command_dune",
+                      "ASP_TARG_ID": "temp_control_rocq_build_verification_targ",
+                      "ASP_ARGS": {
+                        "exe_args": [
+                          "build"
+                        ],
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
+                        "asp_targid": "temp_control_rocq_build_verification_targ"
+                      }
+                    }
+                  }
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "run_command_rocq",
+                      "ASP_TARG_ID": "temp_control_rocq_assumptions_verification_targ",
+                      "ASP_ARGS": {
+                        "exe_args": [
+                          "compile",
+                          "-R",
+                          "_build/default/TempControl",
+                          "TempControl",
+                          "Assumptions.v"
+                        ],
+                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
+                        "goals": [
+                          "hot_means_not_cold",
+                          "fanOn_when_hot",
+                          "fanOff_when_cold",
+                          "fanHold_in_band",
+                          "fanOn_only_if_hot_or_held",
+                          "spec_holds",
+                          "acceptance"
+                        ],
+                        "asp_targid": "temp_control_rocq_assumptions_verification_targ"
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

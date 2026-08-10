@@ -1,0 +1,4 @@
+{
+  "name": "Rocq Proof Verification (verification class)",
+  "description": "Runs `dune build` (every file must elaborate) then the assumptions audit (`rocq compile Assumptions.v`, one Print Assumptions per blessed goal). Elaboration alone proves nothing \u2014 `Admitted.` and `Axiom` compile with exit 0 \u2014 so the appraiser requires every goal to be closed under the global context, and a refusal names the goal and the axioms it leans on. The rocq/dune toolchain is hashed in the same term, before the invocations (measure-then-use)."
+}

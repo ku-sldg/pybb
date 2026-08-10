@@ -386,6 +386,102 @@ def derive_targets_from_lean(package_root: Path, prefix: str = "lean",
     }
 
 
+# ── rocq-package backend ──────────────────────────────────────────────────────
+
+_ROCQ_DECL = re.compile(
+    r"^(?:#\[[^\]]*\]\s*)?"
+    r"(?:Local\s+|Global\s+|Program\s+)*"
+    r"(Definition|Fixpoint|CoFixpoint|Inductive|CoInductive|Record|"
+    r"Structure|Theorem|Lemma|Corollary|Proposition|Fact|Remark|Example|"
+    r"Axiom|Axioms|Parameter|Parameters)\b"
+    r"\s*([A-Za-z_][\w']*)?")
+
+
+def rocq_decl_spans(text: str) -> List[Tuple[str, Optional[str], int, int]]:
+    """
+    (kind, name, start, end) for every top-level declaration in a Rocq
+    source — the same contract as lean_decl_spans: declaration line
+    through the end of its contiguous non-blank block (or the line
+    before the next declaration), 1-based inclusive, so proof bodies
+    (`Proof. ... Qed.`) must not contain blank lines.
+
+    Block-comment aware: `(* ... *)` nests per Rocq's lexer, and lines
+    inside a comment are never declaration starts. Axiom/Parameter are
+    deliberately IN the keyword set — a smuggled postulate is exactly
+    the declaration attribution most needs to name (the assumptions
+    audit refutes it; the slice names it).
+    """
+    lines = text.splitlines()
+    starts: List[Tuple[int, str, Optional[str]]] = []
+    depth = 0
+    for i, line in enumerate(lines):
+        at_line_start = depth
+        depth = max(0, depth + line.count("(*") - line.count("*)"))
+        if at_line_start > 0 or not line.strip() or line[:1].isspace():
+            continue
+        m = _ROCQ_DECL.match(line)
+        if m:
+            starts.append((i, m.group(1), m.group(2)))
+    spans: List[Tuple[str, Optional[str], int, int]] = []
+    for idx, (i, kind, name) in enumerate(starts):
+        next_start = starts[idx + 1][0] if idx + 1 < len(starts) else len(lines)
+        j = i
+        while j + 1 < next_start and lines[j + 1].strip():
+            j += 1
+        spans.append((kind, name, i + 1, j + 1))
+    return spans
+
+
+def derive_targets_from_rocq(package_root: Path, prefix: str = "rocq",
+                             files: Optional[List[str]] = None) -> Dict[str, Dict[str, dict]]:
+    """
+    Rocq/dune-package backend: the CONTRACTS artifact class by syntax
+    scan of the package's .v sources (_build tree excluded), mirroring
+    derive_targets_from_lean:
+
+        {"<prefix>_contracts": {"readfile_range": ...}}  # every declaration span
+
+    Targets are named by declaration, metadata carries Module.Path::decl
+    for attribution. `files` (optional, absolute paths) restricts the
+    scan — the goal-directed scenarios scope contracts to the BLESSED
+    files only, since mutable files carry no structural goldens.
+    """
+    package_root = Path(package_root)
+    if files is not None:
+        sources = sorted(Path(f) for f in files)
+    else:
+        sources = sorted(p for p in package_root.rglob("*.v")
+                         if "_build" not in p.parts)
+
+    contracts: Dict[str, dict] = {}
+    for p in sources:
+        module = ".".join(p.relative_to(package_root).with_suffix("").parts)
+        fslug = _stem_slug(str(p))
+        for kind, name, start, end in rocq_decl_spans(p.read_text()):
+            if name:
+                base_id = f"{prefix}_{fslug}_" + re.sub(r"\W+", "_", name)
+                meta = f"{module}::{name}"
+            else:
+                base_id = f"{prefix}_{fslug}_{kind}_{start}_{end}"
+                meta = f"{module}::{kind}@{start}"
+            targ, n = f"{base_id}_targ", 1
+            while targ in contracts:
+                n += 1
+                targ = f"{base_id}_{n}_targ"
+            contracts[targ] = {
+                "filepath": str(p),
+                "start_index": start,
+                "end_index": end,
+                "metadata": meta,
+            }
+
+    from .copland import with_asp_targids
+
+    return {
+        f"{prefix}_contracts": {"readfile_range": with_asp_targids(contracts)},
+    }
+
+
 # ── term construction (the shape the provisioned protocols use) ──────────────
 
 _SIG = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}

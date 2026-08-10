@@ -1,0 +1,74 @@
+{
+  "readfile_range": {
+    "temp_control_rocq_acceptance_acceptance_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Acceptance.v",
+      "start_index": 4,
+      "end_index": 4,
+      "metadata": "TempControl.Acceptance::acceptance",
+      "asp_targid": "temp_control_rocq_acceptance_acceptance_targ"
+    },
+    "temp_control_rocq_props_FanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 12,
+      "end_index": 14,
+      "metadata": "TempControl.Props::FanCmd",
+      "asp_targid": "temp_control_rocq_props_FanCmd_targ"
+    },
+    "temp_control_rocq_props_SetPoint_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 16,
+      "end_index": 19,
+      "metadata": "TempControl.Props::SetPoint",
+      "asp_targid": "temp_control_rocq_props_SetPoint_targ"
+    },
+    "temp_control_rocq_props_SetPoint_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 23,
+      "end_index": 24,
+      "metadata": "TempControl.Props::SetPoint_valid",
+      "asp_targid": "temp_control_rocq_props_SetPoint_valid_targ"
+    },
+    "temp_control_rocq_props_Step_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 28,
+      "end_index": 28,
+      "metadata": "TempControl.Props::Step",
+      "asp_targid": "temp_control_rocq_props_Step_targ"
+    },
+    "temp_control_rocq_props_fanOn_when_hot_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 31,
+      "end_index": 33,
+      "metadata": "TempControl.Props::fanOn_when_hot_prop",
+      "asp_targid": "temp_control_rocq_props_fanOn_when_hot_prop_targ"
+    },
+    "temp_control_rocq_props_fanOff_when_cold_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 36,
+      "end_index": 38,
+      "metadata": "TempControl.Props::fanOff_when_cold_prop",
+      "asp_targid": "temp_control_rocq_props_fanOff_when_cold_prop_targ"
+    },
+    "temp_control_rocq_props_fanHold_in_band_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 41,
+      "end_index": 43,
+      "metadata": "TempControl.Props::fanHold_in_band_prop",
+      "asp_targid": "temp_control_rocq_props_fanHold_in_band_prop_targ"
+    },
+    "temp_control_rocq_props_fanOn_only_if_hot_or_held_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 47,
+      "end_index": 49,
+      "metadata": "TempControl.Props::fanOn_only_if_hot_or_held_prop",
+      "asp_targid": "temp_control_rocq_props_fanOn_only_if_hot_or_held_prop_targ"
+    },
+    "temp_control_rocq_props_Spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 53,
+      "end_index": 55,
+      "metadata": "TempControl.Props::Spec",
+      "asp_targid": "temp_control_rocq_props_Spec_targ"
+    }
+  }
+}

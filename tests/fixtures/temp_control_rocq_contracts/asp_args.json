@@ -1,0 +1,94 @@
+{
+  "readfile_range": {
+    "temp_control_rocq_acceptance_acceptance_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Acceptance.v",
+      "start_index": 4,
+      "end_index": 4,
+      "metadata": "TempControl.Acceptance::acceptance",
+      "asp_targid": "temp_control_rocq_acceptance_acceptance_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBhY2NlcHRhbmNlIDogU3BlYyBjb21wdXRlRmFuQ21kIDo9IHNwZWNfaG9sZHMu",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_FanCmd_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 12,
+      "end_index": 14,
+      "metadata": "TempControl.Props::FanCmd",
+      "asp_targid": "temp_control_rocq_props_FanCmd_targ",
+      "golden_b64": "SW5kdWN0aXZlIEZhbkNtZCA6IFNldCA6PSAgfCBPbiAgfCBPZmYu",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_SetPoint_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 16,
+      "end_index": 19,
+      "metadata": "TempControl.Props::SetPoint",
+      "asp_targid": "temp_control_rocq_props_SetPoint_targ",
+      "golden_b64": "UmVjb3JkIFNldFBvaW50IDogU2V0IDo9IG1rU2V0UG9pbnQgeyAgbG93ICA6IFo7ICBoaWdoIDogWn0u",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_SetPoint_valid_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 23,
+      "end_index": 24,
+      "metadata": "TempControl.Props::SetPoint_valid",
+      "asp_targid": "temp_control_rocq_props_SetPoint_valid_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBTZXRQb2ludF92YWxpZCAoc3AgOiBTZXRQb2ludCkgOiBQcm9wIDo9ICA1MCA8PSBsb3cgc3AgL1wgbG93IHNwIDw9IGhpZ2ggc3AgL1wgaGlnaCBzcCA8PSAxMTAu",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_Step_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 28,
+      "end_index": 28,
+      "metadata": "TempControl.Props::Step",
+      "asp_targid": "temp_control_rocq_props_Step_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBTdGVwIDogVHlwZSA6PSBaIC0+IFNldFBvaW50IC0+IEZhbkNtZCAtPiBGYW5DbWQu",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_fanOn_when_hot_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 31,
+      "end_index": 33,
+      "metadata": "TempControl.Props::fanOn_when_hot_prop",
+      "asp_targid": "temp_control_rocq_props_fanOn_when_hot_prop_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBmYW5Pbl93aGVuX2hvdF9wcm9wIChmIDogU3RlcCkgOiBQcm9wIDo9ICBmb3JhbGwgKHRlbXAgOiBaKSAoc3AgOiBTZXRQb2ludCkgKGxhdGVzdCA6IEZhbkNtZCksICAgIGhpZ2ggc3AgPCB0ZW1wIC0+IGYgdGVtcCBzcCBsYXRlc3QgPSBPbi4=",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_fanOff_when_cold_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 36,
+      "end_index": 38,
+      "metadata": "TempControl.Props::fanOff_when_cold_prop",
+      "asp_targid": "temp_control_rocq_props_fanOff_when_cold_prop_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBmYW5PZmZfd2hlbl9jb2xkX3Byb3AgKGYgOiBTdGVwKSA6IFByb3AgOj0gIGZvcmFsbCAodGVtcCA6IFopIChzcCA6IFNldFBvaW50KSAobGF0ZXN0IDogRmFuQ21kKSwgICAgU2V0UG9pbnRfdmFsaWQgc3AgLT4gdGVtcCA8IGxvdyBzcCAtPiBmIHRlbXAgc3AgbGF0ZXN0ID0gT2ZmLg==",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_fanHold_in_band_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 41,
+      "end_index": 43,
+      "metadata": "TempControl.Props::fanHold_in_band_prop",
+      "asp_targid": "temp_control_rocq_props_fanHold_in_band_prop_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBmYW5Ib2xkX2luX2JhbmRfcHJvcCAoZiA6IFN0ZXApIDogUHJvcCA6PSAgZm9yYWxsICh0ZW1wIDogWikgKHNwIDogU2V0UG9pbnQpIChsYXRlc3QgOiBGYW5DbWQpLCAgICBsb3cgc3AgPD0gdGVtcCAtPiB0ZW1wIDw9IGhpZ2ggc3AgLT4gZiB0ZW1wIHNwIGxhdGVzdCA9IGxhdGVzdC4=",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_fanOn_only_if_hot_or_held_prop_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 47,
+      "end_index": 49,
+      "metadata": "TempControl.Props::fanOn_only_if_hot_or_held_prop",
+      "asp_targid": "temp_control_rocq_props_fanOn_only_if_hot_or_held_prop_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBmYW5Pbl9vbmx5X2lmX2hvdF9vcl9oZWxkX3Byb3AgKGYgOiBTdGVwKSA6IFByb3AgOj0gIGZvcmFsbCAodGVtcCA6IFopIChzcCA6IFNldFBvaW50KSAobGF0ZXN0IDogRmFuQ21kKSwgICAgZiB0ZW1wIHNwIGxhdGVzdCA9IE9uIC0+IGhpZ2ggc3AgPCB0ZW1wIFwvIGxhdGVzdCA9IE9uLg==",
+      "golden_ts": "2026-08-10 11:01:04"
+    },
+    "temp_control_rocq_props_Spec_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
+      "start_index": 53,
+      "end_index": 55,
+      "metadata": "TempControl.Props::Spec",
+      "asp_targid": "temp_control_rocq_props_Spec_targ",
+      "golden_b64": "RGVmaW5pdGlvbiBTcGVjIChmIDogU3RlcCkgOiBQcm9wIDo9ICBmYW5Pbl93aGVuX2hvdF9wcm9wIGYgL1wgZmFuT2ZmX3doZW5fY29sZF9wcm9wIGYgL1wgIGZhbkhvbGRfaW5fYmFuZF9wcm9wIGYgL1wgZmFuT25fb25seV9pZl9ob3Rfb3JfaGVsZF9wcm9wIGYu",
+      "golden_ts": "2026-08-10 11:01:04"
+    }
+  }
+}
