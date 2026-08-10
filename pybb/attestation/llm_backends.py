@@ -244,3 +244,50 @@ BACKENDS = {
     "anthropic": make_anthropic_complete,
     "openai": make_openai_complete,
 }
+
+
+def arm_llm_engines(cli, base_engines, engine_cls, impl_engine_cls):
+    """
+    The shared --llm arming/confirmation block for the example drivers
+    (lean_workflow and rocq_workflow delegate here): resolve the model,
+    build the backend (or the dry-run stand-in), print the pre-flight
+    confirmation, and assemble the engine ladders.
+
+    `cli` is the parsed argparse namespace carrying the standard flag
+    set (llm, llm_model, llm_max_tokens, llm_effort, llm_dry_run,
+    llm_only); the caller has already enforced the opt-in composition
+    rules. `engine_cls`/`impl_engine_cls` are the ecosystem's proof and
+    implementation engine classes (LlmEngine subclasses — passed in so
+    this module keeps zero synthesis imports). Returns
+    (engines, impl_engines, backend).
+    """
+    model = cli.llm_model or (ANTHROPIC_MODEL if cli.llm == "anthropic"
+                              else OPENAI_MODEL)
+    if cli.llm_dry_run:
+        backend = DryRunComplete(model, provider=cli.llm)
+    else:
+        kwargs = {"model": model, "max_tokens": cli.llm_max_tokens}
+        if cli.llm_effort:  # openai-only knob
+            kwargs["effort"] = cli.llm_effort
+        try:
+            backend = BACKENDS[cli.llm](**kwargs)
+        except LlmBackendError as e:
+            raise SystemExit(f"--llm {cli.llm}: {e}")
+        except TypeError as e:
+            raise SystemExit(
+                f"--llm-effort is not supported by "
+                f"--llm {cli.llm}: {e}")
+    print("LLM engine armed (explicit --llm flag is the "
+          "confirmation):")
+    print(f"  {backend.describe}")
+    print("  key policy: environment/`ant` profile only — never "
+          "stored or logged")
+    print("  cost: a few thousand tokens per goal attempt"
+          if not cli.llm_dry_run else
+          "  cost: none — this run predicts the ceiling instead")
+    armed = engine_cls(complete=backend, attempts=3)
+    non_llm = [e for e in (base_engines or [])
+               if not isinstance(e, engine_cls)]
+    engines = [armed] if cli.llm_only else [*non_llm, armed]
+    impl_engines = [impl_engine_cls(complete=backend, attempts=3)]
+    return engines, impl_engines, backend

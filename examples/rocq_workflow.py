@@ -56,19 +56,26 @@ from pybb.attestation import (
     CvmSubprocessClient,
     ProtocolDir,
     RestartEpisodeKS,
+    RocqImplSynthesisKS,
+    RocqProofSynthesisKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
     WholeFileRestoreKS,
+    attestation_request,
     make_provision_predicate,
     make_attestation_predicate,
     make_readiness_predicate,
     readiness_request,
     request_provision,
+    splice_proof_rocq,
+    stub_impl_axiom,
     trust_summary,
 )
 from pybb.attestation.copland import with_asp_targids
+from pybb.attestation.proof_status import render_checklist, stale_files
 from pybb.attestation.props import write_model_protocol_dir
+from pybb.attestation.rocq_status import rocq_goal_checklist
 from pybb.attestation.targetmap import (
     build_term,
     derive_targets_from_rocq,
@@ -162,6 +169,20 @@ class RocqExampleConfig:
                                 # RestartEpisodeKS: the repair is judged by
                                 # fresh measurement IN-SESSION (one run)
 
+    # ── goal-directed workflow knobs (default None/"" = unavailable) ──────
+    bless_lint: object = None     # callable(cfg), invoked before the model
+                                  # class is (re)blessed; raises to refuse
+    binding_goal: str = "acceptance"    # the audit goal whose section is
+                                        # the "Spec bound (acceptance)" row
+    binding_witness: str = "spec_holds" # the proofs-file obligation witness
+    impl_rel: str = ""            # the implementation source file (mutable)
+    impl_name: str = ""           # the implementation the goals quantify over
+    synthesis_engines: list = None  # --synthesize's engine ladder (callables,
+                                  # GoalContext -> candidate inner scripts);
+                                  # None = --synthesize unavailable
+    break_proof_decl: str = ""    # --break-proof's target: the seed theorem
+                                  # whose proof body gets corrupted
+
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
         # idempotent registration: ASP_USES is module state, so guard the
@@ -195,6 +216,15 @@ class RocqExampleConfig:
     @property
     def proofs_file(self) -> Path:
         return self.package_root / self.proofs_rel
+
+    @property
+    def props_rel(self) -> str:
+        """The blessed statements file (checklist rows, engine context)."""
+        return self.blessed_rels[0]
+
+    @property
+    def props_file(self) -> Path:
+        return self.package_root / self.props_rel
 
     def entry(self, question: str) -> str:
         return f"{self.prefix}:{question}"
@@ -357,6 +387,8 @@ def provision_flow(cfg: RocqExampleConfig, protocols: dict,
         for a in model.asp_args.get("readfile", {}).values())
     pids = [cfg.contracts_id]
     if model is not None and (bless_model or model_unblessed):
+        if cfg.bless_lint is not None:
+            cfg.bless_lint(cfg)  # raises to refuse the blessing
         pids.append(cfg.model_id)
     measured = {pid: protocols[pid] for pid in pids}
     verification = protocols.get(cfg.verification_id)
@@ -445,6 +477,235 @@ def tamper_axiom(cfg: RocqExampleConfig) -> bytes:
     return original
 
 
+# ── the progress view (--status / --ready) ────────────────────────────────────
+
+def _blessed_text(cfg: RocqExampleConfig, protocols: dict) -> str:
+    import base64
+    for args in protocols[cfg.model_id].asp_args.get("readfile", {}).values():
+        if args.get("filepath") == str(cfg.props_file) and args.get("golden_b64"):
+            return base64.b64decode(args["golden_b64"]).decode()
+    raise SystemExit(f"{cfg.model_id}: {cfg.props_rel} is not blessed — "
+                     "run --provision first")
+
+
+def _checklist(cfg: RocqExampleConfig, protocols: dict, verdict):
+    return rocq_goal_checklist(
+        _blessed_text(cfg, protocols), verdict, cfg.build_targ,
+        cfg.assumptions_targ, cfg.audit_goals, cfg.binding_goal,
+        cfg.proofs_file, cfg.package_root / cfg.audit_rel)
+
+
+def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
+                status: bool) -> None:
+    """The goals progress view, same semantics as the Lean driver's:
+    QUICK by default (one verification run — the checklist rows come
+    from the blessed Spec's signed bytes, the cells from the audit's
+    per-goal sections, downgrade-only). --ready additionally runs the
+    readiness gate first — alone it just prints the report; combined
+    with --status a failure poisons every cell to '?'."""
+    report = None
+    if ready:
+        report = make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT,
+            client=CvmSubprocessClient())(readiness_request(list(protocols)))
+        print(f"readiness: {'PASS' if report else 'FAIL'} "
+              f"(checked: {', '.join(report.checked)})")
+        if report.baseline_verified:
+            print("  signed baselines verified: "
+                  + ", ".join(report.baseline_verified))
+        for p in (*report.problems, *report.baseline_problems):
+            print(f"  problem: {p}")
+    if not status:
+        return
+    verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
+        attestation_request(cfg.verification_id))
+    checklist = _checklist(cfg, protocols, verdict)
+    if ready and not report:
+        problems = "; ".join((*report.problems, *report.baseline_problems))
+        checklist = checklist.poison(f"readiness failed: {problems[:200]}")
+    elif ready:
+        checklist = checklist.model_copy(update={"trusted": True})
+    print(render_checklist(checklist))
+
+
+# ── goal-directed synthesis (--synthesize) ────────────────────────────────────
+
+def _stub_proofs(cfg: RocqExampleConfig,
+                 kinds: tuple = ("Theorem", "Lemma")) -> bytes:
+    """Snapshot the live proofs file, then stub every named proof body
+    of the given declaration kinds to `Admitted.` (statements kept —
+    the goal-directed starting state: goals blessed, nothing proved;
+    every stub COMPILES, only the audit refutes it). The impl-first arc
+    widens `kinds` to the Example vectors too: they are kernel-COMPUTED
+    (`reflexivity` through the implementation), so they cannot elaborate
+    over an admitted-axiom impl — and the arc's premise is that nothing
+    exists beyond the blessed properties. Returns the snapshot."""
+    path = cfg.proofs_file
+    original = path.read_bytes()
+    text = original.decode()
+    names = [n for k, n, _s, _e in rocq_decl_spans(text)
+             if k in kinds and n]
+    for n in names:
+        text = splice_proof_rocq(text, n, "Admitted.")
+    path.write_text(text)
+    print(f"Stubbed {len(names)} proofs to Admitted in {cfg.proofs_rel} "
+          "(the build stays green — the audit is what refutes them)")
+    return original
+
+
+def _stub_impl(cfg: RocqExampleConfig) -> bytes:
+    """Snapshot the implementation file, then stub the implementation to
+    the impl-as-axiom form — `Definition <name> ... : T.` +
+    `Proof. Admitted.` (signature kept; the body becomes an axiom:
+    "unimplemented" and "unprovable" are the same kernel judgment).
+    Returns the snapshot.
+
+    Paired with _stub_proofs this is the impl-first starting state: the
+    administrator has blessed WHAT MUST HOLD and nothing else exists."""
+    path = cfg.package_root / cfg.impl_rel
+    original = path.read_bytes()
+    path.write_text(stub_impl_axiom(original.decode(), cfg.impl_name))
+    print(f"Stubbed the implementation '{cfg.impl_name}' to an admitted "
+          f"axiom in {cfg.impl_rel} (signature kept)")
+    return original
+
+
+def _break_proof(cfg: RocqExampleConfig) -> bytes:
+    """Snapshot the proofs file, then corrupt ONE seed proof body with a
+    wrong-but-well-formed tactic script (statement untouched, no
+    Admitted) — the repair starting state: the BUILD fails with real
+    error positions. Returns the snapshot."""
+    path = cfg.proofs_file
+    original = path.read_bytes()
+    path.write_text(splice_proof_rocq(original.decode(), cfg.break_proof_decl,
+                                      "  intros. reflexivity."))
+    print(f"Broke the proof of '{cfg.break_proof_decl}' in "
+          f"{cfg.proofs_rel} (wrong tactic — statement untouched)")
+    return original
+
+
+def _closing_verdict(cfg: RocqExampleConfig, protocols: dict, verdict,
+                     escalated: bool):
+    """The verdict the closing report should be read from.
+
+    A synthesis KS spends a restart only once the whole audit is
+    locally clean, so a run that ends short — escalated with goals
+    still open — leaves accepted candidates no attestation ever saw.
+    The Rocq audit's args disclose only Assumptions.v (which never
+    moves), so the Lean driver's digest-staleness test cannot see
+    proofs-file motion here: an escalated entry re-measures instead
+    (one warm run), buying a closing report that describes the tree
+    the operator is actually left with."""
+    audit = next((c for c in verdict.components
+                  if c.targ_id == cfg.assumptions_targ), None)
+    if not escalated and (audit is None or not stale_files(audit)):
+        return verdict
+    print("\nre-measuring for the closing report: the last attested verdict "
+          "may predate accepted candidates")
+    return make_attestation_predicate(CvmSubprocessClient(), protocols)(
+        attestation_request(cfg.verification_id))
+
+
+def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
+                    keep: bool, engines: list = None,
+                    stub: str = "admits",
+                    impl_engines: list = None) -> BlackboardController:
+    """The step-4 loop, Rocq edition: stub the seeds, put
+    :model/:contracts/:verification on the board, and let
+    RocqProofSynthesisKS work the open goals — engines splice inner
+    tactic scripts, bare dune + the assumptions audit judge locally
+    (free), and each locally-clean state spends ONE restart to be
+    judged by fresh measurement. Ends in good standing or escalates
+    with the checklist of what remains.
+
+    stub="impl" is the IMPL-FIRST arc: the implementation becomes an
+    admitted axiom alongside the admitted proofs, and
+    RocqImplSynthesisKS is chained ahead of the proof rung — the
+    blessed properties alone must yield first an implementation, then
+    proofs about it. stub="break" corrupts one seed proof instead (the
+    repair arc)."""
+    proofs_path = cfg.proofs_file
+    impl_path = cfg.package_root / cfg.impl_rel if cfg.impl_rel else None
+    impl_original = _stub_impl(cfg) if stub == "impl" else None
+    original = _break_proof(cfg) if stub == "break" else _stub_proofs(
+        cfg, kinds=(("Theorem", "Lemma", "Example") if stub == "impl"
+                    else ("Theorem", "Lemma")))
+    context_rels = [r for r in (cfg.props_rel, cfg.impl_rel) if r]
+    try:
+        controller = BlackboardController()
+        client = CvmSubprocessClient()
+        controller.register_predicate(
+            "attestation", make_attestation_predicate(client, protocols,
+                                                      archive_dir=EVIDENCE_DIR))
+        controller.register_predicate(
+            "protocol_check", make_readiness_predicate(
+                protocols, baseline_root=GOLDEN_ROOT, client=client))
+        synth = RocqProofSynthesisKS(
+            engines=engines if engines is not None else cfg.synthesis_engines,
+            blessed=lambda: _blessed_text(cfg, protocols),
+            package_root=str(cfg.package_root),
+            proofs_rel=cfg.proofs_rel,
+            theory_name=cfg.theory_name,
+            audit_rel=cfg.audit_rel,
+            audit_goals=list(cfg.audit_goals),
+            build_targ=cfg.build_targ,
+            audit_targ=cfg.assumptions_targ,
+            binding_witness=cfg.binding_witness,
+            impl_name=cfg.impl_name,
+            context_rels=context_rels,
+            rocq=str(WORKSPACE_BIN / "rocq"),
+            dune=str(WORKSPACE_BIN / "dune"))
+        impl_synth = RocqImplSynthesisKS(
+            engines=impl_engines or [],
+            blessed=lambda: _blessed_text(cfg, protocols),
+            package_root=str(cfg.package_root),
+            impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
+            spec_rel=cfg.props_rel,
+            theory_name=cfg.theory_name,
+            audit_rel=cfg.audit_rel,
+            audit_goals=list(cfg.audit_goals),
+            rocq=str(WORKSPACE_BIN / "rocq"),
+            dune=str(WORKSPACE_BIN / "dune")) if stub == "impl" else None
+        chain = [ks for ks in (impl_synth, synth) if ks is not None]
+        episodes = {cfg.entry("model"): cfg.model_id,
+                    cfg.entry("contracts"): cfg.contracts_id,
+                    cfg.entry("verification"): cfg.verification_id}
+        starter = StartAttestationKS(episodes=episodes)
+        for ks in (*chain, starter):
+            controller.add_ks(ks)
+        controller.route(cfg.entry("model"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("contracts"), on_pass=[], on_fail=[])
+        controller.route(cfg.entry("verification"), on_pass=[], on_fail=chain)
+        controller.blackboard.write_entry(
+            key=cfg.entry("ready"), predicate="protocol_check",
+            measurement=readiness_request(list(protocols)))
+        controller.route(cfg.entry("ready"), on_pass=[starter], on_fail=[])
+        controller.run()
+        print(trust_summary(controller.blackboard,
+                            semantic=[cfg.verification_id]))
+        key = cfg.entry("verification")
+        entry = controller.blackboard.entries.get(key) \
+            or controller.blackboard.escalate.get(key)
+        if entry is not None and entry.result is not None:
+            verdict = _closing_verdict(
+                cfg, protocols, entry.result,
+                escalated=key in controller.blackboard.escalate)
+            print(render_checklist(_checklist(cfg, protocols, verdict)))
+        return controller
+    finally:
+        if keep:
+            print(f"\n--keep: synthesized proofs left in {cfg.proofs_rel}")
+            if impl_original is not None:
+                print(f"--keep: synthesized implementation left in "
+                      f"{cfg.impl_rel}")
+        else:
+            proofs_path.write_bytes(original)
+            print(f"\nRestored seed proofs in {cfg.proofs_rel}")
+            if impl_original is not None:
+                impl_path.write_bytes(impl_original)
+                print(f"Restored the seed implementation in {cfg.impl_rel}")
+
+
 # ── episodes ──────────────────────────────────────────────────────────────────
 
 def attest_episode(cfg: RocqExampleConfig, protocols: dict,
@@ -465,8 +726,14 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
                                   refined_by=cfg.contracts_id)] if repair else []
     if repair and cfg.restart_budget:
         # judged-by-fresh-measurement repair: the chain ends by requesting a
-        # fresh episode instead of escalating "pending next episode"
-        restore = [*restore, RestartEpisodeKS(budget=cfg.restart_budget)]
+        # fresh episode instead of escalating "pending next episode". The
+        # verification entry rides along (`also`): it is ALWAYS-RUN, so a
+        # blessed-file tamper fails it too — its verdict was measured over
+        # the pre-repair tree, and without the sibling restart it would
+        # stay escalated while model/contracts recover, leaving episode 2
+        # only two-thirds good-standing.
+        restore = [*restore, RestartEpisodeKS(
+            budget=cfg.restart_budget, also=[cfg.entry("verification")])]
     model_fail = [TierKS(protocol_id=cfg.contracts_id), *restore]
     episodes = {cfg.entry("model"): cfg.model_id,
                 cfg.entry("contracts"): cfg.contracts_id,
@@ -503,10 +770,100 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "by it — elaborates cleanly, the audit names "
                              "the axiom")
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--status", action="store_true")
+    parser.add_argument("--ready", action="store_true")
+    parser.add_argument("--synthesize", action="store_true")
+    parser.add_argument("--keep", action="store_true")
+    parser.add_argument("--llm", choices=("anthropic", "openai"),
+                        help="explicit confirmation: arm the LLM engine "
+                             "against this provider (keys from the "
+                             "environment only)")
+    parser.add_argument("--llm-only", action="store_true",
+                        help="leave the tactic portfolio off the ladder so "
+                             "the LLM genuinely does the proving")
+    parser.add_argument("--llm-model", metavar="ID",
+                        help="override the provider's default model "
+                             "(e.g. gpt-5.1)")
+    parser.add_argument("--llm-max-tokens", type=int, metavar="N",
+                        help="per-call completion budget (reasoning models "
+                             "spend most of it on reasoning tokens)")
+    parser.add_argument("--llm-effort",
+                        choices=("none", "low", "medium", "high"),
+                        help="OpenAI reasoning_effort: gpt-5* models do NOT "
+                             "reason on this endpoint unless it is set — "
+                             "this is the knob that buys thinking, and the "
+                             "one that drives cost")
+    parser.add_argument("--llm-dry-run", action="store_true",
+                        help="predict the spend: run the flow with a "
+                             "no-network stand-in that records every prompt "
+                             "and yields no candidate, so the reported call "
+                             "count is the worst-case ceiling")
+    parser.add_argument("--break-proof", action="store_true",
+                        help="repair arc: corrupt one seed proof body "
+                             "(implies a synthesis episode)")
+    parser.add_argument("--synthesize-impl", action="store_true",
+                        help="impl-first arc: stub the implementation to an "
+                             "admitted axiom AND every proof to Admitted, "
+                             "then derive the implementation from the "
+                             "blessed properties alone before proving "
+                             "anything about it")
     cli = parser.parse_args()
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom)) > 1:
         parser.error("pick one tamper arc per run")
+    if cli.break_proof:
+        cli.synthesize = True
+    if cli.synthesize_impl:
+        cli.synthesize = True
+        if cli.break_proof:
+            parser.error("--synthesize-impl and --break-proof are different "
+                         "starting states; pick one")
+        if not (cfg.impl_rel and cfg.impl_name):
+            parser.error("--synthesize-impl: this scenario has no "
+                         "implementation file configured (impl_rel/impl_name)")
+    if cli.keep and not cli.synthesize:
+        parser.error("--keep retains --synthesize's proofs; use them together")
+    if cli.llm_only and not cli.llm:
+        parser.error("--llm-only requires --llm (the explicit LLM opt-in)")
+    for flag in ("llm_model", "llm_max_tokens", "llm_dry_run", "llm_effort"):
+        if getattr(cli, flag) and not cli.llm:
+            parser.error(f"--{flag.replace('_', '-')} tunes the armed LLM "
+                         "engine; use it with --llm")
+    if cli.llm and not cli.synthesize:
+        parser.error("--llm arms the synthesis engines; use it with "
+                     "--synthesize or --break-proof")
+    if cli.synthesize:
+        if cfg.synthesis_engines is None:
+            parser.error("--synthesize: this scenario has no synthesis "
+                         "engines configured")
+        if cli.synthesize_impl and not cli.llm:
+            parser.error("--synthesize-impl currently has only the LLM "
+                         "implementation engine; use it with --llm")
+        engines = None
+        impl_engines = None
+        backend = None
+        if cli.llm:
+            from pybb.attestation.llm_backends import arm_llm_engines
+            from pybb.attestation.rocq_synthesis import (RocqLlmEngine,
+                                                         RocqLlmImplEngine)
+            engines, impl_engines, backend = arm_llm_engines(
+                cli, cfg.synthesis_engines, RocqLlmEngine, RocqLlmImplEngine)
+        stub = ("impl" if cli.synthesize_impl
+                else "break" if cli.break_proof else "admits")
+        try:
+            synthesize_flow(cfg, load_protocols(cfg), keep=cli.keep,
+                            engines=engines, stub=stub,
+                            impl_engines=impl_engines)
+        finally:
+            report = getattr(backend, "report", None) or getattr(
+                getattr(backend, "usage", None), "report", None)
+            if report is not None:
+                print(f"\n{report()}")
+        return
+    if cli.status or cli.ready:
+        status_flow(cfg, load_protocols(cfg), ready=cli.ready,
+                    status=cli.status)
+        return
 
     if cli.provision:
         protocols = build_protocol_dirs(cfg)

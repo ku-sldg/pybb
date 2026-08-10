@@ -33,6 +33,16 @@ from .synthesis import (
     TacticPortfolioEngine,
     splice_proof,
 )
+from .rocq_synthesis import (
+    RocqImplSynthesisKS,
+    RocqLlmEngine,
+    RocqLlmImplEngine,
+    RocqProofSynthesisKS,
+    RocqTacticPortfolioEngine,
+    splice_impl_rocq,
+    splice_proof_rocq,
+    stub_impl_axiom,
+)
 from .promotion import (
     DeclDiff,
     PromotionOutcome,
@@ -83,6 +93,14 @@ __all__ = [
     "RepairContext",
     "TacticPortfolioEngine",
     "splice_proof",
+    "RocqImplSynthesisKS",
+    "RocqLlmEngine",
+    "RocqLlmImplEngine",
+    "RocqProofSynthesisKS",
+    "RocqTacticPortfolioEngine",
+    "splice_impl_rocq",
+    "splice_proof_rocq",
+    "stub_impl_axiom",
     "WholeFileRestoreKS",
     "ProvisionOutcome",
     "make_provision_predicate",

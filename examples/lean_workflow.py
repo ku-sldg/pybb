@@ -971,40 +971,10 @@ def run_cli(cfg: LeanExampleConfig, description: str) -> None:
         impl_engines = None
         backend = None
         if cli.llm:
-            from pybb.attestation.llm_backends import (BACKENDS, ANTHROPIC_MODEL,
-                                                       DryRunComplete,
-                                                       LlmBackendError,
-                                                       OPENAI_MODEL)
+            from pybb.attestation.llm_backends import arm_llm_engines
             from pybb.attestation.synthesis import LlmEngine, LlmImplEngine
-            model = cli.llm_model or (ANTHROPIC_MODEL if cli.llm == "anthropic"
-                                      else OPENAI_MODEL)
-            if cli.llm_dry_run:
-                backend = DryRunComplete(model, provider=cli.llm)
-            else:
-                kwargs = {"model": model, "max_tokens": cli.llm_max_tokens}
-                if cli.llm_effort:  # openai-only knob
-                    kwargs["effort"] = cli.llm_effort
-                try:
-                    backend = BACKENDS[cli.llm](**kwargs)
-                except LlmBackendError as e:
-                    raise SystemExit(f"--llm {cli.llm}: {e}")
-                except TypeError as e:
-                    raise SystemExit(
-                        f"--llm-effort is not supported by "
-                        f"--llm {cli.llm}: {e}")
-            print("LLM engine armed (explicit --llm flag is the "
-                  "confirmation):")
-            print(f"  {backend.describe}")
-            print("  key policy: environment/`ant` profile only — never "
-                  "stored or logged")
-            print("  cost: a few thousand tokens per goal attempt"
-                  if not cli.llm_dry_run else
-                  "  cost: none — this run predicts the ceiling instead")
-            armed = LlmEngine(complete=backend, attempts=3)
-            non_llm = [e for e in (cfg.synthesis_engines or [])
-                       if not isinstance(e, LlmEngine)]
-            engines = [armed] if cli.llm_only else [*non_llm, armed]
-            impl_engines = [LlmImplEngine(complete=backend, attempts=3)]
+            engines, impl_engines, backend = arm_llm_engines(
+                cli, cfg.synthesis_engines, LlmEngine, LlmImplEngine)
         stub = ("impl" if cli.synthesize_impl
                 else "break" if cli.break_proof else "sorries")
         try:

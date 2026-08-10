@@ -259,12 +259,22 @@ class RestartEpisodeKS(KnowledgeSource):
     budget is exhausted the rung does nothing, so the chain ends and normal
     end-of-route escalation reports the entry with its last failing
     verdict.
+
+    `also` names sibling entries whose verdicts this chain's repair
+    stales — the primitive supports any key, and a repair to one entry's
+    subject (restoring a blessed file) invalidates every verdict
+    measured over the pre-repair tree. Each sibling is restarted
+    alongside, within the same budget; a sibling that already escalated
+    on the stale tree is revived into the certify segment first, so the
+    fresh episode re-judges it instead of leaving a dead verdict as the
+    session's last word.
     """
 
     name: str = ""
     partition: List[str] = []
     max_attempts: int = 1
     budget: int = 1
+    also: List[str] = []
 
     def model_post_init(self, __context) -> None:
         if not self.name:
@@ -272,5 +282,14 @@ class RestartEpisodeKS(KnowledgeSource):
 
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
-            if blackboard.restarts.get(key, 0) < self.budget:
-                blackboard.request_restart(key, "re-attest after repair")
+            if blackboard.restarts.get(key, 0) >= self.budget:
+                continue
+            blackboard.request_restart(key, "re-attest after repair")
+            for extra in self.also:
+                if extra == key or blackboard.restarts.get(extra, 0) >= self.budget:
+                    continue
+                if extra in blackboard.escalate and extra not in blackboard.entries:
+                    # revive: the sibling escalated on the pre-repair tree
+                    blackboard.entries[extra] = blackboard.escalate.pop(extra)
+                blackboard.request_restart(
+                    extra, "sibling repair staled this verdict")
