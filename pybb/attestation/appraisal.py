@@ -11,6 +11,7 @@ reference implementation for this CVM build.
 from __future__ import annotations
 
 import base64
+import hashlib
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -30,6 +31,59 @@ class ComponentResult(BaseModel):
     # retained appraised output (EXTEND appraisers, via the verified
     # appraisal summary): the join material, base64
     measured_b64: str = ""
+    # abs path -> sha256 hex of the command inputs as they stood at the
+    # run (see stamp_measured_files): the freshness key a derived view
+    # needs before it may join retained output onto the live tree
+    measured_files: Dict[str, str] = {}
+
+
+def digest_file(path: Path) -> str:
+    """sha256 hex of a file's bytes."""
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1 << 16), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def command_inputs(args: dict) -> List[Path]:
+    """The files a run_command measurement read, as far as its args
+    disclose: those `exe_args` operands that resolve to a file under
+    `cwd`. Deliberately narrow — hashfile/readfile targets are excluded,
+    since there the file IS the measurement (and tool binaries are large
+    enough that digesting them every run would not pay for itself)."""
+    exe_args = args.get("exe_args")
+    if not isinstance(exe_args, list):
+        return []
+    cwd = Path(args.get("cwd") or ".")
+    out: List[Path] = []
+    for arg in exe_args:
+        candidate = cwd / str(arg)
+        if candidate.is_file():
+            out.append(candidate)
+    return out
+
+
+def stamp_measured_files(components: List["ComponentResult"]) -> None:
+    """Record each command component's input digests, in place.
+
+    Stamped by the caller immediately after the protocol run rather than
+    read out of the evidence (the measurement carries the tool's OUTPUT,
+    not its inputs' bytes). The window between the ASP's read and this
+    stamp is not closed by construction; it is closed by the workflow,
+    where nothing mutates the tree while a protocol is in flight. The
+    stamp is only ever consumed to DOWNGRADE a derived cell to unknown,
+    so a stamp that is wrong in the conservative direction costs a
+    re-measurement and never a false claim of proof."""
+    for comp in components:
+        digests: Dict[str, str] = {}
+        for path in command_inputs(comp.args):
+            try:
+                digests[str(path.resolve())] = digest_file(path)
+            except OSError:
+                continue  # unreadable: nothing to compare against later
+        if digests:
+            comp.measured_files = digests
 
 
 def _decode_verdict(raw: str) -> tuple[bool, str]:

@@ -2,7 +2,13 @@
 
 import base64
 
-from pybb.attestation.appraisal import overall_verdict, parse_appraisal
+from pybb.attestation.appraisal import (
+    digest_file,
+    overall_verdict,
+    parse_appraisal,
+    stamp_measured_files,
+)
+from pybb.attestation.proof_status import stale_files
 
 
 def _b64(s: str) -> str:
@@ -112,3 +118,30 @@ def test_describe_exe_args_commands():
         "proyek test A_GumboX_UnitTests",
     ]
     assert results[2].reason == "logika failed"
+
+
+def test_stamp_measured_files_digests_command_inputs(tmp_path):
+    """The freshness key: a command component records the bytes of the
+    operands it read, and nothing else — hashfile targets are excluded
+    (there the file IS the measurement) and non-file operands are not
+    invented."""
+    src = tmp_path / "Proofs.lean"
+    src.write_text("theorem a : True := by trivial\n")
+    et = _split(
+        _asp_evt(
+            "run_command_lean_appr",
+            {"exe_args": ["lean", "Proofs.lean", "--", "--json"],
+             "cwd": str(tmp_path)},
+            sub=_asp_evt("run_command_lean", {}),
+        ),
+        _asp_evt("hashfile_appr", ARGS_A, sub=_asp_evt("hashfile", ARGS_A)),
+    )
+    results = parse_appraisal(_response(et, [_b64(""), _b64("")]))
+    stamp_measured_files(results)
+    assert results[0].measured_files == {
+        str(src.resolve()): digest_file(src)}
+    assert results[1].measured_files == {}  # hashfile: not a command input
+
+    src.write_text("theorem a : True := by sorry\n")
+    assert stale_files(results[0]) == [str(src.resolve())]
+    assert stale_files(results[1]) == []

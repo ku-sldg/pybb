@@ -52,7 +52,12 @@ from pydantic import BaseModel
 
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
-from .appraisal import ComponentResult, overall_verdict, parse_appraisal
+from .appraisal import (
+    ComponentResult,
+    overall_verdict,
+    parse_appraisal,
+    stamp_measured_files,
+)
 
 
 def attestation_request(protocol_id: str) -> dict:
@@ -155,6 +160,7 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
     if isinstance(components, str):  # summarizer refusal — fail closed
         return Verdict(protocol=protocol_id, passed=False, error=components,
                        evidence_ref=ref)
+    stamp_measured_files(components)  # freshness key for derived views
     return Verdict(
         protocol=protocol_id,
         passed=overall_verdict(components),

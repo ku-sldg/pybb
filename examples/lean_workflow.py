@@ -72,7 +72,11 @@ from pybb.attestation import (
     trust_summary,
 )
 from pybb.attestation import ImplSynthesisKS, ProofSynthesisKS
-from pybb.attestation.proof_status import goal_checklist, render_checklist
+from pybb.attestation.proof_status import (
+    goal_checklist,
+    render_checklist,
+    stale_files,
+)
 from pybb.attestation.synthesis import splice_proof
 from pybb.attestation.build import install_build_outputs, write_build_protocol_dir
 from pybb.attestation.copland import with_asp_targids
@@ -675,6 +679,27 @@ def derive_spans(text: str):
     return lean_decl_spans(text)
 
 
+def _closing_verdict(cfg: LeanExampleConfig, protocols: dict, verdict):
+    """The verdict the closing report should be read from.
+
+    An episode's last attested verdict is normally NOT the last word on
+    the tree: a synthesis KS spends a restart only once its file is
+    locally clean, so a run that ends short — escalated with two goals
+    still open — leaves accepted candidates that no attestation ever
+    saw. goal_checklist fails closed on that (every cell '?'), which is
+    honest but tells the operator nothing about the work just done. One
+    fresh run, only when the stamp says the tree moved, buys a closing
+    report that describes the tree the operator is actually left with."""
+    comp = next((c for c in verdict.components
+                 if c.targ_id == cfg.proofs_targ), None)
+    if comp is None or not stale_files(comp):
+        return verdict
+    print("\nre-measuring for the closing report: the tree changed after "
+          "the last attested run")
+    return make_attestation_predicate(CvmSubprocessClient(), protocols)(
+        attestation_request(cfg.verification_id))
+
+
 def _stub_impl(cfg: LeanExampleConfig) -> bytes:
     """Snapshot the implementation file, then stub the implementation's
     BODY to sorry (signature kept — it is the blessed `Step` shape the
@@ -774,8 +799,9 @@ def synthesize_flow(cfg: LeanExampleConfig, protocols: dict,
         entry = controller.blackboard.entries.get(cfg.entry("verification")) \
             or controller.blackboard.escalate.get(cfg.entry("verification"))
         if entry is not None and entry.result is not None:
+            verdict = _closing_verdict(cfg, protocols, entry.result)
             print(render_checklist(goal_checklist(
-                _blessed_text(cfg, protocols), entry.result,
+                _blessed_text(cfg, protocols), verdict,
                 cfg.proofs_targ, cfg.binding_targ, proofs_path)))
         return controller
     finally:

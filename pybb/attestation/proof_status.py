@@ -22,6 +22,13 @@ agreed for per-contract joins):
   - fail-closed: unmappable evidence (diagnostics in another file,
     outside every span, empty or unparseable output) downgrades every
     undiagnosed declaration to UNKNOWN, never up to proved;
+  - fail-closed on STALENESS: the join is positional, so it is only
+    meaningful while the file still is the file that was measured. A
+    verdict outlives its tree — a repair KS spends a restart only once
+    its work is locally clean, so mid-synthesis the newest verdict
+    routinely predates several accepted candidates, and every splice
+    shifts the lines under the retained diagnostics. When the component's
+    measured_files digests disagree with the tree, every cell is UNKNOWN;
   - column poisoning: a failed tool:: hash in the same verification
     term means the tool output cannot be trusted — every cell is
     UNKNOWN;
@@ -41,6 +48,7 @@ from typing import Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
+from .appraisal import digest_file
 from .targetmap import lean_decl_spans
 
 # cell states
@@ -112,6 +120,31 @@ def failed_tools(verdict) -> List[str]:
             and (c.args.get("metadata") or "").startswith("tool::")]
 
 
+def stale_files(comp) -> List[str]:
+    """The component's measured inputs whose bytes no longer match the
+    run — the evidence's retained output is about a tree that is gone.
+
+    Empty when the component carries no digests: an unstamped verdict
+    (a hand-built one, or a protocol with no command targets) cannot be
+    checked for staleness, and this is the pre-existing reading rather
+    than a refutation of it."""
+    stale = []
+    for path, digest in (getattr(comp, "measured_files", None) or {}).items():
+        try:
+            live = digest_file(Path(path))
+        except OSError:
+            stale.append(path)  # measured then removed: gone is changed
+            continue
+        if live != digest:
+            stale.append(path)
+    return stale
+
+
+def _stale_detail(stale: List[str]) -> str:
+    return ("measured file changed since the run: "
+            + ", ".join(Path(p).name for p in stale))
+
+
 def decl_status(verdict, targ_id: str, file_path: Path) -> Dict[str, DeclStatus]:
     """
     Per-declaration status of `file_path` from the verification
@@ -131,6 +164,11 @@ def decl_status(verdict, targ_id: str, file_path: Path) -> Dict[str, DeclStatus]
     comp = next((c for c in verdict.components if c.targ_id == targ_id), None)
     if comp is None:
         return _all(spans, UNKNOWN, f"no component {targ_id} in the verdict")
+    stale = stale_files(comp)
+    if stale:
+        # before the pass/fail split: a stale PASS would mark the whole
+        # file proved off a run that never saw it
+        return _all(spans, UNKNOWN, _stale_detail(stale))
     if comp.passed:
         return _all(spans, PROVED, "")
 
@@ -258,9 +296,12 @@ def goal_checklist(blessed_text: str, verdict, proofs_targ: str,
     else:
         comp = next((c for c in verdict.components
                      if c.targ_id == binding_targ), None)
+        stale = stale_files(comp) if comp is not None else []
         if comp is None:
             binding = DeclStatus(state=UNKNOWN,
                                  detail=f"no component {binding_targ}")
+        elif stale:
+            binding = DeclStatus(state=UNKNOWN, detail=_stale_detail(stale))
         elif comp.passed:
             binding = DeclStatus(state=PROVED)
         else:
