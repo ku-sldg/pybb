@@ -44,9 +44,10 @@ This is a THIN CONFIG over examples/rocq_workflow.py; the whole workflow
 
 Usage:
     python examples/temp_control_rocq.py [--provision] [--tamper]
-        [--tamper-admitted] [--tamper-axiom] [--repair]
+        [--tamper-admitted] [--tamper-axiom] [--repair] [--pause]
         [--status] [--ready]
         [--synthesize [--keep]] [--break-proof] [--synthesize-impl]
+        [--synthesize-package]
         [--llm {anthropic,openai} [--llm-only] [--llm-model ID]
          [--llm-max-tokens N] [--llm-effort E] [--llm-dry-run]]
 

@@ -88,10 +88,27 @@ class BlackBoxRepairKS(KnowledgeSource):
     restart_policy: str = "per_attempt"
     files: List[str] = []
     package_root: str = ""
+    also: List[str] = []           # sibling entries whose verdicts this
+                                   # rung's repair stales — restarted
+                                   # alongside, revived from escalate if
+                                   # needed (same semantics as
+                                   # RestartEpisodeKS.also)
 
     def model_post_init(self, __context) -> None:
         if not self.name:
             self.name = "repair:black-box"
+
+    def _request_restart(self, blackboard: Blackboard, key: str,
+                         note: str) -> None:
+        blackboard.request_restart(key, note)
+        for extra in self.also:
+            if extra == key:
+                continue
+            if extra in blackboard.escalate and extra not in blackboard.entries:
+                # revive: the sibling escalated on the pre-repair tree
+                blackboard.entries[extra] = blackboard.escalate.pop(extra)
+            blackboard.request_restart(
+                extra, "sibling repair staled this verdict")
 
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
@@ -103,9 +120,11 @@ class BlackBoxRepairKS(KnowledgeSource):
             if not self.tool(ctx):
                 continue  # nothing tried; handoff/escalation follows
             if self.restart_policy == "per_attempt":
-                blackboard.request_restart(key, f"{self.name}: re-appraise")
+                self._request_restart(blackboard, key,
+                                      f"{self.name}: re-appraise")
             elif self.local_check is None or self.local_check():
-                blackboard.request_restart(key, f"{self.name}: locally clean")
+                self._request_restart(blackboard, key,
+                                      f"{self.name}: locally clean")
 
 
 # ── layer 2: Lean proof synthesis ─────────────────────────────────────────────

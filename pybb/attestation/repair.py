@@ -32,6 +32,7 @@ from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
 from .knowledge_sources import Verdict
 from .snapshot import mirror_path
+from .synthesis import BlackBoxRepairKS, RepairContext
 
 
 def _latest_verdict(blackboard: Blackboard, key: str, protocol: str) -> Optional[Verdict]:
@@ -155,3 +156,85 @@ class SliceRestoreKS(KnowledgeSource):
             gold_lines[gold_span[0]:gold_span[1] + 1]
         live.write_text("".join(live_lines))
         return True
+
+
+def console_gate(work_order: str) -> bool:
+    """The default operator gate: block on stdin until the operator says
+    what happened out-of-band. 'r' (or bare Enter) claims the repair is
+    done — the claim is worthless by design, it only buys the fresh
+    measurement that judges it; 's' declines, so ordinary chain
+    handoff/escalation follows. EOF (a non-interactive session with no
+    piped answer) declines."""
+    while True:
+        try:
+            answer = input(
+                "  out-of-band repair done? [r]e-attest / [s]kip: ")
+        except EOFError:
+            print("  (stdin closed - skipping)")
+            return False
+        answer = answer.strip().lower()
+        if answer in ("", "r", "re-attest"):
+            return True
+        if answer in ("s", "skip"):
+            return False
+
+
+class OutOfBandRepairKS(BlackBoxRepairKS):
+    """
+    The pause rung: a black-box repair whose tool is the world outside
+    the process. It renders the failing verdict as a work order, then
+    BLOCKS on an operator gate while the repair happens out-of-band —
+    a hand edit, an interactive LLM code-agent session, anything.
+
+    The trust story is the ordinary BlackBoxRepairKS one, verbatim: the
+    operator's "done" is a claim, never trusted; only the restart's
+    fresh measurement re-establishes standing, the always-run sentinels
+    catch edits to blessed files, and max_attempts plus the controller's
+    restart law bound the loop. Declining ('skip') returns the key to
+    ordinary handoff/escalation.
+
+    `gate(work_order) -> bool` is injectable (console prompt by
+    default) — a gate that shells out to an agent with the work order
+    is the scripted variant, and belongs behind an explicit arming
+    flag exactly like --llm. `report() -> str` optionally appends live
+    state (e.g. what a local sense says is still open) to each work
+    order. restart_policy applies as usual: "per_attempt" re-attests
+    every claimed repair; "on_local_clean" (with a local_check) gives
+    the operator free local iterations before a restart is spent.
+    """
+
+    name: str = "repair:out-of-band"
+    max_attempts: int = 3
+    gate: object = None            # callable(work_order: str) -> bool
+    report: object = None          # callable() -> str (live-state lines)
+
+    def model_post_init(self, __context) -> None:
+        self.tool = self._await_repair
+
+    def _work_order(self, ctx: RepairContext) -> str:
+        # ctx.attempt is already 1-based when the rung runs (the
+        # controller counts the attempt before execute)
+        lines = [f"  {self.name}: '{ctx.key}' paused for out-of-band "
+                 f"repair (attempt {ctx.attempt}/{self.max_attempts})"]
+        verdict = ctx.verdict
+        if isinstance(verdict, Verdict):
+            for comp in verdict.failing():
+                label = comp.targ_id or comp.description or comp.target_asp
+                where = (comp.args or {}).get("filepath", "")
+                lines.append(f"    - {label}"
+                             + (f" [{where}]" if where else "")
+                             + (f": {comp.reason}" if comp.reason else ""))
+            if verdict.error:
+                lines.append(f"    protocol error: {verdict.error}")
+        if self.report is not None:
+            extra = self.report()
+            if extra:
+                lines.extend("    " + l for l in extra.splitlines())
+        lines.append("    nothing done out-of-band counts until fresh "
+                     "measurement judges it")
+        return "\n".join(lines)
+
+    def _await_repair(self, ctx: RepairContext) -> bool:
+        order = self._work_order(ctx)
+        print(order)
+        return bool((self.gate or console_gate)(order))

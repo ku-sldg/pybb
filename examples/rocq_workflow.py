@@ -54,9 +54,12 @@ from pathlib import Path
 from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
+    OutOfBandRepairKS,
     ProtocolDir,
     RestartEpisodeKS,
     RocqImplSynthesisKS,
+    RocqOutOfBandRepairKS,
+    RocqPackageSynthesisKS,
     RocqProofSynthesisKS,
     StartAttestationKS,
     TargetSnapshot,
@@ -609,7 +612,9 @@ def _closing_verdict(cfg: RocqExampleConfig, protocols: dict, verdict,
 def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
                     keep: bool, engines: list = None,
                     stub: str = "admits",
-                    impl_engines: list = None) -> BlackboardController:
+                    impl_engines: list = None,
+                    package_engines: list = None,
+                    pause: bool = False, gate=None) -> BlackboardController:
     """The step-4 loop, Rocq edition: stub the seeds, put
     :model/:contracts/:verification on the board, and let
     RocqProofSynthesisKS work the open goals — engines splice inner
@@ -622,13 +627,17 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
     admitted axiom alongside the admitted proofs, and
     RocqImplSynthesisKS is chained ahead of the proof rung — the
     blessed properties alone must yield first an implementation, then
-    proofs about it. stub="break" corrupts one seed proof instead (the
-    repair arc)."""
+    proofs about it. stub="package" starts from the same stubs but
+    routes ONE RocqPackageSynthesisKS instead of the two-rung chain:
+    a single black box writes the implementation and the proofs
+    together, judged by the same local senses and the same restart.
+    stub="break" corrupts one seed proof instead (the repair arc)."""
     proofs_path = cfg.proofs_file
     impl_path = cfg.package_root / cfg.impl_rel if cfg.impl_rel else None
-    impl_original = _stub_impl(cfg) if stub == "impl" else None
+    impl_original = _stub_impl(cfg) if stub in ("impl", "package") else None
     original = _break_proof(cfg) if stub == "break" else _stub_proofs(
-        cfg, kinds=(("Theorem", "Lemma", "Example") if stub == "impl"
+        cfg, kinds=(("Theorem", "Lemma", "Example")
+                    if stub in ("impl", "package")
                     else ("Theorem", "Lemma")))
     context_rels = [r for r in (cfg.props_rel, cfg.impl_rel) if r]
     try:
@@ -640,33 +649,53 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
         controller.register_predicate(
             "protocol_check", make_readiness_predicate(
                 protocols, baseline_root=GOLDEN_ROOT, client=client))
-        synth = RocqProofSynthesisKS(
-            engines=engines if engines is not None else cfg.synthesis_engines,
-            blessed=lambda: _blessed_text(cfg, protocols),
-            package_root=str(cfg.package_root),
-            proofs_rel=cfg.proofs_rel,
-            theory_name=cfg.theory_name,
-            audit_rel=cfg.audit_rel,
-            audit_goals=list(cfg.audit_goals),
-            build_targ=cfg.build_targ,
-            audit_targ=cfg.assumptions_targ,
-            binding_witness=cfg.binding_witness,
-            impl_name=cfg.impl_name,
-            context_rels=context_rels,
-            rocq=str(WORKSPACE_BIN / "rocq"),
-            dune=str(WORKSPACE_BIN / "dune"))
-        impl_synth = RocqImplSynthesisKS(
-            engines=impl_engines or [],
-            blessed=lambda: _blessed_text(cfg, protocols),
-            package_root=str(cfg.package_root),
-            impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
-            spec_rel=cfg.props_rel,
-            theory_name=cfg.theory_name,
-            audit_rel=cfg.audit_rel,
-            audit_goals=list(cfg.audit_goals),
-            rocq=str(WORKSPACE_BIN / "rocq"),
-            dune=str(WORKSPACE_BIN / "dune")) if stub == "impl" else None
-        chain = [ks for ks in (impl_synth, synth) if ks is not None]
+        if stub == "package":
+            chain = [RocqPackageSynthesisKS(
+                engines=package_engines or [],
+                blessed=lambda: _blessed_text(cfg, protocols),
+                package_root=str(cfg.package_root),
+                impl_rel=cfg.impl_rel, proofs_rel=cfg.proofs_rel,
+                impl_name=cfg.impl_name,
+                spec_rel=cfg.props_rel,
+                theory_name=cfg.theory_name,
+                audit_rel=cfg.audit_rel,
+                audit_goals=list(cfg.audit_goals),
+                rocq=str(WORKSPACE_BIN / "rocq"),
+                dune=str(WORKSPACE_BIN / "dune"))]
+        else:
+            synth = RocqProofSynthesisKS(
+                engines=(engines if engines is not None
+                         else cfg.synthesis_engines),
+                blessed=lambda: _blessed_text(cfg, protocols),
+                package_root=str(cfg.package_root),
+                proofs_rel=cfg.proofs_rel,
+                theory_name=cfg.theory_name,
+                audit_rel=cfg.audit_rel,
+                audit_goals=list(cfg.audit_goals),
+                build_targ=cfg.build_targ,
+                audit_targ=cfg.assumptions_targ,
+                binding_witness=cfg.binding_witness,
+                impl_name=cfg.impl_name,
+                context_rels=context_rels,
+                rocq=str(WORKSPACE_BIN / "rocq"),
+                dune=str(WORKSPACE_BIN / "dune"))
+            impl_synth = RocqImplSynthesisKS(
+                engines=impl_engines or [],
+                blessed=lambda: _blessed_text(cfg, protocols),
+                package_root=str(cfg.package_root),
+                impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
+                spec_rel=cfg.props_rel,
+                theory_name=cfg.theory_name,
+                audit_rel=cfg.audit_rel,
+                audit_goals=list(cfg.audit_goals),
+                rocq=str(WORKSPACE_BIN / "rocq"),
+                dune=str(WORKSPACE_BIN / "dune")) if stub == "impl" else None
+            chain = [ks for ks in (impl_synth, synth) if ks is not None]
+        if pause:
+            # the human rung before escalation: engines first, then the
+            # operator (or an interactive agent session) on whatever
+            # remains open — judged by the same restart
+            chain = [*chain, _pause_rung(cfg, gate)]
         episodes = {cfg.entry("model"): cfg.model_id,
                     cfg.entry("contracts"): cfg.contracts_id,
                     cfg.entry("verification"): cfg.verification_id}
@@ -708,11 +737,31 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
 
 # ── episodes ──────────────────────────────────────────────────────────────────
 
+def _pause_rung(cfg: RocqExampleConfig, gate=None) -> RocqOutOfBandRepairKS:
+    """The audit-aware pause rung for the :verification chain: blocks for
+    out-of-band repair (editor, interactive agent session), lets the
+    operator iterate for free against the live audit, and spends a
+    restart only on a locally-clean tree."""
+    return RocqOutOfBandRepairKS(
+        gate=gate, package_root=str(cfg.package_root),
+        theory_name=cfg.theory_name, audit_rel=cfg.audit_rel,
+        audit_goals=list(cfg.audit_goals),
+        rocq=str(WORKSPACE_BIN / "rocq"), dune=str(WORKSPACE_BIN / "dune"))
+
+
 def attest_episode(cfg: RocqExampleConfig, protocols: dict,
-                   repair: bool) -> BlackboardController:
+                   repair: bool, pause: bool = False,
+                   gate=None) -> BlackboardController:
     """One attestation episode. The verification class is ALWAYS-RUN —
     the audit is cheap and it is the point of this example; its failures
-    escalate directly (a refuted proof is not golden-restorable)."""
+    escalate directly (a refuted proof is not golden-restorable).
+
+    pause=True inserts out-of-band repair rungs: on :model/:contracts a
+    generic OutOfBandRepairKS ahead of the automatic golden restore (the
+    operator gets first claim; skipping falls through to the restore),
+    and on :verification the audit-aware rung — the one failure class
+    with no automatic repair at all. Every out-of-band fix is judged
+    by fresh measurement, never by the operator's word."""
     controller = BlackboardController()
     client = CvmSubprocessClient()
     controller.register_predicate(
@@ -734,16 +783,20 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
         # only two-thirds good-standing.
         restore = [*restore, RestartEpisodeKS(
             budget=cfg.restart_budget, also=[cfg.entry("verification")])]
-    model_fail = [TierKS(protocol_id=cfg.contracts_id), *restore]
+    oob = [OutOfBandRepairKS(gate=gate,
+                             also=[cfg.entry("verification")])] if pause else []
+    ver_chain = [_pause_rung(cfg, gate)] if pause else []
+    model_fail = [TierKS(protocol_id=cfg.contracts_id), *oob, *restore]
     episodes = {cfg.entry("model"): cfg.model_id,
                 cfg.entry("contracts"): cfg.contracts_id,
                 cfg.entry("verification"): cfg.verification_id}
     starter = StartAttestationKS(episodes=episodes)
-    for ks in (*model_fail, starter):
+    for ks in (*model_fail, *ver_chain, starter):
         controller.add_ks(ks)
     controller.route(cfg.entry("model"), on_pass=[], on_fail=model_fail)
-    controller.route(cfg.entry("contracts"), on_pass=[], on_fail=restore)
-    controller.route(cfg.entry("verification"), on_pass=[], on_fail=[])
+    controller.route(cfg.entry("contracts"), on_pass=[],
+                     on_fail=[*oob, *restore])
+    controller.route(cfg.entry("verification"), on_pass=[], on_fail=ver_chain)
     controller.blackboard.write_entry(
         key=cfg.entry("ready"), predicate="protocol_check",
         measurement=readiness_request(list(protocols)))
@@ -770,6 +823,12 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "by it — elaborates cleanly, the audit names "
                              "the axiom")
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--pause", action="store_true",
+                        help="on failure, pause the episode for out-of-band "
+                             "repair (hand edit, interactive agent session, "
+                             "...) instead of / ahead of the automatic "
+                             "rungs; the fix is judged by fresh measurement, "
+                             "never by the operator's word")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--ready", action="store_true")
     parser.add_argument("--synthesize", action="store_true")
@@ -807,6 +866,12 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "then derive the implementation from the "
                              "blessed properties alone before proving "
                              "anything about it")
+    parser.add_argument("--synthesize-package", action="store_true",
+                        help="whole-package arc: same starting stubs as "
+                             "--synthesize-impl, but ONE black box writes "
+                             "the implementation and all proofs together "
+                             "(complete file contents), instead of the "
+                             "impl-then-proofs rung chain; requires --llm")
     cli = parser.parse_args()
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom)) > 1:
@@ -820,6 +885,14 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                          "starting states; pick one")
         if not (cfg.impl_rel and cfg.impl_name):
             parser.error("--synthesize-impl: this scenario has no "
+                         "implementation file configured (impl_rel/impl_name)")
+    if cli.synthesize_package:
+        cli.synthesize = True
+        if cli.synthesize_impl or cli.break_proof:
+            parser.error("--synthesize-package, --synthesize-impl and "
+                         "--break-proof are different arcs; pick one")
+        if not (cfg.impl_rel and cfg.impl_name):
+            parser.error("--synthesize-package: this scenario has no "
                          "implementation file configured (impl_rel/impl_name)")
     if cli.keep and not cli.synthesize:
         parser.error("--keep retains --synthesize's proofs; use them together")
@@ -839,21 +912,31 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         if cli.synthesize_impl and not cli.llm:
             parser.error("--synthesize-impl currently has only the LLM "
                          "implementation engine; use it with --llm")
+        if cli.synthesize_package and not cli.llm:
+            parser.error("--synthesize-package currently has only the LLM "
+                         "package engine; use it with --llm")
         engines = None
         impl_engines = None
+        package_engines = None
         backend = None
         if cli.llm:
             from pybb.attestation.llm_backends import arm_llm_engines
-            from pybb.attestation.rocq_synthesis import (RocqLlmEngine,
-                                                         RocqLlmImplEngine)
+            from pybb.attestation.rocq_synthesis import (
+                RocqLlmEngine, RocqLlmImplEngine, RocqLlmPackageEngine)
             engines, impl_engines, backend = arm_llm_engines(
                 cli, cfg.synthesis_engines, RocqLlmEngine, RocqLlmImplEngine)
-        stub = ("impl" if cli.synthesize_impl
+            if cli.synthesize_package:
+                package_engines = [RocqLlmPackageEngine(complete=backend,
+                                                        attempts=3)]
+        stub = ("package" if cli.synthesize_package
+                else "impl" if cli.synthesize_impl
                 else "break" if cli.break_proof else "admits")
         try:
             synthesize_flow(cfg, load_protocols(cfg), keep=cli.keep,
                             engines=engines, stub=stub,
-                            impl_engines=impl_engines)
+                            impl_engines=impl_engines,
+                            package_engines=package_engines,
+                            pause=cli.pause)
         finally:
             report = getattr(backend, "report", None) or getattr(
                 getattr(backend, "usage", None), "report", None)
@@ -881,7 +964,7 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     elif cli.tamper_axiom:
         pristine_proofs = tamper_axiom(cfg)
     try:
-        attest_episode(cfg, protocols, repair=cli.repair)
+        attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause)
         if cli.repair and not cfg.restart_budget:
             # without a restart budget, verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")

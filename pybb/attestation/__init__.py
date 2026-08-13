@@ -20,7 +20,12 @@ from .readiness import (
     make_readiness_predicate,
     readiness_request,
 )
-from .repair import SliceRestoreKS, WholeFileRestoreKS
+from .repair import (
+    OutOfBandRepairKS,
+    SliceRestoreKS,
+    WholeFileRestoreKS,
+    console_gate,
+)
 from .synthesis import (
     BlackBoxRepairKS,
     GoalContext,
@@ -34,9 +39,13 @@ from .synthesis import (
     splice_proof,
 )
 from .rocq_synthesis import (
+    PackageContext,
     RocqImplSynthesisKS,
+    RocqOutOfBandRepairKS,
     RocqLlmEngine,
     RocqLlmImplEngine,
+    RocqLlmPackageEngine,
+    RocqPackageSynthesisKS,
     RocqProofSynthesisKS,
     RocqTacticPortfolioEngine,
     splice_impl_rocq,
@@ -82,6 +91,8 @@ __all__ = [
     "verify_bundle",
     "make_readiness_predicate",
     "readiness_request",
+    "OutOfBandRepairKS",
+    "console_gate",
     "SliceRestoreKS",
     "BlackBoxRepairKS",
     "GoalContext",
@@ -93,9 +104,13 @@ __all__ = [
     "RepairContext",
     "TacticPortfolioEngine",
     "splice_proof",
+    "PackageContext",
     "RocqImplSynthesisKS",
+    "RocqOutOfBandRepairKS",
     "RocqLlmEngine",
     "RocqLlmImplEngine",
+    "RocqLlmPackageEngine",
+    "RocqPackageSynthesisKS",
     "RocqProofSynthesisKS",
     "RocqTacticPortfolioEngine",
     "splice_impl_rocq",

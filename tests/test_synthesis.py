@@ -21,9 +21,13 @@ from pybb.attestation import (
     BlackBoxRepairKS,
     GoalContext,
     LlmEngine,
+    OutOfBandRepairKS,
     TacticPortfolioEngine,
     splice_proof,
 )
+from pybb.attestation.appraisal import ComponentResult
+from pybb.attestation.knowledge_sources import Verdict
+from pybb.attestation.synthesis import RepairContext
 
 
 # ── black-box layer ───────────────────────────────────────────────────────────
@@ -124,6 +128,82 @@ def test_tool_that_declines_leads_to_escalation_without_restarts():
     bb, fn = _run(state, ks)
     assert "entry:x" in bb.escalate
     assert bb.restarts == {}
+
+
+# ── the pause rung (out-of-band repair) ───────────────────────────────────────
+
+def test_out_of_band_repair_judged_by_fresh_measurement():
+    """The gate blocks, the 'operator' fixes the world out-of-band, and
+    'r' buys exactly one restart — the fresh measurement is the judge,
+    the operator's claim never counts by itself."""
+    state = {"value": 0, "target": 1}
+    orders = []
+
+    def gate(order):
+        orders.append(order)
+        state["value"] += 1   # the out-of-band fix (editor, agent, ...)
+        return True
+
+    ks = OutOfBandRepairKS(gate=gate)
+    bb, fn = _run(state, ks)
+    assert bb.entries["entry:x"].good_standing
+    assert bb.restarts == {"entry:x": 1}
+    assert len(orders) == 1
+    assert "paused for out-of-band repair (attempt 1/3)" in orders[0]
+    assert "nothing done out-of-band counts" in orders[0]
+
+
+def test_out_of_band_skip_falls_through_to_escalation():
+    """'s' declines: nothing tried, no restart spent, and after
+    max_attempts the key follows ordinary handoff/escalation."""
+    state = {"value": 0, "target": 1}
+    orders = []
+    ks = OutOfBandRepairKS(gate=lambda o: orders.append(o) or False,
+                           max_attempts=2)
+    bb, fn = _run(state, ks)
+    assert "entry:x" in bb.escalate
+    assert bb.restarts == {}
+    assert len(orders) == 2
+
+
+def test_out_of_band_ineffective_claim_costs_a_restart_then_escalates():
+    """A claimed repair that changed nothing: every claim is judged (and
+    refuted) by a fresh measurement, and the controller's restart law is
+    the bound — a fresh episode brings a fresh KS budget by design, so
+    the law, not max_attempts, ends a gate that always claims success."""
+    state = {"value": 0, "target": 10 ** 9}
+    ks = OutOfBandRepairKS(gate=lambda o: True, max_attempts=2)
+    bb, fn = _run(state, ks, max_restarts_per_key=3)
+    assert "entry:x" in bb.escalate
+    assert bb.restarts["entry:x"] <= 3
+
+
+def test_out_of_band_work_order_renders_verdict_and_report():
+    verdict = Verdict(protocol="p", passed=False, components=[
+        ComponentResult(appr_asp="a", target_asp="t", targ_id="slice_targ",
+                        passed=False, reason="hash mismatch",
+                        args={"filepath": "/pkg/Props.v"}),
+    ], error="")
+    ks = OutOfBandRepairKS(gate=lambda o: False,
+                           report=lambda: "still open:\n- goal_a")
+    order = ks._work_order(RepairContext(key="k", verdict=verdict, attempt=2))
+    assert "'k' paused for out-of-band repair (attempt 2/3)" in order
+    assert "slice_targ [/pkg/Props.v]: hash mismatch" in order
+    assert "still open:\n    - goal_a" in order
+
+
+def test_black_box_also_siblings_revived_and_restarted():
+    """`also` on a restart-requesting rung: staled siblings are
+    restarted alongside, revived from escalate when needed."""
+    from pybb.blackboard import Blackboard
+    bb = Blackboard()
+    bb.write_entry(key="a", predicate="check", measurement={})
+    bb.write_entry(key="b", predicate="check", measurement={})
+    bb.escalate["b"] = bb.entries.pop("b")   # b died on the stale tree
+    ks = BlackBoxRepairKS(tool=lambda ctx: True, also=["b"])
+    ks._request_restart(bb, "a", "repaired")
+    assert set(bb.restart_requests) == {"a", "b"}
+    assert "b" in bb.entries and "b" not in bb.escalate
 
 
 # ── Lean layer ────────────────────────────────────────────────────────────────

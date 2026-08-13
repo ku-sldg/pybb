@@ -62,6 +62,8 @@ warm dune builds are sub-second, and the audit is the point.
     python examples/temp_control_rocq.py --break-proof      # corrupt one seed proof -> portfolio repairs it
     python examples/temp_control_rocq.py --synthesize-impl --llm openai --llm-dry-run
                                                             # impl-first arc, spend predicted, no key needed
+    python examples/temp_control_rocq.py --synthesize-package --llm anthropic
+                                                            # whole-package arc: ONE black box writes impl + proofs
 
 Tests: `tests/test_integration_rocq.py` + `tests/test_rocq_synthesis.py`
 (units ungated; toolchain/CVM arcs gated `RUN_ROCQ=1`; live-LLM arcs
@@ -152,6 +154,43 @@ axiom's type, so admitted proofs shadow the admitted impl in the goal
 sections (hence the impl rung's own audit); and the seed `Example`
 vectors are kernel-COMPUTED (`reflexivity`), so the impl-first arc stubs
 them too — they cannot elaborate over an opaque impl.
+
+### `--synthesize-package`: impl + proofs as one black box
+
+The single-rung alternative to the impl-then-proofs chain: same
+starting stubs as the impl-first arc, but the `:verification` fail
+route carries ONE `RocqPackageSynthesisKS`. Its engines
+(`RocqLlmPackageEngine`; LLM-only, so the arc requires `--llm`) reply
+with COMPLETE contents for `Impl.v` and `Proofs.v` together
+(`=== FILE: <path> ===` blocks). Acceptance is monotone progress under
+the same local senses: a candidate is kept iff the tree is auditable,
+nothing closed reopens, and the failing set strictly shrinks; rejected
+candidates are reverted and fed back with the refuting text. The trust
+story is unchanged — the engine owns the mutable files wholesale
+(nothing there was ever trusted on bytes; the sentinels and the blessed
+acceptance binding police the rest), and only the restart's fresh
+measurement re-establishes standing.
+
+### `--pause`: out-of-band repair (the interactive human/agent rung)
+
+`--pause` inserts `OutOfBandRepairKS` rungs — a black box whose tool is
+the world outside the process. On failure the episode BLOCKS with a
+work order (the failing components, plus what the live audit says is
+still open); the operator repairs out-of-band — hand edit, an
+interactive LLM code-agent session in another terminal — and answers
+`[r]e-attest` or `[s]kip`. The claim is worthless by design: only the
+restart's fresh measurement re-establishes standing, and the sentinels
+catch any edit to blessed files. Placement: on `:verification` the
+audit-aware rung (`RocqOutOfBandRepairKS`, on_local_clean — claiming
+"repaired" while the audit is dirty costs nothing but another look);
+on `:model`/`:contracts` a generic rung ahead of the automatic golden
+restore, with `also=[:verification]` so a blessed-file fix restarts the
+staled sibling. In a synthesis arc the pause rung chains AFTER the
+engines: machines first, human on whatever remains. Skipping falls
+through to the ordinary chain (restore, or escalation as before).
+
+    python examples/temp_control_rocq.py --tamper-axiom --pause   # fix it yourself, judged by measurement
+    python examples/temp_control_rocq.py --break-proof --pause    # engines first, then you
 
 ### `--llm`: the armed engines
 

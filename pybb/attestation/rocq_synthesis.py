@@ -43,6 +43,9 @@ from .rocq_status import (
     rocq_spec_conjuncts,
     statement_part_rocq,
 )
+from pydantic import BaseModel
+
+from .repair import OutOfBandRepairKS
 from .synthesis import (
     BlackBoxRepairKS,
     GoalContext,
@@ -54,6 +57,44 @@ from .synthesis import (
 from .targetmap import rocq_decl_spans
 
 _TERMINATOR = re.compile(r"^\s*(Qed|Admitted|Defined)\s*\.\s*$")
+_FILE_HEADER = re.compile(r"^\s*={3,}\s*FILE:\s*(\S+)\s*={3,}\s*$",
+                          re.MULTILINE)
+
+
+class PackageContext(BaseModel):
+    """Everything a whole-package engine sees: the blessed statements,
+    the current (stubbed) contents of both mutable files, and what the
+    audit says is open. Deliberately blessed-first, like ImplContext:
+    the goal properties are the specification; the file contents are
+    skeletons (imports, statements) for the engine to fill."""
+
+    impl_rel: str             # the implementation file to write
+    proofs_rel: str           # the proofs file to write
+    impl_name: str = ""       # the implementation the goals quantify over
+    blessed_statement: str = ""   # the blessed Spec conjunction text
+    context_files: Dict[str, str] = {}  # rel -> contents (blessed statements)
+    files: Dict[str, str] = {}    # rel -> CURRENT contents of the two
+                                  # mutable files (statement skeletons)
+    audit_goals: List[str] = []   # every audited goal, audit order
+    failing: List[str] = []       # goals currently open
+    detail: str = ""              # why the tree currently fails
+    rejections: List[Dict[str, str]] = []  # rejected candidates paired with
+                                  # their refuting diagnostics (see
+                                  # GoalContext.rejections)
+
+
+def parse_file_blocks(text: str) -> Dict[str, str]:
+    """Split an engine reply of `=== FILE: <rel> ===` headers into
+    {rel: contents}. Markdown fences inside a block are stripped (LLMs
+    add them despite instructions); text before the first header is
+    ignored. Returns {} when no header is present."""
+    matches = list(_FILE_HEADER.finditer(text))
+    blocks: Dict[str, str] = {}
+    for i, m in enumerate(matches):
+        end = matches[i + 1].start() if i + 1 < len(matches) else len(text)
+        body = LlmEngine._strip_fences(text[m.end():end])
+        blocks[m.group(1)] = body + "\n" if body else body
+    return blocks
 
 
 # ── splicing ──────────────────────────────────────────────────────────────────
@@ -283,6 +324,89 @@ class RocqLlmImplEngine(LlmImplEngine):
         return "\n\n".join(lines)
 
 
+class RocqLlmPackageEngine:
+    """The whole-package engine: ONE prompt asking for complete
+    replacement contents of the implementation AND proofs files
+    together, from the blessed properties. Candidates are
+    {rel: contents} dicts, untrusted exactly like every other engine's —
+    the package rung's local senses judge them and the attested episode
+    is the final word.
+
+    Same generator protocol as LlmEngine: the KS resumes the iterator
+    only when the previous candidate was rejected, so each retry's
+    prompt carries the accumulated rejections. A reply missing a file
+    block is self-rejected here (with the parse failure as feedback)
+    without costing the KS a judge run."""
+
+    def __init__(self, complete=None, attempts: int = 1):
+        self.complete = complete
+        self.attempts = attempts
+
+    def prompt(self, ctx: PackageContext, failed: list = None) -> str:
+        lines = [
+            "You are writing an implementation AND all of its proofs for "
+            "the Rocq Prover (Rocq 9, formerly Coq; Stdlib only — no "
+            "external libraries). Reply with the COMPLETE contents of "
+            "both files below, each preceded by exactly one header line "
+            "`=== FILE: <path> ===`. No explanations, no markdown fences, "
+            "nothing outside the two blocks.",
+        ]
+        for rel, contents in ctx.context_files.items():
+            lines.append(f"Context (blessed statements — do not restate "
+                         f"or modify) — {rel}:\n```coq\n{contents}\n```")
+        for rel in (ctx.impl_rel, ctx.proofs_rel):
+            contents = ctx.files.get(rel, "")
+            lines.append(f"File to write — {rel} (current contents; keep "
+                         "the imports, every declaration name, and every "
+                         "theorem statement exactly as given — replace "
+                         f"only bodies and proof scripts):\n"
+                         f"```coq\n{contents}\n```")
+        if ctx.impl_name:
+            lines.append(f"Implement '{ctx.impl_name}' (replace its "
+                         "admitted body with a real term) and prove every "
+                         "theorem over it.")
+        if ctx.blessed_statement:
+            lines.append("The implementation must satisfy every blessed "
+                         f"property:\n{ctx.blessed_statement}")
+        lines.append(
+            "Every proof must end with `Qed.` — no `Admitted.`, no new "
+            "`Axiom`/`Parameter`: each audited goal must come out 'Closed "
+            "under the global context' under Print Assumptions."
+            + (f"\nCurrently open goals: {', '.join(ctx.failing)}"
+               if ctx.failing else ""))
+        if ctx.detail:
+            lines.append(f"Current failure: {ctx.detail}")
+        rejected = (ctx.rejections or
+                    [{"candidate": c} for c in (failed or [])])
+        for i, rej in enumerate(rejected[-2:], 1):
+            lines.append(
+                f"Rejected attempt {i} (failed to check — do not repeat "
+                f"it):\n{rej['candidate']}")
+            if rej.get("errors"):
+                lines.append(f"Why it failed:\n{rej['errors']}")
+        return "\n\n".join(lines)
+
+    def __call__(self, ctx: PackageContext) -> Iterable[Dict[str, str]]:
+        if self.complete is None:
+            return
+        for _ in range(self.attempts):
+            raw = LlmEngine._strip_fences(self.complete(self.prompt(ctx)) or "")
+            if not raw:
+                continue
+            blocks = parse_file_blocks(raw)
+            missing = [rel for rel in (ctx.impl_rel, ctx.proofs_rel)
+                       if not blocks.get(rel, "").strip()]
+            if missing:
+                ctx.rejections.append({
+                    "candidate": raw[:2000],
+                    "errors": "- reply carried no `=== FILE: <path> ===` "
+                              "block for: " + ", ".join(missing)})
+                continue
+            yield {rel: blocks[rel] for rel in (ctx.impl_rel, ctx.proofs_rel)}
+            # resumed => the KS rejected this candidate (and appended the
+            # refuting diagnostics to ctx.rejections)
+
+
 # ── the toolchain senses (untrusted, free) ────────────────────────────────────
 
 class _RocqSenses:
@@ -320,6 +444,16 @@ class _RocqSenses:
 
     def _failing_goals(self, sections) -> Set[str]:
         return {g for g, s in zip(self.audit_goals, sections) if s is not None}
+
+    def _open_detail(self, sections) -> str:
+        parts = []
+        for goal, axioms in zip(self.audit_goals, sections):
+            if axioms is None:
+                continue
+            foreign = [a for a in axioms if a != goal]
+            parts.append(f"- {goal} depends on axioms: {', '.join(foreign)}"
+                         if foreign else f"- {goal}: uses Admitted")
+        return "\n".join(parts)
 
     @staticmethod
     def _render_stderr(stderr: str, limit: int = 3) -> str:
@@ -632,6 +766,170 @@ class RocqProofSynthesisKS(BlackBoxRepairKS, _RocqSenses):
             if accepted:
                 decls = scan()
         return acted
+
+
+class RocqPackageSynthesisKS(BlackBoxRepairKS, _RocqSenses):
+    """
+    The whole-package rung: ONE black box generates the implementation
+    and the proofs together, as complete replacement contents for both
+    mutable files — the single-rung alternative to chaining
+    RocqImplSynthesisKS ahead of RocqProofSynthesisKS.
+
+    Engines are callables `engine(PackageContext) -> iterable of
+    {rel: contents}` candidates. The trust story is unchanged — the
+    engine owns the mutable files wholesale (statements, helper lemmas,
+    everything), because nothing about those files was ever trusted on
+    bytes: the always-run model/contracts sentinels catch any edit to
+    blessed files, the blessed acceptance binding pins `spec_holds` to
+    the blessed Spec type, and only the restarted episode's fresh
+    measurement re-establishes standing.
+
+    Acceptance is MONOTONE PROGRESS, judged by the local senses (bare
+    dune + the assumptions audit, free): a candidate is kept iff the
+    tree is auditable, no goal that was closed reopens, and the failing
+    set strictly shrinks. Accepted trees are kept (the next candidate
+    starts from them); rejected candidates are reverted and fed back to
+    the engine with the refuting text. A restart is spent only when the
+    whole audit is clean — attestation cost stays O(1) per accepted
+    clean state, never O(candidates tried).
+    """
+
+    name: str = "synthesis:rocq-package"
+    max_attempts: int = 2
+    restart_policy: str = "on_local_clean"
+    engines: object = None        # list of engine callables
+    blessed: object = None        # callable() -> blessed model bytes (str)
+    impl_rel: str = ""
+    proofs_rel: str = ""
+    impl_name: str = ""
+    spec_rel: str = ""            # blessed statements file (engine context)
+    theory_name: str = ""
+    audit_rel: str = ""
+    audit_goals: List[str] = []
+    rocq: str = ""
+    dune: str = ""
+
+    def model_post_init(self, __context) -> None:
+        self.tool = self._synthesize
+        self.local_check = self._locally_clean
+
+    def _locally_clean(self) -> bool:
+        sections, _ = self._live_sections()
+        return sections is not None and all(s is None for s in sections)
+
+    def _synthesize(self, ctx: RepairContext) -> bool:
+        impl_path = Path(self.package_root) / self.impl_rel
+        proofs_path = Path(self.package_root) / self.proofs_rel
+        sections, err = self._live_sections()
+        if sections is not None:
+            baseline = self._failing_goals(sections)
+            if not baseline:
+                # the verdict is stale and the tree is already clean:
+                # ask for the fresh measurement rather than idling
+                return True
+            detail = self._open_detail(sections)
+        else:
+            baseline = set(self.audit_goals)
+            detail = self._render_stderr(err)
+        blessed_text = self.blessed()
+        blessed_lines = blessed_text.splitlines()
+        blessed_defs = {n: "\n".join(blessed_lines[s - 1:e])
+                        for _k, n, s, e in rocq_decl_spans(blessed_text) if n}
+        pctx = PackageContext(
+            impl_rel=self.impl_rel, proofs_rel=self.proofs_rel,
+            impl_name=self.impl_name,
+            blessed_statement=blessed_defs.get("Spec", ""),
+            context_files=({self.spec_rel: blessed_text}
+                           if self.spec_rel else {}),
+            files={self.impl_rel: impl_path.read_text(),
+                   self.proofs_rel: proofs_path.read_text()},
+            audit_goals=list(self.audit_goals),
+            failing=sorted(baseline), detail=detail)
+        acted = False
+        for engine in (self.engines or []):
+            for candidate in engine(pctx) or []:
+                texts = {rel: candidate.get(rel)
+                         for rel in (self.impl_rel, self.proofs_rel)}
+                if not all(isinstance(t, str) and t.strip()
+                           for t in texts.values()):
+                    pctx.rejections.append({
+                        "candidate": str(candidate)[:400],
+                        "errors": "- candidate must map both file paths "
+                                  "to non-empty contents"})
+                    continue
+                before = {impl_path: impl_path.read_text(),
+                          proofs_path: proofs_path.read_text()}
+                impl_path.write_text(texts[self.impl_rel])
+                proofs_path.write_text(texts[self.proofs_rel])
+                sections, err = self._live_sections()
+                if sections is None:
+                    errors = self._render_stderr(err)
+                else:
+                    failing_now = self._failing_goals(sections)
+                    if failing_now < baseline:  # strict: shrinks, no reopen
+                        acted = True
+                        baseline = failing_now
+                        pctx.failing = sorted(failing_now)
+                        pctx.files = dict(texts)
+                        closed = len(self.audit_goals) - len(failing_now)
+                        print(f"  {self.name}: candidate accepted — "
+                              f"{closed}/{len(self.audit_goals)} goals "
+                              f"closed ({type(engine).__name__})")
+                        if not failing_now:
+                            return True
+                        continue  # keep the tree; resume for the remainder
+                    reopened = sorted(failing_now - baseline)
+                    errors = ("- the candidate reopened previously-closed "
+                              "goals: " + ", ".join(reopened) if reopened
+                              else "- no progress:\n" +
+                                   self._open_detail(sections))
+                pctx.rejections.append({
+                    "candidate": "\n".join(
+                        f"=== FILE: {rel} ===\n{text}"
+                        for rel, text in texts.items()),
+                    "errors": errors})
+                for path, text in before.items():
+                    path.write_text(text)
+        return acted
+
+
+class RocqOutOfBandRepairKS(OutOfBandRepairKS, _RocqSenses):
+    """
+    The pause rung with the Rocq senses: the work order carries what the
+    live audit says is still open (not just the stale verdict), and
+    restart_policy defaults to "on_local_clean" with the audit as the
+    gate — the operator (or an interactive agent session) iterates for
+    free against bare dune + Print Assumptions, and a restart is spent
+    only once the tree is locally clean. Claiming "repaired" while the
+    audit is still dirty costs nothing but another look at the work
+    order.
+    """
+
+    name: str = "repair:rocq-out-of-band"
+    restart_policy: str = "on_local_clean"
+    theory_name: str = ""
+    audit_rel: str = ""
+    audit_goals: List[str] = []
+    rocq: str = ""
+    dune: str = ""
+
+    def model_post_init(self, __context) -> None:
+        super().model_post_init(__context)  # installs the gate as tool
+        self.local_check = self._locally_clean
+        if self.report is None:
+            self.report = self._live_report
+
+    def _locally_clean(self) -> bool:
+        sections, _ = self._live_sections()
+        return sections is not None and all(s is None for s in sections)
+
+    def _live_report(self) -> str:
+        sections, err = self._live_sections()
+        if sections is None:
+            return "tree not auditable:\n" + self._render_stderr(err)
+        detail = self._open_detail(sections)
+        return ("still open (live audit):\n" + detail if detail
+                else "audit locally clean — [r]e-attest spends a restart")
 
 
 def _proof_body(block: str) -> str:

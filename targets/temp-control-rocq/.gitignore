@@ -4,3 +4,4 @@ _build/
 *.vok
 *.glob
 .*.aux
+.lia.cache

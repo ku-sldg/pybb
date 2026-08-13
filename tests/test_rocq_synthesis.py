@@ -25,13 +25,19 @@ import pytest
 from pybb.attestation import (
     GoalContext,
     ImplContext,
+    PackageContext,
+    RepairContext,
     RocqLlmEngine,
+    RocqOutOfBandRepairKS,
     RocqLlmImplEngine,
+    RocqLlmPackageEngine,
+    RocqPackageSynthesisKS,
     RocqTacticPortfolioEngine,
     splice_impl_rocq,
     splice_proof_rocq,
     stub_impl_axiom,
 )
+from pybb.attestation.rocq_synthesis import parse_file_blocks
 from pybb.attestation.appraisal import ComponentResult
 from pybb.attestation.knowledge_sources import Verdict
 from pybb.attestation.proof_status import (
@@ -500,6 +506,185 @@ def test_cli_rejects_llm_flags_without_opt_in_chain():
         assert expected in proc.stderr
 
 
+def test_cli_package_arc_opt_in_and_exclusivity():
+    example = REPO / "examples" / "temp_control_rocq.py"
+    for argv, expected in [
+        (["--synthesize-package"], "use it with --llm"),
+        (["--synthesize-package", "--synthesize-impl",
+          "--llm", "openai", "--llm-dry-run"], "different arcs"),
+        (["--synthesize-package", "--break-proof",
+          "--llm", "openai", "--llm-dry-run"], "different arcs"),
+    ]:
+        proc = subprocess.run(
+            [sys.executable, str(example), *argv],
+            capture_output=True, text=True, cwd=REPO)
+        assert proc.returncode != 0
+        assert expected in proc.stderr
+
+
+# ── the whole-package rung (units — no toolchain) ─────────────────────────────
+
+def test_parse_file_blocks_and_package_engine_protocol():
+    reply = ("preamble the model was told not to write\n"
+             "=== FILE: TempControl/Impl.v ===\n"
+             "```coq\nDefinition computeFanCmd := On.\n```\n"
+             "=== FILE: TempControl/Proofs.v ===\n"
+             "Theorem a : True.\nProof. auto. Qed.\n")
+    blocks = parse_file_blocks(reply)
+    assert blocks["TempControl/Impl.v"] == "Definition computeFanCmd := On.\n"
+    assert blocks["TempControl/Proofs.v"].startswith("Theorem a")
+    assert parse_file_blocks("no headers here") == {}
+
+    ctx = PackageContext(
+        impl_rel="TempControl/Impl.v", proofs_rel="TempControl/Proofs.v",
+        impl_name="computeFanCmd",
+        blessed_statement="Definition Spec ...",
+        context_files={"TempControl/Props.v": "Definition hot_prop ..."},
+        files={"TempControl/Impl.v": "Definition computeFanCmd ... Admitted.",
+               "TempControl/Proofs.v": "Theorem a : ... Admitted."},
+        audit_goals=["a", "acceptance"], failing=["a", "acceptance"],
+        detail="- a: uses Admitted")
+    assert list(RocqLlmPackageEngine()(ctx)) == []  # no backend
+
+    prompts = []
+    replies = ["only prose, no file blocks", reply]
+
+    def complete(prompt):
+        prompts.append(prompt)
+        return replies[len(prompts) - 1]
+
+    armed = RocqLlmPackageEngine(complete=complete, attempts=2)
+    candidates = list(armed(ctx))
+    # reply 1 is self-rejected (no blocks) without reaching the judge
+    assert len(candidates) == 1
+    assert candidates[0]["TempControl/Impl.v"].startswith("Definition")
+    assert ctx.rejections and "no `=== FILE:" in ctx.rejections[0]["errors"]
+    assert "Rocq" in prompts[0] and "=== FILE:" in prompts[0]
+    assert "TempControl/Props.v" in prompts[0]      # the blessed context
+    assert "Currently open goals: a, acceptance" in prompts[0]
+    assert "uses Admitted" in prompts[0]
+    assert "Closed under the global context" in prompts[0]
+    # round 2 carries round 1's self-rejection as feedback
+    assert "Rejected attempt" in prompts[1]
+
+
+class _ScriptedPackageKS(RocqPackageSynthesisKS):
+    """The package rung with scripted senses: each _live_sections call
+    pops the next (sections, err) — no toolchain involved."""
+
+    script: list = []
+
+    def _live_sections(self):
+        return self.script.pop(0)
+
+
+def test_package_ks_monotone_acceptance(tmp_path):
+    impl = tmp_path / "Impl.v"
+    proofs = tmp_path / "Proofs.v"
+    impl.write_text("Definition impl : nat.\nProof.\nAdmitted.\n")
+    proofs.write_text("Theorem a : True.\nProof.\nAdmitted.\n")
+    goals = ["a", "b", "acceptance"]
+    all_open = [["a"], ["b"], ["acceptance"]]
+
+    cand = {n: {"Impl.v": f"(* impl {n} *)\nDefinition impl := 1.\n",
+                "Proofs.v": f"(* proofs {n} *)\nTheorem a : True.\n"}
+            for n in range(1, 5)}
+    contexts = []
+
+    def engine(ctx):
+        contexts.append(ctx)
+        yield cand[1]   # build breaks            -> rejected, reverted
+        yield cand[2]   # closes 'a'              -> accepted, kept
+        yield cand[3]   # reopens 'a'             -> rejected, reverted
+        yield cand[4]   # closes everything       -> accepted, returns
+
+    ks = _ScriptedPackageKS(
+        engines=[engine], blessed=lambda: "Definition Spec := True.\n",
+        package_root=str(tmp_path), impl_rel="Impl.v", proofs_rel="Proofs.v",
+        impl_name="impl", audit_goals=goals,
+        script=[
+            (all_open, ""),                                # initial look
+            (None, "Error: boom (universe inconsistency)"),  # cand 1
+            ([None, ["b"], ["acceptance"]], ""),           # cand 2
+            ([["a"], None, ["acceptance"]], ""),           # cand 3
+            ([None, None, None], ""),                      # cand 4
+        ])
+    assert ks._synthesize(RepairContext(key="k", verdict=None)) is True
+    assert ks.script == []
+    # the accepted tree is the last candidate's
+    assert impl.read_text() == cand[4]["Impl.v"]
+    assert proofs.read_text() == cand[4]["Proofs.v"]
+    # rejections carry the refuting text; accepted candidates none
+    ctx = contexts[0]
+    assert len(ctx.rejections) == 2
+    assert "boom" in ctx.rejections[0]["errors"]
+    assert "reopened previously-closed goals: a" in ctx.rejections[1]["errors"]
+    assert "=== FILE: Impl.v ===" in ctx.rejections[1]["candidate"]
+    # progress updated the engine's view after the first acceptance
+    assert ctx.failing == []
+    assert ctx.files == cand[4]
+    # the initial context described the open goals
+    assert "- a: uses Admitted" in ctx.detail
+
+    # no-progress candidates are rejected too
+    def flat_engine(ctx):
+        contexts.append(ctx)
+        yield cand[1]
+    flat = _ScriptedPackageKS(
+        engines=[flat_engine], blessed=lambda: "Definition Spec := True.\n",
+        package_root=str(tmp_path), impl_rel="Impl.v", proofs_rel="Proofs.v",
+        impl_name="impl", audit_goals=goals,
+        script=[(all_open, ""), (all_open, "")])
+    assert flat._synthesize(RepairContext(key="k", verdict=None)) is False
+    assert "no progress" in contexts[-1].rejections[0]["errors"]
+
+    # stale verdict over an already-clean tree: ask for the measurement
+    clean = _ScriptedPackageKS(
+        engines=[], blessed=lambda: "", package_root=str(tmp_path),
+        impl_rel="Impl.v", proofs_rel="Proofs.v", audit_goals=goals,
+        script=[([None, None, None], ""), ([None, None, None], "")])
+    assert clean._synthesize(RepairContext(key="k", verdict=None)) is True
+    assert clean._locally_clean() is True
+
+
+class _ScriptedOobKS(RocqOutOfBandRepairKS):
+    """The Rocq pause rung with scripted senses (no toolchain)."""
+
+    script: list = []
+
+    def _live_sections(self):
+        return self.script.pop(0)
+
+
+def test_rocq_pause_rung_free_local_iteration():
+    """The audit-aware pause rung: each attempt's work order carries the
+    LIVE audit state, and 'r' while the audit is dirty spends nothing —
+    only a locally-clean tree buys the restart."""
+    from pybb.blackboard import Blackboard
+    dirty = ([["a"], None], "")            # 'a' open, 'b' closed
+    clean = ([None, None], "")
+    broken = (None, "Error: boom")
+    orders = []
+    ks = _ScriptedOobKS(
+        gate=lambda order: orders.append(order) or True,
+        audit_goals=["a", "b"],
+        script=[broken,   # attempt 1 work order: tree not auditable
+                dirty,    # attempt 1 local_check: still dirty -> no restart
+                dirty,    # attempt 2 work order: 'a' still open
+                clean])   # attempt 2 local_check: clean -> restart
+    bb = Blackboard()
+    bb.write_entry(key="k", predicate="attestation", measurement={})
+    ks.execute(bb, ["k"])
+    assert bb.restart_requests == {}       # claimed, but locally dirty
+    ks.execute(bb, ["k"])
+    assert "k" in bb.restart_requests      # locally clean: judged next
+    assert ks.script == []
+    assert "tree not auditable" in orders[0] and "boom" in orders[0]
+    assert "still open (live audit):" in orders[1]
+    assert "- a: uses Admitted" in orders[1]
+    assert "b" not in orders[1].split("still open")[1].splitlines()[1]
+
+
 # ── the blessing lint (static refusals — no toolchain) ────────────────────────
 
 def test_bless_lint_refuses_smuggled_proofs_postulates_and_imports():
@@ -717,6 +902,105 @@ def test_impl_first_full_arc_with_stub_backend():
         "the proofs file must not leak into the impl-first context"
     assert PROOFS.read_bytes() == committed_proofs
     assert IMPL.read_bytes() == committed_impl
+
+
+@needs_rocq
+def test_package_arc_with_stub_backend():
+    """The whole-package arc end-to-end with a STUB backend (no keys, no
+    network): impl and proofs stubbed to admits, ONE rung asks its
+    engine for both files together, the oracle replies with the
+    committed pair, and the run ends in good standing under fresh
+    measurement — a single restart, no impl-then-proofs chain."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    committed_proofs, committed_impl = PROOFS.read_bytes(), IMPL.read_bytes()
+    cfg = rocq.CONFIG
+    reply = (f"=== FILE: {cfg.impl_rel} ===\n{committed_impl.decode()}"
+             f"=== FILE: {cfg.proofs_rel} ===\n{committed_proofs.decode()}")
+    prompts = []
+
+    def complete(prompt):
+        prompts.append(prompt)
+        return reply
+
+    ctl = rw.synthesize_flow(
+        cfg, rw.load_protocols(cfg), keep=False, stub="package",
+        package_engines=[RocqLlmPackageEngine(complete=complete, attempts=1)])
+    entry = ctl.blackboard.entries[f"{PREFIX}:verification"]
+    assert entry.good_standing and not ctl.blackboard.escalate
+    assert ctl.blackboard.restarts.get(f"{PREFIX}:verification", 0) >= 1
+    assert prompts, "the package engine was never invoked"
+    assert "fanOn_when_hot_prop" in prompts[0]     # the blessed properties
+    assert cfg.impl_rel in prompts[0] and cfg.proofs_rel in prompts[0]
+    assert PROOFS.read_bytes() == committed_proofs
+    assert IMPL.read_bytes() == committed_impl
+
+
+@needs_rocq
+def test_package_arc_without_engines_escalates():
+    """--synthesize-package with an empty ladder: nothing can act, the
+    verification entry escalates as the human rung, no restart is ever
+    spent, and both stub files are restored."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    committed_proofs, committed_impl = PROOFS.read_bytes(), IMPL.read_bytes()
+    cfg = rocq.CONFIG
+    ctl = rw.synthesize_flow(cfg, rw.load_protocols(cfg), keep=False,
+                             stub="package", package_engines=[])
+    assert f"{PREFIX}:verification" in ctl.blackboard.escalate
+    assert ctl.blackboard.restarts == {}
+    assert PROOFS.read_bytes() == committed_proofs
+    assert IMPL.read_bytes() == committed_impl
+
+
+@needs_rocq
+def test_pause_arc_operator_fix_judged_by_fresh_measurement():
+    """--break-proof --pause with no engines: the synthesis rung can do
+    nothing, the pause rung blocks, the scripted gate performs the
+    out-of-band fix (the 'interactive agent session'), and the run ends
+    in good standing via the restart's fresh measurement."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    committed = PROOFS.read_bytes()
+    cfg = rocq.CONFIG
+    orders = []
+
+    def gate(order):
+        orders.append(order)
+        PROOFS.write_bytes(committed)   # the out-of-band repair
+        return True
+
+    ctl = rw.synthesize_flow(cfg, rw.load_protocols(cfg), keep=False,
+                             engines=[], stub="break", pause=True, gate=gate)
+    entry = ctl.blackboard.entries[f"{PREFIX}:verification"]
+    assert entry.good_standing and not ctl.blackboard.escalate
+    assert ctl.blackboard.restarts.get(f"{PREFIX}:verification", 0) >= 1
+    assert orders and "paused for out-of-band repair" in orders[0]
+    assert "tree not auditable" in orders[0]   # break-proof: build fails
+    assert PROOFS.read_bytes() == committed
+
+
+@needs_rocq
+def test_pause_skip_falls_through_to_automatic_repair():
+    """--tamper --repair --pause with a gate that always declines: the
+    pause rungs step aside and the automatic chain (golden restore +
+    cross-entry restart) still ends all three entries in good standing."""
+    from pybb.attestation import TargetSnapshot
+
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    protocols = rw.load_protocols(cfg)
+    snapshot = TargetSnapshot.load(
+        {pid: protocols[pid] for pid in cfg.protocol_ids}, GOLDEN_ROOT)
+    orders = []
+    rw.tamper(cfg, protocols)
+    try:
+        ctl = rw.attest_episode(cfg, protocols, repair=True, pause=True,
+                                gate=lambda o: orders.append(o) or False)
+        bb = ctl.blackboard
+        assert not bb.escalate, bb.escalate
+        for question in ("model", "contracts", "verification"):
+            assert bb.entries[cfg.entry(question)].good_standing, question
+        assert orders, "the pause rung never offered the work order"
+    finally:
+        snapshot.restore()
 
 
 @needs_rocq
