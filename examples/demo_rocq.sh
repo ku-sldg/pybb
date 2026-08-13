@@ -122,6 +122,14 @@ expect() {  # expect <pattern> <what went wrong>
   fi
 }
 
+expect_absent() {  # expect_absent <pattern> <what went wrong>
+  if saw "$1"; then
+    echo
+    echo "DEMO ABORT: found '$1' in the last run — $2" >&2
+    exit 1
+  fi
+}
+
 # ── self-cleaning: restore the original spec + proofs + blessing on exit ────
 PROOFS="$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
 PRISTINE="$LOG_DIR/Props.v.pristine"
@@ -183,7 +191,7 @@ if [ ! -f "$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.json" 
   echo "no blessed baseline found — bootstrap provisioning (bless_lint gated)"
   run_driver --provision
 fi
-run_driver --ready --status
+run_driver --ready
 expect "readiness: PASS" "readiness must pass before the demo starts"
 pause
 
@@ -194,6 +202,12 @@ if in_scenes 1; then
     "assumptions audit), tools measured-then-used inside the term."
   run_driver
   expect "all attested components intact" "the baseline episode must be clean"
+  echo
+  echo "${BOLD}the goals checklist over the clean baseline:${RESET}"
+  run_driver --status
+  expect "✓" "every goal must check off over the clean baseline"
+  expect_absent "✗" "a refuted goal on the clean baseline means the demo started dirty"
+  expect_absent "?" "an unjudged goal on the clean baseline means the demo started dirty"
   pause
 fi
 
@@ -313,6 +327,12 @@ if in_scenes 2; then
       expect "all attested components intact" "the reverted tree must attest clean"
       ;;
   esac
+  echo
+  echo "${BOLD}the goals checklist after the ruling:${RESET}"
+  run_driver --status
+  expect "✓" "every goal must check off after the ruling settles"
+  expect_absent "✗" "no goal may stay refuted after the ruling settles"
+  expect_absent "?" "no goal may stay unjudged after the ruling settles"
   pause
 fi
 
@@ -330,6 +350,12 @@ if in_scenes 3; then
   else
     echo "DEMO ABORT: live spec still differs from golden" >&2; exit 1
   fi
+  echo
+  echo "${BOLD}the goals checklist over the restored tree:${RESET}"
+  run_driver --status
+  expect "✓" "every goal must check off over the restored tree"
+  expect_absent "✗" "no goal may stay refuted over the restored tree"
+  expect_absent "?" "no goal may stay unjudged over the restored tree"
   pause
 fi
 
@@ -360,7 +386,7 @@ rw._break_proof(t.CONFIG)" )
   echo
   echo "${BOLD}now the repair arc — the same proof broken, then re-proved:${RESET}"
   run_driver --break-proof
-  expect "all attested components intact" \
+  expect "repaired and re-attested clean in-session" \
     "the portfolio repair must end in good standing"
   echo
   echo "${BOLD}The signed evidence of the re-measurement (NOT a re-blessing):${RESET}"

@@ -407,11 +407,18 @@ def test_escalation_detail_moved_vs_modified(tmp_path):
     bb = Blackboard()
     bb.write_entry(key="k", predicate="attestation", measurement={}, result=v)
     bb.escalate["k"] = bb.entries.pop("k")
+    detail = rw._escalation_detail(bb)
     lines = {l.split("::", 1)[1].split()[0]: l
-             for l in rw._escalation_detail(bb).splitlines() if "::" in l}
-    assert "moved (content unchanged)" in lines["alpha"]
-    assert "modified" in lines["beta"]
-    assert "missing from the live file" in lines["gamma"]
+             for l in detail.splitlines() if "::" in l}
+    # a moved-but-unchanged slice reads ✓ (disposition mark, not the
+    # appraisal's) and drops the raw range-mismatch reason; real changes
+    # keep ✗ and the reason
+    assert "✓" in lines["alpha"] and "moved (content unchanged)" in lines["alpha"]
+    assert "✗" in lines["beta"] and "modified" in lines["beta"]
+    assert "✗" in lines["gamma"] and "missing from the live file" in lines["gamma"]
+    # the raw appraiser reason survives under ✗ (beta, gamma) but is
+    # dropped under a ✓-moved line, where it would only re-confuse
+    assert detail.count("Evidence bytes do not match golden") == 2
 
 
 # ── the Rocq toolchain tier (always-run in episodes; judged here alone) ───────

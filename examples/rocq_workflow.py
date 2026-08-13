@@ -877,12 +877,21 @@ def _escalation_detail(blackboard) -> str:
                 if start and end:
                     where += f":{start}-{end}"
             label = args.get("metadata") or comp.targ_id or comp.description
-            line = f"  ✗ {label}" + (f"  ({where})" if where else "")
             disposition = _slice_disposition(comp)
+            # the mark is the DISPOSITION's, not the appraisal's: a slice
+            # whose declaration relocated to byte-identical content reads
+            # ✓ (the range-based measurement still failed — that verdict
+            # and the escalation stand; the mark keeps the operator from
+            # misreading "moved" as a second violation)
+            moved = disposition == "moved (content unchanged)"
+            mark = "✓" if moved else "✗"
+            line = f"  {mark} {label}" + (f"  ({where})" if where else "")
             if disposition:
                 line += f" — {disposition}"
             reason = (comp.reason or "").strip().splitlines()
-            if reason:
+            if reason and not moved:
+                # "moved" already explains the range mismatch; the raw
+                # appraiser reason under a ✓ would only re-confuse
                 line += f"\n      {reason[0][:160]}"
             by_protocol.setdefault(verdict.protocol, []).append(line)
     return "\n".join(

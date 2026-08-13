@@ -5,14 +5,14 @@
       "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Acceptance.v",
       "asp_targid": "temp_control_rocq_model_acceptance_targ",
       "golden_b64": "KCogQkxFU1NFRDogdGhlIGNhbm9uaWNhbCBvYmxpZ2F0aW9uIGJpbmRpbmcg4oCUIGZhaWxzIHRvIGVsYWJvcmF0ZSBpZgogICBzcGVjX2hvbGRzIGlzIG1pc3NpbmcsIHJlbmFtZWQsIG9yIHdlYWtlciB0aGFuIHRoZSBibGVzc2VkIFNwZWMuICopClJlcXVpcmUgSW1wb3J0IFRlbXBDb250cm9sLlByb29mcy4KRGVmaW5pdGlvbiBhY2NlcHRhbmNlIDogU3BlYyBjb21wdXRlRmFuQ21kIDo9IHNwZWNfaG9sZHMuCg==",
-      "golden_ts": "2026-08-10 11:01:04"
+      "golden_ts": "2026-08-13 14:22:59"
     },
     "temp_control_rocq_model_props_targ": {
       "env_var": "",
       "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
       "asp_targid": "temp_control_rocq_model_props_targ",
       "golden_b64": "KCoKVGhlIEJMRVNTRUQgc3RhdGVtZW50cyBmaWxlOiB0aGUgYWRtaW5pc3RyYXRvcidzIGdvYWwgcHJvcGVydGllcyBmb3IgdGhlCnRlbXAtY29udHJvbCBzeXN0ZW0sIHN0YXRlZCBhYnN0cmFjdGx5IG92ZXIgYW55IGNhbmRpZGF0ZSBpbXBsZW1lbnRhdGlvbi4KU3RhdGVtZW50IGRlY2xhcmF0aW9ucyBvbmx5IOKAlCBubyB0aGVvcmVtcywgbm8gcHJvb2ZzLCBubyBBeGlvbXM6IGJsZXNzaW5nCnRoaXMgZmlsZSBzaWducyBXSEFUIE1VU1QgSE9MRCB3aXRob3V0IGZpeGluZyBob3cgaXQgaXMgaW1wbGVtZW50ZWQgb3IKcHJvdmVkLiBUaGUgd29ya2Zsb3cgb3ducyBJbXBsLnYgYW5kIFByb29mcy52OyB0aGlzIGZpbGUgY2hhbmdlcyBvbmx5CnRocm91Z2ggLS1wcm9tb3RlIChyZS1ibGVzc2luZykuCiopCkZyb20gU3RkbGliIFJlcXVpcmUgSW1wb3J0IFpBcml0aC4KT3BlbiBTY29wZSBaX3Njb3BlLgoKSW5kdWN0aXZlIEZhbkNtZCA6IFNldCA6PQogIHwgT24KICB8IE9mZi4KClJlY29yZCBTZXRQb2ludCA6IFNldCA6PSBta1NldFBvaW50IHsKICBsb3cgIDogWjsKICBoaWdoIDogWgp9LgoKKCogU2V0UG9pbnRfRGF0YV9JbnZhcmlhbnQ6IHRoZSBvcGVyYXRpbmcgYmFuZCBpcyB3ZWxsLWZvcm1lZCBhbmQgd2l0aGluCiAgIHRoZSBwaHlzaWNhbCByYW5nZSBvZiB0aGUgZGV2aWNlLiAqKQpEZWZpbml0aW9uIFNldFBvaW50X3ZhbGlkIChzcCA6IFNldFBvaW50KSA6IFByb3AgOj0KICA1MCA8PSBsb3cgc3AgL1wgbG93IHNwIDw9IGhpZ2ggc3AgL1wgaGlnaCBzcCA8PSAxMTAuCgooKiBUaGUgc2hhcGUgb2YgYSBjYW5kaWRhdGUgaW1wbGVtZW50YXRpb246IG9uZSBjb250cm9sIHN0ZXAgZnJvbSB0aGUKICAgY3VycmVudCB0ZW1wZXJhdHVyZSwgdGhlIG9wZXJhdGluZyBiYW5kLCBhbmQgdGhlIGxhdGVzdCBjb21tYW5kLiAqKQpEZWZpbml0aW9uIFN0ZXAgOiBUeXBlIDo9IFogLT4gU2V0UG9pbnQgLT4gRmFuQ21kIC0+IEZhbkNtZC4KCigqIEdvYWw6IGN1cnJlbnRUZW1wIGFib3ZlIHRoZSBiYW5kIGNvbW1hbmRzIHRoZSBmYW4gT24uICopCkRlZmluaXRpb24gZmFuT25fd2hlbl9ob3RfcHJvcCAoZiA6IFN0ZXApIDogUHJvcCA6PQogIGZvcmFsbCAodGVtcCA6IFopIChzcCA6IFNldFBvaW50KSAobGF0ZXN0IDogRmFuQ21kKSwKICAgIGhpZ2ggc3AgPCB0ZW1wIC0+IGYgdGVtcCBzcCBsYXRlc3QgPSBPbi4KCigqIEdvYWw6IGN1cnJlbnRUZW1wIGJlbG93IHRoZSBiYW5kIGNvbW1hbmRzIHRoZSBmYW4gT2ZmLiAqKQpEZWZpbml0aW9uIGZhbk9mZl93aGVuX2NvbGRfcHJvcCAoZiA6IFN0ZXApIDogUHJvcCA6PQogIGZvcmFsbCAodGVtcCA6IFopIChzcCA6IFNldFBvaW50KSAobGF0ZXN0IDogRmFuQ21kKSwKICAgIFNldFBvaW50X3ZhbGlkIHNwIC0+IHRlbXAgPCBsb3cgc3AgLT4gZiB0ZW1wIHNwIGxhdGVzdCA9IE9mZi4KCigqIEdvYWw6IGN1cnJlbnRUZW1wIGluc2lkZSB0aGUgYmFuZCBob2xkcyB0aGUgbGF0ZXN0IGNvbW1hbmQuICopCkRlZmluaXRpb24gZmFuSG9sZF9pbl9iYW5kX3Byb3AgKGYgOiBTdGVwKSA6IFByb3AgOj0KICBmb3JhbGwgKHRlbXAgOiBaKSAoc3AgOiBTZXRQb2ludCkgKGxhdGVzdCA6IEZhbkNtZCksCiAgICBsb3cgc3AgPD0gdGVtcCAtPiB0ZW1wIDw9IGhpZ2ggc3AgLT4gZiB0ZW1wIHNwIGxhdGVzdCA9IGxhdGVzdC4KCigqIEdvYWwgKHNhZmV0eSk6IHRoZSBmYW4gaXMgb25seSBldmVyIE9uIGJlY2F1c2UgdGhlIHRlbXBlcmF0dXJlCiAgIGRlbWFuZHMgaXQgb3IgYmVjYXVzZSBpdCB3YXMgYWxyZWFkeSBPbi4gKikKRGVmaW5pdGlvbiBmYW5Pbl9vbmx5X2lmX2hvdF9vcl9oZWxkX3Byb3AgKGYgOiBTdGVwKSA6IFByb3AgOj0KICBmb3JhbGwgKHRlbXAgOiBaKSAoc3AgOiBTZXRQb2ludCkgKGxhdGVzdCA6IEZhbkNtZCksCiAgICBmIHRlbXAgc3AgbGF0ZXN0ID0gT24gLT4gaGlnaCBzcCA8IHRlbXAgXC8gbGF0ZXN0ID0gT24uCgooKiBUaGUgYmxlc3NlZCBvYmxpZ2F0aW9uOiBhIHNhbmN0aW9uZWQgaW1wbGVtZW50YXRpb24gc2F0aXNmaWVzIGV2ZXJ5CiAgIGdvYWwgcHJvcGVydHkuICopCkRlZmluaXRpb24gU3BlYyAoZiA6IFN0ZXApIDogUHJvcCA6PQogIGZhbk9uX3doZW5faG90X3Byb3AgZiAvXCBmYW5PZmZfd2hlbl9jb2xkX3Byb3AgZiAvXAogIGZhbkhvbGRfaW5fYmFuZF9wcm9wIGYgL1wgZmFuT25fb25seV9pZl9ob3Rfb3JfaGVsZF9wcm9wIGYuCg==",
-      "golden_ts": "2026-08-10 11:01:04"
+      "golden_ts": "2026-08-13 14:22:59"
     }
   },
   "hashfile": {
@@ -21,14 +21,14 @@
       "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Acceptance.v",
       "asp_targid": "temp_control_rocq_model_acceptance_hash_targ",
       "golden_b64": "bS0TdzL833T8oK5X2/U4i3IfTIKsZbIk17wyJEyC0yo=",
-      "golden_ts": "2026-08-10 11:01:04"
+      "golden_ts": "2026-08-13 14:22:59"
     },
     "temp_control_rocq_model_props_hash_targ": {
       "env_var": "",
       "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/TempControl/Props.v",
       "asp_targid": "temp_control_rocq_model_props_hash_targ",
       "golden_b64": "CGByQCahXx9o4dSUFf0abD2XXgDm+4QhJBTwuOUd1o0=",
-      "golden_ts": "2026-08-10 11:01:04"
+      "golden_ts": "2026-08-13 14:22:59"
     }
   }
 }
