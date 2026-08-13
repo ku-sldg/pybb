@@ -21,9 +21,8 @@ Qed.
 
 Theorem fanOn_when_hot : fanOn_when_hot_prop computeFanCmd.
 Proof.
-  unfold fanOn_when_hot_prop, SetPoint_valid, commands, computeFanCmd. intros.
-  repeat match goal with |- context [?a <? ?b] => destruct (Z.ltb_spec a b) end;
-  first [ reflexivity | discriminate | lia ].
+  unfold fanOn_when_hot_prop, computeFanCmd. intros temp sp latest H.
+  destruct (Z.ltb_spec (high sp) temp); [reflexivity | lia].
 Qed.
 
 Theorem fanOff_when_cold : fanOff_when_cold_prop computeFanCmd.
