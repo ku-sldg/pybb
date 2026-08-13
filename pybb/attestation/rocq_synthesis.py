@@ -29,13 +29,14 @@ What the Rocq toolchain changes:
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import re
 import tempfile
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Set, Tuple
 
-from .proof_status import FAILING
+from .proof_status import FAILING, PROVED, UNKNOWN, DeclStatus
 from .rocq_status import (
     parse_audit_sections,
     parse_build_errors,
@@ -960,3 +961,163 @@ def _rocq_prop_helpers(blessed_text: str, conjuncts: List[str]) -> List[str]:
         if ": Prop" in statement_part_rocq("\n".join(lines[start - 1:end])):
             helpers.append(name)
     return helpers
+
+
+# ── isolation variants: per-goal verdicts from ONE proofs file ────────────────
+#
+# Rocq elaborates a file atomically and stops at the first error, so one
+# broken proof in the monolithic proofs file destroys the audit's evidence
+# for every goal in it (the checklist's build-failure `?` poisoning). Proof
+# OPACITY is the escape: a proof consumes only the STATEMENTS of what it
+# references, never their bodies — so goal k can be judged from a derived
+# variant of the same file in which every other goal's proof body is
+# `Admitted.` (statements byte-identical, order preserved). `Admitted.`
+# compiles unconditionally, so the target's own body is the only possible
+# failure point, and the kernel's `Print Assumptions` in the variant either
+# certifies the target or NAMES the admitted siblings it leans on.
+#
+# The variants are DERIVED, never maintained: regenerated from the live
+# file's bytes on demand (only when the full build has already failed),
+# used for one judgment in a scratch copy of the package, and discarded —
+# the same source-of-authority discipline as the blessed files' derived
+# slices. This is a refinement of the checklist's derived view, not
+# attested evidence: the full-tree build + audit measurement remains the
+# authoritative system verdict.
+#
+# Helper lemmas (config `isolation_keep`) currently retain their REAL
+# bodies in every variant, so a goal whose dependencies are healthy audits
+# fully "Closed". Admitting the helpers too — degrading a broken helper
+# into a named dependency instead of a variant-wide failure — is the
+# documented follow-up.
+
+
+def isolation_variant_text(text: str, target: str,
+                           admit: Iterable[str]) -> str:
+    """The isolation variant for `target`: every goal in `admit` except
+    the target gets its proof body replaced by `Admitted.`; the target's
+    body (and everything not named) is preserved byte-for-byte. Raises
+    KeyError if an admit goal is missing from the file."""
+    for other in admit:
+        if other != target:
+            text = splice_proof_rocq(text, other, "Admitted.")
+    return text
+
+
+def _isolated_status(target: str, axioms: Optional[List[str]],
+                     admitted: Set[str]) -> DeclStatus:
+    """One audit section from the target's variant -> its cell."""
+    if axioms is None:
+        return DeclStatus(state=PROVED, detail="isolated: proof intact")
+    if not axioms:
+        return DeclStatus(state=UNKNOWN,
+                          detail="isolated: unparsed audit section")
+    foreign = [a for a in axioms if a not in admitted and a != target]
+    if target in axioms:
+        detail = "isolated: uses Admitted"
+        if foreign:
+            detail += f"; depends on: {', '.join(foreign)}"
+        return DeclStatus(state=FAILING, detail=detail)
+    if foreign:
+        label = "axioms" if len(foreign) > 1 else "axiom"
+        return DeclStatus(state=FAILING,
+                          detail=f"isolated: depends on {label}: "
+                                 f"{', '.join(foreign)}")
+    sibs = [a for a in axioms if a in admitted]
+    return DeclStatus(state=PROVED,
+                      detail="isolated: script intact; assumes "
+                             f"{', '.join(sibs)} (judged separately)")
+
+
+def make_isolation_status(package_root: Path, theory_name: str,
+                          audit_goals: List[str], admit_goals: List[str],
+                          witness_rel: str, audit_rel: str,
+                          rocq: str, dune: str, timeout: float = 300.0):
+    """An `isolate` callable for the checklist's build-failure fallback
+    (rocq_audit_status/rocq_goal_checklist `isolate=`): judge every audit
+    goal from its isolation variant in a scratch copy of the package.
+    Returns goal -> DeclStatus, or None when the refinement itself is
+    unavailable (fail-closed: the caller keeps the coarse fallback)."""
+    package_root = Path(package_root)
+
+    def isolate() -> Optional[Dict[str, DeclStatus]]:
+        try:
+            return _run(tempfile.mkdtemp(prefix="rocq_isolation_"))
+        except Exception as exc:  # fail-closed to the coarse fallback
+            print(f"  (isolation refinement unavailable: {exc})")
+            return None
+
+    def _run(workdir: str) -> Dict[str, DeclStatus]:
+        scratch = Path(workdir) / package_root.name
+        shutil.copytree(package_root, scratch,
+                        ignore=shutil.ignore_patterns("_build", ".lia.cache",
+                                                      ".git"))
+        live_text = (package_root / witness_rel).read_text()
+        audit_header = [
+            l for l in (package_root / audit_rel).read_text().splitlines()
+            if not re.match(r"\s*Print Assumptions\b", l)]
+        witness_name = Path(witness_rel).name
+        admitted = set(admit_goals)
+        out: Dict[str, DeclStatus] = {}
+        for target in audit_goals:
+            variant = isolation_variant_text(live_text, target, admit_goals)
+            (scratch / witness_rel).write_text(variant)
+            try:
+                build = subprocess.run(
+                    [dune, "build"], cwd=scratch, capture_output=True,
+                    text=True, timeout=timeout)
+            except subprocess.TimeoutExpired:
+                out[target] = DeclStatus(state=UNKNOWN,
+                                         detail="isolated: build timed out")
+                continue
+            if build.returncode != 0:
+                out[target] = _variant_failure(target, variant, witness_name,
+                                               build.stderr)
+                continue
+            check = scratch / f"IsolationCheck_{target}.v"
+            check.write_text("\n".join(
+                [*audit_header, f"Print Assumptions {target}."]) + "\n")
+            try:
+                audit = subprocess.run(
+                    [rocq, "compile", "-R", f"_build/default/{theory_name}",
+                     theory_name, check.name],
+                    cwd=scratch, capture_output=True, text=True,
+                    timeout=timeout)
+            except subprocess.TimeoutExpired:
+                out[target] = DeclStatus(state=UNKNOWN,
+                                         detail="isolated: audit timed out")
+                continue
+            if audit.returncode != 0:
+                out[target] = DeclStatus(
+                    state=UNKNOWN, detail="isolated: audit failed: "
+                    + (audit.stderr.strip().splitlines()[-1]
+                       if audit.stderr.strip() else "no diagnostic"))
+                continue
+            sections = parse_audit_sections(audit.stdout)
+            if len(sections) != 1:
+                out[target] = DeclStatus(
+                    state=UNKNOWN, detail=f"isolated: expected one audit "
+                    f"section, got {len(sections)}")
+                continue
+            out[target] = _isolated_status(target, sections[0], admitted)
+        shutil.rmtree(workdir, ignore_errors=True)
+        return out
+
+    def _variant_failure(target: str, variant: str, witness_name: str,
+                         stderr: str) -> DeclStatus:
+        spans = [(n, s, e) for _k, n, s, e in rocq_decl_spans(variant) if n]
+        for path, line, msg in parse_build_errors(stderr):
+            if Path(path).name != witness_name:
+                continue
+            hit = next((n for n, s, e in spans if s <= line <= e), None)
+            if hit == target:
+                first = msg.strip().splitlines()[0] if msg.strip() else ""
+                return DeclStatus(state=FAILING,
+                                  detail=f"isolated: {first or 'build error'}")
+        first = next((f"{Path(p).name}:{ln}: {m.strip().splitlines()[0]}"
+                      for p, ln, m in parse_build_errors(stderr) if m.strip()),
+                     "no diagnostic")
+        return DeclStatus(state=UNKNOWN,
+                          detail="isolated: build failed outside the "
+                                 f"target's proof ({first})")
+
+    return isolate

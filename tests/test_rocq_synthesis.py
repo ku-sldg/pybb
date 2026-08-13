@@ -37,7 +37,11 @@ from pybb.attestation import (
     splice_proof_rocq,
     stub_impl_axiom,
 )
-from pybb.attestation.rocq_synthesis import parse_file_blocks
+from pybb.attestation.rocq_synthesis import (
+    _isolated_status,
+    isolation_variant_text,
+    parse_file_blocks,
+)
 from pybb.attestation.appraisal import ComponentResult
 from pybb.attestation.knowledge_sources import Verdict
 from pybb.attestation.proof_status import (
@@ -45,6 +49,7 @@ from pybb.attestation.proof_status import (
     NO_WITNESS,
     PROVED,
     UNKNOWN,
+    DeclStatus,
 )
 from pybb.attestation.rocq_status import (
     parse_audit_sections,
@@ -327,6 +332,65 @@ def test_audit_status_build_failure_maps_stderr_else_poisons(tmp_path):
         _cmd(AUDIT, True, stdout=CLOSED * 4))
     st = rocq_audit_status(unmappable, BUILD, AUDIT, GOALS, w, a)
     assert {s.state for s in st.values()} == {UNKNOWN}
+
+
+def test_isolation_variant_text_admits_only_other_goals(tmp_path):
+    text = _witness_file(tmp_path).read_text()
+    variant = isolation_variant_text(text, "hot_ok", ["hot_ok", "spec_holds"])
+    # the target's real body is kept
+    assert "Theorem hot_ok : hot_prop step.\nProof.\n  auto.\nQed." in variant
+    # the sibling is admitted, statement byte-identical
+    assert "Theorem spec_holds : Spec step.\nProof.\nAdmitted." in variant
+    # the helper is untouched (not in the admit set)
+    assert "Theorem helper : True.\nProof.\n  auto.\nQed." in variant
+    with pytest.raises(KeyError):
+        isolation_variant_text(text, "hot_ok", ["missing_goal"])
+
+
+def test_isolated_status_mapping():
+    adm = {"hot_ok", "spec_holds"}
+    assert _isolated_status("hot_ok", None, adm).state == PROVED
+    st = _isolated_status("spec_holds", ["hot_ok"], adm)
+    assert st.state == PROVED and "assumes hot_ok" in st.detail
+    st = _isolated_status("hot_ok", ["convenient"], adm)
+    assert st.state == FAILING and "convenient" in st.detail
+    st = _isolated_status("hot_ok", ["hot_ok"], adm)
+    assert st.state == FAILING and "uses Admitted" in st.detail
+    assert _isolated_status("hot_ok", [], adm).state == UNKNOWN
+
+
+def test_audit_status_isolation_refines_build_failure(tmp_path):
+    w, a = _witness_file(tmp_path), _audit_file(tmp_path)
+    stderr = ('File "./TempControl/Proofs.v", line 9, characters 2-6:\n'
+              "Error: tactic failure.\n")
+    v = _verdict(_cmd(BUILD, False, status=1, stderr=stderr),
+                 _cmd(AUDIT, True, stdout=CLOSED * 4))
+    refined = {
+        "hot_ok": DeclStatus(state=FAILING, detail="isolated: tactic failure"),
+        "helper": DeclStatus(state=PROVED, detail="isolated: proof intact"),
+        "spec_holds": DeclStatus(
+            state=PROVED, detail="isolated: script intact; assumes hot_ok "
+                                 "(judged separately)"),
+        "not_a_goal": DeclStatus(state=PROVED, detail="smuggled"),
+    }
+    st = rocq_audit_status(v, BUILD, AUDIT, GOALS, w, a,
+                           isolate=lambda: refined)
+    assert st["helper"].state == PROVED and "isolated" in st["helper"].detail
+    assert st["hot_ok"].state == FAILING
+    assert st["spec_holds"].state == PROVED
+    # a goal the refinement did not judge keeps the coarse fallback
+    assert st["acceptance"].state == UNKNOWN
+    # the refinement can never ADD goals to the audited set
+    assert "not_a_goal" not in st
+    # a refusal (None) keeps the coarse fallback intact
+    st = rocq_audit_status(v, BUILD, AUDIT, GOALS, w, a, isolate=lambda: None)
+    assert st["hot_ok"].state == FAILING and st["helper"].state == UNKNOWN
+    # isolation runs ONLY on build failure — a green build never calls it
+    calls = []
+    green = _verdict(_cmd(BUILD, True), _cmd(AUDIT, True, stdout=CLOSED * 4))
+    rocq_audit_status(green, BUILD, AUDIT, GOALS, w, a,
+                      isolate=lambda: calls.append(1) or {})
+    assert not calls
 
 
 def test_audit_status_tool_poisoning_and_protocol_error(tmp_path):

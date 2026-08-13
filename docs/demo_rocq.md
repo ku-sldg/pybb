@@ -64,6 +64,65 @@ warm dune builds are sub-second, and the audit is the point.
                                                             # impl-first arc, spend predicted, no key needed
     python examples/temp_control_rocq.py --synthesize-package --llm anthropic
                                                             # whole-package arc: ONE black box writes impl + proofs
+    python examples/temp_control_rocq.py --immutable-model  # per-session ruling: model drift -> restore from
+                                                            # golden on the failed hash appraisal + in-session
+                                                            # re-attest (default ruling escalates for bless/revert)
+    python examples/temp_control_rocq.py --provision --bless-model
+                                                            # the sanctioning act: re-sign the MODEL class over the
+                                                            # live spec (ordinary provisioning refuses — laundering).
+                                                            # Blessing sanctions the SPEC only: it does not touch the
+                                                            # verification tier's bundle, so a spec blessed ahead of
+                                                            # its proofs (spec-first) never poisons the baseline
+    python examples/temp_control_rocq.py --provision --bless-tools
+                                                            # re-sign the verification tier's TOOLCHAIN-hash goldens
+                                                            # (after a toolchain update); runs the woven tier, so do
+                                                            # it on a tree that verifies. FUTURE ENHANCEMENT: a
+                                                            # hashes-only provisioning term (lseq(bseq(hashfile), SIG))
+                                                            # would make tool blessing tree-state-independent —
+                                                            # sanction identities, let episodes prove function — at
+                                                            # the cost of the verified-at-blessing witness
+    python examples/temp_control_rocq.py --repair-proofs --keep
+                                                            # repair the LIVE tree: no stubbing — re-prove whatever
+                                                            # the measurement refutes. The spec-first order: bless
+                                                            # the new obligation, watch verification refute it, then
+                                                            # repair (guidance = the live spec, which after blessing
+                                                            # IS the blessed text)
+
+## The guided demo (`examples/demo_rocq.sh`)
+
+The end-to-end demo workflow as one interactive script — the
+demo_workflow outline, Rocq-only:
+
+    ./examples/demo_rocq.sh                  # all four scenes, interactive
+    ./examples/demo_rocq.sh --no-vscode      # terminal diffs only
+    ./examples/demo_rocq.sh --scenes "2 3"   # a subset
+    ./examples/demo_rocq.sh --fast --auto revert   # unattended (testing)
+
+Scene 1 is the clean baseline over every artifact class (model /
+contracts / verification, tools woven). Scene 2 drifts the blessed spec
+in one of two selectable flavors (`--drift benign|breaking`, or an
+interactive prompt): **benign** widens the `SetPoint_valid` ceiling
+110 → 115 (proofs still prove), **breaking** restates
+`fanOn_when_hot_prop` through a new blessed `commands` relation — the
+model elaborates, but the seed proof's closers never unfold the new
+name, so verification is refuted alongside the drift. Either way the
+episode escalates with the declaration named, and the diff (VSCode when
+available) awaits the operator's ruling: **bless** re-signs the model
+class (`--provision --bless-model`) — spec-first: blessing sanctions
+the statements and leaves the verification tier's tool-hash bundle
+untouched, so for the breaking flavor the next episode shows model and
+contracts clean against the new blessing while verification refutes the
+not-yet-proved obligation, which `--repair-proofs --keep` (the
+portfolio re-proving against the blessed statements) then adapts;
+**revert** confirms the quarantined tree. Scene 3 replays
+drift under `--immutable-model` — restored and re-attested in-session,
+no interaction. Scene 4 is `--break-proof`: the audit refutes, the
+tactic portfolio repairs, the restarted episode re-attests, and the
+script ends on the archived signed evidence + the goals checklist
+(re-measurement, never re-blessing). The script is self-cleaning: the
+original spec and blessing are restored on exit. LLM and pause repair
+strategies are `--repair-strategy` placeholders until their demo
+variants land.
 
 Tests: `tests/test_integration_rocq.py` + `tests/test_rocq_synthesis.py`
 (units ungated; toolchain/CVM arcs gated `RUN_ROCQ=1`; live-LLM arcs
@@ -110,6 +169,36 @@ failing `Print Assumptions` line; a section-count mismatch poisons
 everything. A witness that is live but outside the audited goal set is
 `?`, never presumed proved. `--ready --status` failure poisons the
 checklist (`BASELINES NOT TRUSTED`).
+
+### Isolation variants: per-goal verdicts when the build fails
+
+Rocq elaborates a file atomically and stops at the first error, so one
+broken proof would leave every other cell `?` ("the audit judged an
+incomplete tree"). `--status` refines that case with **isolation
+variants** (`make_isolation_status`, `pybb/attestation/rocq_synthesis.py`):
+for each audited goal, a scratch copy of the package gets a DERIVED
+`Proofs.v` in which every *other* goal's proof body is `Admitted.` —
+statements byte-identical, so proof OPACITY guarantees the target's own
+body is the only possible failure point — then `dune build` + a
+single-goal `Print Assumptions` judge just that goal:
+
+- variant builds, audit `Closed` → ✓ `isolated: proof intact`
+- variant builds, audit names admitted siblings → ✓ `isolated: script
+  intact; assumes <sibling> (judged separately)` — the dependency chain
+  named by the kernel, not poisoned
+- variant fails inside the target's span → ✗ `isolated: <diagnostic>`
+- anything else (error outside the target, timeout, refinement
+  unavailable) → `?`, fail-closed to the coarse fallback
+
+The variants are derived on demand from the live bytes and discarded —
+never maintained copies (the same authority discipline as the blessed
+files' derived slices) — and they run only when the full build already
+failed, so a green run pays nothing. They refine the DERIVED VIEW only:
+the full-tree build + audit measurement remains the attested system
+verdict. Helper lemmas (`isolation_keep` in the config) keep their real
+bodies in every variant for now; admitting them too — so a broken
+helper degrades into a named dependency instead of a variant-wide
+failure — is the documented follow-up.
 
 ### `--synthesize`: the audit as the local judge
 

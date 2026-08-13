@@ -190,6 +190,10 @@ CONFIG = RocqExampleConfig(
     impl_name="computeFanCmd",
     impl_rel=IMPL_REL,
     break_proof_decl="fanHold_in_band",
+    # the helper lemma keeps its real body in isolation variants (the
+    # checklist's build-failure refinement); admitting it too is the
+    # documented follow-up
+    isolation_keep=["hot_means_not_cold"],
 )
 
 if __name__ == "__main__":

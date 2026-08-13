@@ -1,0 +1,378 @@
+#!/usr/bin/env bash
+#
+# demo_rocq.sh — the end-to-end demo workflow on the Rocq example, as an
+# interactive wrapper around examples/temp_control_rocq.py.
+#
+# The outline this script walks (demo_workflow.docx, Rocq-only for now):
+#
+#   scene 1  clean baseline episode over every artifact class the example
+#            has: model (blessed Props.v/Acceptance.v), contracts (decl
+#            slices), verification (dune build + kernel assumptions
+#            audit), with the rocq/dune tools measured-then-used.
+#   scene 2  a spec edit drifts the model -> the episode escalates ->
+#            YOU examine the diff (VSCode if available) and rule at the
+#            prompt: [b]less the change as the new baseline, or [r]evert
+#            to golden. Two selectable flavors: benign (a bound change;
+#            proofs still hold) or breaking (a restatement that compiles
+#            but refutes a seed proof). Blessing sanctions the SPEC only
+#            (--provision --bless-model re-signs the model class; the
+#            verification tier's tool-hash bundle is untouched), so the
+#            breaking flavor blesses FIRST — spec-first — and the next
+#            episode shows model/contracts clean with verification
+#            refuting the not-yet-proved obligation, which proof repair
+#            (--repair-proofs) then adapts.
+#   scene 3  the same drift under --immutable-model: the per-session
+#            ruling that model files never drift — restore from golden on
+#            the failed hash appraisal and re-attest in-session, no
+#            interaction.
+#   scene 4  verification failure -> automated repair (tactic portfolio),
+#            in-session re-attestation, then the goals checklist and the
+#            archived signed evidence of the re-measurement.
+#
+# Repair strategies beyond the portfolio (LLM synthesis, the --pause
+# out-of-band rung) exist in the driver and become demo variants later:
+# see --repair-strategy.
+#
+# Flags:
+#   --no-vscode            never open VSCode; show the diff in the terminal
+#   --repair-strategy S    portfolio (default) | llm | pause  (only
+#                          portfolio is wired into the demo so far)
+#   --scenes "1 2 3 4"     run a subset of scenes
+#   --fast                 skip the press-Enter pauses (for testing)
+#   --auto bless|revert    answer scene 2's ruling automatically (testing)
+#   --drift benign|breaking  pick scene 2's spec change without prompting
+#
+# The demo is self-cleaning: whatever you rule in scene 2, the ORIGINAL
+# spec and blessing are restored on exit (a real sanctioned change would
+# simply stop before the cleanup).
+
+set -u -o pipefail
+
+REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PY="$REPO/.venv/bin/python"
+DRIVER="$REPO/examples/temp_control_rocq.py"
+PROPS="$REPO/targets/temp-control-rocq/TempControl/Props.v"
+GOLDEN_PROPS="$REPO/golden${PROPS}"
+EVIDENCE="$REPO/evidence"
+
+NO_VSCODE=0
+STRATEGY="portfolio"
+SCENES="1 2 3 4"
+FAST=0
+AUTO=""
+DRIFT=""
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --no-vscode) NO_VSCODE=1 ;;
+    --repair-strategy) STRATEGY="$2"; shift ;;
+    --scenes) SCENES="$2"; shift ;;
+    --fast) FAST=1 ;;
+    --auto) AUTO="$2"; shift ;;
+    --drift) DRIFT="$2"; shift ;;
+    -h|--help) sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+case "$STRATEGY" in
+  portfolio) ;;
+  llm)   echo "repair strategy 'llm' is a planned demo variant — the driver"
+         echo "already supports it: temp_control_rocq.py --break-proof --llm anthropic"
+         exit 2 ;;
+  pause) echo "repair strategy 'pause' is a planned demo variant — the driver"
+         echo "already supports it: temp_control_rocq.py --tamper --pause"
+         exit 2 ;;
+  *) echo "unknown --repair-strategy: $STRATEGY" >&2; exit 2 ;;
+esac
+case "$AUTO" in ""|bless|revert) ;; *) echo "--auto takes bless|revert" >&2; exit 2 ;; esac
+case "$DRIFT" in ""|benign|breaking) ;; *) echo "--drift takes benign|breaking" >&2; exit 2 ;; esac
+
+BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
+LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/demo_rocq.XXXXXX")"
+LOG="$LOG_DIR/last_run.log"
+
+banner() {
+  echo
+  echo "${BOLD}════════════════════════════════════════════════════════════════${RESET}"
+  echo "${BOLD}  $1${RESET}"
+  echo "${BOLD}════════════════════════════════════════════════════════════════${RESET}"
+  [ $# -gt 1 ] && printf '%s\n' "${@:2}"
+  echo
+}
+
+pause() {
+  [ "$FAST" = 1 ] && return 0
+  read -r -p "${DIM}-- press Enter to continue --${RESET}" _ </dev/tty
+}
+
+run_driver() {
+  echo "${DIM}\$ python examples/temp_control_rocq.py $*${RESET}"
+  ( cd "$REPO" && "$PY" "$DRIVER" "$@" ) 2>&1 | tee "$LOG"
+}
+
+saw() { grep -q "$1" "$LOG"; }
+
+expect() {  # expect <pattern> <what went wrong>
+  if ! saw "$1"; then
+    echo
+    echo "DEMO ABORT: expected '$1' in the last run — $2" >&2
+    exit 1
+  fi
+}
+
+# ── self-cleaning: restore the original spec + proofs + blessing on exit ────
+PROOFS="$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
+PRISTINE="$LOG_DIR/Props.v.pristine"
+PROOFS_PRISTINE="$LOG_DIR/Proofs.v.pristine"
+cp "$PROPS" "$PRISTINE"
+cp "$PROOFS" "$PROOFS_PRISTINE"
+BLESSED_DURING_DEMO=0
+
+cleanup() {
+  local status=$?
+  if ! cmp -s "$PRISTINE" "$PROPS"; then
+    cp "$PRISTINE" "$PROPS"
+    echo
+    echo "cleanup: restored the original $(basename "$PROPS")"
+  fi
+  if ! cmp -s "$PROOFS_PRISTINE" "$PROOFS"; then
+    cp "$PROOFS_PRISTINE" "$PROOFS"
+    echo "cleanup: restored the original $(basename "$PROOFS")"
+  fi
+  if [ "$BLESSED_DURING_DEMO" = 1 ]; then
+    echo "cleanup: re-blessing the ORIGINAL baseline (the demo blessing was a prop)"
+    ( cd "$REPO" && "$PY" "$DRIVER" --provision --bless-model ) >"$LOG_DIR/cleanup.log" 2>&1 \
+      || echo "cleanup: re-provisioning FAILED — see $LOG_DIR/cleanup.log" >&2
+    echo "note: provisioning refreshes bundle signatures/timestamps under"
+    echo "      tests/fixtures/temp_control_rocq_* — 'git checkout' them if unwanted."
+  fi
+  exit $status
+}
+trap cleanup EXIT
+
+in_scenes() { case " $SCENES " in *" $1 "*) return 0 ;; *) return 1 ;; esac }
+
+edit_spec() {  # edit_spec <sed-expr> <description>
+  local before="$LOG_DIR/Props.v.before_edit"
+  cp "$PROPS" "$before"
+  sed -i '' -E "$1" "$PROPS"
+  if cmp -s "$before" "$PROPS"; then
+    echo "DEMO ABORT: the scripted spec edit matched nothing ($2)" >&2
+    exit 1
+  fi
+  echo "applied spec edit: $2"
+  ( cd "$REPO" && diff -u "$before" "$PROPS" ) | sed -n '4,20p'
+}
+
+show_diff() {  # show_diff <golden-copy> <live-copy>
+  if [ "$NO_VSCODE" = 0 ] && command -v code >/dev/null 2>&1; then
+    echo "opening the diff in VSCode (golden vs proposed) ..."
+    code --diff "$1" "$2"
+  else
+    echo "── golden vs proposed ─────────────────────────────────────────"
+    diff -u "$1" "$2" || true
+    echo "───────────────────────────────────────────────────────────────"
+  fi
+}
+
+# ── setup: provision-if-missing, then the readiness gate ───────────────────
+banner "SETUP — readiness (provision the golden baseline if missing)"
+if [ ! -f "$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.json" ]; then
+  echo "no blessed baseline found — bootstrap provisioning (bless_lint gated)"
+  run_driver --provision
+fi
+run_driver --ready --status
+expect "readiness: PASS" "readiness must pass before the demo starts"
+pause
+
+if in_scenes 1; then
+  banner "SCENE 1 — clean baseline episode" \
+    "Artifact classes measured: model (blessed spec, signed), contracts" \
+    "(decl-named slices), verification (dune build + the kernel's" \
+    "assumptions audit), tools measured-then-used inside the term."
+  run_driver
+  expect "all attested components intact" "the baseline episode must be clean"
+  pause
+fi
+
+apply_breaking_edit() {
+  local before="$LOG_DIR/Props.v.before_edit"
+  cp "$PROPS" "$before"
+  "$PY" - <<'EOF'
+from pathlib import Path
+import os
+p = Path(os.environ["DEMO_PROPS"])
+text = p.read_text()
+helper = '''(* The command relation: f commands c in the given situation. *)
+Definition commands (f : Step) (t : Z) (sp : SetPoint)
+                    (l c : FanCmd) : Prop :=
+  f t sp l = c.
+
+'''
+text = text.replace("(* Goal: currentTemp above the band commands the fan On. *)",
+                    helper + "(* Goal: currentTemp above the band commands"
+                             " the fan On. *)")
+text = text.replace("    high sp < temp -> f temp sp latest = On.",
+                    "    high sp < temp -> commands f temp sp latest On.")
+p.write_text(text)
+EOF
+  if cmp -s "$before" "$PROPS"; then
+    echo "DEMO ABORT: the breaking spec edit matched nothing" >&2
+    exit 1
+  fi
+  echo "applied spec edit: fanOn_when_hot_prop restated through a new"
+  echo "  'commands' relation (the model elaborates; the seed proof will not)"
+  ( cd "$REPO" && diff -u "$before" "$PROPS" ) | sed -n '4,26p'
+}
+
+if in_scenes 2; then
+  banner "SCENE 2 — spec drift: escalate, examine, bless or revert" \
+    "A model edit drifts the blessed spec. The episode detects it, names" \
+    "the changed declaration, and ESCALATES — the demo (not the episode)" \
+    "then asks for your ruling. Two flavors: a benign bound change, or a" \
+    "restatement that compiles but leaves the seed proof unprovable —" \
+    "blessing THAT one drives the proof-repair workflow."
+  if [ -n "$DRIFT" ]; then
+    drift="$DRIFT"; echo "(--drift) spec change: $drift"
+  else
+    echo "Choose the spec drift to demonstrate:"
+    echo "  [1] benign    — widen the physical ceiling 110 -> 115"
+    echo "                  (existing proofs still prove the new spec)"
+    echo "  [2] breaking  — restate fanOn_when_hot_prop through a new"
+    echo "                  'commands' relation (the model compiles; the"
+    echo "                  seed proof breaks -> proof repair after bless)"
+    read -r -p "${BOLD}drift [1/2]: ${RESET}" pick </dev/tty
+    case "$pick" in 2|breaking) drift="breaking" ;; *) drift="benign" ;; esac
+  fi
+  echo
+  if [ "$drift" = "benign" ]; then
+    edit_spec 's/high sp <= 110/high sp <= 115/' "SetPoint_valid ceiling 110 -> 115"
+  else
+    DEMO_PROPS="$PROPS" apply_breaking_edit
+  fi
+  PROPOSED="$LOG_DIR/Props.v.proposed"
+  cp "$PROPS" "$PROPOSED"
+  run_driver
+  expect "user intervention required" "the drifted episode must escalate"
+  expect "failed attestation results" \
+    "the failed contract attestation detail must display"
+  expect "— modified" "the changed contract must be annotated as modified"
+  if [ "$drift" = "breaking" ]; then
+    expect "moved (content unchanged)" \
+      "shifted-but-unchanged slices must be told apart from the real change"
+  fi
+  echo
+  echo "${BOLD}The episode escalated (and quarantined the live tree back to golden).${RESET}"
+  echo "Your ruling on the proposed spec change:"
+  show_diff "$GOLDEN_PROPS" "$PROPOSED"
+  if [ -n "$AUTO" ]; then
+    answer="$AUTO"; echo "(--auto) ruling: $answer"
+  else
+    read -r -p "${BOLD}[b]less as the new baseline / [r]evert to golden: ${RESET}" answer </dev/tty
+  fi
+  case "$answer" in
+    b|bless)
+      echo
+      echo "re-applying the change and RE-BLESSING (the sanctioning act) ..."
+      echo "Blessing sanctions the SPEC — whether the proofs currently verify"
+      echo "is the episode's question, not the blessing's."
+      cp "$PROPOSED" "$PROPS"
+      run_driver --provision --bless-model
+      BLESSED_DURING_DEMO=1
+      echo
+      echo "fresh episode against the NEW baseline:"
+      run_driver
+      if [ "$drift" = "breaking" ]; then
+        expect "all attested components intact" \
+          "model and contracts must attest clean against the new blessing"
+        expect "user intervention required" \
+          "verification must refute the not-yet-proved blessed obligation"
+        echo
+        echo "${BOLD}The spec is blessed; the proofs have not caught up.${RESET}"
+        echo "Model and contracts attest clean against the NEW baseline, but"
+        echo "verification refutes: the seed proof no longer proves the blessed"
+        echo "obligation. The workflow now repairs the proofs (portfolio),"
+        echo "judged by fresh measurement:"
+        run_driver --repair-proofs --keep
+        expect "repaired and re-attested clean in-session" \
+          "proof repair must adapt the proofs to the blessed model"
+        echo
+        echo "confirming with a fresh episode:"
+        run_driver
+      fi
+      expect "all attested components intact" \
+        "the blessed change must attest clean against the new baseline"
+      ;;
+    *)
+      echo
+      echo "reverted: the escalation already restored the live tree to golden;"
+      echo "confirming with a fresh episode:"
+      run_driver
+      expect "all attested components intact" "the reverted tree must attest clean"
+      ;;
+  esac
+  pause
+fi
+
+if in_scenes 3; then
+  banner "SCENE 3 — the same drift under --immutable-model" \
+    "The per-session ruling for automated pipelines: model files must" \
+    "never drift. The failed hash appraisal IS the repair order — restore" \
+    "from golden, restart the episode in-session, no user interaction."
+  edit_spec 's/50 <= low sp/45 <= low sp/' "SetPoint_valid floor 50 -> 45"
+  run_driver --immutable-model
+  expect "repaired and re-attested clean in-session" \
+    "immutable-model must restore and re-attest in one session"
+  if cmp -s "$GOLDEN_PROPS" "$PROPS"; then
+    echo "${BOLD}live spec is byte-identical to golden again.${RESET}"
+  else
+    echo "DEMO ABORT: live spec still differs from golden" >&2; exit 1
+  fi
+  pause
+fi
+
+if in_scenes 4; then
+  banner "SCENE 4 — verification failure -> automated repair (portfolio)" \
+    "A seed proof is corrupted (wrong tactic, statement untouched). First" \
+    "the goals checklist over the BROKEN tree: the failing contract is" \
+    "refuted with its diagnostic, and every OTHER proof is judged from" \
+    "its own derived isolation variant (proof opacity: one real proof" \
+    "per scratch build, siblings admitted) — real per-goal verdicts" \
+    "instead of '?' poisoning. Then the tactic-portfolio engine re-proves" \
+    "the broken goal and the restarted episode re-attests. Standing" \
+    "comes from fresh measurement, never from the repair's own claim."
+  PROOFS_SAVE="$LOG_DIR/Proofs.v.pristine"
+  cp "$REPO/targets/temp-control-rocq/TempControl/Proofs.v" "$PROOFS_SAVE"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, 'examples')
+import temp_control_rocq as t, rocq_workflow as rw
+rw._break_proof(t.CONFIG)" )
+  echo
+  echo "${BOLD}the goals checklist over the broken tree — the failing contract:${RESET}"
+  run_driver --status
+  expect "✗" "the checklist must display the failing contract"
+  expect "isolated: proof intact" \
+    "the isolation variants must judge the intact proofs individually"
+  cp "$PROOFS_SAVE" "$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
+  pause
+  echo
+  echo "${BOLD}now the repair arc — the same proof broken, then re-proved:${RESET}"
+  run_driver --break-proof
+  expect "all attested components intact" \
+    "the portfolio repair must end in good standing"
+  echo
+  echo "${BOLD}The signed evidence of the re-measurement (NOT a re-blessing):${RESET}"
+  latest_evidence="$(ls -t "$EVIDENCE" 2>/dev/null | head -1)"
+  [ -n "$latest_evidence" ] && ls "$EVIDENCE/$latest_evidence" | sed "s|^|  evidence/$latest_evidence/|"
+  pause
+fi
+
+banner "DEMO COMPLETE" \
+  "postponed, by design: episode-triggering monitor (external scheduler)," \
+  "wall-clock repair timeouts, the executable artifact class, LLM and" \
+  "pause repair-strategy variants, Rocq --check/--promote (the bless in" \
+  "scene 2 is the provision-bootstrap form until promote lands), and a" \
+  "hashes-only --bless-tools term (tool blessing independent of tree" \
+  "state; today it runs the woven tier and must see a verifying tree)."

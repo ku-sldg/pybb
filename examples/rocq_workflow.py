@@ -79,6 +79,7 @@ from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.proof_status import render_checklist, stale_files
 from pybb.attestation.props import write_model_protocol_dir
 from pybb.attestation.rocq_status import rocq_goal_checklist
+from pybb.attestation.rocq_synthesis import make_isolation_status
 from pybb.attestation.targetmap import (
     build_term,
     derive_targets_from_rocq,
@@ -185,6 +186,11 @@ class RocqExampleConfig:
                                   # None = --synthesize unavailable
     break_proof_decl: str = ""    # --break-proof's target: the seed theorem
                                   # whose proof body gets corrupted
+    isolation_keep: list = None   # audited HELPER goals whose real proof
+                                  # bodies stay in every isolation variant
+                                  # (--status build-failure refinement);
+                                  # admitting these too is the documented
+                                  # follow-up
 
     def __post_init__(self) -> None:
         self.package_root = Path(self.package_root)
@@ -301,7 +307,11 @@ def _tier_term(targets_by_asp: dict) -> dict:
 
 def build_tier_protocol_dir(cfg: RocqExampleConfig) -> None:
     """(Re)generate the verification dir from the config, with tool
-    measurements woven in per TOOL_CADENCE."""
+    measurements woven in per TOOL_CADENCE. Installed goldens (the tool
+    hashes) are provisioning-owned and carried forward through
+    regeneration: the tier re-provisions only at bootstrap or on an
+    explicit --bless-tools, so an ordinary regeneration (e.g. a model
+    blessing) must not orphan them."""
     targets_by_asp = {asp_id: with_asp_targids(targets)
                       for asp_id, targets in cfg.verification_targets.items()}
     asp_args = {asp_id: dict(targets)
@@ -313,6 +323,14 @@ def build_tier_protocol_dir(cfg: RocqExampleConfig) -> None:
             asp_args, term, session, manifest)
     d = FIXTURES / cfg.verification_id
     d.mkdir(exist_ok=True)
+    if (d / "asp_args.json").is_file():
+        installed = json.loads((d / "asp_args.json").read_text())
+        for asp_id, targets in asp_args.items():
+            for targ, args in targets.items():
+                prev = (installed.get(asp_id) or {}).get(targ) or {}
+                for key in ("golden_b64", "golden_ts"):
+                    if prev.get(key) and not args.get(key):
+                        args[key] = prev[key]
     (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
@@ -376,14 +394,25 @@ def load_protocols(cfg: RocqExampleConfig) -> dict:
 # ── provisioning ──────────────────────────────────────────────────────────────
 
 def provision_flow(cfg: RocqExampleConfig, protocols: dict,
-                   bless_model: bool = False) -> None:
+                   bless_model: bool = False,
+                   bless_tools: bool = False) -> None:
     """Capture golden and provision on the blackboard: the contracts
     class and — with woven tool measurements — the verification tier,
     whose tool hash goldens land measure-in-place (live artifacts, no
     golden copies). The MODEL class is provisioned ONLY when blessing is
     requested or when it has never been blessed (bootstrap): re-signing
     the model is the administrator's sanctioning act, so ordinary
-    re-provisioning — including a laundering pass — cannot refresh it."""
+    re-provisioning — including a laundering pass — cannot refresh it.
+
+    The VERIFICATION tier is provisioned only at bootstrap (no bundle
+    yet) or on bless_tools=True: its goldens are TOOLCHAIN hashes,
+    independent of the spec, and its woven term RUNS the tier — so
+    re-provisioning it as a side effect of blessing would embed the
+    current tree's build outcome in a signed bundle, and a spec blessed
+    ahead of its proofs (the sanctioned spec-first order) would poison
+    the baseline readiness verifies. Blessing sanctions the MODEL;
+    whether the tree currently verifies is the episode measurement's
+    question, not the blessing's."""
     model = protocols.get(cfg.model_id)
     model_unblessed = model is not None and not any(
         a.get("golden_b64")
@@ -396,7 +425,11 @@ def provision_flow(cfg: RocqExampleConfig, protocols: dict,
     measured = {pid: protocols[pid] for pid in pids}
     verification = protocols.get(cfg.verification_id)
     if verification is not None and "hashfile" in verification.asp_args:
-        measured[cfg.verification_id] = verification
+        tools_unprovisioned = not (
+            GOLDEN_ROOT / "_bundles" / cfg.verification_id
+            / "provision_bundle.json").is_file()
+        if bless_tools or tools_unprovisioned:
+            measured[cfg.verification_id] = verification
     snapshot = TargetSnapshot.capture(measured, dest=GOLDEN_ROOT)
     print(f"golden captured: {len(snapshot.files)} files")
     client = CvmSubprocessClient()
@@ -491,11 +524,25 @@ def _blessed_text(cfg: RocqExampleConfig, protocols: dict) -> str:
                      "run --provision first")
 
 
-def _checklist(cfg: RocqExampleConfig, protocols: dict, verdict):
+def _isolation(cfg: RocqExampleConfig):
+    """The checklist's build-failure refinement: per-goal verdicts from
+    isolation variants (every non-helper goal proof except the target
+    admitted; helpers keep their real bodies — see isolation_keep)."""
+    admit = [g for g in cfg.audit_goals
+             if g != cfg.binding_goal and g not in (cfg.isolation_keep or [])]
+    return make_isolation_status(
+        cfg.package_root, cfg.theory_name, cfg.audit_goals, admit,
+        cfg.proofs_rel, cfg.audit_rel,
+        rocq=str(WORKSPACE_BIN / "rocq"), dune=str(WORKSPACE_BIN / "dune"))
+
+
+def _checklist(cfg: RocqExampleConfig, protocols: dict, verdict,
+               isolate: bool = False):
     return rocq_goal_checklist(
         _blessed_text(cfg, protocols), verdict, cfg.build_targ,
         cfg.assumptions_targ, cfg.audit_goals, cfg.binding_goal,
-        cfg.proofs_file, cfg.package_root / cfg.audit_rel)
+        cfg.proofs_file, cfg.package_root / cfg.audit_rel,
+        isolate=_isolation(cfg) if isolate else None)
 
 
 def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
@@ -522,7 +569,7 @@ def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
         return
     verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
         attestation_request(cfg.verification_id))
-    checklist = _checklist(cfg, protocols, verdict)
+    checklist = _checklist(cfg, protocols, verdict, isolate=True)
     if ready and not report:
         problems = "; ".join((*report.problems, *report.baseline_problems))
         checklist = checklist.poison(f"readiness failed: {problems[:200]}")
@@ -631,15 +678,33 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
     routes ONE RocqPackageSynthesisKS instead of the two-rung chain:
     a single black box writes the implementation and the proofs
     together, judged by the same local senses and the same restart.
-    stub="break" corrupts one seed proof instead (the repair arc)."""
+    stub="break" corrupts one seed proof instead (the repair arc).
+    stub="none" stubs NOTHING: the episode measures the LIVE tree and
+    the synthesis rung re-proves whatever fails — the repair mode for a
+    proof broken by a sanctioned model change (re-blessed statements,
+    seed script now stale)."""
     proofs_path = cfg.proofs_file
     impl_path = cfg.package_root / cfg.impl_rel if cfg.impl_rel else None
     impl_original = _stub_impl(cfg) if stub in ("impl", "package") else None
-    original = _break_proof(cfg) if stub == "break" else _stub_proofs(
-        cfg, kinds=(("Theorem", "Lemma", "Example")
-                    if stub in ("impl", "package")
-                    else ("Theorem", "Lemma")))
+    if stub == "break":
+        original = _break_proof(cfg)
+    elif stub == "none":
+        original = proofs_path.read_bytes()
+    else:
+        original = _stub_proofs(
+            cfg, kinds=(("Theorem", "Lemma", "Example")
+                        if stub in ("impl", "package")
+                        else ("Theorem", "Lemma")))
     context_rels = [r for r in (cfg.props_rel, cfg.impl_rel) if r]
+    # Engine guidance (conjuncts, helper names, statements). The stubbed
+    # arcs prove the BLESSED statements, so guidance comes from the signed
+    # bytes; stub="none" adapts proofs to a model change and reads the
+    # LIVE spec — after a spec-first blessing the live file IS the blessed
+    # text, and for a pre-bless repair it is the proposal. Guidance
+    # provenance mints no trust either way: every candidate is judged by
+    # the kernel and the assumptions audit.
+    guidance = ((lambda: cfg.props_file.read_text()) if stub == "none"
+                else (lambda: _blessed_text(cfg, protocols)))
     try:
         controller = BlackboardController()
         client = CvmSubprocessClient()
@@ -652,7 +717,7 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
         if stub == "package":
             chain = [RocqPackageSynthesisKS(
                 engines=package_engines or [],
-                blessed=lambda: _blessed_text(cfg, protocols),
+                blessed=guidance,
                 package_root=str(cfg.package_root),
                 impl_rel=cfg.impl_rel, proofs_rel=cfg.proofs_rel,
                 impl_name=cfg.impl_name,
@@ -666,7 +731,7 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
             synth = RocqProofSynthesisKS(
                 engines=(engines if engines is not None
                          else cfg.synthesis_engines),
-                blessed=lambda: _blessed_text(cfg, protocols),
+                blessed=guidance,
                 package_root=str(cfg.package_root),
                 proofs_rel=cfg.proofs_rel,
                 theory_name=cfg.theory_name,
@@ -681,7 +746,7 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
                 dune=str(WORKSPACE_BIN / "dune"))
             impl_synth = RocqImplSynthesisKS(
                 engines=impl_engines or [],
-                blessed=lambda: _blessed_text(cfg, protocols),
+                blessed=guidance,
                 package_root=str(cfg.package_root),
                 impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
                 spec_rel=cfg.props_rel,
@@ -749,9 +814,87 @@ def _pause_rung(cfg: RocqExampleConfig, gate=None) -> RocqOutOfBandRepairKS:
         rocq=str(WORKSPACE_BIN / "rocq"), dune=str(WORKSPACE_BIN / "dune"))
 
 
+def _slice_disposition(comp) -> str:
+    """moved-vs-modified annotation for a failing contract slice.
+
+    Range slices are measured by POSITION (line ranges frozen at
+    provisioning), so an insertion above a declaration fails every slice
+    below it. This DISPLAY-LAYER refinement relocates the declaration by
+    NAME in the live file (rocq_decl_spans) and compares its content —
+    flattened with readfile_range's exact semantics (1-based inclusive,
+    line terminators stripped, concatenated) — against the slice's
+    signed golden: "moved (content unchanged)" vs "modified" vs
+    "missing from the live file" (renamed or deleted). The measurement's
+    position-based verdict stands — this annotates, never overrides;
+    anything unexpected returns "" and the plain display remains."""
+    import base64
+
+    args = comp.args or {}
+    meta = args.get("metadata") or ""
+    if "::" not in meta or not all(
+            args.get(k) for k in ("golden_b64", "filepath",
+                                  "start_index", "end_index")):
+        return ""
+    try:
+        text = Path(args["filepath"]).read_text()
+        name = meta.rsplit("::", 1)[-1]
+        span = next(((s, e) for _k, n, s, e in rocq_decl_spans(text)
+                     if n == name), None)
+        if span is None:
+            return "missing from the live file"
+        lines = text.splitlines()
+        live = "".join(lines[span[0] - 1:span[1]])
+        gold = base64.b64decode(args["golden_b64"]).decode()
+        return "moved (content unchanged)" if live == gold else "modified"
+    except Exception:
+        return ""
+
+
+def _escalation_detail(blackboard) -> str:
+    """The failed attestation results behind the summary's one-liners:
+    for every escalated entry's verdict, each failing component with its
+    contract name (metadata), file:line slice, moved-vs-modified
+    disposition, and the appraiser's reason — deduped across entries
+    (the model entry's refined verdict and the always-run contracts
+    entry share components)."""
+    from pybb.attestation.knowledge_sources import Verdict
+
+    seen = set()
+    by_protocol = {}
+    for _key, entry in blackboard.get_escalate().items():
+        verdict = entry.result
+        if not isinstance(verdict, Verdict):
+            continue
+        for comp in verdict.failing():
+            if (verdict.protocol, comp.targ_id) in seen:
+                continue
+            seen.add((verdict.protocol, comp.targ_id))
+            args = comp.args or {}
+            where = ""
+            if args.get("filepath"):
+                where = Path(args["filepath"]).name
+                start, end = args.get("start_index"), args.get("end_index")
+                if start and end:
+                    where += f":{start}-{end}"
+            label = args.get("metadata") or comp.targ_id or comp.description
+            line = f"  ✗ {label}" + (f"  ({where})" if where else "")
+            disposition = _slice_disposition(comp)
+            if disposition:
+                line += f" — {disposition}"
+            reason = (comp.reason or "").strip().splitlines()
+            if reason:
+                line += f"\n      {reason[0][:160]}"
+            by_protocol.setdefault(verdict.protocol, []).append(line)
+    return "\n".join(
+        line
+        for protocol, lines in by_protocol.items()
+        for line in (f"failed attestation results ({protocol}):", *lines))
+
+
 def attest_episode(cfg: RocqExampleConfig, protocols: dict,
                    repair: bool, pause: bool = False,
-                   gate=None) -> BlackboardController:
+                   gate=None,
+                   model_drift_policy: str = "escalate") -> BlackboardController:
     """One attestation episode. The verification class is ALWAYS-RUN —
     the audit is cheap and it is the point of this example; its failures
     escalate directly (a refuted proof is not golden-restorable).
@@ -761,7 +904,27 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
     operator gets first claim; skipping falls through to the restore),
     and on :verification the audit-aware rung — the one failure class
     with no automatic repair at all. Every out-of-band fix is judged
-    by fresh measurement, never by the operator's word."""
+    by fresh measurement, never by the operator's word.
+
+    model_drift_policy names the per-session ruling on model-file drift:
+      "escalate" (default)  refine to the contracts tier for attribution,
+                            then the ordinary chain (pause/restore rungs
+                            if armed, escalation otherwise) — the
+                            administrator examines the diff and re-blesses
+                            or reverts.
+      "restore"             the immutable-model ruling: a failed model
+                            hash appraisal IS the repair order. Every
+                            failing model file is restored from golden
+                            immediately — no slice confirmation, since
+                            every byte of a model file is blessed content
+                            (whole-file blessing means whole-file restore
+                            can never clobber unblessed work) — and the
+                            episode restarts in-session so standing comes
+                            from fresh measurement over the restored tree.
+    """
+    if model_drift_policy not in ("escalate", "restore"):
+        raise ValueError(f"unknown model_drift_policy: {model_drift_policy!r}"
+                         " (expected 'escalate' or 'restore')")
     controller = BlackboardController()
     client = CvmSubprocessClient()
     controller.register_predicate(
@@ -786,7 +949,21 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
     oob = [OutOfBandRepairKS(gate=gate,
                              also=[cfg.entry("verification")])] if pause else []
     ver_chain = [_pause_rung(cfg, gate)] if pause else []
-    model_fail = [TierKS(protocol_id=cfg.contracts_id), *oob, *restore]
+    if model_drift_policy == "restore":
+        # refined_by = the model protocol itself: _latest_verdict finds the
+        # entry's own hash verdict, so the restore targets exactly the
+        # hash-failed model files — drift OUTSIDE the contract slices is
+        # restored too (under "escalate" the same drift ends tolerated:
+        # "attested clean at finer granularity")
+        model_fail = [
+            WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
+                               refined_by=cfg.model_id),
+            RestartEpisodeKS(budget=cfg.restart_budget or 1,
+                             also=[cfg.entry("contracts"),
+                                   cfg.entry("verification")]),
+        ]
+    else:
+        model_fail = [TierKS(protocol_id=cfg.contracts_id), *oob, *restore]
     episodes = {cfg.entry("model"): cfg.model_id,
                 cfg.entry("contracts"): cfg.contracts_id,
                 cfg.entry("verification"): cfg.verification_id}
@@ -804,6 +981,9 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
     controller.run()
     print(trust_summary(controller.blackboard,
                         semantic=[cfg.verification_id]))
+    detail = _escalation_detail(controller.blackboard)
+    if detail:
+        print(f"\n{detail}")
     return controller
 
 
@@ -823,6 +1003,32 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "by it — elaborates cleanly, the audit names "
                              "the axiom")
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--immutable-model", action="store_true",
+                        help="per-session model drift ruling: model files "
+                             "must never drift from their golden contents "
+                             "— a failed model hash appraisal restores the "
+                             "failing files from golden immediately (no "
+                             "slice confirmation, no user interaction) and "
+                             "re-attests in-session; the default ruling "
+                             "escalates for a manual bless-or-revert")
+    parser.add_argument("--bless-model", action="store_true",
+                        help="with --provision: the administrator's "
+                             "sanctioning act — re-sign the MODEL class "
+                             "over the live spec (bless_lint gated). "
+                             "Ordinary provisioning refuses to refresh an "
+                             "already-blessed model precisely so that a "
+                             "laundering pass cannot; this flag is the "
+                             "deliberate exception. Blessing sanctions the "
+                             "SPEC only: a spec whose proofs do not yet "
+                             "verify blesses fine (spec-first), and the "
+                             "failing verification surfaces as episode "
+                             "measurement, never as a poisoned baseline")
+    parser.add_argument("--bless-tools", action="store_true",
+                        help="with --provision: re-provision the "
+                             "verification tier's TOOLCHAIN-hash goldens "
+                             "(after a toolchain update). Runs the woven "
+                             "tier and signs its outcome into the bundle, "
+                             "so do this on a tree that verifies")
     parser.add_argument("--pause", action="store_true",
                         help="on failure, pause the episode for out-of-band "
                              "repair (hand edit, interactive agent session, "
@@ -860,6 +1066,13 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     parser.add_argument("--break-proof", action="store_true",
                         help="repair arc: corrupt one seed proof body "
                              "(implies a synthesis episode)")
+    parser.add_argument("--repair-proofs", action="store_true",
+                        help="repair the LIVE tree: a synthesis episode "
+                             "with no stubbing — re-prove whatever the "
+                             "measurement refutes (the arc for a proof "
+                             "broken by a sanctioned, re-blessed model "
+                             "change; use --keep to retain the adapted "
+                             "proofs)")
     parser.add_argument("--synthesize-impl", action="store_true",
                         help="impl-first arc: stub the implementation to an "
                              "admitted axiom AND every proof to Admitted, "
@@ -876,8 +1089,21 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom)) > 1:
         parser.error("pick one tamper arc per run")
+    if (cli.bless_model or cli.bless_tools) and not cli.provision:
+        parser.error("--bless-model/--bless-tools are provisioning-time "
+                     "acts; use them with --provision")
+    if cli.immutable_model and (cli.synthesize or cli.synthesize_impl
+                                or cli.synthesize_package or cli.break_proof):
+        parser.error("--immutable-model governs the default attestation "
+                     "episodes; it is not wired for the synthesis arcs")
     if cli.break_proof:
         cli.synthesize = True
+    if cli.repair_proofs:
+        cli.synthesize = True
+        if cli.break_proof or cli.synthesize_impl or cli.synthesize_package:
+            parser.error("--repair-proofs runs over the live tree; the "
+                         "stubbed arcs are different starting states — "
+                         "pick one")
     if cli.synthesize_impl:
         cli.synthesize = True
         if cli.break_proof:
@@ -930,7 +1156,8 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                                                         attempts=3)]
         stub = ("package" if cli.synthesize_package
                 else "impl" if cli.synthesize_impl
-                else "break" if cli.break_proof else "admits")
+                else "break" if cli.break_proof
+                else "none" if cli.repair_proofs else "admits")
         try:
             synthesize_flow(cfg, load_protocols(cfg), keep=cli.keep,
                             engines=engines, stub=stub,
@@ -950,7 +1177,8 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
 
     if cli.provision:
         protocols = build_protocol_dirs(cfg)
-        provision_flow(cfg, protocols)
+        provision_flow(cfg, protocols, bless_model=cli.bless_model,
+                       bless_tools=cli.bless_tools)
         return
 
     protocols = load_protocols(cfg)
@@ -963,12 +1191,15 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         pristine_proofs = tamper_admitted(cfg)
     elif cli.tamper_axiom:
         pristine_proofs = tamper_axiom(cfg)
+    policy = "restore" if cli.immutable_model else "escalate"
     try:
-        attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause)
+        attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause,
+                       model_drift_policy=policy)
         if cli.repair and not cfg.restart_budget:
             # without a restart budget, verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
-            attest_episode(cfg, protocols, repair=cli.repair)
+            attest_episode(cfg, protocols, repair=cli.repair,
+                           model_drift_policy=policy)
     finally:
         if pristine_proofs is not None:
             cfg.proofs_file.write_bytes(pristine_proofs)

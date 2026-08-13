@@ -173,13 +173,21 @@ def _audit_print_lines(audit_file: Optional[Path]) -> Dict[str, int]:
 
 def rocq_audit_status(verdict, build_targ: str, audit_targ: str,
                       audit_goals: List[str], witness_file: Path,
-                      audit_file: Optional[Path] = None
-                      ) -> Dict[str, DeclStatus]:
+                      audit_file: Optional[Path] = None,
+                      isolate=None) -> Dict[str, DeclStatus]:
     """
     Per-goal status from the verification verdict's build + audit
     components, per the fail-closed tiers in the module docstring. Keys
     are the audited goal names; a failed build may add extra FAILING
     keys for witness-file declarations its stderr names.
+
+    `isolate` (optional, callable() -> Dict[str, DeclStatus] | None)
+    refines the build-failure fallback: per-goal verdicts from isolation
+    variants of the proofs file (see rocq_synthesis.make_isolation_status)
+    replace the coarse `?` poisoning for every goal they judge. It runs
+    ONLY when the full build failed, and a refusal (None) keeps the
+    coarse fallback — the refinement can downgrade precision, never
+    upgrade a verdict the measurement did not support.
     """
     goals = list(audit_goals)
     witness_file = Path(witness_file)
@@ -223,6 +231,12 @@ def rocq_audit_status(verdict, build_targ: str, audit_targ: str,
             mapped += 1
             statuses[hit] = DeclStatus(state=FAILING,
                                        detail=_first_line(msg) or "build error")
+        if isolate is not None:
+            refined = isolate()
+            if refined:
+                statuses.update({g: st for g, st in refined.items()
+                                 if g in statuses})
+                return statuses
         if not mapped:
             reason = _first_line(build.reason) or "build failed"
             return _all(goals, UNKNOWN, f"build failed, unmappable: {reason}")
@@ -293,7 +307,8 @@ def rocq_spec_conjuncts(blessed_text: str) -> List[str]:
 def rocq_goal_checklist(blessed_text: str, verdict, build_targ: str,
                         audit_targ: str, audit_goals: List[str],
                         binding_goal: str, witness_file: Path,
-                        audit_file: Optional[Path] = None) -> Checklist:
+                        audit_file: Optional[Path] = None,
+                        isolate=None) -> Checklist:
     """
     One row per blessed goal property (the Spec `/\\`-conjuncts, scanned
     from the SIGNED blessed bytes) plus the `Spec bound` row from the
@@ -305,7 +320,8 @@ def rocq_goal_checklist(blessed_text: str, verdict, build_targ: str,
     """
     witness_file = Path(witness_file)
     statuses = rocq_audit_status(verdict, build_targ, audit_targ,
-                                 audit_goals, witness_file, audit_file)
+                                 audit_goals, witness_file, audit_file,
+                                 isolate=isolate)
     text = witness_file.read_text()
     lines = text.splitlines()
     spans = [(n, k, s, e) for k, n, s, e in rocq_decl_spans(text) if n]

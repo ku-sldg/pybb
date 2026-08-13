@@ -197,6 +197,223 @@ def test_repair_reattested_clean_in_session_via_restart():
         snapshot.restore()
 
 
+@needs_rocq
+def test_immutable_model_policy_restores_and_reattests_in_session():
+    """model_drift_policy="restore" (the driver's --immutable-model): a
+    header-comment edit drifts the model file WITHOUT weakening any
+    contract slice — the drift the escalate policy tolerates ("attested
+    clean at finer granularity"). Under the immutable ruling the failed
+    hash appraisal alone is the repair order: the file is restored from
+    golden and the episode re-attests in-session, no refinement gating,
+    no user."""
+    from pybb.attestation.snapshot import mirror_path
+
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    protocols = _protocols(VERIFICATION_ID)
+    snapshot = TargetSnapshot.load(protocols, GOLDEN_ROOT)
+    text = PROPS.read_text()
+    marker = "The BLESSED statements file:"
+    assert marker in text
+    PROPS.write_text(text.replace(marker, marker + " (drifted header)"))
+    try:
+        ctl = rw.attest_episode(rocq.CONFIG, protocols, repair=False,
+                                model_drift_policy="restore")
+        bb = ctl.blackboard
+        key = f"{PREFIX}:model"
+        assert bb.entries[key].good_standing and not bb.escalate
+        assert bb.restarts.get(key) == 1
+        assert PROPS.read_bytes() == mirror_path(GOLDEN_ROOT, PROPS).read_bytes()
+        assert "repaired and re-attested clean in-session" in trust_summary(bb)
+    finally:
+        snapshot.restore()
+
+
+@needs_rocq
+def test_isolation_variants_judge_goals_individually():
+    """The checklist's build-failure refinement: break ONE proof; every
+    goal is judged from its own derived isolation variant (proof
+    opacity — siblings admitted, statements preserved): intact proofs
+    PROVED, the broken goal FAILING with its own diagnostic, and the
+    dependency chain (spec_holds, acceptance) intact-with-assumes."""
+    from pybb.attestation.proof_status import FAILING, PROVED
+
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    pristine = PROOFS.read_bytes()
+    rw._break_proof(rocq.CONFIG)
+    try:
+        statuses = rw._isolation(rocq.CONFIG)()
+        broken = statuses["fanHold_in_band"]
+        assert broken.state == FAILING and "isolated" in broken.detail
+        for goal in ("hot_means_not_cold", "fanOn_when_hot",
+                     "fanOff_when_cold", "fanOn_only_if_hot_or_held"):
+            assert statuses[goal].state == PROVED, (goal, statuses[goal])
+        # spec_holds' own script is intact but leans on the (admitted)
+        # broken sibling — named, not poisoned
+        sh = statuses["spec_holds"]
+        assert sh.state == PROVED and "fanHold_in_band" in sh.detail
+        acc = statuses["acceptance"]
+        assert acc.state == PROVED and "assumes spec_holds" in acc.detail
+    finally:
+        PROOFS.write_bytes(pristine)
+
+
+def test_model_drift_policy_validated():
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    with pytest.raises(ValueError, match="model_drift_policy"):
+        rw.attest_episode(rocq.CONFIG, {}, repair=False,
+                          model_drift_policy="tolerate")
+
+
+def _apply_breaking_restatement():
+    """The 'commands' restatement: the model elaborates and bless_lint
+    passes, but the seed proof of fanOn_when_hot no longer proves it."""
+    text = PROPS.read_text()
+    helper = ("Definition commands (f : Step) (t : Z) (sp : SetPoint)\n"
+              "                    (l c : FanCmd) : Prop :=\n"
+              "  f t sp l = c.\n\n")
+    marker = "(* Goal: currentTemp above the band commands the fan On. *)"
+    text = text.replace(marker, helper + marker)
+    text = text.replace("    high sp < temp -> f temp sp latest = On.",
+                        "    high sp < temp -> commands f temp sp latest On.")
+    PROPS.write_text(text)
+
+
+@needs_rocq
+def test_spec_first_blessing_keeps_baseline_coherent():
+    """Blessing sanctions the SPEC: a model change whose proofs do not
+    yet verify blesses fine. The verification tier's tool-hash bundle is
+    NOT re-provisioned (its goldens are spec-independent), so readiness
+    still verifies every signed baseline and the unproved obligation
+    surfaces as episode measurement — verification escalates while model
+    and contracts attest clean against the new blessing."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    props_pristine = PROPS.read_bytes()
+    proofs_pristine = PROOFS.read_bytes()
+    ver_bundle = (GOLDEN_ROOT / "_bundles" / cfg.verification_id
+                  / "provision_bundle.json")
+    bundle_before = ver_bundle.read_bytes()
+    _apply_breaking_restatement()
+    try:
+        rw.provision_flow(cfg, rw.build_protocol_dirs(cfg), bless_model=True)
+        assert ver_bundle.read_bytes() == bundle_before, \
+            "blessing must not re-sign the verification tier"
+        ctl = rw.attest_episode(cfg, rw.load_protocols(cfg), repair=False)
+        bb = ctl.blackboard
+        assert bb.entries[f"{PREFIX}:model"].good_standing
+        assert bb.entries[f"{PREFIX}:contracts"].good_standing
+        assert f"{PREFIX}:verification" in bb.escalate
+    finally:
+        PROPS.write_bytes(props_pristine)
+        PROOFS.write_bytes(proofs_pristine)
+        rw.provision_flow(cfg, rw.build_protocol_dirs(cfg), bless_model=True)
+
+
+@needs_rocq
+def test_repair_proofs_adapts_to_proposed_model_change():
+    """synthesize_flow stub='none' (--repair-proofs): a sanctioned model
+    RESTATEMENT (a new blessed helper relation wrapping a conclusion)
+    elaborates but refutes the seed proof; the live-tree synthesis
+    episode re-proves the goal against the PROPOSED statements (guidance
+    from the live spec, not the old blessing) and re-attests in-session."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    props_pristine = PROPS.read_bytes()
+    proofs_pristine = PROOFS.read_bytes()
+    _apply_breaking_restatement()
+    try:
+        ctl = rw.synthesize_flow(cfg, rw.load_protocols(cfg), keep=False,
+                                 stub="none")
+        bb = ctl.blackboard
+        key = f"{PREFIX}:verification"
+        assert bb.entries[key].good_standing, "verification must recover"
+        assert bb.restarts.get(key) == 1, "standing from fresh measurement"
+        assert "repaired and re-attested clean in-session" \
+            in trust_summary(bb, semantic=[cfg.verification_id])
+        # the drift entries stay escalated: blessing is a separate act
+        assert f"{PREFIX}:model" in bb.escalate
+    finally:
+        PROPS.write_bytes(props_pristine)
+        PROOFS.write_bytes(proofs_pristine)
+
+
+def test_escalation_detail_renders_failing_contracts():
+    """The terminal detail behind the summary one-liners: contract name,
+    file:line slice, first reason line — deduped across the escalated
+    entries that share a verdict."""
+    from pybb.blackboard import Blackboard
+    from pybb.attestation.appraisal import ComponentResult
+    from pybb.attestation.knowledge_sources import Verdict
+
+    rw = _rocq_workflow()
+    comp = ComponentResult(
+        appr_asp="model_slices_appr", target_asp="readfile_range",
+        targ_id="slice_targ", passed=False,
+        reason="Evidence bytes do not match golden\nsecond line",
+        args={"metadata": "TempControl.Props::SetPoint_valid",
+              "filepath": "/x/Props.v", "start_index": 23, "end_index": 24})
+    verdict = Verdict(protocol="contracts_p", passed=False,
+                      components=[comp])
+    bb = Blackboard()
+    for key in ("a:model", "a:contracts"):
+        bb.write_entry(key=key, predicate="attestation", measurement={},
+                       result=verdict)
+        bb.escalate[key] = bb.entries.pop(key)
+    detail = rw._escalation_detail(bb)
+    assert "failed attestation results (contracts_p):" in detail
+    assert "TempControl.Props::SetPoint_valid" in detail
+    assert "Props.v:23-24" in detail
+    assert "Evidence bytes do not match golden" in detail
+    assert detail.count("SetPoint_valid") == 1   # deduped across entries
+    assert "second line" not in detail           # first reason line only
+    assert rw._escalation_detail(Blackboard()) == ""
+
+
+def test_escalation_detail_moved_vs_modified(tmp_path):
+    """The display-layer refinement of position-based slice failures: a
+    failing slice whose declaration relocates BY NAME to unchanged
+    content is 'moved', changed content is 'modified', an absent name is
+    'missing' — annotation only, the position-based verdict stands."""
+    import base64
+    from pybb.blackboard import Blackboard
+    from pybb.attestation.appraisal import ComponentResult
+    from pybb.attestation.knowledge_sources import Verdict
+
+    rw = _rocq_workflow()
+    live = tmp_path / "Props.v"
+    live.write_text(
+        "(* an insertion shifted everything below *)\n"
+        "Definition extra : Prop := True.\n"
+        "\n"
+        "Definition alpha (x : Z) : Prop :=\n"
+        "  0 <= x.\n"
+        "\n"
+        "Definition beta (x : Z) : Prop :=\n"
+        "  x <= 99.\n")
+
+    def comp(name, golden):
+        return ComponentResult(
+            appr_asp="model_slices_appr", target_asp="readfile_range",
+            targ_id=f"{name}_targ", passed=False,
+            reason="Evidence bytes do not match golden",
+            args={"metadata": f"T.Props::{name}", "filepath": str(live),
+                  "start_index": 1, "end_index": 2,
+                  "golden_b64": base64.b64encode(golden.encode()).decode()})
+
+    v = Verdict(protocol="p", passed=False, components=[
+        comp("alpha", "Definition alpha (x : Z) : Prop :=  0 <= x."),
+        comp("beta", "Definition beta (x : Z) : Prop :=  x <= 42."),
+        comp("gamma", "anything")])
+    bb = Blackboard()
+    bb.write_entry(key="k", predicate="attestation", measurement={}, result=v)
+    bb.escalate["k"] = bb.entries.pop("k")
+    lines = {l.split("::", 1)[1].split()[0]: l
+             for l in rw._escalation_detail(bb).splitlines() if "::" in l}
+    assert "moved (content unchanged)" in lines["alpha"]
+    assert "modified" in lines["beta"]
+    assert "missing from the live file" in lines["gamma"]
+
+
 # ── the Rocq toolchain tier (always-run in episodes; judged here alone) ───────
 
 def _tier_verdict():
