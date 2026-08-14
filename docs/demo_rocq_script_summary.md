@@ -38,12 +38,18 @@ An interactive walkthrough of the attestation workflow on the Rocq example
   interaction. The policy for automated pipelines where spec drift is never
   tolerated.
 
-## Scene 4 — verification failure and repair
+## Scene 4 — verification failure, repair by selectable strategy
 
-- A corrupted seed proof: the failure-time checklist names the failing
-  contract with its diagnostic, and **isolation variants** judge every other
-  proof individually (per-goal ✓/✗ from one proofs file, instead of unknowns).
-- Tactic-portfolio repair, in-session re-attestation, and the archived
+- Strategy chosen at the prompt or `--repair-strategy`:
+  **portfolio** (deterministic tactic search; no API keys),
+  **llm** (LLM engine behind the portfolio — real calls with
+  `ANTHROPIC_API_KEY`, keyless dry-run otherwise), or
+  **pause** (out-of-band: the episode blocks on a work order, *you* repair
+  in another terminal, and only fresh measurement — never your claim —
+  re-establishes standing; declining falls through to escalation).
+- For the engine strategies: the failure-time checklist names the failing
+  contract, with **isolation variants** judging every other proof
+  individually; then in-session re-attestation and the archived
   **signed evidence** of the re-measurement (never a re-blessing).
 
 ## Scene 5 — baseline tamper: the repair that must refuse
@@ -63,5 +69,5 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 - Self-cleaning: the original spec, proofs, and blessing are restored on exit.
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
-the executable artifact class, LLM/pause repair-strategy variants, Rocq
-`--check`/`--promote`, hashes-only tool blessing.
+the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
+blessing, toolchain-tamper and audit-regeneration repair scenes.

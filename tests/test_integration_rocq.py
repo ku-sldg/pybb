@@ -424,6 +424,32 @@ def test_escalation_detail_renders_failing_contracts():
     assert rw._escalation_detail(Blackboard()) == ""
 
 
+def test_declined_out_of_band_repair_is_not_repaired_from_golden():
+    """A claim-based repair rung (out-of-band gate) in an escalated
+    entry's history proves only that it RAN — a declined operator gate
+    repaired nothing, so the terminal phrase must be 'user intervention
+    required', never the restore rungs' 'repaired from golden'."""
+    from pybb.blackboard import Blackboard
+    from pybb.attestation import trust_summary
+    from pybb.attestation.knowledge_sources import Verdict
+
+    def escalated_with(ks_name):
+        bb = Blackboard()
+        bb.write_entry(key="k:ver", predicate="attestation", measurement={},
+                       result=Verdict(protocol="p", passed=False,
+                                      components=[]))
+        bb.entries["k:ver"].ks_history[ks_name] = 3
+        bb.escalate["k:ver"] = bb.entries.pop("k:ver")
+        return trust_summary(bb)
+
+    declined = escalated_with("repair:rocq-out-of-band")
+    assert "user intervention required" in declined
+    assert "repaired from golden" not in declined
+    restored = escalated_with("repair:whole-file")
+    assert "repaired from golden — verification pending next episode" \
+        in restored
+
+
 def test_escalation_detail_moved_vs_modified(tmp_path):
     """The display-layer refinement of position-based slice failures: a
     failing slice whose declaration relocates BY NAME to unchanged

@@ -25,9 +25,11 @@
 #            ruling that model files never drift — restore from golden on
 #            the failed hash appraisal and re-attest in-session, no
 #            interaction.
-#   scene 4  verification failure -> automated repair (tactic portfolio),
-#            in-session re-attestation, then the goals checklist and the
-#            archived signed evidence of the re-measurement.
+#   scene 4  verification failure -> repair by selectable strategy:
+#            portfolio (deterministic, keyless), llm (behind the
+#            portfolio; dry-run without a key), or pause (out-of-band —
+#            you repair, fresh measurement judges); with the failure-time
+#            checklist and the archived signed evidence.
 #   scene 5  baseline tamper -> the repair that must refuse: a flipped
 #            byte of signed bundle evidence (signature refutes) and a
 #            hand-edited installed golden (anchor refutes, signature
@@ -41,8 +43,11 @@
 #
 # Flags:
 #   --no-vscode            never open VSCode; show the diff in the terminal
-#   --repair-strategy S    portfolio (default) | llm | pause  (only
-#                          portfolio is wired into the demo so far)
+#   --repair-strategy S    scene 4's repair: portfolio (default; keyless) |
+#                          llm (real with ANTHROPIC_API_KEY, dry-run
+#                          without) | pause (out-of-band: you repair,
+#                          measurement judges); prompted interactively
+#                          when not given
 #   --scenes "1 2 3 4 5"   run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --auto bless|revert    answer scene 2's ruling automatically (testing)
@@ -62,7 +67,7 @@ GOLDEN_PROPS="$REPO/golden${PROPS}"
 EVIDENCE="$REPO/evidence"
 
 NO_VSCODE=0
-STRATEGY="portfolio"
+STRATEGY=""
 SCENES="1 2 3 4 5"
 FAST=0
 AUTO=""
@@ -83,14 +88,8 @@ while [ $# -gt 0 ]; do
 done
 
 case "$STRATEGY" in
-  portfolio) ;;
-  llm)   echo "repair strategy 'llm' is a planned demo variant — the driver"
-         echo "already supports it: temp_control_rocq.py --break-proof --llm anthropic"
-         exit 2 ;;
-  pause) echo "repair strategy 'pause' is a planned demo variant — the driver"
-         echo "already supports it: temp_control_rocq.py --tamper --pause"
-         exit 2 ;;
-  *) echo "unknown --repair-strategy: $STRATEGY" >&2; exit 2 ;;
+  ""|portfolio|llm|pause) ;;
+  *) echo "--repair-strategy takes portfolio|llm|pause" >&2; exit 2 ;;
 esac
 case "$AUTO" in ""|bless|revert) ;; *) echo "--auto takes bless|revert" >&2; exit 2 ;; esac
 case "$DRIFT" in ""|benign|breaking) ;; *) echo "--drift takes benign|breaking" >&2; exit 2 ;; esac
@@ -377,34 +376,99 @@ if in_scenes 3; then
 fi
 
 if in_scenes 4; then
-  banner "SCENE 4 — verification failure -> automated repair (portfolio)" \
-    "A seed proof is corrupted (wrong tactic, statement untouched). First" \
-    "the goals checklist over the BROKEN tree: the failing contract is" \
-    "refuted with its diagnostic, and every OTHER proof is judged from" \
-    "its own derived isolation variant (proof opacity: one real proof" \
-    "per scratch build, siblings admitted) — real per-goal verdicts" \
-    "instead of '?' poisoning. Then the tactic-portfolio engine re-proves" \
-    "the broken goal and the restarted episode re-attests. Standing" \
-    "comes from fresh measurement, never from the repair's own claim."
-  PROOFS_SAVE="$LOG_DIR/Proofs.v.pristine"
-  cp "$REPO/targets/temp-control-rocq/TempControl/Proofs.v" "$PROOFS_SAVE"
-  ( cd "$REPO" && "$PY" -c "
+  banner "SCENE 4 — verification failure -> repair (selectable strategy)" \
+    "A verification failure, repaired by the strategy of your choice:" \
+    "the deterministic tactic portfolio (no keys needed), the LLM engine" \
+    "behind the portfolio, or the out-of-band pause rung — YOU repair," \
+    "fresh measurement judges. Standing never comes from the repair's" \
+    "own claim."
+  if [ -z "$STRATEGY" ]; then
+    if [ "$FAST" = 1 ]; then
+      STRATEGY="portfolio"
+    else
+      echo "Choose the repair strategy:"
+      echo "  [1] portfolio — deterministic tactic search (default; no API keys)"
+      echo "  [2] llm       — LLM engine behind the portfolio (real calls with"
+      echo "                  ANTHROPIC_API_KEY set; keyless dry-run otherwise)"
+      echo "  [3] pause     — out-of-band: the episode blocks while YOU repair"
+      read -r -p "${BOLD}strategy [1/2/3]: ${RESET}" pick </dev/tty
+      case "$pick" in
+        2|llm) STRATEGY="llm" ;;
+        3|pause) STRATEGY="pause" ;;
+        *) STRATEGY="portfolio" ;;
+      esac
+    fi
+  fi
+  echo "repair strategy: $STRATEGY"
+  echo
+
+  case "$STRATEGY" in
+    portfolio|llm)
+      echo "${BOLD}A seed proof is corrupted (wrong tactic, statement untouched).${RESET}"
+      echo "First the goals checklist over the BROKEN tree — the failing"
+      echo "contract refuted with its diagnostic, every OTHER proof judged"
+      echo "from its own derived isolation variant:"
+      PROOFS_SCENE4="$LOG_DIR/Proofs.v.scene4"
+      cp "$PROOFS" "$PROOFS_SCENE4"
+      ( cd "$REPO" && "$PY" -c "
 import sys; sys.path.insert(0, 'examples')
 import temp_control_rocq as t, rocq_workflow as rw
 rw._break_proof(t.CONFIG)" )
-  echo
-  echo "${BOLD}the goals checklist over the broken tree — the failing contract:${RESET}"
-  run_driver --status
-  expect "✗" "the checklist must display the failing contract"
-  expect "isolated: proof intact" \
-    "the isolation variants must judge the intact proofs individually"
-  cp "$PROOFS_SAVE" "$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
-  pause
-  echo
-  echo "${BOLD}now the repair arc — the same proof broken, then re-proved:${RESET}"
-  run_driver --break-proof
-  expect "repaired and re-attested clean in-session" \
-    "the portfolio repair must end in good standing"
+      run_driver --status
+      expect "✗" "the checklist must display the failing contract"
+      expect "isolated: proof intact" \
+        "the isolation variants must judge the intact proofs individually"
+      cp "$PROOFS_SCENE4" "$PROOFS"
+      pause
+      echo
+      if [ "$STRATEGY" = "llm" ]; then
+        LLM_FLAGS="--llm anthropic"
+        if [ -z "${ANTHROPIC_API_KEY:-}" ]; then
+          LLM_FLAGS="$LLM_FLAGS --llm-dry-run"
+          echo "${BOLD}no ANTHROPIC_API_KEY in the environment — the LLM engine runs${RESET}"
+          echo "${BOLD}as a DRY-RUN (prompts recorded, spend predicted, no calls);${RESET}"
+          echo "${BOLD}the portfolio ahead of it on the ladder still does the proving:${RESET}"
+        else
+          echo "${BOLD}the engine ladder: portfolio first, the LLM on whatever remains:${RESET}"
+        fi
+        # shellcheck disable=SC2086
+        run_driver --break-proof $LLM_FLAGS
+      else
+        echo "${BOLD}now the repair arc — the same proof broken, then re-proved:${RESET}"
+        run_driver --break-proof
+      fi
+      expect "repaired and re-attested clean in-session" \
+        "the repair must end in good standing"
+      ;;
+    pause)
+      echo "${BOLD}One proof is Admitted — the build stays green (this is Rocq),${RESET}"
+      echo "${BOLD}the kernel's assumptions audit refutes the goal by name, and the${RESET}"
+      echo "${BOLD}episode BLOCKS on the out-of-band pause rung: no engine, no${RESET}"
+      echo "${BOLD}restore — the repair is yours, and only fresh measurement can${RESET}"
+      echo "${BOLD}re-establish standing.${RESET}"
+      if [ "$FAST" = 1 ]; then
+        echo "(unattended: answering [s]kip — the decline path, escalation follows)"
+        printf 's\n' | run_driver --tamper-admitted --pause
+        expect "user intervention required" \
+          "declining the operator gate must fall through to escalation"
+        expect "Restored pristine" \
+          "the tamper arc must restore the pristine proofs on exit"
+      else
+        echo
+        echo "when the work order appears, repair in ANOTHER terminal:"
+        echo "    cd $REPO && git checkout -- targets/temp-control-rocq/TempControl/Proofs.v"
+        echo "then answer [r]e-attest. (Answer [s]kip to see the escalation path.)"
+        run_driver --tamper-admitted --pause
+        if saw "repaired and re-attested clean in-session"; then
+          echo "${BOLD}your repair stood — judged by measurement, not by your word.${RESET}"
+        else
+          expect "user intervention required" \
+            "skip must fall through to escalation"
+          echo "${BOLD}declined — the episode escalated rather than trust a claim.${RESET}"
+        fi
+      fi
+      ;;
+  esac
   echo
   echo "${BOLD}The signed evidence of the re-measurement (NOT a re-blessing):${RESET}"
   latest_evidence="$(ls -t "$EVIDENCE" 2>/dev/null | head -1)"

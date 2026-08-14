@@ -61,6 +61,13 @@ def _summarize_key(
         repaired = entry is not None and any(
             ks.startswith("repair:") for ks in entry.ks_history
         )
+        # "repaired from golden" is the RESTORE rungs' claim; a claim-based
+        # rung (out-of-band, black-box) in the history proves only that it
+        # RAN — a declined operator gate repaired nothing
+        golden_repaired = entry is not None and any(
+            ks.startswith(("repair:whole-file", "repair:slice"))
+            for ks in entry.ks_history
+        )
         restarted = blackboard.restarts.get(key, 0)
         if repaired and restarted:
             terminal = (
@@ -68,7 +75,7 @@ def _summarize_key(
                 "in-session restart(s) — restart budget exhausted; "
                 "user intervention required"
             )
-        elif repaired:
+        elif golden_repaired:
             terminal = (
                 "repaired from golden — verification pending next episode "
                 "(re-run the workflow)"

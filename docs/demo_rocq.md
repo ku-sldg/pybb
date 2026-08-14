@@ -114,7 +114,13 @@ untouched, so for the breaking flavor the next episode shows model and
 contracts clean against the new blessing while verification refutes the
 not-yet-proved obligation, which `--repair-proofs --keep` (the
 portfolio re-proving against the blessed statements) then adapts;
-**revert** confirms the quarantined tree. Scene 5 attacks the trust
+**revert** confirms the quarantined tree. Scene 4's repair strategy is selectable
+(`--repair-strategy` or an interactive prompt): the deterministic
+portfolio (keyless default), the LLM engine behind the portfolio
+(real with `ANTHROPIC_API_KEY`, dry-run without), or the out-of-band
+pause rung — the episode blocks on a work order, the operator repairs
+in another terminal, and fresh measurement judges; declining
+escalates. Scene 5 attacks the trust
 state itself — one flipped byte of signed bundle evidence (signature
 refutes) and one hand-edited installed golden (anchor refutes,
 signature silent): attestation never starts, no KS can repair a
