@@ -400,6 +400,67 @@ def test_audit_coverage_tamper_regenerated_and_reattested():
         audit.write_bytes(pristine)
 
 
+def test_audit_status_poisons_on_audit_file_divergence(tmp_path):
+    """A failing audit-file hash component poisons every cell: the
+    sections bind to goals only through the canonical rendering, so a
+    divergent rendering makes clean-looking sections unattributable."""
+    from pybb.attestation.appraisal import ComponentResult
+    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.rocq_status import rocq_audit_status
+    from pybb.attestation.proof_status import UNKNOWN
+
+    w = tmp_path / "Proofs.v"
+    w.write_text("Theorem g : True.\nProof.\nauto.\nQed.\n")
+    goals = ["g"]
+    good = "Closed under the global context\n"
+    comps = [
+        ComponentResult(appr_asp="goldenbytes_appr", target_asp="hashfile",
+                        targ_id="p_audit_file_targ", passed=False,
+                        args={"metadata": "audit-file::Assumptions.v"}),
+        ComponentResult(appr_asp="run_command_rocq_appr",
+                        target_asp="run_command_dune", targ_id="b",
+                        passed=True, args={}),
+        ComponentResult(appr_asp="run_command_rocq_appr",
+                        target_asp="run_command_rocq", targ_id="a",
+                        passed=True, args={}),
+    ]
+    v = Verdict(protocol="p", passed=False, components=comps)
+    st = rocq_audit_status(v, "b", "a", goals, w)
+    assert st["g"].state == UNKNOWN
+    assert "diverged from its canonical rendering" in st["g"].detail
+
+
+@needs_rocq
+def test_audit_substitution_caught_by_byte_anchor_only():
+    """The substitution attack: swap one Print Assumptions query for a
+    different CLOSED constant — section count right, every section
+    Closed, so the output appraisal passes; ONLY the audit file's hash
+    against its blessed canonical rendering refutes. The regeneration
+    rung then repairs and the restarted episode re-attests."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    audit = ROCQ_ROOT / "Assumptions.v"
+    pristine = audit.read_bytes()
+    rw.tamper_audit_subst(cfg)
+    try:
+        verdict = make_attestation_predicate(
+            CvmSubprocessClient(), _protocols(VERIFICATION_ID))(
+            attestation_request(VERIFICATION_ID))
+        assert not verdict
+        failing = {c.targ_id for c in verdict.failing()}
+        assert cfg.audit_file_targ in failing, "the byte anchor must refute"
+        assert cfg.assumptions_targ not in failing, \
+            "the output check alone is fooled — count right, all Closed"
+        ctl = rw.attest_episode(cfg, rw.load_protocols(cfg),
+                                repair=False, audit_repair=True)
+        bb = ctl.blackboard
+        key = f"{PREFIX}:verification"
+        assert bb.entries[key].good_standing
+        assert audit.read_bytes() == pristine
+    finally:
+        audit.write_bytes(pristine)
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

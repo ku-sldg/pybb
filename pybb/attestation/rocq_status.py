@@ -198,6 +198,18 @@ def rocq_audit_status(verdict, build_targ: str, audit_targ: str,
     if poisoned:
         return _all(goals, UNKNOWN,
                     f"toolchain measurement failed: {', '.join(poisoned)}")
+    drifted = [c.targ_id or "audit file" for c in verdict.components
+               if not c.passed
+               and (c.args.get("metadata") or "").startswith("audit-file::")]
+    if drifted:
+        # the audit file is a rendering of config, and its sections bind
+        # to goals only through that rendering — a divergent rendering
+        # (deleted, substituted, or reordered queries) makes every
+        # section unattributable, however clean they look
+        return _all(goals, UNKNOWN,
+                    "audit file diverged from its canonical rendering "
+                    f"({', '.join(drifted)}) — its sections cannot be "
+                    "bound to goals")
     build = next((c for c in verdict.components if c.targ_id == build_targ),
                  None)
     audit = next((c for c in verdict.components if c.targ_id == audit_targ),

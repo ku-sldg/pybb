@@ -7,7 +7,7 @@
       "metadata": "tool::rocq",
       "asp_targid": "tool_rocq_rocq_targ",
       "golden_b64": "guUjjaCY74Tu0SqIimJfZnvjF+o4Uf9ICILW5+6RZyw=",
-      "golden_ts": "2026-08-10 11:01:05"
+      "golden_ts": "2026-08-14 10:40:58"
     },
     "tool_rocq_dune_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/bin/dune",
@@ -16,7 +16,7 @@
       "metadata": "tool::rocq",
       "asp_targid": "tool_rocq_dune_targ",
       "golden_b64": "vBu3/2neiGqdePGUAdQ/rQc/o7jtai+HVXqqN3Pr+VQ=",
-      "golden_ts": "2026-08-10 11:01:05"
+      "golden_ts": "2026-08-14 10:40:58"
     },
     "tool_rocq_rocq_2_targ": {
       "filepath": "/Users/adampetz/.opam/5.2/bin/rocq",
@@ -25,7 +25,7 @@
       "metadata": "tool::rocq",
       "asp_targid": "tool_rocq_rocq_2_targ",
       "golden_b64": "3jWFwkM8RvVSnbK+g4RzxVc4dqv356M5zH4ZTEU1REA=",
-      "golden_ts": "2026-08-10 11:01:05"
+      "golden_ts": "2026-08-14 10:40:58"
     },
     "tool_rocq_dune_2_targ": {
       "filepath": "/Users/adampetz/.opam/5.2/bin/dune",
@@ -34,7 +34,15 @@
       "metadata": "tool::rocq",
       "asp_targid": "tool_rocq_dune_2_targ",
       "golden_b64": "f4wv68clsVSaGD6xldSQCptnZBDvPA99S97bBwKyW18=",
-      "golden_ts": "2026-08-10 11:01:05"
+      "golden_ts": "2026-08-14 10:40:58"
+    },
+    "temp_control_rocq_audit_file_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/Assumptions.v",
+      "env_var": "",
+      "metadata": "audit-file::Assumptions.v",
+      "asp_targid": "temp_control_rocq_audit_file_targ",
+      "golden_b64": "BZEwMJKGRsxIAyBU4XvjlfPpvNh7ZJymPGJ6xRzgvB4=",
+      "golden_ts": "2026-08-14 10:40:58"
     }
   },
   "run_command_dune": {

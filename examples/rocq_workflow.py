@@ -249,13 +249,29 @@ class RocqExampleConfig:
         return f"{self.prefix}_assumptions_verification_targ"
 
     @property
+    def audit_file_targ(self) -> str:
+        return f"{self.prefix}_audit_file_targ"
+
+    @property
     def verification_targets(self) -> dict:
         """{asp_id: {targ: args}} in EXECUTION ORDER: the build first (the
         audit reads the theory's compiled .vo files from _build), then the
-        assumptions audit. The audit target's `goals` list IS the
-        appraiser's assumptions-mode configuration — build mode carries no
-        goals key, so a clean exit judges the build."""
+        assumptions audit, with the audit FILE's hash first
+        (measure-then-use: the rendering is anchored to its blessed bytes
+        before its output is trusted). The audit target's `goals` list IS
+        the appraiser's assumptions-mode configuration — build mode
+        carries no goals key, so a clean exit judges the build."""
         return {
+            # the audit file's byte anchor: Assumptions.v is a RENDERING of
+            # audit_goals, and the sections it prints bind to goals only
+            # positionally — so the rendering itself is hashed against the
+            # blessed canonical bytes, measure-then-use, before the audit
+            # runs. (The appraiser's section count stays as depth: it still
+            # catches config-vs-blessing drift.)
+            "hashfile": {self.audit_file_targ: {
+                "filepath": str(self.package_root / self.audit_rel),
+                "env_var": "",
+                "metadata": f"audit-file::{self.audit_rel}"}},
             "run_command_dune": {self.build_targ: {
                 "exe_args": ["build"],
                 "cwd": str(self.package_root)}},
@@ -635,6 +651,27 @@ def tamper_audit(cfg: RocqExampleConfig) -> bytes:
     path.write_text("\n".join(lines) + "\n")
     print(f"Deleted 'Print Assumptions {goal}.' from {cfg.audit_rel} — "
           "audit coverage silently shrank")
+    return original
+
+
+def tamper_audit_subst(cfg: RocqExampleConfig) -> bytes:
+    """Audit SUBSTITUTION tamper — the attack the byte anchor exists
+    for: replace one goal's `Print Assumptions` line with a query for a
+    DIFFERENT (closed) constant. The section count stays right and every
+    section still reads "Closed under the global context" — the output
+    check alone is fooled; only the rendering's hash refutes. Returns
+    the pristine bytes."""
+    path = cfg.package_root / cfg.audit_rel
+    original = path.read_bytes()
+    victim = cfg.audit_goals[len(cfg.audit_goals) // 2]
+    decoy = cfg.audit_goals[0]
+    text = original.decode().replace(
+        f"Print Assumptions {victim}.", f"Print Assumptions {decoy}.")
+    assert text != original.decode(), victim
+    path.write_text(text)
+    print(f"Substituted 'Print Assumptions {victim}.' with a duplicate "
+          f"query for '{decoy}' — section count unchanged, every section "
+          "still Closed")
     return original
 
 
@@ -1041,6 +1078,13 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "regeneration rung re-renders the audit from "
                              "config and re-attests: the derived-artifact "
                              "repair, neither restore nor synthesis")
+    parser.add_argument("--tamper-audit-subst", action="store_true",
+                        help="audit substitution tamper: swap one Print "
+                             "Assumptions query for a different closed "
+                             "constant — count and sections look perfect; "
+                             "only the audit file's byte anchor (hash vs "
+                             "the blessed canonical rendering) refutes; "
+                             "the regeneration rung repairs")
     parser.add_argument("--tamper-axiom", action="store_true",
                         help="smuggle an Axiom asserting the goal and prove "
                              "by it — elaborates cleanly, the audit names "
@@ -1131,7 +1175,7 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     cli = parser.parse_args()
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom,
-            cli.tamper_audit)) > 1:
+            cli.tamper_audit, cli.tamper_audit_subst)) > 1:
         parser.error("pick one tamper arc per run")
     if (cli.bless_model or cli.bless_tools) and not cli.provision:
         parser.error("--bless-model/--bless-tools are provisioning-time "
@@ -1235,12 +1279,15 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         pristine_proofs = tamper_admitted(cfg)
     elif cli.tamper_axiom:
         pristine_proofs = tamper_axiom(cfg)
-    pristine_audit = tamper_audit(cfg) if cli.tamper_audit else None
+    pristine_audit = (tamper_audit(cfg) if cli.tamper_audit
+                      else tamper_audit_subst(cfg)
+                      if cli.tamper_audit_subst else None)
     policy = "restore" if cli.immutable_model else "escalate"
     try:
         attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause,
                        model_drift_policy=policy,
-                       audit_repair=cli.tamper_audit)
+                       audit_repair=(cli.tamper_audit
+                                     or cli.tamper_audit_subst))
         if cli.repair and not cfg.restart_budget:
             # without a restart budget, verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")

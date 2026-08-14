@@ -56,9 +56,14 @@ warm dune builds are sub-second, and the audit is the point.
     python examples/temp_control_rocq.py --tamper --repair  # golden restore + in-session re-attestation
     python examples/temp_control_rocq.py --tamper-admitted  # Admitted: build green, audit names the goal
     python examples/temp_control_rocq.py --tamper-axiom     # smuggled Axiom: everything green EXCEPT the audit
-    python examples/temp_control_rocq.py --tamper-audit     # deleted Print Assumptions line: the section count
-                                                            # fails closed -> AuditRegenerateKS re-renders the
-                                                            # audit from config (the derived-artifact repair)
+    python examples/temp_control_rocq.py --tamper-audit     # deleted Print Assumptions line -> the audit file's
+                                                            # byte anchor (hash vs blessed rendering) refutes ->
+                                                            # AuditRegenerateKS re-renders from config
+    python examples/temp_control_rocq.py --tamper-audit-subst
+                                                            # one query swapped for a different CLOSED constant:
+                                                            # count right, sections all Closed, output check fooled
+                                                            # — only the byte anchor refutes (Print Assumptions
+                                                            # never echoes its query); same regeneration repair
     python examples/temp_control_rocq.py --status           # the goals checklist (quick view)
     python examples/temp_control_rocq.py --ready --status   # + readiness gate; failure poisons every cell
     python examples/temp_control_rocq.py --synthesize       # stub all proofs to Admitted -> portfolio proves all
@@ -178,7 +183,9 @@ stdout judges `audit_goals[k]` BY NAME (`pybb/attestation/rocq_status.py`):
   smuggled-postulate attribution)
 
 Fail-closed tiers below that: a failed `tool::` hash or protocol error
-poisons every cell to `?`; a failed BUILD component falls back to
+poisons every cell to `?`; a failed `audit-file::` hash (the audit's
+rendering diverged from its blessed canonical bytes — sections can no
+longer be bound to goals) poisons the same way; a failed BUILD component falls back to
 mapping the build stderr's `File "...", line N` into `rocq_decl_spans`
 (dune removes a failed file's `.vo`, so the audit after a failed build
 judged an incomplete tree — nothing else may stay ✓); an audit compile

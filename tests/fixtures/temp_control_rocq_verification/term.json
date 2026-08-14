@@ -70,21 +70,45 @@
               "TERM_BODY": [
                 "both_paths",
                 {
-                  "TERM_CONSTRUCTOR": "asp",
-                  "TERM_BODY": {
-                    "ASP_CONSTRUCTOR": "ASPC",
-                    "ASP_BODY": {
-                      "ASP_ID": "run_command_dune",
-                      "ASP_TARG_ID": "temp_control_rocq_build_verification_targ",
-                      "ASP_ARGS": {
-                        "exe_args": [
-                          "build"
-                        ],
-                        "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
-                        "asp_targid": "temp_control_rocq_build_verification_targ"
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "temp_control_rocq_audit_file_targ",
+                          "ASP_ARGS": {
+                            "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/Assumptions.v",
+                            "env_var": "",
+                            "metadata": "audit-file::Assumptions.v",
+                            "asp_targid": "temp_control_rocq_audit_file_targ",
+                            "golden_b64": "BZEwMJKGRsxIAyBU4XvjlfPpvNh7ZJymPGJ6xRzgvB4=",
+                            "golden_ts": "2026-08-14 10:40:58"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "run_command_dune",
+                          "ASP_TARG_ID": "temp_control_rocq_build_verification_targ",
+                          "ASP_ARGS": {
+                            "exe_args": [
+                              "build"
+                            ],
+                            "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq",
+                            "asp_targid": "temp_control_rocq_build_verification_targ"
+                          }
+                        }
                       }
                     }
-                  }
+                  ]
                 },
                 {
                   "TERM_CONSTRUCTOR": "asp",

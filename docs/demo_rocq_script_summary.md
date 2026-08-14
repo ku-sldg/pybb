@@ -76,11 +76,15 @@ An interactive walkthrough of the attestation workflow on the Rocq example
   the canonical wrapper, prove it against the blessed golden, confirm
   readiness.)
 
-## Scene 7 — audit coverage tamper: regeneration from config
+## Scene 7 — audit tamper: the rendering anchored to config
 
-- One deleted `Print Assumptions` line: every proof still proves, but what
-  *provability means* silently shrank — the appraiser's section count fails
-  closed and every cell poisons.
+- The audit file's sections bind to goals only through the file's structure,
+  so the **rendering itself is hashed** against its blessed canonical bytes,
+  measure-then-use. Beat 1: a deleted `Print Assumptions` line. Beat 2: a
+  query **substituted** for a different closed constant — count right, every
+  section "Closed", the output check alone fooled; only the byte anchor
+  refutes. (The section count stays as depth: it still catches
+  config-vs-blessing drift.)
 - The repair is the third species — neither restore nor synthesis: the audit
   file is a **rendering of AM configuration**, so the rung re-renders its
   Print block from config and the restarted episode re-attests.

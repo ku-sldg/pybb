@@ -27,6 +27,12 @@
       "measure_in_place": true,
       "metadata": "tool::rocq",
       "asp_targid": "tool_rocq_dune_2_targ"
+    },
+    "temp_control_rocq_audit_file_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/temp-control-rocq/Assumptions.v",
+      "env_var": "",
+      "metadata": "audit-file::Assumptions.v",
+      "asp_targid": "temp_control_rocq_audit_file_targ"
     }
   },
   "run_command_dune": {

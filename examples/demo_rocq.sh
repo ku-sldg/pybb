@@ -43,12 +43,15 @@
 #            are unrepairable from goldens by design, so YOU restore the
 #            tool and fresh measurement re-establishes standing (a false
 #            claim buys nothing but another look).
-#   scene 7  audit coverage tamper -> a deleted Print Assumptions line
-#            silently shrinks what provability means; the appraiser's
-#            section count fails closed and the checklist poisons. The
-#            repair is the THIRD species: neither restore nor synthesis
-#            but REGENERATION — the audit file is a rendering of AM
-#            config, so the rung re-renders it and re-attests.
+#   scene 7  audit tamper -> the audit file's RENDERING is hashed against
+#            its blessed canonical bytes (measure-then-use) because its
+#            sections bind to goals only through the file's structure.
+#            Beat 1: a deleted Print Assumptions line. Beat 2: a query
+#            SUBSTITUTED for a different closed constant — count right,
+#            sections all Closed, output check fooled; only the byte
+#            anchor refutes. Repair is the THIRD species: REGENERATION —
+#            the file is a rendering of AM config, re-rendered and
+#            re-attested.
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -659,30 +662,51 @@ if in_scenes 6; then
 fi
 
 if in_scenes 7; then
-  banner "SCENE 7 — audit coverage tamper: regeneration from config" \
-    "One Print Assumptions line is deleted: every proof still proves," \
-    "the audit still compiles — but what PROVABILITY MEANS just silently" \
-    "shrank. The appraiser counts sections against the audited goals and" \
-    "fails closed; every cell poisons. The repair is the third species —" \
-    "neither restore-from-golden nor synthesis: the audit file is a" \
-    "RENDERING of AM configuration, so the rung re-renders its Print" \
-    "block from config and the restarted episode re-attests."
+  banner "SCENE 7 — audit tamper: the rendering is anchored to config" \
+    "The audit file asks the questions; its sections bind to goals only" \
+    "through the file's structure — so the RENDERING itself is hashed" \
+    "against its blessed canonical bytes, measure-then-use, before any" \
+    "section is trusted. Two attacks, one anchor. The repair is the" \
+    "third species — neither restore nor synthesis: the file is a" \
+    "rendering of AM config, so the rung re-renders it and re-attests."
   cp "$AUDIT_FILE" "$AUDIT_PRISTINE"
+
+  echo "${BOLD}beat 1 — deletion: one Print Assumptions line removed${RESET}"
   ( cd "$REPO" && "$PY" -c "
 import sys; sys.path.insert(0, 'examples')
 import temp_control_rocq as t, rocq_workflow as rw
 rw.tamper_audit(t.CONFIG)" )
   echo
-  echo "${BOLD}the goals checklist under shrunken coverage — everything poisons:${RESET}"
+  echo "${BOLD}the goals checklist — every cell poisons on the byte anchor:${RESET}"
   run_driver --status
-  expect "audit mismatch" "the section-count mismatch must poison the checklist"
+  expect "diverged from its canonical rendering" \
+    "the audit-file hash must refute the tampered rendering"
   expect "?" "poisoned cells must read unknown, never presumed proved"
-  expect_absent "✗" "shrunken coverage refutes nothing — it unjudges everything"
+  expect_absent "✗" "a tampered rendering refutes nothing — it unjudges everything"
   cp "$AUDIT_PRISTINE" "$AUDIT_FILE"
-  pause
   echo
-  echo "${BOLD}now the repair arc — tamper, regenerate from config, re-attest:${RESET}"
+  echo "the appraiser's section count remains as DEPTH beneath the hash:"
+  echo "it still catches config-vs-blessing drift (goals added without"
+  echo "re-rendering and re-blessing)."
+  echo
+  echo "${BOLD}the repair arc — tamper, regenerate from config, re-attest:${RESET}"
   run_driver --tamper-audit
+  expect "regenerated Assumptions.v from config" \
+    "the regeneration rung must re-render the audit from config"
+  expect "repaired and re-attested clean in-session" \
+    "the regenerated audit must re-attest in one session"
+  pause
+
+  echo
+  echo "${BOLD}beat 2 — substitution: the attack the byte anchor exists for${RESET}"
+  echo "One query is swapped for a DIFFERENT closed constant: the section"
+  echo "count stays right, every section still reads 'Closed under the"
+  echo "global context' — Print Assumptions never echoes its query, so"
+  echo "the output check alone is fooled. Only the rendering's hash"
+  echo "refutes:"
+  run_driver --tamper-audit-subst
+  expect "Substituted 'Print Assumptions" \
+    "the substitution tamper must apply"
   expect "regenerated Assumptions.v from config" \
     "the regeneration rung must re-render the audit from config"
   expect "repaired and re-attested clean in-session" \
