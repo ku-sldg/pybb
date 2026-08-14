@@ -264,6 +264,61 @@ def test_model_drift_policy_validated():
                           model_drift_policy="tolerate")
 
 
+def test_baseline_tamper_refuses_at_readiness():
+    """The repair that must refuse: the trust state is attacked while the
+    live tree stays pristine, and readiness stops attestation before it
+    starts. Beat 1: one flipped byte of stored bundle evidence breaks the
+    bundle signature. Beat 2: a hand-edited installed golden leaves the
+    signature intact but fails the anchor to the signed evidence. No
+    repair chain exists for either — re-blessing is out-of-band."""
+    import json as _json
+    from pybb.attestation import (CvmSubprocessClient,
+                                  make_readiness_predicate,
+                                  readiness_request)
+
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    bundle = GOLDEN_ROOT / "_bundles" / f"{PREFIX}_model" / "provision_bundle.json"
+    args_path = FIXTURES / f"{PREFIX}_model" / "asp_args.json"
+    bundle_pristine = bundle.read_bytes()
+    args_pristine = args_path.read_bytes()
+
+    def report():
+        protocols = rw.load_protocols(rocq.CONFIG)
+        return make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT,
+            client=CvmSubprocessClient())(readiness_request(list(protocols)))
+
+    def flip(s, at=10):
+        return s[:at] + ("A" if s[at] != "A" else "B") + s[at + 1:]
+
+    try:
+        d = _json.loads(bundle_pristine)
+        raw = d[0][0]["RawEv"]
+        i = max(range(1, len(raw)), key=lambda k: len(raw[k]))  # never the sig slot
+        raw[i] = flip(raw[i])
+        bundle.write_text(_json.dumps(d))
+        r = report()
+        assert not r
+        assert any("signature verification FAILED" in p
+                   for p in r.baseline_problems)
+        bundle.write_bytes(bundle_pristine)
+
+        a = _json.loads(args_pristine)
+        targ = a["readfile"][f"{PREFIX}_model_props_targ"]
+        targ["golden_b64"] = flip(targ["golden_b64"])
+        args_path.write_text(_json.dumps(a, indent=2))
+        r = report()
+        assert not r
+        assert any("Blessed-content appraisal failed" in p
+                   for p in r.baseline_problems)
+        # the bundle is authentic in this beat: only the anchor refutes
+        assert not any("signature verification FAILED" in p
+                       for p in r.baseline_problems)
+    finally:
+        bundle.write_bytes(bundle_pristine)
+        args_path.write_bytes(args_pristine)
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

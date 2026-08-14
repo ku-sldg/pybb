@@ -46,6 +46,16 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 - Tactic-portfolio repair, in-session re-attestation, and the archived
   **signed evidence** of the re-measurement (never a re-blessing).
 
+## Scene 5 — baseline tamper: the repair that must refuse
+
+- The trust state itself is attacked; the live tree stays pristine. Two
+  beats against the model baseline: a **flipped byte of signed bundle
+  evidence** (the signature refutes) and a **hand-edited installed golden**
+  (the anchor to the signed evidence refutes; the signature stays silent).
+- Both stop attestation before it starts — and no knowledge source can
+  repair a baseline: the readiness gate's failure chain is empty by design,
+  so the only exit is the administrator's out-of-band re-bless.
+
 ## Throughout
 
 - Every scene gates on expected output (including no-✗/no-? checks on clean

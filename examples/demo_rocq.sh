@@ -28,6 +28,12 @@
 #   scene 4  verification failure -> automated repair (tactic portfolio),
 #            in-session re-attestation, then the goals checklist and the
 #            archived signed evidence of the re-measurement.
+#   scene 5  baseline tamper -> the repair that must refuse: a flipped
+#            byte of signed bundle evidence (signature refutes) and a
+#            hand-edited installed golden (anchor refutes, signature
+#            silent) each stop attestation before it starts; no KS can
+#            repair a baseline — the only exit is the administrator's
+#            out-of-band re-bless.
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -37,7 +43,7 @@
 #   --no-vscode            never open VSCode; show the diff in the terminal
 #   --repair-strategy S    portfolio (default) | llm | pause  (only
 #                          portfolio is wired into the demo so far)
-#   --scenes "1 2 3 4"     run a subset of scenes
+#   --scenes "1 2 3 4 5"   run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --auto bless|revert    answer scene 2's ruling automatically (testing)
 #   --drift benign|breaking  pick scene 2's spec change without prompting
@@ -57,7 +63,7 @@ EVIDENCE="$REPO/evidence"
 
 NO_VSCODE=0
 STRATEGY="portfolio"
-SCENES="1 2 3 4"
+SCENES="1 2 3 4 5"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -134,6 +140,10 @@ expect_absent() {  # expect_absent <pattern> <what went wrong>
 PROOFS="$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
 PRISTINE="$LOG_DIR/Props.v.pristine"
 PROOFS_PRISTINE="$LOG_DIR/Proofs.v.pristine"
+MODEL_BUNDLE="$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.json"
+MODEL_ARGS="$REPO/tests/fixtures/temp_control_rocq_model/asp_args.json"
+BUNDLE_PRISTINE="$LOG_DIR/model_bundle.pristine"
+ARGS_PRISTINE="$LOG_DIR/model_asp_args.pristine"
 cp "$PROPS" "$PRISTINE"
 cp "$PROOFS" "$PROOFS_PRISTINE"
 BLESSED_DURING_DEMO=0
@@ -149,6 +159,13 @@ cleanup() {
     cp "$PROOFS_PRISTINE" "$PROOFS"
     echo "cleanup: restored the original $(basename "$PROOFS")"
   fi
+  for pair in "$BUNDLE_PRISTINE:$MODEL_BUNDLE" "$ARGS_PRISTINE:$MODEL_ARGS"; do
+    save="${pair%%:*}"; live="${pair##*:}"
+    if [ -f "$save" ] && ! cmp -s "$save" "$live"; then
+      cp "$save" "$live"
+      echo "cleanup: restored $(basename "$live") (scene 5 tamper)"
+    fi
+  done
   if [ "$BLESSED_DURING_DEMO" = 1 ]; then
     echo "cleanup: re-blessing the ORIGINAL baseline (the demo blessing was a prop)"
     ( cd "$REPO" && "$PY" "$DRIVER" --provision --bless-model ) >"$LOG_DIR/cleanup.log" 2>&1 \
@@ -392,6 +409,71 @@ rw._break_proof(t.CONFIG)" )
   echo "${BOLD}The signed evidence of the re-measurement (NOT a re-blessing):${RESET}"
   latest_evidence="$(ls -t "$EVIDENCE" 2>/dev/null | head -1)"
   [ -n "$latest_evidence" ] && ls "$EVIDENCE/$latest_evidence" | sed "s|^|  evidence/$latest_evidence/|"
+  pause
+fi
+
+if in_scenes 5; then
+  banner "SCENE 5 — baseline tamper: the repair that must refuse" \
+    "Now the TRUST STATE itself is attacked — the live tree stays" \
+    "pristine throughout. Readiness re-appraises the signed provisioning" \
+    "record (appraisal-only CVM run: sig_appr verifies the bundle," \
+    "goldenbytes anchors the installed goldens to the signed evidence)" \
+    "and refuses to START attestation. No knowledge source can repair a" \
+    "baseline — the ready entry's failure chain is empty BY DESIGN," \
+    "provisioning is unreachable from failure handling — so the only" \
+    "exit is the administrator's out-of-band re-bless."
+  cp "$MODEL_BUNDLE" "$BUNDLE_PRISTINE"
+  cp "$MODEL_ARGS" "$ARGS_PRISTINE"
+
+  echo "${BOLD}beat 1 — tamper the signed record: flip ONE byte of stored evidence${RESET}"
+  "$PY" - "$MODEL_BUNDLE" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+raw = d[0][0]["RawEv"]
+i = max(range(1, len(raw)), key=lambda k: len(raw[k]))  # largest payload; never slot 0, the signature
+s = raw[i]
+raw[i] = s[:10] + ("A" if s[10] != "A" else "B") + s[11:]
+json.dump(d, open(path, "w"))
+print(f"flipped one character of RawEv slot {i} in the model bundle")
+PYEOF
+  run_driver
+  expect "bundle signature verification FAILED" \
+    "a tampered bundle byte must break the signature"
+  expect "attestation never started" \
+    "a refused baseline must stop attestation before it starts"
+  cp "$BUNDLE_PRISTINE" "$MODEL_BUNDLE"
+  echo
+  echo "${BOLD}the record itself was not authentic — restored; now the other side:${RESET}"
+  pause
+
+  echo "${BOLD}beat 2 — tamper the installation: hand-edit one installed golden${RESET}"
+  "$PY" - "$MODEL_ARGS" <<'PYEOF'
+import json, sys
+path = sys.argv[1]
+d = json.load(open(path))
+t = d["readfile"]["temp_control_rocq_model_props_targ"]
+g = t["golden_b64"]
+t["golden_b64"] = g[:10] + ("A" if g[10] != "A" else "B") + g[11:]
+json.dump(d, open(path, "w"), indent=2)
+print("flipped one character of the INSTALLED golden for Props.v")
+PYEOF
+  run_driver
+  expect "Blessed-content appraisal failed" \
+    "an edited installed golden must fail the anchor to the signed evidence"
+  expect "attestation never started" \
+    "a refused baseline must stop attestation before it starts"
+  expect_absent "signature verification FAILED" \
+    "the bundle is authentic in this beat — only the anchor may refute"
+  cp "$ARGS_PRISTINE" "$MODEL_ARGS"
+  echo
+  echo "${BOLD}Same gate, two attributed refusals: record integrity (signature)${RESET}"
+  echo "${BOLD}vs installation consistency (anchor) — and in both, the live tree${RESET}"
+  echo "${BOLD}was pristine. The only exit is the administrator's re-bless${RESET}"
+  echo "${BOLD}(--provision --bless-model); examples/verify_baseline.py is the${RESET}"
+  echo "${BOLD}operator's audit view. Restored — confirming readiness:${RESET}"
+  run_driver --ready
+  expect "readiness: PASS" "the restored baseline must verify again"
   pause
 fi
 

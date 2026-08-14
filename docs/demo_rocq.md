@@ -114,7 +114,12 @@ untouched, so for the breaking flavor the next episode shows model and
 contracts clean against the new blessing while verification refutes the
 not-yet-proved obligation, which `--repair-proofs --keep` (the
 portfolio re-proving against the blessed statements) then adapts;
-**revert** confirms the quarantined tree. Scene 3 replays
+**revert** confirms the quarantined tree. Scene 5 attacks the trust
+state itself — one flipped byte of signed bundle evidence (signature
+refutes) and one hand-edited installed golden (anchor refutes,
+signature silent): attestation never starts, no KS can repair a
+baseline, and the only exit is the administrator's out-of-band
+re-bless. Scene 3 replays
 drift under `--immutable-model` — restored and re-attested in-session,
 no interaction. Scene 4 is `--break-proof`: the audit refutes, the
 tactic portfolio repairs, the restarted episode re-attests, and the
