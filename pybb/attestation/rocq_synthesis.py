@@ -47,7 +47,7 @@ from .rocq_status import (
 from pydantic import BaseModel
 
 from ..knowledge_source import KnowledgeSource
-from .repair import OutOfBandRepairKS
+from .repair import OutOfBandRepairKS, SliceRestoreKS
 from .synthesis import (
     BlackBoxRepairKS,
     GoalContext,
@@ -56,6 +56,7 @@ from .synthesis import (
     LlmImplEngine,
     RepairContext,
 )
+from .snapshot import mirror_path
 from .targetmap import rocq_decl_spans
 
 _TERMINATOR = re.compile(r"^\s*(Qed|Admitted|Defined)\s*\.\s*$")
@@ -1267,3 +1268,45 @@ class RocqSpecGuidedImplEngine:
                   if (cm := re.fullmatch(r"([\w ]+?)\s*<\s*([\w ]+)",
                                          hyp)) is not None]
         return (guards, rhs, False)
+
+
+# ── declaration-anchored slice restore ────────────────────────────────────────
+
+class RocqSliceRestoreKS(SliceRestoreKS):
+    """
+    Slice restore for declaration-named Rocq contract slices: locate the
+    violated DECLARATION BY NAME (the slice's `metadata` tail) in both
+    the live file and its golden copy via the comment-aware syntax scan,
+    and splice only that declaration's lines. Position-independent — an
+    insertion elsewhere in the file moves the declaration, not the
+    repair — and scope-disciplined: everything outside the violated
+    declaration (benign drift included) is left untouched. Falls back to
+    the marker-based splice for components without a named declaration.
+    """
+
+    name: str = "repair:slice"
+
+    def _splice(self, args: dict) -> bool:
+        meta = args.get("metadata") or ""
+        filepath = args.get("filepath")
+        if "::" not in meta or not filepath:
+            return super()._splice(args)
+        name = meta.rsplit("::", 1)[-1]
+        live = Path(filepath)
+        golden_copy = mirror_path(self.golden_root, live)
+        if not (live.is_file() and golden_copy.is_file()):
+            return False
+        live_text = live.read_text()
+        gold_text = golden_copy.read_text()
+        live_span = next(((s, e) for _k, n, s, e in rocq_decl_spans(live_text)
+                          if n == name), None)
+        gold_span = next(((s, e) for _k, n, s, e in rocq_decl_spans(gold_text)
+                          if n == name), None)
+        if live_span is None or gold_span is None:
+            return False
+        live_lines = live_text.splitlines(keepends=True)
+        gold_lines = gold_text.splitlines(keepends=True)
+        live_lines[live_span[0] - 1:live_span[1]] = \
+            gold_lines[gold_span[0] - 1:gold_span[1]]
+        live.write_text("".join(live_lines))
+        return True

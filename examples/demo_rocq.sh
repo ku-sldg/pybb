@@ -21,10 +21,12 @@
 #            episode shows model/contracts clean with verification
 #            refuting the not-yet-proved obligation, which proof repair
 #            (--repair-proofs) then adapts.
-#   scene 3  the same drift under --immutable-model: the per-session
-#            ruling that model files never drift — restore from golden on
-#            the failed hash appraisal and re-attest in-session, no
-#            interaction.
+#   scene 3  restore at two grains: --immutable-model (whole-file: model
+#            files never drift — the failed hash appraisal IS the repair
+#            order, no interaction) and --repair-granularity slice (only
+#            the violated declaration is spliced back, by NAME — benign
+#            drift elsewhere survives, and the model entry ends attested
+#            clean via the contracts refinement).
 #   scene 4  verification failure -> repair by selectable strategy:
 #            portfolio (deterministic, keyless), llm (behind the
 #            portfolio; dry-run without a key), or pause (out-of-band —
@@ -427,10 +429,13 @@ if in_scenes 2; then
 fi
 
 if in_scenes 3; then
-  banner "SCENE 3 — the same drift under --immutable-model" \
-    "The per-session ruling for automated pipelines: model files must" \
-    "never drift. The failed hash appraisal IS the repair order — restore" \
-    "from golden, restart the episode in-session, no user interaction."
+  banner "SCENE 3 — restore, at two grains" \
+    "Beat 1, --immutable-model: the per-session ruling for automated" \
+    "pipelines — model files must never drift; the failed hash appraisal" \
+    "IS the repair order, whole-file restore + in-session re-attest, no" \
+    "interaction. Beat 2, --repair-granularity slice: the repair unit is" \
+    "the MEASUREMENT unit — only the violated declaration is spliced" \
+    "back, and benign drift elsewhere in the file survives."
   edit_spec 's/50 <= low sp/45 <= low sp/' "SetPoint_valid floor 50 -> 45"
   run_driver --immutable-model
   expect "repaired and re-attested clean in-session" \
@@ -446,6 +451,27 @@ if in_scenes 3; then
   expect "✓" "every goal must check off over the restored tree"
   expect_absent "✗" "no goal may stay refuted over the restored tree"
   expect_absent "?" "no goal may stay unjudged over the restored tree"
+  pause
+
+  echo
+  echo "${BOLD}beat 2 — slice granularity: the repair unit is the measurement unit${RESET}"
+  echo "A benign note lands OUTSIDE every declaration, and one blessed"
+  echo "slice is corrupted. Whole-file restore would clobber the note;"
+  echo "slice restore splices ONLY the violated declaration (located by"
+  echo "NAME — insertion-robust). The proof it worked is in the summary:"
+  echo "episode 2's model entry passes VIA the contracts refinement —"
+  echo "the model hash still failed (the note survived!), and every"
+  echo "declaration was intact."
+  printf '\n(* engineering note: candidate sensor swap under review *)\n' >> "$PROPS"
+  run_driver --tamper --repair --repair-granularity slice
+  expect "repair:slice: restored 1 block(s) from golden" \
+    "the slice rung must restore exactly the violated declaration"
+  expect "temp_control_rocq:model: all attested components intact (temp_control_rocq_contracts passed)" \
+    "the model entry must pass VIA contracts — the surviving note is why"
+  expect "repaired and re-attested clean in-session" \
+    "the spliced declaration must re-attest in one session"
+  echo
+  echo "(the driver's exit self-clean then restored the note too — demo policy)"
   pause
 fi
 

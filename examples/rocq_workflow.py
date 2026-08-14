@@ -63,6 +63,7 @@ from pybb.attestation import (
     RocqProofSynthesisKS,
     AuditRegenerateKS,
     RocqSpecGuidedImplEngine,
+    RocqSliceRestoreKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
@@ -987,7 +988,8 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
                    repair: bool, pause: bool = False,
                    gate=None,
                    model_drift_policy: str = "escalate",
-                   audit_repair: bool = False) -> BlackboardController:
+                   audit_repair: bool = False,
+                   repair_granularity: str = "whole-file") -> BlackboardController:
     """One attestation episode. The verification class is ALWAYS-RUN —
     the audit is cheap and it is the point of this example; its failures
     escalate directly (a refuted proof is not golden-restorable).
@@ -1027,8 +1029,16 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,
                                       client=client))
-    restore = [WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                  refined_by=cfg.contracts_id)] if repair else []
+    # repair_granularity: "whole-file" restores every confirmed-violated
+    # file; "slice" splices ONLY the violated declarations (located BY
+    # NAME, insertion-robust) — repair unit = measurement unit, and
+    # benign drift outside the violated declarations survives (the model
+    # hash then ends "attested clean at finer granularity").
+    restore_ks = (RocqSliceRestoreKS(golden_root=GOLDEN_ROOT)
+                  if repair_granularity == "slice"
+                  else WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
+                                          refined_by=cfg.contracts_id))
+    restore = [restore_ks] if repair else []
     if repair and cfg.restart_budget:
         # judged-by-fresh-measurement repair: the chain ends by requesting a
         # fresh episode instead of escalating "pending next episode". The
@@ -1127,6 +1137,14 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "by it — elaborates cleanly, the audit names "
                              "the axiom")
     parser.add_argument("--repair", action="store_true")
+    parser.add_argument("--repair-granularity",
+                        choices=("whole-file", "slice"), default="whole-file",
+                        help="--repair's restore unit: whole-file (every "
+                             "confirmed-violated file) or slice (ONLY the "
+                             "violated declarations, located by name — "
+                             "benign drift outside them survives and the "
+                             "hash tier ends attested clean at finer "
+                             "granularity)")
     parser.add_argument("--immutable-model", action="store_true",
                         help="per-session model drift ruling: model files "
                              "must never drift from their golden contents "
@@ -1331,7 +1349,8 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause,
                        model_drift_policy=policy,
                        audit_repair=(cli.tamper_audit
-                                     or cli.tamper_audit_subst))
+                                     or cli.tamper_audit_subst),
+                       repair_granularity=cli.repair_granularity)
         if cli.repair and not cfg.restart_budget:
             # without a restart budget, verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")

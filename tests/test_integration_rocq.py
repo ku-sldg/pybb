@@ -515,6 +515,69 @@ def test_impl_tamper_repaired_by_ladder_not_proofs():
         PROOFS.write_bytes(proofs_pristine)
 
 
+def test_rocq_slice_restore_is_decl_anchored(tmp_path):
+    """The declaration-anchored splice: located BY NAME (insertion-
+    robust), it restores only the violated declaration — drift outside
+    it, including an insertion that shifted every position, survives."""
+    from pybb.attestation import RocqSliceRestoreKS
+    from pybb.attestation.snapshot import mirror_path
+
+    golden_root = tmp_path / "golden"
+    live = tmp_path / "pkg" / "Props.v"
+    live.parent.mkdir(parents=True)
+    gold = mirror_path(golden_root, live)
+    gold.parent.mkdir(parents=True)
+    canonical = ("Definition alpha (x : Z) : Prop :=\n  0 <= x.\n\n"
+                 "Definition beta (x : Z) : Prop :=\n  x <= 99.\n")
+    gold.write_text(canonical)
+    live.write_text("(* an insertion shifts every position *)\n"
+                    "Definition extra : Prop := True.\n\n"
+                    "Definition alpha (x : Z) : Prop :=\n  0 <= x.\n\n"
+                    "Definition beta (x : Z) : Prop :=\n  TAMPERED.\n")
+    ks = RocqSliceRestoreKS(golden_root=golden_root)
+    assert ks._splice({"metadata": "T.Props::beta", "filepath": str(live)})
+    text = live.read_text()
+    assert "  x <= 99." in text and "TAMPERED" not in text
+    assert "an insertion shifts every position" in text, \
+        "drift outside the violated declaration must survive"
+    assert "Definition extra : Prop := True." in text
+    # unknown declaration: unrestorable, file untouched
+    before = live.read_bytes()
+    assert not ks._splice({"metadata": "T.Props::gamma",
+                           "filepath": str(live)})
+    assert live.read_bytes() == before
+
+
+@needs_rocq
+def test_slice_granularity_restores_decl_and_spares_benign_drift():
+    """Scene-3 beat 2: a benign note outside every declaration plus one
+    corrupted blessed slice. Slice-granularity repair splices only the
+    violated declaration; the note SURVIVES to re-measurement, so the
+    model entry ends good standing via the contracts refinement."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    pristine = PROPS.read_bytes()
+    note = "\n(* engineering note: candidate sensor swap under review *)\n"
+    PROPS.write_bytes(pristine + note.encode())
+    protocols = rw.load_protocols(cfg)
+    rw.tamper(cfg, protocols)
+    try:
+        ctl = rw.attest_episode(cfg, protocols, repair=True,
+                                repair_granularity="slice")
+        bb = ctl.blackboard
+        assert bb.entries[f"{PREFIX}:model"].good_standing
+        assert bb.entries[f"{PREFIX}:contracts"].good_standing
+        text = PROPS.read_text()
+        assert "engineering note" in text, "benign drift must survive"
+        assert "TAMPERED" not in text, "the violated slice must be restored"
+        # the model entry's final verdict came from the refinement — the
+        # hash still failed over the surviving note
+        assert bb.entries[f"{PREFIX}:model"].result.protocol \
+            == cfg.contracts_id
+    finally:
+        PROPS.write_bytes(pristine)
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

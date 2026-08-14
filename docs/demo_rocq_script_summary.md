@@ -31,12 +31,16 @@ An interactive walkthrough of the attestation workflow on the Rocq example
   automated **proof repair** (`--repair-proofs`, tactic portfolio) adapts the
   proof, judged by fresh measurement.
 
-## Scene 3 — immutable-model policy
+## Scene 3 — restore, at two grains
 
-- The same drift under `--immutable-model`: a failed model hash appraisal is
-  the repair order — restore from golden and re-attest **in-session**, no
-  interaction. The policy for automated pipelines where spec drift is never
-  tolerated.
+- **Whole-file** (`--immutable-model`): the ruling for automated pipelines —
+  model files never drift; a failed hash appraisal is the repair order,
+  restore + re-attest **in-session**, no interaction.
+- **Slice** (`--repair-granularity slice`): the repair unit is the
+  measurement unit — only the violated declaration is spliced back (located
+  by **name**, insertion-robust), benign drift elsewhere survives, and the
+  model entry ends attested clean *via the contracts refinement* — the
+  terminal proof the note survived to re-measurement.
 
 ## Scene 4 — verification failure, repair by selectable strategy
 
@@ -107,4 +111,4 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
 the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
-blessing, slice-granularity restore, the laundering-derivability beat.
+blessing, the laundering-derivability beat.

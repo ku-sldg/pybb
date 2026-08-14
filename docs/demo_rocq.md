@@ -54,6 +54,10 @@ warm dune builds are sub-second, and the audit is the point.
     python examples/temp_control_rocq.py                    # clean episode
     python examples/temp_control_rocq.py --tamper           # blessed-slice tamper -> attribution names the prop
     python examples/temp_control_rocq.py --tamper --repair  # golden restore + in-session re-attestation
+    python examples/temp_control_rocq.py --tamper --repair --repair-granularity slice
+                                                            # splice ONLY the violated declaration (by name,
+                                                            # insertion-robust); benign drift elsewhere survives and
+                                                            # the model entry passes via the contracts refinement
     python examples/temp_control_rocq.py --tamper-admitted  # Admitted: build green, audit names the goal
     python examples/temp_control_rocq.py --tamper-axiom     # smuggled Axiom: everything green EXCEPT the audit
     python examples/temp_control_rocq.py --tamper-audit     # deleted Print Assumptions line -> the audit file's
