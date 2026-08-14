@@ -62,6 +62,18 @@ An interactive walkthrough of the attestation workflow on the Rocq example
   repair a baseline: the readiness gate's failure chain is empty by design,
   so the only exit is the administrator's out-of-band re-bless.
 
+## Scene 6 — toolchain tamper: measure-then-use catches the tool
+
+- A **functionality-preserving** edit to the rocq wrapper: every build and
+  audit still runs and looks fine, but the tool hash — taken in the same
+  term, before use — refutes, and every proof cell poisons to `?`
+  fail-closed. Readiness still passes: the stored record is coherent; the
+  *live* tool drifted.
+- Hash-only artifacts are unrepairable from goldens by design: the repair is
+  the out-of-band pause rung — you restore the tool, fresh measurement
+  re-establishes standing, and a claim without the repair just buys another
+  failing measurement.
+
 ## Throughout
 
 - Every scene gates on expected output (including no-✗/no-? checks on clean
@@ -70,4 +82,4 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
 the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
-blessing, toolchain-tamper and audit-regeneration repair scenes.
+blessing, audit-regeneration and implementation-repair scenes.

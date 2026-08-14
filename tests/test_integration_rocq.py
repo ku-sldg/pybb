@@ -319,6 +319,35 @@ def test_baseline_tamper_refuses_at_readiness():
         args_path.write_bytes(args_pristine)
 
 
+@needs_rocq
+def test_tool_tamper_poisons_and_fresh_measurement_recovers():
+    """Scene-6 mechanics: a functionality-PRESERVING edit to the rocq
+    wrapper still refutes the measure-then-use tool hash — the tier runs
+    and its outputs look fine, but the verdict fails on the tool targ
+    (deduped across the bseq branches). Restoring the tool and measuring
+    fresh recovers: hash-only artifacts repair out-of-band, judged by
+    measurement."""
+    from pybb.attestation.proof_status import failed_tools
+
+    pristine = ROCQ_WRAPPER.read_bytes()
+    protocols = _protocols(VERIFICATION_ID)
+
+    def measure():
+        return make_attestation_predicate(CvmSubprocessClient(), protocols)(
+            attestation_request(VERIFICATION_ID))
+
+    try:
+        ROCQ_WRAPPER.write_bytes(pristine + b"# drifted\n")
+        verdict = measure()
+        assert not verdict
+        tools = failed_tools(verdict)
+        assert tools and all(t.startswith("tool_rocq_rocq") for t in tools)
+        assert len(tools) == len(set(tools)), "branch replicas must dedupe"
+    finally:
+        ROCQ_WRAPPER.write_bytes(pristine)
+    assert measure(), "the restored toolchain must measure clean"
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

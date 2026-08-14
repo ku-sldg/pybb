@@ -125,7 +125,11 @@ state itself — one flipped byte of signed bundle evidence (signature
 refutes) and one hand-edited installed golden (anchor refutes,
 signature silent): attestation never starts, no KS can repair a
 baseline, and the only exit is the administrator's out-of-band
-re-bless. Scene 3 replays
+re-bless. Scene 6 edits the rocq wrapper functionality-preservingly:
+the measure-then-use tool hash refutes while every run still looks
+fine, the checklist poisons fail-closed, and the repair is the pause
+rung — hash-only artifacts restore out-of-band, judged by fresh
+measurement. Scene 3 replays
 drift under `--immutable-model` — restored and re-attested in-session,
 no interaction. Scene 4 is `--break-proof`: the audit refutes, the
 tactic portfolio repairs, the restarted episode re-attests, and the

@@ -114,10 +114,13 @@ def _named_spans(text: str) -> List[tuple]:
 def failed_tools(verdict) -> List[str]:
     """targ ids of failed tool-measurement components in a verdict —
     the poisoning condition: the term's own toolchain hashes did not
-    verify, so its retained output cannot be trusted."""
-    return [c.targ_id or c.description for c in verdict.components
-            if not c.passed
-            and (c.args.get("metadata") or "").startswith("tool::")]
+    verify, so its retained output cannot be trusted. Deduped:
+    bseq(both_paths) replicates prior evidence into both branches, so
+    one violated tool hash is witnessed once per branch."""
+    return list(dict.fromkeys(
+        c.targ_id or c.description for c in verdict.components
+        if not c.passed
+        and (c.args.get("metadata") or "").startswith("tool::")))
 
 
 def stale_files(comp) -> List[str]:

@@ -36,6 +36,13 @@
 #            silent) each stop attestation before it starts; no KS can
 #            repair a baseline — the only exit is the administrator's
 #            out-of-band re-bless.
+#   scene 6  toolchain tamper -> a functionality-PRESERVING edit to the
+#            rocq wrapper still refutes the measure-then-use tool hash;
+#            every proof cell poisons fail-closed ('?'), and the honest
+#            repair is the out-of-band pause rung: hash-only artifacts
+#            are unrepairable from goldens by design, so YOU restore the
+#            tool and fresh measurement re-establishes standing (a false
+#            claim buys nothing but another look).
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -48,7 +55,7 @@
 #                          without) | pause (out-of-band: you repair,
 #                          measurement judges); prompted interactively
 #                          when not given
-#   --scenes "1 2 3 4 5"   run a subset of scenes
+#   --scenes "1 2 3 4 5 6" run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --auto bless|revert    answer scene 2's ruling automatically (testing)
 #   --drift benign|breaking  pick scene 2's spec change without prompting
@@ -68,7 +75,7 @@ EVIDENCE="$REPO/evidence"
 
 NO_VSCODE=0
 STRATEGY=""
-SCENES="1 2 3 4 5"
+SCENES="1 2 3 4 5 6"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -143,6 +150,8 @@ MODEL_BUNDLE="$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.jso
 MODEL_ARGS="$REPO/tests/fixtures/temp_control_rocq_model/asp_args.json"
 BUNDLE_PRISTINE="$LOG_DIR/model_bundle.pristine"
 ARGS_PRISTINE="$LOG_DIR/model_asp_args.pristine"
+ROCQ_WRAPPER="$HOME/Claude_workspace/bin/rocq"
+WRAPPER_PRISTINE="$LOG_DIR/rocq_wrapper.pristine"
 cp "$PROPS" "$PRISTINE"
 cp "$PROOFS" "$PROOFS_PRISTINE"
 BLESSED_DURING_DEMO=0
@@ -158,11 +167,12 @@ cleanup() {
     cp "$PROOFS_PRISTINE" "$PROOFS"
     echo "cleanup: restored the original $(basename "$PROOFS")"
   fi
-  for pair in "$BUNDLE_PRISTINE:$MODEL_BUNDLE" "$ARGS_PRISTINE:$MODEL_ARGS"; do
+  for pair in "$BUNDLE_PRISTINE:$MODEL_BUNDLE" "$ARGS_PRISTINE:$MODEL_ARGS" \
+              "$WRAPPER_PRISTINE:$ROCQ_WRAPPER"; do
     save="${pair%%:*}"; live="${pair##*:}"
     if [ -f "$save" ] && ! cmp -s "$save" "$live"; then
       cp "$save" "$live"
-      echo "cleanup: restored $(basename "$live") (scene 5 tamper)"
+      echo "cleanup: restored $(basename "$live") (scene tamper)"
     fi
   done
   if [ "$BLESSED_DURING_DEMO" = 1 ]; then
@@ -538,6 +548,57 @@ PYEOF
   echo "${BOLD}operator's audit view. Restored — confirming readiness:${RESET}"
   run_driver --ready
   expect "readiness: PASS" "the restored baseline must verify again"
+  pause
+fi
+
+if in_scenes 6; then
+  banner "SCENE 6 — toolchain tamper: measure-then-use catches the tool" \
+    "The rocq WRAPPER is edited — functionality preserved (a comment" \
+    "line), so every build and audit still runs and looks fine. The" \
+    "verification term hashes the toolchain IN THE SAME TERM, before" \
+    "using it: the tool hash refutes, and every proof cell poisons to" \
+    "'?' fail-closed — whether the change was benign is precisely what" \
+    "an unblessed tool cannot be trusted to answer. Readiness still" \
+    "PASSES: the stored record is coherent; it is the LIVE tool that" \
+    "drifted. Hash-only artifacts are unrepairable from goldens by" \
+    "design — the repair is out-of-band, judged by fresh measurement."
+  cp "$ROCQ_WRAPPER" "$WRAPPER_PRISTINE"
+  printf '# drifted: innocuous-looking edit\n' >> "$ROCQ_WRAPPER"
+  echo "appended one comment line to $ROCQ_WRAPPER"
+  echo
+  echo "${BOLD}the goals checklist under an unblessed tool — everything poisons:${RESET}"
+  run_driver --status
+  expect "toolchain measurement failed" \
+    "the tool-hash failure must poison the checklist"
+  expect "?" "poisoned cells must read unknown, never presumed proved"
+  expect_absent "✗" "no goal may be REFUTED by a tool drift — only unjudged"
+  pause
+  echo
+  if [ "$FAST" = 1 ]; then
+    echo "(unattended: answering [s]kip — the decline path, escalation follows)"
+    printf 's\n' | run_driver --pause
+    expect "user intervention required" \
+      "declining the operator gate must fall through to escalation"
+    cp "$WRAPPER_PRISTINE" "$ROCQ_WRAPPER"
+    echo
+    echo "${BOLD}wrapper restored out-of-band; fresh measurement re-establishes standing:${RESET}"
+    run_driver
+    expect "all attested components intact" \
+      "the restored toolchain must attest clean"
+  else
+    echo "${BOLD}the episode blocks on the pause rung. Repair in ANOTHER terminal:${RESET}"
+    echo "    cp $WRAPPER_PRISTINE $ROCQ_WRAPPER"
+    echo "then answer [r]e-attest. (A claim WITHOUT the repair just buys"
+    echo "another failing measurement — try it.)"
+    run_driver --pause
+    if saw "repaired and re-attested clean in-session"; then
+      echo "${BOLD}your repair stood — judged by measurement, not by your word.${RESET}"
+    else
+      expect "user intervention required" "skip must fall through to escalation"
+      cp "$WRAPPER_PRISTINE" "$ROCQ_WRAPPER"
+      echo "${BOLD}declined — escalated; wrapper restored by the demo.${RESET}"
+    fi
+  fi
   pause
 fi
 
