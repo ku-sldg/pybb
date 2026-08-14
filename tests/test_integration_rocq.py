@@ -461,6 +461,60 @@ def test_audit_substitution_caught_by_byte_anchor_only():
         audit.write_bytes(pristine)
 
 
+def test_spec_guided_impl_engine_derives_canonical():
+    """The keyless impl engine: the blessed Spec's conjuncts determine
+    the guarded-step implementation — branches from `a < b -> f ... = C`
+    hypotheses (as `a <? b`), default from the hold conjunct; safety
+    implications and validity preconditions contribute nothing. An
+    underivable spec yields no candidates (the kernel-judged ladder
+    hands off)."""
+    from pybb.attestation import RocqSpecGuidedImplEngine
+    from pybb.attestation.synthesis import ImplContext
+
+    spec = (ROCQ_ROOT / "TempControl" / "Props.v").read_text()
+    sig = ("Definition computeFanCmd (temp : Z) (sp : SetPoint) "
+           "(latest : FanCmd)\n    : FanCmd")
+    cands = list(RocqSpecGuidedImplEngine()(ImplContext(
+        name="computeFanCmd", signature=sig, context_files={"p": spec})))
+    assert len(cands) == 2  # Spec order, then reversed
+    assert cands[0].splitlines() == [
+        "if high sp <? temp then On",
+        "else if temp <? low sp then Off",
+        "else latest"]
+    underivable = ImplContext(
+        name="f", signature="(x : Z)",
+        context_files={"p": "Definition Spec (f : Step) : Prop := True.\n"})
+    assert list(RocqSpecGuidedImplEngine()(underivable)) == []
+
+
+@needs_rocq
+def test_impl_tamper_repaired_by_ladder_not_proofs():
+    """Scene-8 arc: a real-but-wrong implementation. Proof repair
+    exhausts — the goals are genuinely false of it, and the exhaustion
+    is the DIAGNOSIS — then the ladder's impl rung re-derives the
+    implementation from the blessed statements (deterministic engine).
+    The proofs end byte-untouched: the right artifact was repaired."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    impl = ROCQ_ROOT / "TempControl" / "Impl.v"
+    impl_pristine = impl.read_bytes()
+    proofs_pristine = PROOFS.read_bytes()
+    rw.tamper_impl(cfg)
+    tampered = impl.read_bytes()
+    try:
+        ctl = rw.synthesize_flow(cfg, rw.load_protocols(cfg), keep=False,
+                                 stub="none")
+        bb = ctl.blackboard
+        key = f"{PREFIX}:verification"
+        assert bb.entries[key].good_standing
+        assert impl.read_bytes() != tampered, "the impl rung must repair"
+        assert PROOFS.read_bytes() == proofs_pristine, \
+            "an implementation repair must not touch the proofs"
+    finally:
+        impl.write_bytes(impl_pristine)
+        PROOFS.write_bytes(proofs_pristine)
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

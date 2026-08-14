@@ -68,8 +68,13 @@ warm dune builds are sub-second, and the audit is the point.
     python examples/temp_control_rocq.py --ready --status   # + readiness gate; failure poisons every cell
     python examples/temp_control_rocq.py --synthesize       # stub all proofs to Admitted -> portfolio proves all
     python examples/temp_control_rocq.py --break-proof      # corrupt one seed proof -> portfolio repairs it
-    python examples/temp_control_rocq.py --synthesize-impl --llm openai --llm-dry-run
-                                                            # impl-first arc, spend predicted, no key needed
+    python examples/temp_control_rocq.py --synthesize-impl  # impl-first arc, fully KEYLESS: the spec-guided
+                                                            # engine derives the implementation from the blessed
+                                                            # statements, the portfolio proves every goal
+                                                            # (--llm adds LLM engines behind both)
+    python examples/temp_control_rocq.py --tamper-impl      # real-but-WRONG impl: proof repair exhausts (the
+                                                            # diagnosis), the ladder's impl rung re-derives the
+                                                            # implementation from the blessed statements
     python examples/temp_control_rocq.py --synthesize-package --llm anthropic
                                                             # whole-package arc: ONE black box writes impl + proofs
     python examples/temp_control_rocq.py --immutable-model  # per-session ruling: model drift -> restore from

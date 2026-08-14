@@ -89,6 +89,16 @@ An interactive walkthrough of the attestation workflow on the Rocq example
   file is a **rendering of AM configuration**, so the rung re-renders its
   Print block from config and the restarted episode re-attests.
 
+## Scene 8 — implementation tamper: the ladder repairs the right artifact
+
+- The implementation's hot response is inverted: it elaborates fine, but the
+  blessed goals are genuinely **false** of it, so no proof can repair this.
+  Proof repair exhausts — the exhaustion *is the diagnosis* — and the ladder
+  hands off to the impl rung, which **re-derives the implementation from the
+  blessed statements alone** (deterministic spec-guided engine, no API keys;
+  `--llm` adds the LLM behind it). The seed proofs prove again, the restarted
+  episode re-attests, and the proofs end byte-untouched.
+
 ## Throughout
 
 - Every scene gates on expected output (including no-✗/no-? checks on clean
@@ -97,4 +107,4 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
 the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
-blessing, the implementation-repair ladder scene.
+blessing, slice-granularity restore, the laundering-derivability beat.

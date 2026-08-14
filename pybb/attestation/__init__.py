@@ -40,6 +40,7 @@ from .synthesis import (
 )
 from .rocq_synthesis import (
     AuditRegenerateKS,
+    RocqSpecGuidedImplEngine,
     PackageContext,
     RocqImplSynthesisKS,
     RocqOutOfBandRepairKS,
@@ -107,6 +108,7 @@ __all__ = [
     "splice_proof",
     "PackageContext",
     "AuditRegenerateKS",
+    "RocqSpecGuidedImplEngine",
     "RocqImplSynthesisKS",
     "RocqOutOfBandRepairKS",
     "RocqLlmEngine",

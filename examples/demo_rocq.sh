@@ -52,6 +52,14 @@
 #            anchor refutes. Repair is the THIRD species: REGENERATION —
 #            the file is a rendering of AM config, re-rendered and
 #            re-attested.
+#   scene 8  implementation tamper -> the ladder repairs the RIGHT
+#            artifact: the impl is inverted (elaborates fine; the
+#            blessed goals are genuinely FALSE of it), so proof repair
+#            exhausts — the exhaustion IS the diagnosis — and the impl
+#            rung re-derives the implementation from the blessed
+#            statements alone (deterministic spec-guided engine, no
+#            API keys; --llm would add the LLM behind it). The proofs
+#            end untouched.
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -64,7 +72,7 @@
 #                          without) | pause (out-of-band: you repair,
 #                          measurement judges); prompted interactively
 #                          when not given
-#   --scenes "1 2 3 4 5 6 7"  run a subset of scenes
+#   --scenes "1 2 3 4 ..."  run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --auto bless|revert    answer scene 2's ruling automatically (testing)
 #   --drift benign|breaking  pick scene 2's spec change without prompting
@@ -89,7 +97,7 @@ EVIDENCE="$REPO/evidence"
 NO_VSCODE=0
 RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6 7"
+SCENES="1 2 3 4 5 6 7 8"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -711,6 +719,34 @@ rw.tamper_audit(t.CONFIG)" )
     "the regeneration rung must re-render the audit from config"
   expect "repaired and re-attested clean in-session" \
     "the regenerated audit must re-attest in one session"
+  pause
+fi
+
+if in_scenes 8; then
+  banner "SCENE 8 — implementation tamper: the ladder repairs the RIGHT artifact" \
+    "The implementation's hot response is inverted. It elaborates fine —" \
+    "but the blessed goals are genuinely FALSE of it, so NO proof can" \
+    "repair this. The chain runs proofs first; their exhaustion is the" \
+    "DIAGNOSIS that the implementation is the artifact at fault, and the" \
+    "ladder hands off: the impl rung re-derives the implementation from" \
+    "the blessed statements ALONE (deterministic spec-guided engine —" \
+    "no API keys), the seed proofs prove again, and the restarted" \
+    "episode re-attests. The proofs end byte-untouched: the ladder" \
+    "repaired the right artifact."
+  run_driver --tamper-impl
+  expect "Tampered implementation" "the behavior tamper must apply"
+  expect "handing to 'synthesis:rocq-impl'" \
+    "proof exhaustion must hand off to the implementation rung"
+  expect "implemented (RocqSpecGuidedImplEngine)" \
+    "the spec-guided engine must re-derive the implementation"
+  expect "repaired and re-attested clean in-session" \
+    "the re-derived implementation must re-attest in one session"
+  if cmp -s "$PROOFS_PRISTINE" "$PROOFS"; then
+    echo "${BOLD}proofs byte-untouched — the ladder repaired the right artifact.${RESET}"
+  else
+    echo "DEMO ABORT: the proofs changed during an implementation repair" >&2
+    exit 1
+  fi
   pause
 fi
 

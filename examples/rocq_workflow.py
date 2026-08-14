@@ -62,6 +62,7 @@ from pybb.attestation import (
     RocqPackageSynthesisKS,
     RocqProofSynthesisKS,
     AuditRegenerateKS,
+    RocqSpecGuidedImplEngine,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
@@ -654,6 +655,24 @@ def tamper_audit(cfg: RocqExampleConfig) -> bytes:
     return original
 
 
+def tamper_impl(cfg: RocqExampleConfig) -> bytes:
+    """Behavior tamper: invert the implementation's hot response
+    (`then On` -> `then Off`). The model elaborates fine — but the
+    blessed goals are now genuinely FALSE of the implementation, so no
+    proof repair can succeed: the proof rung's exhaustion is the
+    diagnosis that the IMPLEMENTATION is the artifact at fault. Returns
+    the pristine bytes."""
+    path = cfg.package_root / cfg.impl_rel
+    original = path.read_bytes()
+    text = original.decode()
+    assert "then On" in text, cfg.impl_rel
+    path.write_text(text.replace("then On", "then Off", 1))
+    print("Tampered implementation: hot response inverted "
+          "(then On -> then Off) — elaborates fine; the blessed goals "
+          "are now FALSE of it")
+    return original
+
+
 def tamper_audit_subst(cfg: RocqExampleConfig) -> bytes:
     """Audit SUBSTITUTION tamper — the attack the byte anchor exists
     for: replace one goal's `Print Assumptions` line with a query for a
@@ -800,7 +819,7 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
                 rocq=str(WORKSPACE_BIN / "rocq"),
                 dune=str(WORKSPACE_BIN / "dune"))
             impl_synth = RocqImplSynthesisKS(
-                engines=impl_engines or [],
+                engines=[RocqSpecGuidedImplEngine(), *(impl_engines or [])],
                 blessed=guidance,
                 package_root=str(cfg.package_root),
                 impl_rel=cfg.impl_rel, impl_name=cfg.impl_name,
@@ -809,8 +828,17 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
                 audit_rel=cfg.audit_rel,
                 audit_goals=list(cfg.audit_goals),
                 rocq=str(WORKSPACE_BIN / "rocq"),
-                dune=str(WORKSPACE_BIN / "dune")) if stub == "impl" else None
-            chain = [ks for ks in (impl_synth, synth) if ks is not None]
+                dune=str(WORKSPACE_BIN / "dune")) \
+                if (cfg.impl_rel and cfg.impl_name
+                    and stub in ("impl", "none")) else None
+            # impl-first arc: derive the implementation BEFORE proving.
+            # repair arc (stub "none"): proofs first — their exhaustion
+            # against a real-but-wrong implementation is the DIAGNOSIS
+            # that the impl is the artifact at fault, and the ladder
+            # moves to it.
+            chain = ([impl_synth, synth] if stub == "impl"
+                     else [synth, impl_synth])
+            chain = [ks for ks in chain if ks is not None]
         if pause:
             # the human rung before escalation: engines first, then the
             # operator (or an interactive agent session) on whatever
@@ -1071,6 +1099,15 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     parser.add_argument("--tamper-admitted", action="store_true",
                         help="replace one proof with Admitted. — the build "
                              "passes, the assumptions audit refutes the goal")
+    parser.add_argument("--tamper-impl", action="store_true",
+                        help="behavior tamper: invert the implementation's "
+                             "hot response — it elaborates fine, but the "
+                             "blessed goals are FALSE of it, so proof "
+                             "repair exhausts (the diagnosis) and the "
+                             "ladder's impl rung re-derives the "
+                             "implementation from the blessed statements "
+                             "(deterministic spec-guided engine; --llm "
+                             "adds the LLM behind it)")
     parser.add_argument("--tamper-audit", action="store_true",
                         help="audit coverage tamper: delete one Print "
                              "Assumptions line (everything still proves; "
@@ -1186,6 +1223,11 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                      "episodes; it is not wired for the synthesis arcs")
     if cli.break_proof:
         cli.synthesize = True
+    if cli.tamper_impl:
+        cli.synthesize = True
+        if (cli.break_proof or cli.synthesize_impl or cli.synthesize_package
+                or cli.repair_proofs):
+            parser.error("--tamper-impl is its own arc; pick one")
     if cli.repair_proofs:
         cli.synthesize = True
         if cli.break_proof or cli.synthesize_impl or cli.synthesize_package:
@@ -1223,9 +1265,6 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         if cfg.synthesis_engines is None:
             parser.error("--synthesize: this scenario has no synthesis "
                          "engines configured")
-        if cli.synthesize_impl and not cli.llm:
-            parser.error("--synthesize-impl currently has only the LLM "
-                         "implementation engine; use it with --llm")
         if cli.synthesize_package and not cli.llm:
             parser.error("--synthesize-package currently has only the LLM "
                          "package engine; use it with --llm")
@@ -1242,10 +1281,12 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
             if cli.synthesize_package:
                 package_engines = [RocqLlmPackageEngine(complete=backend,
                                                         attempts=3)]
+        pristine_impl = tamper_impl(cfg) if cli.tamper_impl else None
         stub = ("package" if cli.synthesize_package
                 else "impl" if cli.synthesize_impl
                 else "break" if cli.break_proof
-                else "none" if cli.repair_proofs else "admits")
+                else "none" if (cli.repair_proofs or cli.tamper_impl)
+                else "admits")
         try:
             synthesize_flow(cfg, load_protocols(cfg), keep=cli.keep,
                             engines=engines, stub=stub,
@@ -1257,6 +1298,9 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                 getattr(backend, "usage", None), "report", None)
             if report is not None:
                 print(f"\n{report()}")
+            if pristine_impl is not None and not cli.keep:
+                (cfg.package_root / cfg.impl_rel).write_bytes(pristine_impl)
+                print(f"\nRestored pristine {cfg.impl_rel}")
         return
     if cli.status or cli.ready:
         status_flow(cfg, load_protocols(cfg), ready=cli.ready,

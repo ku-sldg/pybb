@@ -1171,3 +1171,99 @@ class AuditRegenerateKS(KnowledgeSource):
             entry = blackboard.get_entry(key)
             blackboard.write_entry(key=key, predicate=entry.predicate,
                                    measurement=entry.measurement, result=None)
+
+
+# ── deterministic implementation candidates from the blessed statements ───────
+
+class RocqSpecGuidedImplEngine:
+    """
+    Deterministic implementation candidates derived from the BLESSED
+    statements ALONE — the keyless counterpart of the tactic portfolio,
+    tuned to the guarded-step prop class (every committed scenario's
+    Spec is derivable; pinned by test). Each conjunct of the blessed
+    Spec whose statement has the shape
+
+        forall <binders>, H1 -> ... -> Hn -> f x y z = C
+
+    contributes a branch: a hypothesis `a < b` becomes the boolean
+    guard `a <? b` (Z.ltb — the seed proofs bridge the gap with
+    Z.ltb_spec); hypotheses that are not strict comparisons (validity
+    preconditions like SetPoint_valid) narrow the PROPERTY, not the
+    computation, and are ignored. A conjunct concluding
+    `f x y z = <last-binder>` is the default branch; conjuncts whose
+    conclusion is not an f-equation (safety implications) contribute
+    nothing. Candidates: branches in Spec order, then reversed. The
+    engine only proposes — the kernel (build + audit over the live
+    proofs) judges every candidate.
+    """
+
+    _BINDER = re.compile(r"\((\w+)\s*:\s*[\w.]+\)")
+
+    def __call__(self, ctx: ImplContext) -> Iterable[str]:
+        spec_text = next(iter(ctx.context_files.values()), "")
+        impl_binders = self._BINDER.findall(ctx.signature)
+        if not spec_text or not impl_binders:
+            return
+        lines = spec_text.splitlines()
+        spans = {n: (s, e) for _k, n, s, e in rocq_decl_spans(spec_text) if n}
+        branches, default = [], None
+        for prop in rocq_spec_conjuncts(spec_text):
+            if prop not in spans:
+                continue
+            s, e = spans[prop]
+            parsed = self._parse_prop("\n".join(lines[s - 1:e]), impl_binders)
+            if parsed is None:
+                continue
+            guards, rhs, is_default = parsed
+            if is_default:
+                default = default or rhs
+            elif guards:
+                branches.append((guards, rhs))
+        if not branches or default is None:
+            return
+
+        def render(ordered):
+            out = []
+            for i, (guards, ctor) in enumerate(ordered):
+                kw = "if" if i == 0 else "else if"
+                out.append(f"{kw} {' && '.join(guards)} then {ctor}")
+            out.append(f"else {default}")
+            return "\n".join(out)
+
+        yield render(branches)
+        if len(branches) > 1:
+            yield render(list(reversed(branches)))
+
+    def _parse_prop(self, block: str, impl_binders: List[str]):
+        head, sep, body = block.partition(":=")
+        if not sep:
+            return None
+        body = body.strip().rstrip(".")
+        m = re.match(r"forall\s+((?:\([^)]*\)\s*)+),\s*(.*)", body, re.S)
+        if m is None:
+            return None
+        prop_binders = self._BINDER.findall(head)
+        fvar = prop_binders[0] if prop_binders else "f"
+        segs = [s.strip().replace("\n", " ") for s in m.group(2).split("->")]
+        eq = re.fullmatch(rf"{re.escape(fvar)}((?:\s+\w+)+)\s*=\s*(\w+)",
+                          segs[-1])
+        if eq is None:
+            return None
+        args = eq.group(1).split()
+        rhs = eq.group(2)
+        if len(args) != len(impl_binders):
+            return None
+        rename = dict(zip(args, impl_binders))
+
+        def rn(text: str) -> str:
+            return re.sub(r"\b(\w+)\b",
+                          lambda mm: rename.get(mm.group(1), mm.group(1)),
+                          text)
+
+        if rhs in args and rename[rhs] == impl_binders[-1]:
+            return ([], impl_binders[-1], True)
+        guards = [f"{rn(cm.group(1).strip())} <? {rn(cm.group(2).strip())}"
+                  for hyp in segs[:-1]
+                  if (cm := re.fullmatch(r"([\w ]+?)\s*<\s*([\w ]+)",
+                                         hyp)) is not None]
+        return (guards, rhs, False)
