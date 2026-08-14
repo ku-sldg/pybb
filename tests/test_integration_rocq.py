@@ -348,6 +348,58 @@ def test_tool_tamper_poisons_and_fresh_measurement_recovers():
     assert measure(), "the restored toolchain must measure clean"
 
 
+def test_audit_regenerate_ks_rerenders_from_config(tmp_path, capsys):
+    """The derived-artifact repair: a coverage-tampered audit file is
+    re-rendered BYTE-IDENTICALLY from config (header preserved, Print
+    block regenerated in audit order); an already-canonical file makes
+    the rung decline so the chain can hand off."""
+    from pybb.blackboard import Blackboard
+    from pybb.attestation import AuditRegenerateKS
+    from pybb.attestation.knowledge_sources import Verdict
+
+    rocq = _rocq_example()
+    pristine = (ROCQ_ROOT / "Assumptions.v").read_bytes()
+    (tmp_path / "Assumptions.v").write_bytes(pristine)
+    tampered = [l for l in pristine.decode().splitlines()
+                if "fanHold_in_band" not in l]
+    (tmp_path / "Assumptions.v").write_text("\n".join(tampered) + "\n")
+    ks = AuditRegenerateKS(package_root=str(tmp_path),
+                           audit_rel="Assumptions.v",
+                           audit_goals=list(rocq.CONFIG.audit_goals))
+    bb = Blackboard()
+    bb.write_entry(key="k", predicate="attestation", measurement={},
+                   result=Verdict(protocol="p", passed=False, components=[]))
+    ks.execute(bb, ["k"])
+    assert (tmp_path / "Assumptions.v").read_bytes() == pristine, \
+        "regeneration must be byte-identical to the canonical rendering"
+    assert bb.entries["k"].result is None, "entry reset for fresh measurement"
+    ks.execute(bb, ["k"])
+    assert "already canonical" in capsys.readouterr().out
+    assert (tmp_path / "Assumptions.v").read_bytes() == pristine
+
+
+@needs_rocq
+def test_audit_coverage_tamper_regenerated_and_reattested():
+    """Scene-7 arc: coverage tamper -> section count fails closed ->
+    the regeneration rung re-renders the audit from config -> restarted
+    episode re-attests clean, with the file back to canonical bytes."""
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    audit = ROCQ_ROOT / "Assumptions.v"
+    pristine = audit.read_bytes()
+    rw.tamper_audit(rocq.CONFIG)
+    try:
+        ctl = rw.attest_episode(rocq.CONFIG, rw.load_protocols(rocq.CONFIG),
+                                repair=False, audit_repair=True)
+        bb = ctl.blackboard
+        key = f"{PREFIX}:verification"
+        assert bb.entries[key].good_standing
+        assert bb.restarts.get(key) == 1
+        assert audit.read_bytes() == pristine, \
+            "the regenerated audit is the canonical rendering"
+    finally:
+        audit.write_bytes(pristine)
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

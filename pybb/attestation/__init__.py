@@ -39,6 +39,7 @@ from .synthesis import (
     splice_proof,
 )
 from .rocq_synthesis import (
+    AuditRegenerateKS,
     PackageContext,
     RocqImplSynthesisKS,
     RocqOutOfBandRepairKS,
@@ -105,6 +106,7 @@ __all__ = [
     "TacticPortfolioEngine",
     "splice_proof",
     "PackageContext",
+    "AuditRegenerateKS",
     "RocqImplSynthesisKS",
     "RocqOutOfBandRepairKS",
     "RocqLlmEngine",

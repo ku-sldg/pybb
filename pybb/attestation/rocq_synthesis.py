@@ -46,6 +46,7 @@ from .rocq_status import (
 )
 from pydantic import BaseModel
 
+from ..knowledge_source import KnowledgeSource
 from .repair import OutOfBandRepairKS
 from .synthesis import (
     BlackBoxRepairKS,
@@ -1121,3 +1122,52 @@ def make_isolation_status(package_root: Path, theory_name: str,
                                  f"target's proof ({first})")
 
     return isolate
+
+
+# ── derived-artifact repair: the audit file is a RENDERING of config ──────────
+
+class AuditRegenerateKS(KnowledgeSource):
+    """
+    The third repair species — neither restore-from-golden nor
+    synthesis: REGENERATION FROM CONFIGURATION. The assumptions audit
+    file is the rendering of AM config (audit_goals); a coverage tamper
+    (a deleted or reordered `Print Assumptions` line) fails the
+    appraiser's section count closed, and the honest repair is to
+    re-render the file from the config that defines it. Header lines
+    (comments, Requires) are preserved; the Print block is replaced by
+    the canonical one-line-per-goal block in audit order.
+
+    Declines when the file is already canonical — then the failure was
+    not a coverage drift, and the chain hands off (escalation follows
+    unless a later rung claims the key). Like every repair, the
+    regeneration is judged by fresh measurement, never by its own claim.
+    """
+
+    name: str = "repair:audit-regenerate"
+    partition: List[str] = []
+    max_attempts: int = 1
+    package_root: str
+    audit_rel: str
+    audit_goals: List[str] = []
+
+    def execute(self, blackboard, keys) -> None:
+        path = Path(self.package_root) / self.audit_rel
+        text = path.read_text()
+        header = [l for l in text.splitlines()
+                  if not re.match(r"\s*Print Assumptions\b", l)]
+        while header and not header[-1].strip():
+            header.pop()
+        canonical = "\n".join(
+            [*header, "",
+             *(f"Print Assumptions {g}." for g in self.audit_goals)]) + "\n"
+        if canonical == text:
+            print(f"  {self.name}: audit coverage already canonical — "
+                  "nothing to regenerate")
+            return
+        path.write_text(canonical)
+        print(f"  {self.name}: regenerated {self.audit_rel} from config "
+              f"({len(self.audit_goals)} Print Assumptions, audit order)")
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            blackboard.write_entry(key=key, predicate=entry.predicate,
+                                   measurement=entry.measurement, result=None)

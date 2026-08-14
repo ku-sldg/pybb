@@ -56,6 +56,9 @@ warm dune builds are sub-second, and the audit is the point.
     python examples/temp_control_rocq.py --tamper --repair  # golden restore + in-session re-attestation
     python examples/temp_control_rocq.py --tamper-admitted  # Admitted: build green, audit names the goal
     python examples/temp_control_rocq.py --tamper-axiom     # smuggled Axiom: everything green EXCEPT the audit
+    python examples/temp_control_rocq.py --tamper-audit     # deleted Print Assumptions line: the section count
+                                                            # fails closed -> AuditRegenerateKS re-renders the
+                                                            # audit from config (the derived-artifact repair)
     python examples/temp_control_rocq.py --status           # the goals checklist (quick view)
     python examples/temp_control_rocq.py --ready --status   # + readiness gate; failure poisons every cell
     python examples/temp_control_rocq.py --synthesize       # stub all proofs to Admitted -> portfolio proves all

@@ -72,7 +72,18 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 - Hash-only artifacts are unrepairable from goldens by design: the repair is
   the out-of-band pause rung — you restore the tool, fresh measurement
   re-establishes standing, and a claim without the repair just buys another
-  failing measurement.
+  failing measurement. (`--restore-tools` is the recovery hatch: reinstall
+  the canonical wrapper, prove it against the blessed golden, confirm
+  readiness.)
+
+## Scene 7 — audit coverage tamper: regeneration from config
+
+- One deleted `Print Assumptions` line: every proof still proves, but what
+  *provability means* silently shrank — the appraiser's section count fails
+  closed and every cell poisons.
+- The repair is the third species — neither restore nor synthesis: the audit
+  file is a **rendering of AM configuration**, so the rung re-renders its
+  Print block from config and the restarted episode re-attests.
 
 ## Throughout
 
@@ -82,4 +93,4 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
 the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
-blessing, audit-regeneration and implementation-repair scenes.
+blessing, the implementation-repair ladder scene.

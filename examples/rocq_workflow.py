@@ -61,6 +61,7 @@ from pybb.attestation import (
     RocqOutOfBandRepairKS,
     RocqPackageSynthesisKS,
     RocqProofSynthesisKS,
+    AuditRegenerateKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
@@ -620,6 +621,23 @@ def _stub_impl(cfg: RocqExampleConfig) -> bytes:
     return original
 
 
+def tamper_audit(cfg: RocqExampleConfig) -> bytes:
+    """Audit COVERAGE tamper: delete one `Print Assumptions` line — every
+    proof still proves and the file still compiles, but the appraiser's
+    section count fails closed (fewer sections than audited goals).
+    Returns the pristine bytes."""
+    path = cfg.package_root / cfg.audit_rel
+    original = path.read_bytes()
+    goal = cfg.audit_goals[len(cfg.audit_goals) // 2]
+    lines = [l for l in original.decode().splitlines()
+             if l.strip() != f"Print Assumptions {goal}."]
+    assert len(lines) < len(original.decode().splitlines()), goal
+    path.write_text("\n".join(lines) + "\n")
+    print(f"Deleted 'Print Assumptions {goal}.' from {cfg.audit_rel} — "
+          "audit coverage silently shrank")
+    return original
+
+
 def _break_proof(cfg: RocqExampleConfig) -> bytes:
     """Snapshot the proofs file, then corrupt ONE seed proof body with a
     wrong-but-well-formed tactic script (statement untouched, no
@@ -903,7 +921,8 @@ def _escalation_detail(blackboard) -> str:
 def attest_episode(cfg: RocqExampleConfig, protocols: dict,
                    repair: bool, pause: bool = False,
                    gate=None,
-                   model_drift_policy: str = "escalate") -> BlackboardController:
+                   model_drift_policy: str = "escalate",
+                   audit_repair: bool = False) -> BlackboardController:
     """One attestation episode. The verification class is ALWAYS-RUN —
     the audit is cheap and it is the point of this example; its failures
     escalate directly (a refuted proof is not golden-restorable).
@@ -958,6 +977,14 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
     oob = [OutOfBandRepairKS(gate=gate,
                              also=[cfg.entry("verification")])] if pause else []
     ver_chain = [_pause_rung(cfg, gate)] if pause else []
+    if audit_repair:
+        # the derived-artifact rung: regenerate the audit's Print block
+        # from config, then re-attest in-session; declines (and the chain
+        # hands off) when the file is already canonical
+        ver_chain = [AuditRegenerateKS(
+            package_root=str(cfg.package_root), audit_rel=cfg.audit_rel,
+            audit_goals=list(cfg.audit_goals)),
+            RestartEpisodeKS(budget=cfg.restart_budget or 1), *ver_chain]
     if model_drift_policy == "restore":
         # refined_by = the model protocol itself: _latest_verdict finds the
         # entry's own hash verdict, so the restore targets exactly the
@@ -1007,6 +1034,13 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     parser.add_argument("--tamper-admitted", action="store_true",
                         help="replace one proof with Admitted. — the build "
                              "passes, the assumptions audit refutes the goal")
+    parser.add_argument("--tamper-audit", action="store_true",
+                        help="audit coverage tamper: delete one Print "
+                             "Assumptions line (everything still proves; "
+                             "the section count fails closed) — the "
+                             "regeneration rung re-renders the audit from "
+                             "config and re-attests: the derived-artifact "
+                             "repair, neither restore nor synthesis")
     parser.add_argument("--tamper-axiom", action="store_true",
                         help="smuggle an Axiom asserting the goal and prove "
                              "by it — elaborates cleanly, the audit names "
@@ -1096,7 +1130,8 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "impl-then-proofs rung chain; requires --llm")
     cli = parser.parse_args()
 
-    if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom)) > 1:
+    if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom,
+            cli.tamper_audit)) > 1:
         parser.error("pick one tamper arc per run")
     if (cli.bless_model or cli.bless_tools) and not cli.provision:
         parser.error("--bless-model/--bless-tools are provisioning-time "
@@ -1200,10 +1235,12 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         pristine_proofs = tamper_admitted(cfg)
     elif cli.tamper_axiom:
         pristine_proofs = tamper_axiom(cfg)
+    pristine_audit = tamper_audit(cfg) if cli.tamper_audit else None
     policy = "restore" if cli.immutable_model else "escalate"
     try:
         attest_episode(cfg, protocols, repair=cli.repair, pause=cli.pause,
-                       model_drift_policy=policy)
+                       model_drift_policy=policy,
+                       audit_repair=cli.tamper_audit)
         if cli.repair and not cfg.restart_budget:
             # without a restart budget, verification arrives in a fresh run
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
@@ -1213,6 +1250,9 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         if pristine_proofs is not None:
             cfg.proofs_file.write_bytes(pristine_proofs)
             print(f"\nRestored pristine {cfg.proofs_rel}")
+        if pristine_audit is not None:
+            (cfg.package_root / cfg.audit_rel).write_bytes(pristine_audit)
+            print(f"Restored pristine {cfg.audit_rel}")
         restored = golden.restore()
         if restored:
             print(f"\nRestored {len(restored)} live target(s) from golden")

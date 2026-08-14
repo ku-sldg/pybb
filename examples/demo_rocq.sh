@@ -43,6 +43,12 @@
 #            are unrepairable from goldens by design, so YOU restore the
 #            tool and fresh measurement re-establishes standing (a false
 #            claim buys nothing but another look).
+#   scene 7  audit coverage tamper -> a deleted Print Assumptions line
+#            silently shrinks what provability means; the appraiser's
+#            section count fails closed and the checklist poisons. The
+#            repair is the THIRD species: neither restore nor synthesis
+#            but REGENERATION — the audit file is a rendering of AM
+#            config, so the rung re-renders it and re-attests.
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -55,10 +61,14 @@
 #                          without) | pause (out-of-band: you repair,
 #                          measurement judges); prompted interactively
 #                          when not given
-#   --scenes "1 2 3 4 5 6" run a subset of scenes
+#   --scenes "1 2 3 4 5 6 7"  run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --auto bless|revert    answer scene 2's ruling automatically (testing)
 #   --drift benign|breaking  pick scene 2's spec change without prompting
+#   --restore-tools        recovery: reinstall the canonical rocq wrapper
+#                          (e.g. after an interrupted scene 6), verify its
+#                          hash against the BLESSED tool golden, confirm
+#                          readiness, and exit
 #
 # The demo is self-cleaning: whatever you rule in scene 2, the ORIGINAL
 # spec and blessing are restored on exit (a real sanctioned change would
@@ -74,8 +84,9 @@ GOLDEN_PROPS="$REPO/golden${PROPS}"
 EVIDENCE="$REPO/evidence"
 
 NO_VSCODE=0
+RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6"
+SCENES="1 2 3 4 5 6 7"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -88,6 +99,7 @@ while [ $# -gt 0 ]; do
     --fast) FAST=1 ;;
     --auto) AUTO="$2"; shift ;;
     --drift) DRIFT="$2"; shift ;;
+    --restore-tools) RESTORE_TOOLS=1 ;;
     -h|--help) sed -n '2,40p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
   esac
@@ -142,6 +154,44 @@ expect_absent() {  # expect_absent <pattern> <what went wrong>
   fi
 }
 
+# ── recovery: reinstall the canonical rocq wrapper and prove it ─────────────
+if [ "$RESTORE_TOOLS" = 1 ]; then
+  WRAPPER="$HOME/Claude_workspace/bin/rocq"
+  cat > "$WRAPPER" <<'WRAPEOF'
+#!/usr/bin/env bash
+# Workspace wrapper: rocq (the Rocq Prover, opam switch 5.2)
+# (CVM child processes see this via CvmConfig.path_prepend).
+# The opam bin dir is prepended so rocq's own subprocesses (coqc,
+# coqdep, ...) resolve from the same pinned switch.
+export PATH="$HOME/.opam/5.2/bin:$PATH"
+exec "$HOME/.opam/5.2/bin/rocq" "$@"
+WRAPEOF
+  chmod +x "$WRAPPER"
+  echo "reinstalled the canonical wrapper at $WRAPPER"
+  ( cd "$REPO" && "$PY" - "$WRAPPER" <<'PYEOF'
+import base64, hashlib, json, sys
+digest = base64.b64encode(
+    hashlib.sha256(open(sys.argv[1], "rb").read()).digest()).decode()
+args = json.load(open(
+    "tests/fixtures/temp_control_rocq_verification/asp_args.json"))
+golden = next(a["golden_b64"] for a in args["hashfile"].values()
+              if a.get("filepath", "").endswith("Claude_workspace/bin/rocq"))
+if digest == golden:
+    print("restored wrapper matches the BLESSED tool golden")
+else:
+    raise SystemExit(
+        "restored wrapper does NOT match the blessed tool golden —\n"
+        "the blessed baseline expects different content; if the wrapper\n"
+        "legitimately changed, re-bless the tools:\n"
+        "    python examples/temp_control_rocq.py --provision --bless-tools")
+PYEOF
+  ) || exit 1
+  run_driver --ready
+  expect "readiness: PASS" "readiness must pass after the tool restore"
+  echo "${BOLD}toolchain restored and proven — readiness passes.${RESET}"
+  exit 0
+fi
+
 # ── self-cleaning: restore the original spec + proofs + blessing on exit ────
 PROOFS="$REPO/targets/temp-control-rocq/TempControl/Proofs.v"
 PRISTINE="$LOG_DIR/Props.v.pristine"
@@ -152,6 +202,8 @@ BUNDLE_PRISTINE="$LOG_DIR/model_bundle.pristine"
 ARGS_PRISTINE="$LOG_DIR/model_asp_args.pristine"
 ROCQ_WRAPPER="$HOME/Claude_workspace/bin/rocq"
 WRAPPER_PRISTINE="$LOG_DIR/rocq_wrapper.pristine"
+AUDIT_FILE="$REPO/targets/temp-control-rocq/Assumptions.v"
+AUDIT_PRISTINE="$LOG_DIR/assumptions.pristine"
 cp "$PROPS" "$PRISTINE"
 cp "$PROOFS" "$PROOFS_PRISTINE"
 BLESSED_DURING_DEMO=0
@@ -168,7 +220,8 @@ cleanup() {
     echo "cleanup: restored the original $(basename "$PROOFS")"
   fi
   for pair in "$BUNDLE_PRISTINE:$MODEL_BUNDLE" "$ARGS_PRISTINE:$MODEL_ARGS" \
-              "$WRAPPER_PRISTINE:$ROCQ_WRAPPER"; do
+              "$WRAPPER_PRISTINE:$ROCQ_WRAPPER" \
+              "$AUDIT_PRISTINE:$AUDIT_FILE"; do
     save="${pair%%:*}"; live="${pair##*:}"
     if [ -f "$save" ] && ! cmp -s "$save" "$live"; then
       cp "$save" "$live"
@@ -588,8 +641,11 @@ if in_scenes 6; then
   else
     echo "${BOLD}the episode blocks on the pause rung. Repair in ANOTHER terminal:${RESET}"
     echo "    cp $WRAPPER_PRISTINE $ROCQ_WRAPPER"
+    echo "  (or: ./examples/demo_rocq.sh --restore-tools)"
     echo "then answer [r]e-attest. (A claim WITHOUT the repair just buys"
     echo "another failing measurement — try it.)"
+    echo "if you get stuck or abort mid-scene, the same --restore-tools flag"
+    echo "recovers the toolchain afterwards."
     run_driver --pause
     if saw "repaired and re-attested clean in-session"; then
       echo "${BOLD}your repair stood — judged by measurement, not by your word.${RESET}"
@@ -599,6 +655,38 @@ if in_scenes 6; then
       echo "${BOLD}declined — escalated; wrapper restored by the demo.${RESET}"
     fi
   fi
+  pause
+fi
+
+if in_scenes 7; then
+  banner "SCENE 7 — audit coverage tamper: regeneration from config" \
+    "One Print Assumptions line is deleted: every proof still proves," \
+    "the audit still compiles — but what PROVABILITY MEANS just silently" \
+    "shrank. The appraiser counts sections against the audited goals and" \
+    "fails closed; every cell poisons. The repair is the third species —" \
+    "neither restore-from-golden nor synthesis: the audit file is a" \
+    "RENDERING of AM configuration, so the rung re-renders its Print" \
+    "block from config and the restarted episode re-attests."
+  cp "$AUDIT_FILE" "$AUDIT_PRISTINE"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, 'examples')
+import temp_control_rocq as t, rocq_workflow as rw
+rw.tamper_audit(t.CONFIG)" )
+  echo
+  echo "${BOLD}the goals checklist under shrunken coverage — everything poisons:${RESET}"
+  run_driver --status
+  expect "audit mismatch" "the section-count mismatch must poison the checklist"
+  expect "?" "poisoned cells must read unknown, never presumed proved"
+  expect_absent "✗" "shrunken coverage refutes nothing — it unjudges everything"
+  cp "$AUDIT_PRISTINE" "$AUDIT_FILE"
+  pause
+  echo
+  echo "${BOLD}now the repair arc — tamper, regenerate from config, re-attest:${RESET}"
+  run_driver --tamper-audit
+  expect "regenerated Assumptions.v from config" \
+    "the regeneration rung must re-render the audit from config"
+  expect "repaired and re-attested clean in-session" \
+    "the regenerated audit must re-attest in one session"
   pause
 fi
 
