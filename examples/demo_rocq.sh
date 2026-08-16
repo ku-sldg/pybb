@@ -216,6 +216,8 @@ MODEL_BUNDLE="$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.jso
 MODEL_ARGS="$REPO/tests/fixtures/temp_control_rocq_model/asp_args.json"
 BUNDLE_PRISTINE="$LOG_DIR/model_bundle.pristine"
 ARGS_PRISTINE="$LOG_DIR/model_asp_args.pristine"
+IMPL_FILE="$REPO/targets/temp-control-rocq/TempControl/Impl.v"
+IMPL_SCENE8="$LOG_DIR/Impl.v.scene8"
 ROCQ_WRAPPER="$HOME/Claude_workspace/bin/rocq"
 WRAPPER_PRISTINE="$LOG_DIR/rocq_wrapper.pristine"
 AUDIT_FILE="$REPO/targets/temp-control-rocq/Assumptions.v"
@@ -238,6 +240,7 @@ cleanup() {
   fi
   for pair in "$BUNDLE_PRISTINE:$MODEL_BUNDLE" "$ARGS_PRISTINE:$MODEL_ARGS" \
               "$WRAPPER_PRISTINE:$ROCQ_WRAPPER" \
+              "$IMPL_SCENE8:$IMPL_FILE" \
               "$AUDIT_PRISTINE:$AUDIT_FILE"; do
     save="${pair%%:*}"; live="${pair##*:}"
     if [ -f "$save" ] && ! cmp -s "$save" "$live"; then
@@ -284,6 +287,33 @@ show_diff() {  # show_diff <golden-copy> <live-copy>
     diff -u "$1" "$2" || true
     echo "───────────────────────────────────────────────────────────────"
   fi
+}
+
+has_tty() { { : </dev/tty; } 2>/dev/null; }
+
+offer_diff() {  # offer_diff <left> <right> <label> — opt-in artifact diff
+  [ "$FAST" = 1 ] && return 0
+  has_tty || return 0
+  local a=""
+  echo
+  read -r -p "${BOLD}[v]iew diff — $3 / Enter to continue: ${RESET}" a </dev/tty
+  case "$a" in
+    v|V)
+      # snapshot BOTH sides before returning: callers often restore the
+      # live file on the very next line, and VSCode reads its files
+      # asynchronously — diffing the live path would race the restore
+      # and render an empty diff
+      local snap
+      snap="$(mktemp -d "$LOG_DIR/diff.XXXXXX")"
+      mkdir -p "$snap/before" "$snap/after"
+      cp "$1" "$snap/before/$(basename "$1")"
+      cp "$2" "$snap/after/$(basename "$2")"
+      if [ "$NO_VSCODE" = 0 ] && command -v code >/dev/null 2>&1; then
+        code --diff "$snap/before/$(basename "$1")" "$snap/after/$(basename "$2")"
+      else
+        diff -u "$snap/before/$(basename "$1")" "$snap/after/$(basename "$2")" || true
+      fi ;;
+  esac
 }
 
 # ── setup: provision-if-missing, then the readiness gate ───────────────────
@@ -358,7 +388,10 @@ if in_scenes 2; then
     echo "  [2] breaking  — restate fanOn_when_hot_prop through a new"
     echo "                  'commands' relation (the model compiles; the"
     echo "                  seed proof breaks -> proof repair after bless)"
-    read -r -p "${BOLD}drift [1/2]: ${RESET}" pick </dev/tty
+    pick=""
+    if has_tty; then
+      read -r -p "${BOLD}drift [1/2]: ${RESET}" pick </dev/tty
+    fi
     case "$pick" in 2|breaking) drift="breaking" ;; *) drift="benign" ;; esac
   fi
   echo
@@ -385,7 +418,10 @@ if in_scenes 2; then
   if [ -n "$AUTO" ]; then
     answer="$AUTO"; echo "(--auto) ruling: $answer"
   else
-    read -r -p "${BOLD}[b]less as the new baseline / [r]evert to golden: ${RESET}" answer </dev/tty
+    answer=""
+    if has_tty; then
+      read -r -p "${BOLD}[b]less as the new baseline / [r]evert to golden: ${RESET}" answer </dev/tty
+    fi
   fi
   case "$answer" in
     b|bless)
@@ -410,9 +446,12 @@ if in_scenes 2; then
         echo "verification refutes: the seed proof no longer proves the blessed"
         echo "obligation. The workflow now repairs the proofs (portfolio),"
         echo "judged by fresh measurement:"
+        cp "$PROOFS" "$LOG_DIR/Proofs.v.prerepair"
         run_driver --repair-proofs --keep
         expect "repaired and re-attested clean in-session" \
           "proof repair must adapt the proofs to the blessed model"
+        offer_diff "$LOG_DIR/Proofs.v.prerepair" "$PROOFS" \
+          "the machine-adapted proof (seed vs what the portfolio wrote)"
         echo
         echo "confirming with a fresh episode:"
         run_driver
@@ -500,7 +539,10 @@ if in_scenes 4; then
       echo "  [2] llm       — LLM engine behind the portfolio (real calls with"
       echo "                  ANTHROPIC_API_KEY set; keyless dry-run otherwise)"
       echo "  [3] pause     — out-of-band: the episode blocks while YOU repair"
-      read -r -p "${BOLD}strategy [1/2/3]: ${RESET}" pick </dev/tty
+      pick=""
+      if has_tty; then
+        read -r -p "${BOLD}strategy [1/2/3]: ${RESET}" pick </dev/tty
+      fi
       case "$pick" in
         2|llm) STRATEGY="llm" ;;
         3|pause) STRATEGY="pause" ;;
@@ -527,6 +569,8 @@ rw._break_proof(t.CONFIG)" )
       expect "✗" "the checklist must display the failing contract"
       expect "isolated: proof intact" \
         "the isolation variants must judge the intact proofs individually"
+      offer_diff "$PROOFS_SCENE4" "$PROOFS" \
+        "the corrupted proof (seed vs the wrong tactic)"
       cp "$PROOFS_SCENE4" "$PROOFS"
       pause
       echo
@@ -541,13 +585,16 @@ rw._break_proof(t.CONFIG)" )
           echo "${BOLD}the engine ladder: portfolio first, the LLM on whatever remains:${RESET}"
         fi
         # shellcheck disable=SC2086
-        run_driver --break-proof $LLM_FLAGS
+        run_driver --break-proof --keep $LLM_FLAGS
       else
         echo "${BOLD}now the repair arc — the same proof broken, then re-proved:${RESET}"
-        run_driver --break-proof
+        run_driver --break-proof --keep
       fi
       expect "repaired and re-attested clean in-session" \
         "the repair must end in good standing"
+      offer_diff "$PROOFS_SCENE4" "$PROOFS" \
+        "the machine-repaired proof (seed vs what the engine wrote)"
+      cp "$PROOFS_SCENE4" "$PROOFS"
       ;;
     pause)
       echo "${BOLD}One proof is Admitted — the build stays green (this is Rocq),${RESET}"
@@ -709,6 +756,8 @@ if in_scenes 6; then
     "the tool-hash failure must poison the checklist"
   expect "?" "poisoned cells must read unknown, never presumed proved"
   expect_absent "✗" "no goal may be REFUTED by a tool drift — only unjudged"
+  offer_diff "$WRAPPER_PRISTINE" "$ROCQ_WRAPPER" \
+    "the functionality-preserving wrapper edit (one comment line)"
   pause
   echo
   if [ "$FAST" = 1 ]; then
@@ -764,6 +813,8 @@ rw.tamper_audit(t.CONFIG)" )
     "the audit-file hash must refute the tampered rendering"
   expect "?" "poisoned cells must read unknown, never presumed proved"
   expect_absent "✗" "a tampered rendering refutes nothing — it unjudges everything"
+  offer_diff "$AUDIT_PRISTINE" "$AUDIT_FILE" \
+    "the deleted audit query (canonical vs tampered rendering)"
   cp "$AUDIT_PRISTINE" "$AUDIT_FILE"
   echo
   echo "the appraiser's section count remains as DEPTH beneath the hash:"
@@ -784,7 +835,15 @@ rw.tamper_audit(t.CONFIG)" )
   echo "count stays right, every section still reads 'Closed under the"
   echo "global context' — Print Assumptions never echoes its query, so"
   echo "the output check alone is fooled. Only the rendering's hash"
-  echo "refutes:"
+  echo "refutes. First, see how innocent the tamper looks:"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, 'examples')
+import temp_control_rocq as t, rocq_workflow as rw
+rw.tamper_audit_subst(t.CONFIG)" )
+  offer_diff "$AUDIT_PRISTINE" "$AUDIT_FILE" \
+    "the substituted audit query (canonical vs tampered rendering)"
+  cp "$AUDIT_PRISTINE" "$AUDIT_FILE"
+  echo
   run_driver --tamper-audit-subst
   expect "Substituted 'Print Assumptions" \
     "the substitution tamper must apply"
@@ -808,7 +867,11 @@ if in_scenes 8; then
     "repaired the right artifact."
   SCENE8_PROOFS="$LOG_DIR/Proofs.v.scene8"
   cp "$PROOFS" "$SCENE8_PROOFS"
-  run_driver --tamper-impl
+  cp "$IMPL_FILE" "$IMPL_SCENE8"
+  sed 's/then On/then Off/' "$IMPL_SCENE8" > "$LOG_DIR/Impl.v.tampered"
+  offer_diff "$IMPL_SCENE8" "$LOG_DIR/Impl.v.tampered" \
+    "the behavior inversion the arc is about to apply"
+  run_driver --tamper-impl --keep
   expect "Tampered implementation" "the behavior tamper must apply"
   expect "handing to 'synthesis:rocq-impl'" \
     "proof exhaustion must hand off to the implementation rung"
@@ -822,6 +885,7 @@ if in_scenes 8; then
     echo "DEMO ABORT: the proofs changed during an implementation repair" >&2
     exit 1
   fi
+  cp "$IMPL_SCENE8" "$IMPL_FILE"
   pause
 fi
 
