@@ -806,6 +806,8 @@ if in_scenes 8; then
     "no API keys), the seed proofs prove again, and the restarted" \
     "episode re-attests. The proofs end byte-untouched: the ladder" \
     "repaired the right artifact."
+  SCENE8_PROOFS="$LOG_DIR/Proofs.v.scene8"
+  cp "$PROOFS" "$SCENE8_PROOFS"
   run_driver --tamper-impl
   expect "Tampered implementation" "the behavior tamper must apply"
   expect "handing to 'synthesis:rocq-impl'" \
@@ -814,7 +816,7 @@ if in_scenes 8; then
     "the spec-guided engine must re-derive the implementation"
   expect "repaired and re-attested clean in-session" \
     "the re-derived implementation must re-attest in one session"
-  if cmp -s "$PROOFS_PRISTINE" "$PROOFS"; then
+  if cmp -s "$SCENE8_PROOFS" "$PROOFS"; then
     echo "${BOLD}proofs byte-untouched — the ladder repaired the right artifact.${RESET}"
   else
     echo "DEMO ABORT: the proofs changed during an implementation repair" >&2

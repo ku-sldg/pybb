@@ -1193,26 +1193,39 @@ class RocqSpecGuidedImplEngine:
     computation, and are ignored. A conjunct concluding
     `f x y z = <last-binder>` is the default branch; conjuncts whose
     conclusion is not an f-equation (safety implications) contribute
-    nothing. Candidates: branches in Spec order, then reversed. The
-    engine only proposes — the kernel (build + audit over the live
-    proofs) judges every candidate.
+    nothing. A conclusion wrapped in a BLESSED helper relation whose
+    own body is an f-equation (e.g. `commands f x y z C` with
+    `commands ... := f x y z = C`) is resolved by one beta step —
+    the engine follows the blessed definitions, so a restated spec
+    (a sanctioned mid-demo blessing) derives the same implementation.
+    Candidates: branches in Spec order, then reversed. The engine only
+    proposes — the kernel (build + audit over the live proofs) judges
+    every candidate.
     """
 
-    _BINDER = re.compile(r"\((\w+)\s*:\s*[\w.]+\)")
+    _BINDER = re.compile(r"\(([\w\s]+?)\s*:\s*[\w.]+\)")
+
+    @classmethod
+    def _binder_names(cls, text: str) -> List[str]:
+        """Flattened binder names — `(l c : FanCmd)` binds both."""
+        return [n for m in cls._BINDER.finditer(text)
+                for n in m.group(1).split()]
 
     def __call__(self, ctx: ImplContext) -> Iterable[str]:
         spec_text = next(iter(ctx.context_files.values()), "")
-        impl_binders = self._BINDER.findall(ctx.signature)
+        impl_binders = self._binder_names(ctx.signature)
         if not spec_text or not impl_binders:
             return
         lines = spec_text.splitlines()
         spans = {n: (s, e) for _k, n, s, e in rocq_decl_spans(spec_text) if n}
+        helpers = self._helper_equations(spec_text, lines, spans)
         branches, default = [], None
         for prop in rocq_spec_conjuncts(spec_text):
             if prop not in spans:
                 continue
             s, e = spans[prop]
-            parsed = self._parse_prop("\n".join(lines[s - 1:e]), impl_binders)
+            parsed = self._parse_prop("\n".join(lines[s - 1:e]), impl_binders,
+                                      helpers)
             if parsed is None:
                 continue
             guards, rhs, is_default = parsed
@@ -1235,7 +1248,26 @@ class RocqSpecGuidedImplEngine:
         if len(branches) > 1:
             yield render(list(reversed(branches)))
 
-    def _parse_prop(self, block: str, impl_binders: List[str]):
+    def _helper_equations(self, spec_text, lines, spans):
+        """Blessed helper relations whose body is a bare equation:
+        name -> (binder names, (lhs-head, lhs-args, rhs))."""
+        helpers = {}
+        for _k, name, s, e in rocq_decl_spans(spec_text):
+            if not name:
+                continue
+            head, sep, body = "\n".join(lines[s - 1:e]).partition(":=")
+            if not sep:
+                continue
+            eq = re.fullmatch(r"(\w+)((?:\s+\w+)+)\s*=\s*(\w+)",
+                              body.strip().rstrip(".").replace("\n", " "))
+            if eq is None:
+                continue
+            helpers[name] = (self._binder_names(head),
+                             (eq.group(1), eq.group(2).split(), eq.group(3)))
+        return helpers
+
+    def _parse_prop(self, block: str, impl_binders: List[str],
+                    helpers=None):
         head, sep, body = block.partition(":=")
         if not sep:
             return None
@@ -1243,11 +1275,22 @@ class RocqSpecGuidedImplEngine:
         m = re.match(r"forall\s+((?:\([^)]*\)\s*)+),\s*(.*)", body, re.S)
         if m is None:
             return None
-        prop_binders = self._BINDER.findall(head)
+        prop_binders = self._binder_names(head)
         fvar = prop_binders[0] if prop_binders else "f"
         segs = [s.strip().replace("\n", " ") for s in m.group(2).split("->")]
+        conclusion = segs[-1]
+        app = re.fullmatch(r"(\w+)((?:\s+\w+)+)", conclusion)
+        if app is not None and (helpers or {}).get(app.group(1)) is not None:
+            # one beta step through the blessed helper relation
+            binders, (lhs_head, lhs_args, brhs) = helpers[app.group(1)]
+            actual = app.group(2).split()
+            if len(actual) == len(binders):
+                sub = dict(zip(binders, actual))
+                conclusion = (" ".join([sub.get(lhs_head, lhs_head),
+                                        *(sub.get(a, a) for a in lhs_args)])
+                              + " = " + sub.get(brhs, brhs))
         eq = re.fullmatch(rf"{re.escape(fvar)}((?:\s+\w+)+)\s*=\s*(\w+)",
-                          segs[-1])
+                          conclusion)
         if eq is None:
             return None
         args = eq.group(1).split()

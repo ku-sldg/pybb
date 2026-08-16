@@ -461,6 +461,16 @@ def test_audit_substitution_caught_by_byte_anchor_only():
         audit.write_bytes(pristine)
 
 
+def _breaking_restated_text(spec: str) -> str:
+    helper = ("Definition commands (f : Step) (t : Z) (sp : SetPoint)\n"
+              "                    (l c : FanCmd) : Prop :=\n"
+              "  f t sp l = c.\n\n")
+    marker = "(* Goal: currentTemp above the band commands the fan On. *)"
+    spec = spec.replace(marker, helper + marker)
+    return spec.replace("    high sp < temp -> f temp sp latest = On.",
+                        "    high sp < temp -> commands f temp sp latest On.")
+
+
 def test_spec_guided_impl_engine_derives_canonical():
     """The keyless impl engine: the blessed Spec's conjuncts determine
     the guarded-step implementation — branches from `a < b -> f ... = C`
@@ -485,6 +495,14 @@ def test_spec_guided_impl_engine_derives_canonical():
         name="f", signature="(x : Z)",
         context_files={"p": "Definition Spec (f : Step) : Prop := True.\n"})
     assert list(RocqSpecGuidedImplEngine()(underivable)) == []
+    # the commands-restated blessing (scene 2's breaking flavor) derives
+    # the SAME implementation: the engine follows the blessed helper
+    # relation with one beta step
+    restated_ctx = ImplContext(
+        name="computeFanCmd", signature=sig,
+        context_files={"p": _breaking_restated_text(spec)})
+    restated = list(RocqSpecGuidedImplEngine()(restated_ctx))
+    assert restated and restated[0] == cands[0]
 
 
 @needs_rocq
