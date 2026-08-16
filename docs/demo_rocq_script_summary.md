@@ -122,9 +122,11 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
 - **Opt-in VSCode diffs** at every artifact-modification beat: the corrupted
   and machine-repaired proof (scene 4), the tampered wrapper (scene 6), the
   deleted and substituted audit queries (scene 7), the behavior inversion
-  (scene 8), and the machine-adapted proof
-  after a spec-first bless (scene 2) — `[v]iew diff / Enter to continue`,
-  terminal fallback, skipped in unattended runs.
+  (scene 8), the machine-adapted proof after a spec-first bless (scene 2),
+  and scene 5's trust-state attacks — the flipped evidence byte and the
+  hand-edited golden (both pretty-printed JSON), and the
+  blessed-vs-laundered spec — `[v]iew diff / Enter to continue`, terminal
+  fallback, skipped in unattended runs.
 - Every scene gates on expected output (including no-✗/no-? checks on clean
   checklists), so regressions — or a dirty starting tree — abort loudly.
 - Self-cleaning: the original spec, proofs, and blessing are restored on exit.

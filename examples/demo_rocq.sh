@@ -316,6 +316,21 @@ offer_diff() {  # offer_diff <left> <right> <label> — opt-in artifact diff
   esac
 }
 
+offer_diff_json() {  # offer_diff_json <left> <right> <label> — pretty-printed
+  [ "$FAST" = 1 ] && return 0
+  has_tty || return 0
+  local pp
+  pp="$(mktemp -d "$LOG_DIR/json.XXXXXX")"
+  mkdir -p "$pp/before" "$pp/after"
+  "$PY" -c "
+import json, sys
+for src, dst in ((sys.argv[1], sys.argv[2]), (sys.argv[3], sys.argv[4])):
+    json.dump(json.load(open(src)), open(dst, 'w'), indent=1)
+" "$1" "$pp/before/$(basename "$1")" "$2" "$pp/after/$(basename "$2")" \
+    || return 0
+  offer_diff "$pp/before/$(basename "$1")" "$pp/after/$(basename "$2")" "$3"
+}
+
 # ── setup: provision-if-missing, then the readiness gate ───────────────────
 banner "SETUP — readiness (provision the golden baseline if missing)"
 if [ ! -f "$REPO/golden/_bundles/temp_control_rocq_model/provision_bundle.json" ]; then
@@ -667,6 +682,8 @@ PYEOF
     "a tampered bundle byte must break the signature"
   expect "attestation never started" \
     "a refused baseline must stop attestation before it starts"
+  offer_diff_json "$BUNDLE_PRISTINE" "$MODEL_BUNDLE" \
+    "one flipped byte of signed evidence (pristine vs tampered bundle)"
   cp "$BUNDLE_PRISTINE" "$MODEL_BUNDLE"
   echo
   echo "${BOLD}the record itself was not authentic — restored; now the other side:${RESET}"
@@ -690,6 +707,8 @@ PYEOF
     "a refused baseline must stop attestation before it starts"
   expect_absent "signature verification FAILED" \
     "the bundle is authentic in this beat — only the anchor may refute"
+  offer_diff_json "$ARGS_PRISTINE" "$MODEL_ARGS" \
+    "one hand-edited installed golden (pristine vs tampered asp_args)"
   cp "$ARGS_PRISTINE" "$MODEL_ARGS"
   echo
   echo "${BOLD}restored — now the smarter adversary:${RESET}"
@@ -719,6 +738,8 @@ PYEOF
     "a refused baseline must stop attestation before it starts"
   expect_absent "signature verification FAILED" \
     "the laundered bundle is self-consistent — only lineage refutes"
+  offer_diff "$SCENE5_PROPS" "$PROPS" \
+    "what the administrator signed vs the laundered live spec"
   echo
   echo "restoring the spec and re-provisioning derivable goldens:"
   cp "$SCENE5_PROPS" "$PROPS"
