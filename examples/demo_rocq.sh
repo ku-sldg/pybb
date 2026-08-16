@@ -597,6 +597,11 @@ if in_scenes 5; then
     "exit is the administrator's out-of-band re-bless."
   cp "$MODEL_BUNDLE" "$BUNDLE_PRISTINE"
   cp "$MODEL_ARGS" "$ARGS_PRISTINE"
+  # scene-ENTRY spec capture: beat 3 must restore to the spec the
+  # CURRENT blessing covers — which is not the demo-start pristine if
+  # scene 2 blessed a change earlier in this same run
+  SCENE5_PROPS="$LOG_DIR/Props.v.scene5"
+  cp "$PROPS" "$SCENE5_PROPS"
 
   echo "${BOLD}beat 1 — tamper the signed record: flip ONE byte of stored evidence${RESET}"
   "$PY" - "$MODEL_BUNDLE" <<'PYEOF'
@@ -652,8 +657,12 @@ PYEOF
   echo "touch the model class, and readiness re-derives every contract"
   echo "slice from the blessed SIGNED bytes:"
   LAUNDERED_DURING_DEMO=1
-  sed -i '' 's/high sp <= 110/high sp <= 115/' "$PROPS"
-  echo "(edited SetPoint_valid ceiling 110 -> 115 in the live spec)"
+  sed -i '' 's/50 <= low sp/45 <= low sp/' "$PROPS"
+  if cmp -s "$SCENE5_PROPS" "$PROPS"; then
+    echo "DEMO ABORT: the laundering spec edit matched nothing" >&2
+    exit 1
+  fi
+  echo "(edited SetPoint_valid floor 50 -> 45 in the live spec)"
   run_driver --provision
   expect "goldens provisioned" "the laundering pass must provision"
   run_driver
@@ -665,7 +674,7 @@ PYEOF
     "the laundered bundle is self-consistent — only lineage refutes"
   echo
   echo "restoring the spec and re-provisioning derivable goldens:"
-  cp "$PRISTINE" "$PROPS"
+  cp "$SCENE5_PROPS" "$PROPS"
   run_driver --provision
   LAUNDERED_DURING_DEMO=0
   echo
