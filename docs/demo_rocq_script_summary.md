@@ -3,6 +3,17 @@
 An interactive walkthrough of the attestation workflow on the Rocq example
 (`temp-control-rocq`), driven end-to-end through `temp_control_rocq.py`.
 
+**At a glance**: eight scenes; seven repair species (whole-file restore,
+declaration splice, proof synthesis, implementation re-derivation,
+human-out-of-band, regeneration-from-config, principled refusal); three
+refusal properties at one gate (signature, anchor, derivability). Keyless by
+default — the LLM is an opt-in branch where relevant.
+
+**Running it**: `./examples/demo_rocq.sh` (interactive; `--help` for flags —
+`--scenes`, `--drift`, `--repair-strategy`, `--fast --auto` for unattended,
+`--restore-tools` recovery). Pinned checkouts: tag `rocq-demo-v2` (this
+eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
+
 ## Setup
 
 - Bootstrap provisioning if no blessed baseline exists (`bless_lint`-gated).
