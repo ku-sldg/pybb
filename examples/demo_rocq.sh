@@ -32,12 +32,15 @@
 #            portfolio; dry-run without a key), or pause (out-of-band —
 #            you repair, fresh measurement judges); with the failure-time
 #            checklist and the archived signed evidence.
-#   scene 5  baseline tamper -> the repair that must refuse: a flipped
-#            byte of signed bundle evidence (signature refutes) and a
-#            hand-edited installed golden (anchor refutes, signature
-#            silent) each stop attestation before it starts; no KS can
-#            repair a baseline — the only exit is the administrator's
-#            out-of-band re-bless.
+#   scene 5  baseline tamper -> the repair that must refuse, three beats:
+#            a flipped byte of signed bundle evidence (signature refutes),
+#            a hand-edited installed golden (anchor refutes, signature
+#            silent), and LAUNDERING — the tampered spec re-provisioned
+#            into a fully self-consistent contracts bundle, refuted by
+#            the blessing's derivability check (slice goldens must be
+#            extractable from the blessed signed bytes). Each stops
+#            attestation before it starts; no KS can repair a baseline —
+#            the only exit is the administrator's out-of-band re-bless.
 #   scene 6  toolchain tamper -> a functionality-PRESERVING edit to the
 #            rocq wrapper still refutes the measure-then-use tool hash;
 #            every proof cell poisons fail-closed ('?'), and the honest
@@ -220,6 +223,7 @@ AUDIT_PRISTINE="$LOG_DIR/assumptions.pristine"
 cp "$PROPS" "$PRISTINE"
 cp "$PROOFS" "$PROOFS_PRISTINE"
 BLESSED_DURING_DEMO=0
+LAUNDERED_DURING_DEMO=0
 
 cleanup() {
   local status=$?
@@ -241,6 +245,11 @@ cleanup() {
       echo "cleanup: restored $(basename "$live") (scene tamper)"
     fi
   done
+  if [ "$LAUNDERED_DURING_DEMO" = 1 ]; then
+    echo "cleanup: re-provisioning derivable goldens (scene 5 laundering)"
+    ( cd "$REPO" && "$PY" "$DRIVER" --provision ) >"$LOG_DIR/cleanup_provision.log" 2>&1 \
+      || echo "cleanup: re-provisioning FAILED — see $LOG_DIR/cleanup_provision.log" >&2
+  fi
   if [ "$BLESSED_DURING_DEMO" = 1 ]; then
     echo "cleanup: re-blessing the ORIGINAL baseline (the demo blessing was a prop)"
     ( cd "$REPO" && "$PY" "$DRIVER" --provision --bless-model ) >"$LOG_DIR/cleanup.log" 2>&1 \
@@ -631,11 +640,40 @@ PYEOF
     "the bundle is authentic in this beat — only the anchor may refute"
   cp "$ARGS_PRISTINE" "$MODEL_ARGS"
   echo
-  echo "${BOLD}Same gate, two attributed refusals: record integrity (signature)${RESET}"
-  echo "${BOLD}vs installation consistency (anchor) — and in both, the live tree${RESET}"
-  echo "${BOLD}was pristine. The only exit is the administrator's re-bless${RESET}"
-  echo "${BOLD}(--provision --bless-model); examples/verify_baseline.py is the${RESET}"
-  echo "${BOLD}operator's audit view. Restored — confirming readiness:${RESET}"
+  echo "${BOLD}restored — now the smarter adversary:${RESET}"
+  pause
+
+  echo "${BOLD}beat 3 — laundering: tamper the spec, re-provision it into the goldens${RESET}"
+  echo "The live spec is edited, then an ORDINARY re-provision re-derives"
+  echo "and RE-SIGNS the contracts baseline from the tampered tree. The"
+  echo "laundered bundle is fully self-consistent — signature valid,"
+  echo "anchors matching: every check from beats 1 and 2 passes. But the"
+  echo "BLESSING cannot be laundered: ordinary provisioning refuses to"
+  echo "touch the model class, and readiness re-derives every contract"
+  echo "slice from the blessed SIGNED bytes:"
+  LAUNDERED_DURING_DEMO=1
+  sed -i '' 's/high sp <= 110/high sp <= 115/' "$PROPS"
+  echo "(edited SetPoint_valid ceiling 110 -> 115 in the live spec)"
+  run_driver --provision
+  expect "goldens provisioned" "the laundering pass must provision"
+  run_driver
+  expect "slice golden not extractable from blessed content" \
+    "the derivability anchor must refute the laundered slice"
+  expect "attestation never started" \
+    "a refused baseline must stop attestation before it starts"
+  expect_absent "signature verification FAILED" \
+    "the laundered bundle is self-consistent — only lineage refutes"
+  echo
+  echo "restoring the spec and re-provisioning derivable goldens:"
+  cp "$PRISTINE" "$PROPS"
+  run_driver --provision
+  LAUNDERED_DURING_DEMO=0
+  echo
+  echo "${BOLD}One gate, three attributed refusals: record integrity (signature),${RESET}"
+  echo "${BOLD}installation consistency (anchor), semantic lineage (derivability)${RESET}"
+  echo "${BOLD}— the blessing is the root that laundering cannot reach. The only${RESET}"
+  echo "${BOLD}sanctioned exit is the administrator's re-bless; verify_baseline.py${RESET}"
+  echo "${BOLD}is the operator's audit view. Restored — confirming readiness:${RESET}"
   run_driver --ready
   expect "readiness: PASS" "the restored baseline must verify again"
   pause

@@ -578,6 +578,44 @@ def test_slice_granularity_restores_decl_and_spares_benign_drift():
         PROPS.write_bytes(pristine)
 
 
+@needs_rocq
+def test_laundering_refuted_by_blessing_derivability():
+    """Scene-5 beat 3: tamper the spec and re-provision it into the
+    goldens. The laundered contracts bundle is fully SELF-CONSISTENT —
+    signature valid, anchors matching — and readiness refutes it anyway:
+    every contract-slice golden must be DERIVABLE from the blessed
+    signed bytes, and the laundered slice is not. Ordinary provisioning
+    cannot refresh the blessing, so the launder cannot reach the root.
+    Recovery: restore + ordinary re-provision."""
+    from pybb.attestation import make_readiness_predicate, readiness_request
+
+    rocq, rw = _rocq_example(), _rocq_workflow()
+    cfg = rocq.CONFIG
+    pristine = PROPS.read_bytes()
+    PROPS.write_text(pristine.decode().replace("high sp <= 110",
+                                               "high sp <= 115"))
+
+    def report():
+        protocols = rw.load_protocols(cfg)
+        return make_readiness_predicate(
+            protocols, baseline_root=GOLDEN_ROOT,
+            client=CvmSubprocessClient())(readiness_request(list(protocols)))
+
+    try:
+        rw.provision_flow(cfg, rw.build_protocol_dirs(cfg))  # the launder
+        r = report()
+        assert not r
+        assert any("slice golden not extractable from blessed content" in p
+                   and "SetPoint_valid" in p for p in r.baseline_problems)
+        assert not any("signature verification FAILED" in p
+                       for p in r.baseline_problems), \
+            "the laundered bundle is self-consistent — only lineage refutes"
+    finally:
+        PROPS.write_bytes(pristine)
+        rw.provision_flow(cfg, rw.build_protocol_dirs(cfg))
+    assert report(), "restore + re-provision must verify green again"
+
+
 def _apply_breaking_restatement():
     """The 'commands' restatement: the model elaborates and bless_lint
     passes, but the seed proof of fanOn_when_hot no longer proves it."""

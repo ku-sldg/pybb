@@ -58,11 +58,14 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 ## Scene 5 — baseline tamper: the repair that must refuse
 
-- The trust state itself is attacked; the live tree stays pristine. Two
-  beats against the model baseline: a **flipped byte of signed bundle
-  evidence** (the signature refutes) and a **hand-edited installed golden**
-  (the anchor to the signed evidence refutes; the signature stays silent).
-- Both stop attestation before it starts — and no knowledge source can
+- Three beats, one gate, three attributed refusals: a **flipped byte of
+  signed bundle evidence** (record integrity — the signature refutes), a
+  **hand-edited installed golden** (installation consistency — the anchor
+  refutes, signature silent), and **laundering** — the tampered spec
+  re-provisioned into a fully self-consistent contracts bundle, refuted by
+  semantic lineage: every slice golden must be *derivable from the blessed
+  signed bytes*, and ordinary provisioning cannot refresh the blessing.
+- Each stops attestation before it starts — and no knowledge source can
   repair a baseline: the readiness gate's failure chain is empty by design,
   so the only exit is the administrator's out-of-band re-bless.
 
@@ -111,4 +114,4 @@ An interactive walkthrough of the attestation workflow on the Rocq example
 
 Postponed by design: episode-triggering monitor, wall-clock repair timeouts,
 the executable artifact class, Rocq `--check`/`--promote`, hashes-only tool
-blessing, the laundering-derivability beat.
+blessing.

@@ -138,9 +138,12 @@ portfolio (keyless default), the LLM engine behind the portfolio
 pause rung — the episode blocks on a work order, the operator repairs
 in another terminal, and fresh measurement judges; declining
 escalates. Scene 5 attacks the trust
-state itself — one flipped byte of signed bundle evidence (signature
-refutes) and one hand-edited installed golden (anchor refutes,
-signature silent): attestation never starts, no KS can repair a
+state itself, three beats: one flipped byte of signed bundle evidence
+(signature refutes), one hand-edited installed golden (anchor refutes,
+signature silent), and laundering — the tampered spec re-provisioned
+into a fully self-consistent contracts bundle, refuted by the
+blessing's derivability check ("slice golden not extractable from
+blessed content"): attestation never starts, no KS can repair a
 baseline, and the only exit is the administrator's out-of-band
 re-bless. Scene 6 edits the rocq wrapper functionality-preservingly:
 the measure-then-use tool hash refutes while every run still looks
