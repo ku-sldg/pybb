@@ -201,12 +201,18 @@ class OutOfBandRepairKS(BlackBoxRepairKS):
     order. restart_policy applies as usual: "per_attempt" re-attests
     every claimed repair; "on_local_clean" (with a local_check) gives
     the operator free local iterations before a restart is spent.
+
+    A DECLINE IS FINAL: max_attempts budgets the repair loop (claim ->
+    fresh measurement refutes -> ask again), but an operator who
+    answered [s]kip has ruled — the remaining attempts auto-decline
+    without re-prompting and the key falls through to escalation.
     """
 
     name: str = "repair:out-of-band"
     max_attempts: int = 3
     gate: object = None            # callable(work_order: str) -> bool
     report: object = None          # callable() -> str (live-state lines)
+    declined: set = set()          # keys whose operator already ruled skip
 
     def model_post_init(self, __context) -> None:
         self.tool = self._await_repair
@@ -235,6 +241,12 @@ class OutOfBandRepairKS(BlackBoxRepairKS):
         return "\n".join(lines)
 
     def _await_repair(self, ctx: RepairContext) -> bool:
+        if ctx.key in self.declined:
+            print(f"  {self.name}: '{ctx.key}' declined earlier — skipping")
+            return False
         order = self._work_order(ctx)
         print(order)
-        return bool((self.gate or console_gate)(order))
+        answer = bool((self.gate or console_gate)(order))
+        if not answer:
+            self.declined.add(ctx.key)
+        return answer

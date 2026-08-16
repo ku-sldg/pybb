@@ -154,8 +154,11 @@ def test_out_of_band_repair_judged_by_fresh_measurement():
 
 
 def test_out_of_band_skip_falls_through_to_escalation():
-    """'s' declines: nothing tried, no restart spent, and after
-    max_attempts the key follows ordinary handoff/escalation."""
+    """'s' declines: nothing tried, no restart spent, and the key
+    follows ordinary handoff/escalation. A DECLINE IS FINAL — the
+    operator ruled, so the remaining attempt budget auto-declines
+    without re-opening the gate (the budget exists for the repair-retry
+    loop, not to re-ask a settled question)."""
     state = {"value": 0, "target": 1}
     orders = []
     ks = OutOfBandRepairKS(gate=lambda o: orders.append(o) or False,
@@ -163,7 +166,7 @@ def test_out_of_band_skip_falls_through_to_escalation():
     bb, fn = _run(state, ks)
     assert "entry:x" in bb.escalate
     assert bb.restarts == {}
-    assert len(orders) == 2
+    assert len(orders) == 1, "an operator who ruled skip is not re-asked"
 
 
 def test_out_of_band_ineffective_claim_costs_a_restart_then_escalates():

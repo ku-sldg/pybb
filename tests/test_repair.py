@@ -205,3 +205,20 @@ def test_chain_flow_ends_repaired_pending(tmp_path):
     summary = trust_summary(bb)
     assert "repaired from golden — verification pending next episode" in summary
     assert "user intervention required" not in summary
+
+
+def test_out_of_band_decline_is_final():
+    """max_attempts budgets the repair-retry loop, but an operator who
+    answered [s]kip has RULED: later attempts auto-decline without
+    re-opening the gate, and the key falls through to escalation."""
+    from pybb.attestation.repair import OutOfBandRepairKS
+    from pybb.attestation.synthesis import RepairContext
+
+    calls = []
+    ks = OutOfBandRepairKS(gate=lambda order: (calls.append(order), False)[1])
+    assert ks._await_repair(RepairContext(key="k", attempt=1, verdict=None)) is False
+    assert ks._await_repair(RepairContext(key="k", attempt=2, verdict=None)) is False
+    assert len(calls) == 1, "an operator who ruled skip is not re-asked"
+    # a different key gets its own gate
+    assert ks._await_repair(RepairContext(key="j", attempt=1, verdict=None)) is False
+    assert len(calls) == 2
