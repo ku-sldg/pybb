@@ -9,6 +9,9 @@ human-out-of-band, regeneration-from-config, principled refusal); three
 refusal properties at one gate (signature, anchor, derivability). Keyless by
 default — the LLM is an opt-in branch where relevant.
 
+**Detailed version**: [demo_rocq_walkthrough.md](demo_rocq_walkthrough.md) —
+scene-by-scene narrative with linked diffs of every artifact modified.
+
 **Running it**: `./examples/demo_rocq.sh` (interactive; `--help` for flags —
 `--scenes`, `--drift`, `--repair-strategy`, `--fast --auto` for unattended,
 `--restore-tools` recovery). Pinned checkouts: tag `rocq-demo-v2` (this
