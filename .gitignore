@@ -24,3 +24,4 @@ history.txt
 .env
 .env.*
 secrets*
+.demo.lock/

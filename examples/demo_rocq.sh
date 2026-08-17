@@ -9,7 +9,15 @@
 #            has: model (blessed Props.v/Acceptance.v), contracts (decl
 #            slices), verification (dune build + kernel assumptions
 #            audit), with the rocq/dune tools measured-then-used.
-#   scene 2  a spec edit drifts the model -> the episode escalates ->
+#   scene 2  implementation tamper -> the ladder repairs the RIGHT
+#            artifact: the impl is inverted (elaborates fine; the
+#            blessed goals are genuinely FALSE of it), so proof repair
+#            exhausts — the exhaustion IS the diagnosis — and the impl
+#            rung re-derives the implementation from the blessed
+#            statements alone (deterministic spec-guided engine, no
+#            API keys; --llm would add the LLM behind it). The proofs
+#            end untouched.
+#   scene 3  a spec edit drifts the model -> the episode escalates ->
 #            YOU examine the diff (VSCode if available) and rule at the
 #            prompt: [b]less the change as the new baseline, or [r]evert
 #            to golden. Two selectable flavors: benign (a bound change;
@@ -21,18 +29,18 @@
 #            episode shows model/contracts clean with verification
 #            refuting the not-yet-proved obligation, which proof repair
 #            (--repair-proofs) then adapts.
-#   scene 3  restore at two grains: --immutable-model (whole-file: model
+#   scene 4  restore at two grains: --immutable-model (whole-file: model
 #            files never drift — the failed hash appraisal IS the repair
 #            order, no interaction) and --repair-granularity slice (only
 #            the violated declaration is spliced back, by NAME — benign
 #            drift elsewhere survives, and the model entry ends attested
 #            clean via the contracts refinement).
-#   scene 4  verification failure -> repair by selectable strategy:
+#   scene 5  verification failure -> repair by selectable strategy:
 #            portfolio (deterministic, keyless), llm (behind the
 #            portfolio; dry-run without a key), or pause (out-of-band —
 #            you repair, fresh measurement judges); with the failure-time
 #            checklist and the archived signed evidence.
-#   scene 5  baseline tamper -> the repair that must refuse, three beats:
+#   scene 6  baseline tamper -> the repair that must refuse, three beats:
 #            a flipped byte of signed bundle evidence (signature refutes),
 #            a hand-edited installed golden (anchor refutes, signature
 #            silent), and LAUNDERING — the tampered spec re-provisioned
@@ -41,14 +49,14 @@
 #            extractable from the blessed signed bytes). Each stops
 #            attestation before it starts; no KS can repair a baseline —
 #            the only exit is the administrator's out-of-band re-bless.
-#   scene 6  toolchain tamper -> a functionality-PRESERVING edit to the
+#   scene 7  toolchain tamper -> a functionality-PRESERVING edit to the
 #            rocq wrapper still refutes the measure-then-use tool hash;
 #            every proof cell poisons fail-closed ('?'), and the honest
 #            repair is the out-of-band pause rung: hash-only artifacts
 #            are unrepairable from goldens by design, so YOU restore the
 #            tool and fresh measurement re-establishes standing (a false
 #            claim buys nothing but another look).
-#   scene 7  audit tamper -> the audit file's RENDERING is hashed against
+#   scene 8  audit tamper -> the audit file's RENDERING is hashed against
 #            its blessed canonical bytes (measure-then-use) because its
 #            sections bind to goals only through the file's structure.
 #            Beat 1: a deleted Print Assumptions line. Beat 2: a query
@@ -57,14 +65,6 @@
 #            anchor refutes. Repair is the THIRD species: REGENERATION —
 #            the file is a rendering of AM config, re-rendered and
 #            re-attested.
-#   scene 8  implementation tamper -> the ladder repairs the RIGHT
-#            artifact: the impl is inverted (elaborates fine; the
-#            blessed goals are genuinely FALSE of it), so proof repair
-#            exhausts — the exhaustion IS the diagnosis — and the impl
-#            rung re-derives the implementation from the blessed
-#            statements alone (deterministic spec-guided engine, no
-#            API keys; --llm would add the LLM behind it). The proofs
-#            end untouched.
 #
 # Repair strategies beyond the portfolio (LLM synthesis, the --pause
 # out-of-band rung) exist in the driver and become demo variants later:
@@ -72,21 +72,21 @@
 #
 # Flags:
 #   --no-vscode            never open VSCode; show the diff in the terminal
-#   --repair-strategy S    scene 4's repair: portfolio (default; keyless) |
+#   --repair-strategy S    scene 5's repair: portfolio (default; keyless) |
 #                          llm (real with ANTHROPIC_API_KEY, dry-run
 #                          without) | pause (out-of-band: you repair,
 #                          measurement judges); prompted interactively
 #                          when not given
 #   --scenes "1 2 3 4 ..."  run a subset of scenes
 #   --fast                 skip the press-Enter pauses (for testing)
-#   --auto bless|revert    answer scene 2's ruling automatically (testing)
-#   --drift benign|breaking  pick scene 2's spec change without prompting
+#   --auto bless|revert    answer scene 3's ruling automatically (testing)
+#   --drift benign|breaking  pick scene 3's spec change without prompting
 #   --restore-tools        recovery: reinstall the canonical rocq wrapper
-#                          (e.g. after an interrupted scene 6), verify its
+#                          (e.g. after an interrupted scene 7), verify its
 #                          hash against the BLESSED tool golden, confirm
 #                          readiness, and exit
 #
-# The demo is self-cleaning: whatever you rule in scene 2, the ORIGINAL
+# The demo is self-cleaning: whatever you rule in scene 3, the ORIGINAL
 # spec and blessing are restored on exit (a real sanctioned change would
 # simply stop before the cleanup).
 
@@ -132,6 +132,23 @@ case "$DRIFT" in ""|benign|breaking) ;; *) echo "--drift takes benign|breaking" 
 BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/demo_rocq.XXXXXX")"
 LOG="$LOG_DIR/last_run.log"
+
+# one demo at a time (lock shared with demo_isolette.sh): every demo
+# tampers and restores the same live tree — concurrent runs corrupt
+# each other's beats
+DEMO_LOCK="$REPO/.demo.lock"
+if ! mkdir "$DEMO_LOCK" 2>/dev/null; then
+  LOCK_PID="$(cat "$DEMO_LOCK/pid" 2>/dev/null)"
+  if [ -n "$LOCK_PID" ] && kill -0 "$LOCK_PID" 2>/dev/null; then
+    echo "DEMO ABORT: another demo run (pid $LOCK_PID) holds $DEMO_LOCK —" >&2
+    echo "wait for it to finish (or kill it) and re-run." >&2
+    exit 1
+  fi
+  echo "(stale demo lock from pid ${LOCK_PID:-unknown} — taking over)"
+fi
+echo $$ > "$DEMO_LOCK/pid"
+release_demo_lock() { rm -rf "${DEMO_LOCK:-}" 2>/dev/null; }
+trap release_demo_lock EXIT
 
 banner() {
   echo
@@ -249,7 +266,7 @@ cleanup() {
     fi
   done
   if [ "$LAUNDERED_DURING_DEMO" = 1 ]; then
-    echo "cleanup: re-provisioning derivable goldens (scene 5 laundering)"
+    echo "cleanup: re-provisioning derivable goldens (scene 6 laundering)"
     ( cd "$REPO" && "$PY" "$DRIVER" --provision ) >"$LOG_DIR/cleanup_provision.log" 2>&1 \
       || echo "cleanup: re-provisioning FAILED — see $LOG_DIR/cleanup_provision.log" >&2
   fi
@@ -260,6 +277,7 @@ cleanup() {
     echo "note: provisioning refreshes bundle signatures/timestamps under"
     echo "      tests/fixtures/temp_control_rocq_* — 'git checkout' them if unwanted."
   fi
+  release_demo_lock
   exit $status
 }
 trap cleanup EXIT
@@ -340,7 +358,6 @@ fi
 run_driver --ready
 expect "readiness: PASS" "readiness must pass before the demo starts"
 pause
-
 if in_scenes 1; then
   banner "SCENE 1 — clean baseline episode" \
     "Artifact classes measured: model (blessed spec, signed), contracts" \
@@ -386,9 +403,42 @@ EOF
   echo "  'commands' relation (the model elaborates; the seed proof will not)"
   ( cd "$REPO" && diff -u "$before" "$PROPS" ) | sed -n '4,26p'
 }
-
 if in_scenes 2; then
-  banner "SCENE 2 — spec drift: escalate, examine, bless or revert" \
+  banner "SCENE 2 — implementation tamper: the ladder repairs the RIGHT artifact" \
+    "The implementation's hot response is inverted. It elaborates fine —" \
+    "but the blessed goals are genuinely FALSE of it, so NO proof can" \
+    "repair this. The chain runs proofs first; their exhaustion is the" \
+    "DIAGNOSIS that the implementation is the artifact at fault, and the" \
+    "ladder hands off: the impl rung re-derives the implementation from" \
+    "the blessed statements ALONE (deterministic spec-guided engine —" \
+    "no API keys), the seed proofs prove again, and the restarted" \
+    "episode re-attests. The proofs end byte-untouched: the ladder" \
+    "repaired the right artifact."
+  SCENE8_PROOFS="$LOG_DIR/Proofs.v.scene8"
+  cp "$PROOFS" "$SCENE8_PROOFS"
+  cp "$IMPL_FILE" "$IMPL_SCENE8"
+  sed 's/then On/then Off/' "$IMPL_SCENE8" > "$LOG_DIR/Impl.v.tampered"
+  offer_diff "$IMPL_SCENE8" "$LOG_DIR/Impl.v.tampered" \
+    "the behavior inversion the arc is about to apply"
+  run_driver --tamper-impl --keep
+  expect "Tampered implementation" "the behavior tamper must apply"
+  expect "handing to 'synthesis:rocq-impl'" \
+    "proof exhaustion must hand off to the implementation rung"
+  expect "implemented (RocqSpecGuidedImplEngine)" \
+    "the spec-guided engine must re-derive the implementation"
+  expect "repaired and re-attested clean in-session" \
+    "the re-derived implementation must re-attest in one session"
+  if cmp -s "$SCENE8_PROOFS" "$PROOFS"; then
+    echo "${BOLD}proofs byte-untouched — the ladder repaired the right artifact.${RESET}"
+  else
+    echo "DEMO ABORT: the proofs changed during an implementation repair" >&2
+    exit 1
+  fi
+  cp "$IMPL_SCENE8" "$IMPL_FILE"
+  pause
+fi
+if in_scenes 3; then
+  banner "SCENE 3 — spec drift: escalate, examine, bless or revert" \
     "A model edit drifts the blessed spec. The episode detects it, names" \
     "the changed declaration, and ESCALATES — the demo (not the episode)" \
     "then asks for your ruling. Two flavors: a benign bound change, or a" \
@@ -490,9 +540,8 @@ if in_scenes 2; then
   expect_absent "?" "no goal may stay unjudged after the ruling settles"
   pause
 fi
-
-if in_scenes 3; then
-  banner "SCENE 3 — restore, at two grains" \
+if in_scenes 4; then
+  banner "SCENE 4 — restore, at two grains" \
     "Beat 1, --immutable-model: the per-session ruling for automated" \
     "pipelines — model files must never drift; the failed hash appraisal" \
     "IS the repair order, whole-file restore + in-session re-attest, no" \
@@ -537,9 +586,8 @@ if in_scenes 3; then
   echo "(the driver's exit self-clean then restored the note too — demo policy)"
   pause
 fi
-
-if in_scenes 4; then
-  banner "SCENE 4 — verification failure -> repair (selectable strategy)" \
+if in_scenes 5; then
+  banner "SCENE 5 — verification failure -> repair (selectable strategy)" \
     "A verification failure, repaired by the strategy of your choice:" \
     "the deterministic tactic portfolio (no keys needed), the LLM engine" \
     "behind the portfolio, or the out-of-band pause rung — YOU repair," \
@@ -646,9 +694,8 @@ rw._break_proof(t.CONFIG)" )
   [ -n "$latest_evidence" ] && ls "$EVIDENCE/$latest_evidence" | sed "s|^|  evidence/$latest_evidence/|"
   pause
 fi
-
-if in_scenes 5; then
-  banner "SCENE 5 — baseline tamper: the repair that must refuse" \
+if in_scenes 6; then
+  banner "SCENE 6 — baseline tamper: the repair that must refuse" \
     "Now the TRUST STATE itself is attacked — the live tree stays" \
     "pristine throughout. Readiness re-appraises the signed provisioning" \
     "record (appraisal-only CVM run: sig_appr verifies the bundle," \
@@ -661,7 +708,7 @@ if in_scenes 5; then
   cp "$MODEL_ARGS" "$ARGS_PRISTINE"
   # scene-ENTRY spec capture: beat 3 must restore to the spec the
   # CURRENT blessing covers — which is not the demo-start pristine if
-  # scene 2 blessed a change earlier in this same run
+  # scene 3 blessed a change earlier in this same run
   SCENE5_PROPS="$LOG_DIR/Props.v.scene5"
   cp "$PROPS" "$SCENE5_PROPS"
 
@@ -755,9 +802,8 @@ PYEOF
   expect "readiness: PASS" "the restored baseline must verify again"
   pause
 fi
-
-if in_scenes 6; then
-  banner "SCENE 6 — toolchain tamper: measure-then-use catches the tool" \
+if in_scenes 7; then
+  banner "SCENE 7 — toolchain tamper: measure-then-use catches the tool" \
     "The rocq WRAPPER is edited — functionality preserved (a comment" \
     "line), so every build and audit still runs and looks fine. The" \
     "verification term hashes the toolchain IN THE SAME TERM, before" \
@@ -811,9 +857,8 @@ if in_scenes 6; then
   fi
   pause
 fi
-
-if in_scenes 7; then
-  banner "SCENE 7 — audit tamper: the rendering is anchored to config" \
+if in_scenes 8; then
+  banner "SCENE 8 — audit tamper: the rendering is anchored to config" \
     "The audit file asks the questions; its sections bind to goals only" \
     "through the file's structure — so the RENDERING itself is hashed" \
     "against its blessed canonical bytes, measure-then-use, before any" \
@@ -875,45 +920,10 @@ rw.tamper_audit_subst(t.CONFIG)" )
   pause
 fi
 
-if in_scenes 8; then
-  banner "SCENE 8 — implementation tamper: the ladder repairs the RIGHT artifact" \
-    "The implementation's hot response is inverted. It elaborates fine —" \
-    "but the blessed goals are genuinely FALSE of it, so NO proof can" \
-    "repair this. The chain runs proofs first; their exhaustion is the" \
-    "DIAGNOSIS that the implementation is the artifact at fault, and the" \
-    "ladder hands off: the impl rung re-derives the implementation from" \
-    "the blessed statements ALONE (deterministic spec-guided engine —" \
-    "no API keys), the seed proofs prove again, and the restarted" \
-    "episode re-attests. The proofs end byte-untouched: the ladder" \
-    "repaired the right artifact."
-  SCENE8_PROOFS="$LOG_DIR/Proofs.v.scene8"
-  cp "$PROOFS" "$SCENE8_PROOFS"
-  cp "$IMPL_FILE" "$IMPL_SCENE8"
-  sed 's/then On/then Off/' "$IMPL_SCENE8" > "$LOG_DIR/Impl.v.tampered"
-  offer_diff "$IMPL_SCENE8" "$LOG_DIR/Impl.v.tampered" \
-    "the behavior inversion the arc is about to apply"
-  run_driver --tamper-impl --keep
-  expect "Tampered implementation" "the behavior tamper must apply"
-  expect "handing to 'synthesis:rocq-impl'" \
-    "proof exhaustion must hand off to the implementation rung"
-  expect "implemented (RocqSpecGuidedImplEngine)" \
-    "the spec-guided engine must re-derive the implementation"
-  expect "repaired and re-attested clean in-session" \
-    "the re-derived implementation must re-attest in one session"
-  if cmp -s "$SCENE8_PROOFS" "$PROOFS"; then
-    echo "${BOLD}proofs byte-untouched — the ladder repaired the right artifact.${RESET}"
-  else
-    echo "DEMO ABORT: the proofs changed during an implementation repair" >&2
-    exit 1
-  fi
-  cp "$IMPL_SCENE8" "$IMPL_FILE"
-  pause
-fi
-
 banner "DEMO COMPLETE" \
   "postponed, by design: episode-triggering monitor (external scheduler)," \
   "wall-clock repair timeouts, the executable artifact class, LLM and" \
   "pause repair-strategy variants, Rocq --check/--promote (the bless in" \
-  "scene 2 is the provision-bootstrap form until promote lands), and a" \
+  "scene 3 is the provision-bootstrap form until promote lands), and a" \
   "hashes-only --bless-tools term (tool blessing independent of tree" \
   "state; today it runs the woven tier and must see a verifying tree)."

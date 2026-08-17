@@ -31,7 +31,17 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   rocq/dune toolchain hashed measure-then-use in the same term.
 - The per-goal checklist, all green.
 
-## Scene 2 — spec drift: escalate, examine, rule
+## Scene 2 — implementation tamper: the ladder repairs the right artifact
+
+- The implementation's hot response is inverted: it elaborates fine, but the
+  blessed goals are genuinely **false** of it, so no proof can repair this.
+  Proof repair exhausts — the exhaustion *is the diagnosis* — and the ladder
+  hands off to the impl rung, which **re-derives the implementation from the
+  blessed statements alone** (deterministic spec-guided engine, no API keys;
+  `--llm` adds the LLM behind it). The seed proofs prove again, the restarted
+  episode re-attests, and the proofs end byte-untouched.
+
+## Scene 3 — spec drift: escalate, examine, rule
 
 - A model edit (operator's choice: **benign** bound change, or a **breaking**
   restatement that compiles but refutes a seed proof).
@@ -45,7 +55,7 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   automated **proof repair** (`--repair-proofs`, tactic portfolio) adapts the
   proof, judged by fresh measurement.
 
-## Scene 3 — restore, at two grains
+## Scene 4 — restore, at two grains
 
 - **Whole-file** (`--immutable-model`): the ruling for automated pipelines —
   model files never drift; a failed hash appraisal is the repair order,
@@ -56,7 +66,7 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   model entry ends attested clean *via the contracts refinement* — the
   terminal proof the note survived to re-measurement.
 
-## Scene 4 — verification failure, repair by selectable strategy
+## Scene 5 — verification failure, repair by selectable strategy
 
 - Strategy chosen at the prompt or `--repair-strategy`:
   **portfolio** (deterministic tactic search; no API keys),
@@ -70,7 +80,7 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   individually; then in-session re-attestation and the archived
   **signed evidence** of the re-measurement (never a re-blessing).
 
-## Scene 5 — baseline tamper: the repair that must refuse
+## Scene 6 — baseline tamper: the repair that must refuse
 
 - Three beats, one gate, three attributed refusals: a **flipped byte of
   signed bundle evidence** (record integrity — the signature refutes), a
@@ -83,7 +93,7 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   repair a baseline: the readiness gate's failure chain is empty by design,
   so the only exit is the administrator's out-of-band re-bless.
 
-## Scene 6 — toolchain tamper: measure-then-use catches the tool
+## Scene 7 — toolchain tamper: measure-then-use catches the tool
 
 - A **functionality-preserving** edit to the rocq wrapper: every build and
   audit still runs and looks fine, but the tool hash — taken in the same
@@ -97,7 +107,7 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   the canonical wrapper, prove it against the blessed golden, confirm
   readiness.)
 
-## Scene 7 — audit tamper: the rendering anchored to config
+## Scene 8 — audit tamper: the rendering anchored to config
 
 - The audit file's sections bind to goals only through the file's structure,
   so the **rendering itself is hashed** against its blessed canonical bytes,
@@ -110,23 +120,13 @@ eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
   file is a **rendering of AM configuration**, so the rung re-renders its
   Print block from config and the restarted episode re-attests.
 
-## Scene 8 — implementation tamper: the ladder repairs the right artifact
-
-- The implementation's hot response is inverted: it elaborates fine, but the
-  blessed goals are genuinely **false** of it, so no proof can repair this.
-  Proof repair exhausts — the exhaustion *is the diagnosis* — and the ladder
-  hands off to the impl rung, which **re-derives the implementation from the
-  blessed statements alone** (deterministic spec-guided engine, no API keys;
-  `--llm` adds the LLM behind it). The seed proofs prove again, the restarted
-  episode re-attests, and the proofs end byte-untouched.
-
 ## Throughout
 
 - **Opt-in VSCode diffs** at every artifact-modification beat: the corrupted
-  and machine-repaired proof (scene 4), the tampered wrapper (scene 6), the
-  deleted and substituted audit queries (scene 7), the behavior inversion
-  (scene 8), the machine-adapted proof after a spec-first bless (scene 2),
-  and scene 5's trust-state attacks — the flipped evidence byte and the
+  and machine-repaired proof (scene 5), the tampered wrapper (scene 7), the
+  deleted and substituted audit queries (scene 8), the behavior inversion
+  (scene 2), the machine-adapted proof after a spec-first bless (scene 3),
+  and scene 6's trust-state attacks — the flipped evidence byte and the
   hand-edited golden (both pretty-printed JSON), and the
   blessed-vs-laundered spec — `[v]iew diff / Enter to continue`, terminal
   fallback, skipped in unattended runs.
