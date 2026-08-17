@@ -19,7 +19,7 @@ deterministic or out-of-band.
 for flags — `--scenes`, `--drift`, `--auto`, `--repair-strategy`,
 `--fast` for unattended, `--restore-tools` recovery). Warm cargo-verus
 caches recommended: every Verus tier run re-verifies 7 crates (~10 s
-warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
+warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
 
 ## Setup
 
@@ -39,12 +39,27 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   the verus toolchain hashed measure-then-use in the same term.
 - The per-crate proof checklist, all green.
 
-## Scene 2 — spec drift: escalate, examine, rule
+## Scene 2 — implementation tamper: the ladder repairs the right artifact
+
+- A **pre-generated dummy bad implementation** replaces the
+  developer-owned compute logic wholesale ([diff&nbsp;D1](#d1); heat
+  ON in INIT and FAILED modes, both NORMAL responses inverted): it
+  compiles fine, but the blessed contracts are genuinely **false** of
+  it, so no contract-side repair can help.
+- The ladder diagnoses before it repairs: the contracts-intact rung
+  finds every contract slice of the failing crate byte-identical to
+  golden — the exhaustion *is the diagnosis* that the implementation is
+  the artifact at fault — and hands off to the impl rung, which
+  restores the implementation (crate-scoped, from golden, standing in
+  for a future spec-guided Rust engine). The restarted episode
+  re-attests; the model and contract slices end untouched.
+
+## Scene 3 — spec drift: escalate, examine, rule
 
 - A GUMBO contract edit in `Regulate.sysml` (operator's choice:
   **benign** semantically equivalent restatement
-  ([diff&nbsp;D1](#d1)), or **breaking** — REQ_MHS_1's initialize
-  guarantee flipped Off -> Onn ([diff&nbsp;D2](#d2)), which codegen
+  ([diff&nbsp;D2](#d2)), or **breaking** — REQ_MHS_1's initialize
+  guarantee flipped Off -> Onn ([diff&nbsp;D3](#d3)), which codegen
   accepts but the implementation cannot honor).
 - Detection and escalation with attribution: the l2 refinement names
   the changed slices; interactive ruling over the diff — **revert**, or
@@ -57,31 +72,31 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   codegen** (re-splices the contract marker regions inside the
   developer-owned app.rs) -> **Verus proof gate** -> gold moves ->
   props re-blessed. Benign: the regenerated contracts prove, with the
-  codegen re-splice shown as a diff ([diff&nbsp;D3](#d3)). Breaking:
+  codegen re-splice shown as a diff ([diff&nbsp;D4](#d4)). Breaking:
   the proof gate
   **refuses** before gold moves — the old baseline stays fully in
-  place, and the honest exits are an implementation fix (scene 8's
+  place, and the honest exits are an implementation fix (scene 2's
   ladder) or walking the sanction back.
 
-## Scene 3 — restore, at two grains
+## Scene 4 — restore, at two grains
 
 - **Whole-file** (`--immutable-model`): the ruling for automated
-  pipelines — measured files never drift ([diff&nbsp;D4](#d4)); the
+  pipelines — measured files never drift ([diff&nbsp;D5](#d5)); the
   failed l1a hash appraisal IS the repair order, restore + re-attest
   **in-session**, no interaction, no l2 examination.
 - **Slice** (`--repair-granularity slice`): the repair unit is the
-  measurement unit ([diff&nbsp;D5](#d5)) — only the violated contract
+  measurement unit ([diff&nbsp;D6](#d6)) — only the violated contract
   slice is spliced back, located by **content alignment** (difflib
   against golden; insertion-robust), benign drift elsewhere in the
   same file survives,
   and the files entry ends attested clean *via the l2 contracts
   refinement* — the terminal proof the note survived re-measurement.
 
-## Scene 4 — verification failure, repair by selectable strategy
+## Scene 5 — verification failure, repair by selectable strategy
 
 - The implementation drifts in its **developer-owned region** — the
   INSPECTA exemplar's own seeded bug (REQ-MHS-2 response inverted,
-  [diff&nbsp;D6](#d6)). Every contract slice is intact, so integrity
+  [diff&nbsp;D7](#d7)). Every contract slice is intact, so integrity
   attests clean at finer
   granularity; the always-run verus tier refutes the crate: the
   generated contracts are genuinely **false** of the drifted behavior.
@@ -92,17 +107,17 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   only fresh measurement — never your claim — re-establishes standing).
 - Rocq's tactic-portfolio / LLM strategies have no honest counterpart
   here: Verus contracts are generated artifacts, so "repairing" them
-  would launder the spec, and repairing the *implementation* is scene
-  8's ladder.
+  would launder the spec, and repairing the *implementation* was
+  scene 2's ladder.
 
-## Scene 5 — baseline tamper: the repair that must refuse
+## Scene 6 — baseline tamper: the repair that must refuse
 
 - Three beats, one gate, three attributed refusals: a **flipped byte of
-  signed bundle evidence** ([diff&nbsp;D7](#d7); record integrity — the
+  signed bundle evidence** ([diff&nbsp;D8](#d8); record integrity — the
   signature refutes), a **hand-edited installed golden**
-  ([diff&nbsp;D8](#d8); installation consistency — the anchor refutes,
+  ([diff&nbsp;D9](#d9); installation consistency — the anchor refutes,
   signature silent), and **laundering** — a tampered spec
-  ([diff&nbsp;D4](#d4) again) re-provisioned into fully
+  ([diff&nbsp;D5](#d5) again) re-provisioned into fully
   self-consistent measurement baselines,
   refuted by semantic lineage: every hash and slice golden must be
   *derivable from the blessed signed bytes*, and ordinary provisioning
@@ -111,10 +126,10 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   chain is empty by design, so the only exit is the administrator's
   out-of-band re-bless.
 
-## Scene 6 — toolchain tamper: measure-then-use catches the tool
+## Scene 7 — toolchain tamper: measure-then-use catches the tool
 
 - A **functionality-preserving** edit to the cargo-verus wrapper
-  ([diff&nbsp;D9](#d9)): every verification still runs and looks fine,
+  ([diff&nbsp;D10](#d10)): every verification still runs and looks fine,
   but the tool hash — taken in
   the same term, before use — refutes, and every proof cell poisons to
   `?` fail-closed. Readiness still passes: the stored record is
@@ -125,15 +140,15 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   recovery hatch: reinstall the canonical wrapper, prove it against the
   blessed golden, confirm readiness.)
 
-## Scene 7 — report tamper: the rendering anchored and regenerated
+## Scene 8 — report tamper: the rendering anchored and regenerated
 
 - The attestation report is the **authority** every protocol dir is
   derived from — measurement targets bind to contracts only through its
   structure — so the report itself is hashed measure-then-use as its
   own always-run entry. Beat 1: a **deleted slice**
-  ([diff&nbsp;D10](#d10); a re-derived protocol would measure one
+  ([diff&nbsp;D11](#d11); a re-derived protocol would measure one
   target fewer than the blessing intended). Beat 2: a slice span
-  **substituted** for a different contract's ([diff&nbsp;D11](#d11)) —
+  **substituted** for a different contract's ([diff&nbsp;D12](#d12)) —
   counts stay right, structure stays plausible; only the byte anchor
   refutes.
 - The repair is the regeneration species — neither restore nor
@@ -141,33 +156,18 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   measured codegen toolchain**, so the rung re-emits it (tool gate
   first, then real codegen) and the restarted episode re-attests.
 
-## Scene 8 — implementation tamper: the ladder repairs the right artifact
-
-- A **pre-generated dummy bad implementation** replaces the
-  developer-owned compute logic wholesale ([diff&nbsp;D12](#d12); heat
-  ON in INIT and FAILED modes, both NORMAL responses inverted): it
-  compiles fine, but the blessed contracts are genuinely **false** of
-  it, so no contract-side repair can help.
-- The ladder diagnoses before it repairs: the contracts-intact rung
-  finds every contract slice of the failing crate byte-identical to
-  golden — the exhaustion *is the diagnosis* that the implementation is
-  the artifact at fault — and hands off to the impl rung, which
-  restores the implementation (crate-scoped, from golden, standing in
-  for a future spec-guided Rust engine). The restarted episode
-  re-attests; the model and contract slices end untouched.
-
 ## Throughout
 
 - **Opt-in VSCode diffs** at every artifact-modification beat: the
-  seeded behavior bug (scene 4), the wrapper edit (scene 6), the
-  deleted and substituted report slices (scene 7, pretty-printed
+  seeded behavior bug (scene 5), the wrapper edit (scene 7), the
+  deleted and substituted report slices (scene 8, pretty-printed
   JSON, shown BEFORE the arc — "see how innocent the tamper looks"),
-  the dummy-bad-impl inversion (scene 8), the codegen re-splice after
-  a benign bless (scene 2), and scene 5's trust-state attacks — the
+  the dummy-bad-impl inversion (scene 2), the codegen re-splice after
+  a benign bless (scene 3), and scene 6's trust-state attacks — the
   flipped evidence byte and the hand-edited golden (both
   pretty-printed JSON), and the blessed-vs-laundered spec —
   `[v]iew diff / Enter to continue`, terminal fallback, skipped in
-  unattended runs. Scene 2's ruling diff (golden vs proposed) is
+  unattended runs. Scene 3's ruling diff (golden vs proposed) is
   always shown. This document links the same diffs statically — see
   the [appendix](#appendix-artifact-diffs).
 - Every scene gates on expected output (including no-✗/no-? checks on
@@ -175,7 +175,7 @@ warm, multi-minute cold); scene 2's codegen beats add ~1-2 min each.
   loudly.
 - Self-cleaning: tampered targets restore at every driver exit;
   bundles, goldens, wrapper, and any demo blessing are restored on
-  script exit (scene 2's codegen catch-up requires a git-clean
+  script exit (scene 3's codegen catch-up requires a git-clean
   `targets/isolette-microkit` and restores through git).
 
 Postponed by design: episode-triggering monitor, wall-clock repair
@@ -188,247 +188,12 @@ the live hash), and a real spec-guided Rust implementation engine.
 The same diffs the script offers interactively (`[v]iew diff … / Enter`), statically. Paths are relative to `targets/isolette-microkit/` (model + generated tree) or the pybb repo root (trust state).
 
 <a id="d1"></a>
-### D1 — scene 2 (benign): the `lower_is_lower_temp` restatement
-
-Semantically equivalent (`x <= y` -> `y >= x`), in both components carrying the guarantee; the regenerated contracts still prove.
-
-```diff
---- a/sysml/Regulate.sysml
-+++ b/sysml/Regulate.sysml
-@@ -188,7 +188,7 @@
-                 // general guarantee between outgoing port values
-                 guarantee lower_is_lower_temp "Derived requirement, not in AR-08-32: MHS unconditionally assumes the
-                                               |Desired Range is well-ordered,.":
--                    lower_desired_temp.degrees <= upper_desired_temp.degrees;
-+                    upper_desired_temp.degrees >= lower_desired_temp.degrees;
- 
-                 compute_cases
-                     // ====== Regulator Status ======    
-@@ -460,7 +460,7 @@
-             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
-             compute
-                 // assumption on set points enforced within the Operator Interface
--                assume lower_is_lower_temp: lower_desired_temp.degrees <= upper_desired_temp.degrees;
-+                assume lower_is_lower_temp: upper_desired_temp.degrees >= lower_desired_temp.degrees;
-             
-                 // the lastCmd state variable is always equal to the value of the heat_control output port
-                 guarantee lastCmd "Set lastCmd to value of output Cmd port":
-```
-
-<a id="d2"></a>
-### D2 — scene 2 (breaking): REQ_MHS_1's initialize guarantee flipped
-
-Codegen accepts it; the implementation initializes the heat control Off, so the catch-up's proof gate must refuse.
-
-```diff
---- a/sysml/Regulate.sysml
-+++ b/sysml/Regulate.sysml
-@@ -455,7 +455,7 @@
-                 guarantee REQ_MHS_1 "If the Regulator Mode is INIT, the Heat Control shall be
-                                     |set to Off.
-                                     |https://www.faa.gov/sites/faa.gov/files/aircraft/air_cert/design_approvals/air_software/AR-08-32.pdf#page=110 ":
--                    heat_control == Isolette_Data_Model::On_Off.Off;
-+                    heat_control == Isolette_Data_Model::On_Off.Onn;
-             
-             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
-             compute
-```
-
-<a id="d3"></a>
-### D3 — scene 2 (benign, blessed): the codegen re-splice
-
-What `--promote` wrote back into the developer-owned file's marker region — the realization catching up with the blessed restatement.
+### D1 — scene 2: the pre-generated dummy bad implementation
 
 ```diff
 --- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
 +++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-@@ -54,7 +54,7 @@
-       requires
-         // BEGIN MARKER TIME TRIGGERED REQUIRES
-         // assume lower_is_lower_temp
--        old(api).lower_desired_temp.degrees <= old(api).upper_desired_temp.degrees,
-+        old(api).upper_desired_temp.degrees >= old(api).lower_desired_temp.degrees,
-         // END MARKER TIME TRIGGERED REQUIRES
-       ensures
-         // BEGIN MARKER TIME TRIGGERED ENSURES
-```
-
-<a id="d4"></a>
-### D4 — scene 3 beat 1: the model drift (also scene 5's laundered edit)
-
-```diff
---- a/sysml/Regulate.sysml
-+++ b/sysml/Regulate.sysml
-@@ -188,7 +188,7 @@
-                 // general guarantee between outgoing port values
-                 guarantee lower_is_lower_temp "Derived requirement, not in AR-08-32: MHS unconditionally assumes the
-                                               |Desired Range is well-ordered,.":
--                    lower_desired_temp.degrees <= upper_desired_temp.degrees;
-+                    lower_desired_temp.degrees < upper_desired_temp.degrees;
- 
-                 compute_cases
-                     // ====== Regulator Status ======    
-@@ -460,7 +460,7 @@
-             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
-             compute
-                 // assumption on set points enforced within the Operator Interface
--                assume lower_is_lower_temp: lower_desired_temp.degrees <= upper_desired_temp.degrees;
-+                assume lower_is_lower_temp: lower_desired_temp.degrees < upper_desired_temp.degrees;
-             
-                 // the lastCmd state variable is always equal to the value of the heat_control output port
-                 guarantee lastCmd "Set lastCmd to value of output Cmd port":
-```
-
-<a id="d5"></a>
-### D5 — scene 3 beat 2: one corrupted slice + the benign note
-
-Slice restore splices back ONLY the violated block; the note survives, and the files entry passes via the l2 refinement.
-
-```diff
---- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-+++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-@@ -11,7 +11,7 @@
- 
-   pub struct thermostat_rt_mhs_mhs {
-     // BEGIN MARKER STATE VARS
--    pub lastCmd: Isolette_Data_Model::On_Off,
-+// TAMPERED: verus contract weakened
-     // END MARKER STATE VARS
-   }
- 
-@@ -175,3 +175,5 @@
-   }
- 
- }
-+
-+// engineering note: candidate sensor swap under review
-```
-
-<a id="d6"></a>
-### D6 — scene 4: the seeded behavior bug
-
-The INSPECTA exemplar's own seeded bug: in NORMAL mode below the lower bound, command Off instead of On.
-
-```diff
---- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-+++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-@@ -126,8 +126,8 @@
-               } else if (currentTemp.degrees < lower.degrees) {
-                   assert(api.current_tempWstatus.degrees < api.lower_desired_temp.degrees);
-                   // REQ-MHS-2
--                  //currentCmd = On_Off::Off; // seeded bug/error
--                  currentCmd = On_Off::Onn;
-+                  currentCmd = On_Off::Off; // seeded bug/error
-+                  //currentCmd = On_Off::Onn;
-               }
-               // otherwise currentCmd defaults to lastCmd (REQ-MHS-4)
-           },
-```
-
-<a id="d7"></a>
-### D7 — scene 5 beat 1: one flipped byte of signed evidence
-
-Pretty-printed and truncated; the change is a single character inside one RawEv slot of the props bundle.
-
-```diff
---- a/golden/_bundles/isolette_sysmlv2_rust_props/provision_bundle.json
-+++ b/golden/_bundles/isolette_sysmlv2_rust_props/provision_bundle.json
-@@ -8,5 +8,5 @@
-     "Ly8gTW9uaXRvci5zeXNtbApwYWNrYWdlIE1vbml0b3IgewogIAo…[truncated]…ogIH0KfQo=",
-     "cGFja2FnZSBPcGVyYXRvcl9JbnRlcmZhY2UgewogIAogIHByaXZ…[truncated]…8KICB9Cn0K",
--    "Ly8gUmVndWxhdGUuc3lzbWwKCnBhY2thZ2UgUmVndWxhdGUgewo…[truncated]…CAgIH0KfQo="
-+    "Ly8gUmVndWAhdGUuc3lzbWwKCnBhY2thZ2UgUmVndWxhdGUgewo…[truncated]…CAgIH0KfQo="
-    ]
-   },
-```
-
-<a id="d8"></a>
-### D8 — scene 5 beat 2: one hand-edited installed golden
-
-The bundle stays authentic; only the anchor to the signed evidence refutes.
-
-```diff
---- a/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json
-+++ b/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json
-@@ -33,5 +33,5 @@
-    "filepath": "/Users/adampetz/Claude_workspace/pybb/ta…[truncated]…late.sysml",
-    "asp_targid": "isolette_sysmlv2_rust_props_regulate_targ",
--   "golden_b64": "Ly8gUmVndWxhdGUuc3lzbWwKCnBhY2thZ2UgUm…[truncated]…AgIH0KfQo=",
-+   "golden_b64": "Ly8gUmVndWAhdGUuc3lzbWwKCnBhY2thZ2UgUm…[truncated]…AgIH0KfQo=",
-    "golden_ts": "2026-08-17 09:04:12"
-   }
-```
-
-<a id="d9"></a>
-### D9 — scene 6: the functionality-preserving wrapper edit
-
-```diff
---- a/~/Claude_workspace/bin/cargo-verus
-+++ b/~/Claude_workspace/bin/cargo-verus
-@@ -3,3 +3,4 @@
- # (CVM child processes see this via CvmConfig.path_prepend).
- export PATH="/Users/adampetz/Claude_workspace/verus-arm64-macos:$HOME/.cargo/bin:$PATH"
- exec /Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus "$@"
-+# drifted: innocuous-looking edit
-```
-
-<a id="d10"></a>
-### D10 — scene 7 beat 1: the deleted report slice
-
-Pretty-printed; one Verus slice quietly gone from the authority.
-
-```diff
---- a/attestation/sysml_attestation_report.json
-+++ b/attestation/sysml_attestation_report.json
-@@ -36,19 +36,4 @@
-         "length": 121
-        }
--      },
--      {
--       "type": "Slice",
--       "kind": "Verus",
--       "meta": "Verus realization of GUMBO initializes contract",
--       "pos": {
--        "type": "Position",
--        "uri": "../crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
--        "beginLine": 25,
--        "beginCol": 11,
--        "endLine": 26,
--        "endCol": 72,
--        "offset": 567,
--        "length": 73
--       }
-       }
-      ]
-```
-
-<a id="d11"></a>
-### D11 — scene 7 beat 2: the substituted slice span
-
-Slice count unchanged; the slice now points at a different contract's lines in the same file.
-
-```diff
---- a/attestation/sysml_attestation_report.json
-+++ b/attestation/sysml_attestation_report.json
-@@ -29,7 +29,7 @@
-         "type": "Position",
-         "uri": "../../../sysml/Regulate.sysml",
--        "beginLine": 176,
-+        "beginLine": 182,
-         "beginCol": 16,
--        "endLine": 177,
-+        "endLine": 186,
-         "endCol": 111,
-         "offset": 9738,
-```
-
-<a id="d12"></a>
-### D12 — scene 8: the pre-generated dummy bad implementation
-
-```diff
---- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-+++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
-@@ -114,28 +114,25 @@
+ -114,28 +114,25 
  
            // ----- INIT Mode --------
            Regulator_Mode::Init_Regulator_Mode => {
@@ -465,4 +230,239 @@ Slice count unchanged; the slice now points at a different contract's lines in t
            }
        }
  
+```
+
+<a id="d2"></a>
+### D2 — scene 3 (benign): the `lower_is_lower_temp` restatement
+
+Semantically equivalent (`x <= y` -> `y >= x`), in both components carrying the guarantee; the regenerated contracts still prove.
+
+```diff
+--- a/sysml/Regulate.sysml
++++ b/sysml/Regulate.sysml
+ -188,7 +188,7 
+                 // general guarantee between outgoing port values
+                 guarantee lower_is_lower_temp "Derived requirement, not in AR-08-32: MHS unconditionally assumes the
+                                               |Desired Range is well-ordered,.":
+-                    lower_desired_temp.degrees <= upper_desired_temp.degrees;
++                    upper_desired_temp.degrees >= lower_desired_temp.degrees;
+ 
+                 compute_cases
+                     // ====== Regulator Status ======    
+ -460,7 +460,7 
+             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
+             compute
+                 // assumption on set points enforced within the Operator Interface
+-                assume lower_is_lower_temp: lower_desired_temp.degrees <= upper_desired_temp.degrees;
++                assume lower_is_lower_temp: upper_desired_temp.degrees >= lower_desired_temp.degrees;
+             
+                 // the lastCmd state variable is always equal to the value of the heat_control output port
+                 guarantee lastCmd "Set lastCmd to value of output Cmd port":
+```
+
+<a id="d3"></a>
+### D3 — scene 3 (breaking): REQ_MHS_1's initialize guarantee flipped
+
+Codegen accepts it; the implementation initializes the heat control Off, so the catch-up's proof gate must refuse.
+
+```diff
+--- a/sysml/Regulate.sysml
++++ b/sysml/Regulate.sysml
+ -455,7 +455,7 
+                 guarantee REQ_MHS_1 "If the Regulator Mode is INIT, the Heat Control shall be
+                                     |set to Off.
+                                     |https://www.faa.gov/sites/faa.gov/files/aircraft/air_cert/design_approvals/air_software/AR-08-32.pdf#page=110 ":
+-                    heat_control == Isolette_Data_Model::On_Off.Off;
++                    heat_control == Isolette_Data_Model::On_Off.Onn;
+             
+             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
+             compute
+```
+
+<a id="d4"></a>
+### D4 — scene 3 (benign, blessed): the codegen re-splice
+
+What `--promote` wrote back into the developer-owned file's marker region — the realization catching up with the blessed restatement.
+
+```diff
+--- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
++++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
+ -54,7 +54,7 
+       requires
+         // BEGIN MARKER TIME TRIGGERED REQUIRES
+         // assume lower_is_lower_temp
+-        old(api).lower_desired_temp.degrees <= old(api).upper_desired_temp.degrees,
++        old(api).upper_desired_temp.degrees >= old(api).lower_desired_temp.degrees,
+         // END MARKER TIME TRIGGERED REQUIRES
+       ensures
+         // BEGIN MARKER TIME TRIGGERED ENSURES
+```
+
+<a id="d5"></a>
+### D5 — scene 4 beat 1: the model drift (also scene 6's laundered edit)
+
+```diff
+--- a/sysml/Regulate.sysml
++++ b/sysml/Regulate.sysml
+ -188,7 +188,7 
+                 // general guarantee between outgoing port values
+                 guarantee lower_is_lower_temp "Derived requirement, not in AR-08-32: MHS unconditionally assumes the
+                                               |Desired Range is well-ordered,.":
+-                    lower_desired_temp.degrees <= upper_desired_temp.degrees;
++                    lower_desired_temp.degrees < upper_desired_temp.degrees;
+ 
+                 compute_cases
+                     // ====== Regulator Status ======    
+ -460,7 +460,7 
+             //  ====== C o m p u t e    E n t r y    P o i n t   Behavior Constraints =====      
+             compute
+                 // assumption on set points enforced within the Operator Interface
+-                assume lower_is_lower_temp: lower_desired_temp.degrees <= upper_desired_temp.degrees;
++                assume lower_is_lower_temp: lower_desired_temp.degrees < upper_desired_temp.degrees;
+             
+                 // the lastCmd state variable is always equal to the value of the heat_control output port
+                 guarantee lastCmd "Set lastCmd to value of output Cmd port":
+```
+
+<a id="d6"></a>
+### D6 — scene 4 beat 2: one corrupted slice + the benign note
+
+Slice restore splices back ONLY the violated block; the note survives, and the files entry passes via the l2 refinement.
+
+```diff
+--- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
++++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
+ -11,7 +11,7 
+ 
+   pub struct thermostat_rt_mhs_mhs {
+     // BEGIN MARKER STATE VARS
+-    pub lastCmd: Isolette_Data_Model::On_Off,
++// TAMPERED: verus contract weakened
+     // END MARKER STATE VARS
+   }
+ 
+ -175,3 +175,5 
+   }
+ 
+ }
++
++// engineering note: candidate sensor swap under review
+```
+
+<a id="d7"></a>
+### D7 — scene 5: the seeded behavior bug
+
+The INSPECTA exemplar's own seeded bug: in NORMAL mode below the lower bound, command Off instead of On.
+
+```diff
+--- a/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
++++ b/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs
+ -126,8 +126,8 
+               } else if (currentTemp.degrees < lower.degrees) {
+                   assert(api.current_tempWstatus.degrees < api.lower_desired_temp.degrees);
+                   // REQ-MHS-2
+-                  //currentCmd = On_Off::Off; // seeded bug/error
+-                  currentCmd = On_Off::Onn;
++                  currentCmd = On_Off::Off; // seeded bug/error
++                  //currentCmd = On_Off::Onn;
+               }
+               // otherwise currentCmd defaults to lastCmd (REQ-MHS-4)
+           },
+```
+
+<a id="d8"></a>
+### D8 — scene 6 beat 1: one flipped byte of signed evidence
+
+Pretty-printed and truncated; the change is a single character inside one RawEv slot of the props bundle.
+
+```diff
+--- a/golden/_bundles/isolette_sysmlv2_rust_props/provision_bundle.json
++++ b/golden/_bundles/isolette_sysmlv2_rust_props/provision_bundle.json
+ -8,5 +8,5 
+     "Ly8gTW9uaXRvci5zeXNtbApwYWNrYWdlIE1vbml0b3IgewogIAo…[truncated]…ogIH0KfQo=",
+     "cGFja2FnZSBPcGVyYXRvcl9JbnRlcmZhY2UgewogIAogIHByaXZ…[truncated]…8KICB9Cn0K",
+-    "Ly8gUmVndWxhdGUuc3lzbWwKCnBhY2thZ2UgUmVndWxhdGUgewo…[truncated]…CAgIH0KfQo="
++    "Ly8gUmVndWAhdGUuc3lzbWwKCnBhY2thZ2UgUmVndWxhdGUgewo…[truncated]…CAgIH0KfQo="
+    ]
+   },
+```
+
+<a id="d9"></a>
+### D9 — scene 6 beat 2: one hand-edited installed golden
+
+The bundle stays authentic; only the anchor to the signed evidence refutes.
+
+```diff
+--- a/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json
++++ b/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json
+ -33,5 +33,5 
+    "filepath": "/Users/adampetz/Claude_workspace/pybb/ta…[truncated]…late.sysml",
+    "asp_targid": "isolette_sysmlv2_rust_props_regulate_targ",
+-   "golden_b64": "Ly8gUmVndWxhdGUuc3lzbWwKCnBhY2thZ2UgUm…[truncated]…AgIH0KfQo=",
++   "golden_b64": "Ly8gUmVndWAhdGUuc3lzbWwKCnBhY2thZ2UgUm…[truncated]…AgIH0KfQo=",
+    "golden_ts": "2026-08-17 09:04:12"
+   }
+```
+
+<a id="d10"></a>
+### D10 — scene 7: the functionality-preserving wrapper edit
+
+```diff
+--- a/~/Claude_workspace/bin/cargo-verus
++++ b/~/Claude_workspace/bin/cargo-verus
+ -3,3 +3,4 
+ # (CVM child processes see this via CvmConfig.path_prepend).
+ export PATH="/Users/adampetz/Claude_workspace/verus-arm64-macos:$HOME/.cargo/bin:$PATH"
+ exec /Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus "$@"
++# drifted: innocuous-looking edit
+```
+
+<a id="d11"></a>
+### D11 — scene 8 beat 1: the deleted report slice
+
+Pretty-printed; one Verus slice quietly gone from the authority.
+
+```diff
+--- a/attestation/sysml_attestation_report.json
++++ b/attestation/sysml_attestation_report.json
+ -36,19 +36,4 
+         "length": 121
+        }
+-      },
+-      {
+-       "type": "Slice",
+-       "kind": "Verus",
+-       "meta": "Verus realization of GUMBO initializes contract",
+-       "pos": {
+-        "type": "Position",
+-        "uri": "../crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+-        "beginLine": 25,
+-        "beginCol": 11,
+-        "endLine": 26,
+-        "endCol": 72,
+-        "offset": 567,
+-        "length": 73
+-       }
+       }
+      ]
+```
+
+<a id="d12"></a>
+### D12 — scene 8 beat 2: the substituted slice span
+
+Slice count unchanged; the slice now points at a different contract's lines in the same file.
+
+```diff
+--- a/attestation/sysml_attestation_report.json
++++ b/attestation/sysml_attestation_report.json
+ -29,7 +29,7 
+         "type": "Position",
+         "uri": "../../../sysml/Regulate.sysml",
+-        "beginLine": 176,
++        "beginLine": 182,
+         "beginCol": 16,
+-        "endLine": 177,
++        "endLine": 186,
+         "endCol": 111,
+         "offset": 9738,
 ```

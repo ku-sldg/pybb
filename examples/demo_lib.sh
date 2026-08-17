@@ -13,6 +13,33 @@
 BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
 LOG="$LOG_DIR/last_run.log"
 
+# ── one demo at a time ──────────────────────────────────────────────────────
+# Every demo tampers and restores the SAME live target tree, goldens,
+# and fixtures: two concurrent runs corrupt each other's beats (one
+# run's mid-scene restore lands inside the other's episode). The lock
+# is shared across demo scripts. acquire_demo_lock arms a release trap;
+# a script that later installs its own EXIT trap must call
+# release_demo_lock from it.
+
+acquire_demo_lock() {
+  DEMO_LOCK="$REPO/.demo.lock"
+  if ! mkdir "$DEMO_LOCK" 2>/dev/null; then
+    local pid
+    pid="$(cat "$DEMO_LOCK/pid" 2>/dev/null)"
+    if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+      echo "DEMO ABORT: another demo run (pid $pid) holds $DEMO_LOCK." >&2
+      echo "Concurrent demo runs tamper and restore the same live tree —" >&2
+      echo "wait for it to finish (or kill it) and re-run." >&2
+      exit 1
+    fi
+    echo "(stale demo lock from pid ${pid:-unknown} — taking over)"
+  fi
+  echo $$ > "$DEMO_LOCK/pid"
+  trap release_demo_lock EXIT
+}
+
+release_demo_lock() { rm -rf "${DEMO_LOCK:-}" 2>/dev/null; }
+
 banner() {
   echo
   echo "${BOLD}════════════════════════════════════════════════════════════════${RESET}"

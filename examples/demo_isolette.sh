@@ -11,36 +11,17 @@
 #            verification (cargo-verus over 7 crates, always-run), the
 #            verus toolchain hashed measure-then-use in the same term,
 #            and the blessed props baseline verified at readiness.
-#   scene 3  restore at two grains: --immutable-model (the failed hash
-#            appraisal IS the repair order — whole-file restore +
-#            in-session re-attest, no interaction) and
-#            --repair-granularity slice (only the violated contract
-#            slice is spliced back by CONTENT ALIGNMENT — a benign note
-#            elsewhere in the same file survives, and the files entry
-#            ends attested clean via the l2 refinement).
-#   scene 4  verification failure -> repair by selectable strategy: the
-#            implementation drifts in its DEVELOPER-OWNED region, so
-#            integrity attests clean at finer granularity (every
-#            contract slice intact) while the always-run verus tier
-#            refutes the crate — the generated contracts are genuinely
-#            false of the drifted behavior. Strategies: restore (the
-#            failing crate's hashed files from golden, judged by fresh
-#            measurement in-session) or pause (out-of-band: YOU repair,
-#            measurement judges).
-#   scene 5  baseline tamper -> the repair that must refuse, three
-#            beats: a flipped byte of signed bundle evidence (signature
-#            refutes), a hand-edited installed golden (anchor refutes,
-#            signature silent), and LAUNDERING — a tampered spec
-#            re-provisioned into fully self-consistent measurement
-#            baselines, refuted by the props blessing's derivability
-#            check. Each stops attestation before it starts; the only
-#            exit is the administrator's out-of-band re-bless.
-#   scene 6  toolchain tamper -> a functionality-PRESERVING edit to the
-#            cargo-verus wrapper still refutes the measure-then-use
-#            tool hash; every proof cell poisons fail-closed ('?'), and
-#            the honest repair is the out-of-band pause rung.
-#
-#   scene 2  a spec edit drifts the model -> the episode escalates ->
+#   scene 2  implementation tamper -> the ladder repairs the RIGHT
+#            artifact: a PRE-GENERATED DUMMY BAD IMPLEMENTATION replaces
+#            the developer-owned compute logic wholesale (heat ON in
+#            INIT and FAILED modes, NORMAL responses inverted). It
+#            compiles fine; the blessed contracts are genuinely FALSE of
+#            it. The diagnosis rung finds every contract slice
+#            byte-identical to golden — the exhaustion IS the diagnosis
+#            — and hands to the impl rung (crate-scoped restore,
+#            standing in for a spec-guided engine). The model and the
+#            contract slices end untouched.
+#   scene 3  a spec edit drifts the model -> the episode escalates ->
 #            YOU examine the diff (VSCode if available) and rule at the
 #            prompt: [b]less the change as the new baseline, or
 #            [r]evert to golden. Blessing is SPEC-FIRST
@@ -55,8 +36,35 @@
 #            Onn — codegen accepts it, the implementation cannot honor
 #            it -> the proof gate REFUSES the catch-up; the old
 #            baseline stays in place).
-#
-#   scene 7  report tamper -> the rendering is anchored: the attestation
+#   scene 4  restore at two grains: --immutable-model (the failed hash
+#            appraisal IS the repair order — whole-file restore +
+#            in-session re-attest, no interaction) and
+#            --repair-granularity slice (only the violated contract
+#            slice is spliced back by CONTENT ALIGNMENT — a benign note
+#            elsewhere in the same file survives, and the files entry
+#            ends attested clean via the l2 refinement).
+#   scene 5  verification failure -> repair by selectable strategy: the
+#            implementation drifts in its DEVELOPER-OWNED region, so
+#            integrity attests clean at finer granularity (every
+#            contract slice intact) while the always-run verus tier
+#            refutes the crate — the generated contracts are genuinely
+#            false of the drifted behavior. Strategies: restore (the
+#            failing crate's hashed files from golden, judged by fresh
+#            measurement in-session) or pause (out-of-band: YOU repair,
+#            measurement judges).
+#   scene 6  baseline tamper -> the repair that must refuse, three
+#            beats: a flipped byte of signed bundle evidence (signature
+#            refutes), a hand-edited installed golden (anchor refutes,
+#            signature silent), and LAUNDERING — a tampered spec
+#            re-provisioned into fully self-consistent measurement
+#            baselines, refuted by the props blessing's derivability
+#            check. Each stops attestation before it starts; the only
+#            exit is the administrator's out-of-band re-bless.
+#   scene 7  toolchain tamper -> a functionality-PRESERVING edit to the
+#            cargo-verus wrapper still refutes the measure-then-use
+#            tool hash; every proof cell poisons fail-closed ('?'), and
+#            the honest repair is the out-of-band pause rung.
+#   scene 8  report tamper -> the rendering is anchored: the attestation
 #            report is the AUTHORITY every protocol dir is derived from
 #            — targets bind to contracts only through its structure —
 #            so the report itself is hashed measure-then-use as its own
@@ -66,30 +74,20 @@
 #            is the REGENERATION species: the report is a rendering of
 #            the model through the measured codegen toolchain, so the
 #            rung re-emits it (tool gate first) and re-attests.
-#   scene 8  implementation tamper -> the ladder repairs the RIGHT
-#            artifact: a PRE-GENERATED DUMMY BAD IMPLEMENTATION replaces
-#            the developer-owned compute logic wholesale (heat ON in
-#            INIT and FAILED modes, NORMAL responses inverted). It
-#            compiles fine; the blessed contracts are genuinely FALSE of
-#            it. The diagnosis rung finds every contract slice
-#            byte-identical to golden — the exhaustion IS the diagnosis
-#            — and hands to the impl rung (crate-scoped restore,
-#            standing in for a spec-guided engine). The model and the
-#            contract slices end untouched.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
-#   --repair-strategy S    scene 4's repair: restore (default; from
+#   --repair-strategy S    scene 5's repair: restore (default; from
 #                          golden, keyless) | pause (out-of-band: you
 #                          repair, measurement judges); prompted
 #                          interactively when not given
 #   --scenes "1 2 3 ..."   run a subset of scenes
-#   --drift benign|breaking  pick scene 2's spec change without prompting
-#   --auto bless|revert    answer scene 2's ruling automatically (testing;
+#   --drift benign|breaking  pick scene 3's spec change without prompting
+#   --auto bless|revert    answer scene 3's ruling automatically (testing;
 #                          unattended runs with no tty default to revert)
 #   --fast                 skip the press-Enter pauses (for testing)
 #   --restore-tools        recovery: reinstall the canonical cargo-verus
-#                          wrapper (e.g. after an interrupted scene 6),
+#                          wrapper (e.g. after an interrupted scene 7),
 #                          verify its hash against the BLESSED tool
 #                          golden, confirm readiness, and exit
 #
@@ -131,7 +129,7 @@ while [ $# -gt 0 ]; do
     --auto) AUTO="$2"; shift ;;
     --drift) DRIFT="$2"; shift ;;
     --restore-tools) RESTORE_TOOLS=1 ;;
-    -h|--help) sed -n '2,84p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,96p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -147,6 +145,7 @@ case "$DRIFT" in ""|benign|breaking) ;; *) echo "--drift takes benign|breaking" 
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/demo_isolette.XXXXXX")"
 # shellcheck source=demo_lib.sh
 . "$REPO/examples/demo_lib.sh"
+acquire_demo_lock
 
 run_driver() {
   run_logged "$REPO" "$PY" "$DRIVER" --frontend sysml "$@"
@@ -206,7 +205,7 @@ BLESSED_DURING_DEMO=0
 
 cleanup() {
   local status=$?
-  # file-level restores FIRST: a scene-2 re-bless below re-derives the
+  # file-level restores FIRST: a scene-3 re-bless below re-derives the
   # props fixtures/bundles fresh, and must not be stomped afterwards
   for pair in "$REGULATE_PRISTINE:$REGULATE" "$MHS_PRISTINE:$MHS_APP" \
               "$BUNDLE_PRISTINE:$PROPS_BUNDLE" "$ARGS_PRISTINE:$PROPS_ARGS" \
@@ -233,13 +232,14 @@ cleanup() {
     echo "      tests/fixtures/isolette_sysmlv2_rust_* — 'git checkout' them if unwanted."
   fi
   if [ "$LAUNDERED_DURING_DEMO" = 1 ]; then
-    echo "cleanup: re-provisioning derivable goldens (scene 5 laundering)"
+    echo "cleanup: re-provisioning derivable goldens (scene 6 laundering)"
     ( cd "$REPO" && "$PY" "$DRIVER" --frontend sysml --provision ) \
       >"$LOG_DIR/cleanup_provision.log" 2>&1 \
       || echo "cleanup: re-provisioning FAILED — see $LOG_DIR/cleanup_provision.log" >&2
     echo "note: provisioning refreshes bundle signatures/timestamps under"
     echo "      tests/fixtures/isolette_sysmlv2_rust_* — 'git checkout' them if unwanted."
   fi
+  release_demo_lock
   exit $status
 }
 trap cleanup EXIT
@@ -272,7 +272,6 @@ note_slow
 run_driver --ready
 expect "readiness: PASS" "readiness must pass before the demo starts"
 pause
-
 if in_scenes 1; then
   banner "SCENE 1 — clean baseline episode" \
     "Artifact classes measured: files (13 whole-file hashes: SysML" \
@@ -298,9 +297,50 @@ if in_scenes 1; then
   expect_absent "?" "an unjudged crate on the clean baseline means the demo started dirty"
   pause
 fi
-
 if in_scenes 2; then
-  banner "SCENE 2 — spec drift: escalate, examine, bless or revert" \
+  banner "SCENE 2 — implementation tamper: the ladder repairs the RIGHT artifact" \
+    "A PRE-GENERATED DUMMY BAD IMPLEMENTATION replaces the" \
+    "developer-owned compute logic wholesale: heat ON in INIT and" \
+    "FAILED modes, both NORMAL responses inverted. It compiles fine —" \
+    "but the blessed contracts are genuinely FALSE of it, so NO" \
+    "contract-side repair can help. The ladder diagnoses before it" \
+    "repairs: every contract slice of the failing crate is" \
+    "byte-identical to golden — the exhaustion IS the diagnosis that" \
+    "the implementation is the artifact at fault — and the impl rung" \
+    "repairs it (crate-scoped restore from golden, standing in for a" \
+    "spec-guided Rust engine). The model and the contract slices end" \
+    "untouched."
+  SCENE8_MHS="$LOG_DIR/mhs_app.rs.scene8"
+  cp "$MHS_APP" "$SCENE8_MHS"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+from pathlib import Path
+Path(sys.argv[1]).write_text(ex.dummy_bad_impl_text(ex.MHS_APP.read_text()))
+" "$LOG_DIR/mhs_app.rs.tampered" )
+  offer_diff "$SCENE8_MHS" "$LOG_DIR/mhs_app.rs.tampered" \
+    "the behavior inversion the arc is about to apply (dummy bad impl)"
+  run_driver --tamper-impl-full --verify --repair-impl
+  expect "DUMMY BAD IMPL" "the dummy bad implementation must apply"
+  expect "the IMPLEMENTATION is the artifact at fault" \
+    "the diagnosis rung must attribute the fault to the implementation"
+  expect "repair:whole-file:crate: restored 1 file(s) from golden" \
+    "the impl rung must repair exactly the failing crate"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the repaired implementation must prove again"
+  expect "repaired and re-attested clean in-session" \
+    "the repaired implementation must re-attest in one session"
+  if cmp -s "$SCENE8_MHS" "$MHS_APP"; then
+    echo "${BOLD}implementation byte-identical to the pre-tamper tree, and the${RESET}"
+    echo "${BOLD}model was never flagged — the ladder repaired the right artifact.${RESET}"
+  else
+    echo "DEMO ABORT: the implementation file did not return to its pre-tamper bytes" >&2
+    exit 1
+  fi
+  pause
+fi
+if in_scenes 3; then
+  banner "SCENE 3 — spec drift: escalate, examine, bless or revert" \
     "A model edit drifts a blessed GUMBO contract. The episode detects" \
     "it, names the changed slices, and ESCALATES — the demo (not the" \
     "episode) then asks for your ruling. Blessing is SPEC-FIRST:" \
@@ -310,7 +350,7 @@ if in_scenes 2; then
     "real SysML codegen -> Verus proof gate -> gold -> re-bless)."
   if ! ( cd "$REPO" && git diff --quiet -- targets/isolette-microkit ); then
     echo "DEMO ABORT: targets/isolette-microkit has uncommitted changes —" >&2
-    echo "scene 2's codegen catch-up restores via git checkout" >&2
+    echo "scene 3's codegen catch-up restores via git checkout" >&2
     exit 1
   fi
   if [ -n "$DRIFT" ]; then
@@ -409,7 +449,8 @@ if in_scenes 2; then
         echo "${BOLD}Off where the flipped REQ_MHS_1 now demands On.${RESET}"
         echo "${BOLD}The proof gate refused BEFORE gold moved: the old baseline is${RESET}"
         echo "${BOLD}fully in place, and the honest exits are an implementation fix${RESET}"
-        echo "${BOLD}(scene 8's ladder) or the administrator walking the sanction${RESET}"
+        echo "${BOLD}(the ladder scene 2 demonstrated) or the administrator walking${RESET}"
+        echo "${BOLD}the sanction${RESET}"
         echo "${BOLD}back. The demo walks it back:${RESET}"
         ( cd "$REPO" && git checkout -- targets/isolette-microkit )
         run_driver --provision --bless-props
@@ -429,9 +470,8 @@ if in_scenes 2; then
   esac
   pause
 fi
-
-if in_scenes 3; then
-  banner "SCENE 3 — restore, at two grains" \
+if in_scenes 4; then
+  banner "SCENE 4 — restore, at two grains" \
     "Beat 1, --immutable-model: the ruling for automated pipelines —" \
     "measured files must never drift; the failed hash appraisal IS the" \
     "repair order, whole-file restore + in-session re-attest, no" \
@@ -440,8 +480,11 @@ if in_scenes 3; then
     "spliced back (located by CONTENT ALIGNMENT, insertion-robust)," \
     "and benign drift elsewhere in the file survives."
   echo "${BOLD}beat 1 — a GUMBO guarantee drifts in Regulate.sysml${RESET}"
-  edit_spec 's/lower_desired_temp\.degrees <= upper_desired_temp\.degrees;/lower_desired_temp.degrees < upper_desired_temp.degrees;/' \
-    "lower_is_lower_temp guarantee <= -> < (a strictness change)"
+  # two alternates: the pristine spec carries 'x <= y'; after scene 3's
+  # benign bless the OPERATIVE spec carries the restated 'y >= x' — the
+  # drift must land either way (operative state, never demo-start state)
+  edit_spec 's/lower_desired_temp\.degrees <= upper_desired_temp\.degrees;/lower_desired_temp.degrees < upper_desired_temp.degrees;/; s/upper_desired_temp\.degrees >= lower_desired_temp\.degrees;/upper_desired_temp.degrees > lower_desired_temp.degrees;/' \
+    "lower_is_lower_temp guarantee tightened (a strictness change)"
   echo
   echo "AM detection names the changed contract (position-independently,"
   echo "in the model language):"
@@ -478,9 +521,8 @@ if in_scenes 3; then
   echo "(the driver's exit self-clean then restored the note too — demo policy)"
   pause
 fi
-
-if in_scenes 4; then
-  banner "SCENE 4 — verification failure -> repair (selectable strategy)" \
+if in_scenes 5; then
+  banner "SCENE 5 — verification failure -> repair (selectable strategy)" \
     "The implementation drifts in its DEVELOPER-OWNED region — the" \
     "INSPECTA exemplar's own seeded bug: in NORMAL mode below the" \
     "lower bound, command Off instead of On. Every contract slice is" \
@@ -511,6 +553,11 @@ if in_scenes 4; then
   fi
   echo "repair strategy: $STRATEGY"
   echo
+  # scene-ENTRY capture: the status-beat restore must return to the
+  # OPERATIVE file (a scene-3 benign promote re-spliced its requires
+  # clause), never the demo-start pristine
+  SCENE5_MHS="$LOG_DIR/mhs_app.rs.scene5"
+  cp "$MHS_APP" "$SCENE5_MHS"
 
   echo "${BOLD}first, the checklist over the BROKEN tree — the failing crate${RESET}"
   echo "${BOLD}refuted with its diagnostic, every other crate judged from its${RESET}"
@@ -518,9 +565,9 @@ if in_scenes 4; then
   run_driver --tamper-impl --status
   expect "✗" "the checklist must display the failing crate"
   expect "thermostat_rt_mhs_mhs" "the failing crate must be named"
-  offer_diff "$MHS_PRISTINE" "$MHS_APP" \
+  offer_diff "$SCENE5_MHS" "$MHS_APP" \
     "the seeded behavior bug (pristine vs drifted developer region)"
-  cp "$MHS_PRISTINE" "$MHS_APP"
+  cp "$SCENE5_MHS" "$MHS_APP"
   pause
   echo
   case "$STRATEGY" in
@@ -566,9 +613,8 @@ if in_scenes 4; then
   [ -n "$latest_evidence" ] && ls "$EVIDENCE/$latest_evidence" | sed "s|^|  evidence/$latest_evidence/|"
   pause
 fi
-
-if in_scenes 5; then
-  banner "SCENE 5 — baseline tamper: the repair that must refuse" \
+if in_scenes 6; then
+  banner "SCENE 6 — baseline tamper: the repair that must refuse" \
     "Now the TRUST STATE itself is attacked — the live tree stays" \
     "pristine throughout. Readiness re-appraises the signed" \
     "provisioning record and refuses to START attestation. No" \
@@ -576,10 +622,17 @@ if in_scenes 5; then
     "failure chain is empty BY DESIGN, provisioning is unreachable" \
     "from failure handling — so the only exit is the administrator's" \
     "out-of-band re-bless."
-  # scene-ENTRY spec capture: beat 3 must restore to the spec the
-  # CURRENT blessing covers
-  SCENE5_SPEC="$LOG_DIR/Regulate.sysml.scene5"
-  cp "$REGULATE" "$SCENE5_SPEC"
+  # scene-ENTRY captures — every beat must restore to the OPERATIVE
+  # state (a scene-3 bless changed the blessing for the rest of the
+  # run): the spec the CURRENT blessing covers, and the CURRENT signed
+  # bundle + installed goldens (the demo-start pristines would revert
+  # the blessing under a promoted baseline)
+  SCENE6_SPEC="$LOG_DIR/Regulate.sysml.scene6"
+  SCENE6_BUNDLE="$LOG_DIR/props_bundle.scene6"
+  SCENE6_ARGS="$LOG_DIR/props_asp_args.scene6"
+  cp "$REGULATE" "$SCENE6_SPEC"
+  cp "$PROPS_BUNDLE" "$SCENE6_BUNDLE"
+  cp "$PROPS_ARGS" "$SCENE6_ARGS"
 
   echo "${BOLD}beat 1 — tamper the signed record: flip ONE byte of stored evidence${RESET}"
   "$PY" - "$PROPS_BUNDLE" <<'PYEOF'
@@ -598,9 +651,9 @@ PYEOF
     "a tampered bundle byte must break the signature"
   expect "attestation never started" \
     "a refused baseline must stop attestation before it starts"
-  offer_diff_json "$BUNDLE_PRISTINE" "$PROPS_BUNDLE" \
+  offer_diff_json "$SCENE6_BUNDLE" "$PROPS_BUNDLE" \
     "one flipped byte of signed evidence (pristine vs tampered bundle)"
-  cp "$BUNDLE_PRISTINE" "$PROPS_BUNDLE"
+  cp "$SCENE6_BUNDLE" "$PROPS_BUNDLE"
   echo
   echo "${BOLD}the record itself was not authentic — restored; now the other side:${RESET}"
   pause
@@ -622,9 +675,9 @@ PYEOF
     "a refused baseline must stop attestation before it starts"
   expect_absent "signature verification FAILED" \
     "the bundle is authentic in this beat — only the anchor may refute"
-  offer_diff_json "$ARGS_PRISTINE" "$PROPS_ARGS" \
+  offer_diff_json "$SCENE6_ARGS" "$PROPS_ARGS" \
     "one hand-edited installed golden (pristine vs tampered asp_args)"
-  cp "$ARGS_PRISTINE" "$PROPS_ARGS"
+  cp "$SCENE6_ARGS" "$PROPS_ARGS"
   echo
   echo "${BOLD}restored — now the smarter adversary:${RESET}"
   pause
@@ -638,8 +691,10 @@ PYEOF
   echo "refuses to touch the props class, and readiness re-derives every"
   echo "hash and slice golden from the blessed SIGNED bytes:"
   LAUNDERED_DURING_DEMO=1
-  edit_spec 's/lower_desired_temp\.degrees <= upper_desired_temp\.degrees;/lower_desired_temp.degrees < upper_desired_temp.degrees;/' \
-    "lower_is_lower_temp guarantee <= -> < (the laundered change)"
+  # same two alternates as scene 4: the edit must land on the OPERATIVE
+  # spec whether or not scene 3 blessed the restatement
+  edit_spec 's/lower_desired_temp\.degrees <= upper_desired_temp\.degrees;/lower_desired_temp.degrees < upper_desired_temp.degrees;/; s/upper_desired_temp\.degrees >= lower_desired_temp\.degrees;/upper_desired_temp.degrees > lower_desired_temp.degrees;/' \
+    "lower_is_lower_temp guarantee tightened (the laundered change)"
   run_driver --provision
   expect "goldens provisioned" "the laundering pass must provision"
   run_driver
@@ -649,11 +704,11 @@ PYEOF
     "a refused baseline must stop attestation before it starts"
   expect_absent "signature verification FAILED" \
     "the laundered bundles are self-consistent — only lineage refutes"
-  offer_diff "$SCENE5_SPEC" "$REGULATE" \
+  offer_diff "$SCENE6_SPEC" "$REGULATE" \
     "what the administrator signed vs the laundered live spec"
   echo
   echo "restoring the spec and re-provisioning derivable goldens:"
-  cp "$SCENE5_SPEC" "$REGULATE"
+  cp "$SCENE6_SPEC" "$REGULATE"
   run_driver --provision
   LAUNDERED_DURING_DEMO=0
   echo
@@ -665,9 +720,8 @@ PYEOF
   expect "readiness: PASS" "the restored baseline must verify again"
   pause
 fi
-
-if in_scenes 6; then
-  banner "SCENE 6 — toolchain tamper: measure-then-use catches the tool" \
+if in_scenes 7; then
+  banner "SCENE 7 — toolchain tamper: measure-then-use catches the tool" \
     "The cargo-verus WRAPPER is edited — functionality preserved (a" \
     "comment line), so every verification still runs and looks fine." \
     "The verus term hashes the toolchain IN THE SAME TERM, before" \
@@ -722,9 +776,8 @@ if in_scenes 6; then
   fi
   pause
 fi
-
-if in_scenes 7; then
-  banner "SCENE 7 — report tamper: the rendering is anchored to the model" \
+if in_scenes 8; then
+  banner "SCENE 8 — report tamper: the rendering is anchored to the model" \
     "The attestation report is the AUTHORITY: every protocol dir is" \
     "derived from it, so measurement targets bind to contracts only" \
     "through the report's structure — and the report itself is hashed" \
@@ -785,52 +838,9 @@ ex.tamper_report_subst(ex.FRONTENDS['sysml'], {})" )
   pause
 fi
 
-if in_scenes 8; then
-  banner "SCENE 8 — implementation tamper: the ladder repairs the RIGHT artifact" \
-    "A PRE-GENERATED DUMMY BAD IMPLEMENTATION replaces the" \
-    "developer-owned compute logic wholesale: heat ON in INIT and" \
-    "FAILED modes, both NORMAL responses inverted. It compiles fine —" \
-    "but the blessed contracts are genuinely FALSE of it, so NO" \
-    "contract-side repair can help. The ladder diagnoses before it" \
-    "repairs: every contract slice of the failing crate is" \
-    "byte-identical to golden — the exhaustion IS the diagnosis that" \
-    "the implementation is the artifact at fault — and the impl rung" \
-    "repairs it (crate-scoped restore from golden, standing in for a" \
-    "spec-guided Rust engine). The model and the contract slices end" \
-    "untouched."
-  SCENE8_MHS="$LOG_DIR/mhs_app.rs.scene8"
-  cp "$MHS_APP" "$SCENE8_MHS"
-  ( cd "$REPO" && "$PY" -c "
-import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
-import isolette_rust as ex
-from pathlib import Path
-Path(sys.argv[1]).write_text(ex.dummy_bad_impl_text(ex.MHS_APP.read_text()))
-" "$LOG_DIR/mhs_app.rs.tampered" )
-  offer_diff "$SCENE8_MHS" "$LOG_DIR/mhs_app.rs.tampered" \
-    "the behavior inversion the arc is about to apply (dummy bad impl)"
-  run_driver --tamper-impl-full --verify --repair-impl
-  expect "DUMMY BAD IMPL" "the dummy bad implementation must apply"
-  expect "the IMPLEMENTATION is the artifact at fault" \
-    "the diagnosis rung must attribute the fault to the implementation"
-  expect "repair:whole-file:crate: restored 1 file(s) from golden" \
-    "the impl rung must repair exactly the failing crate"
-  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
-    "the repaired implementation must prove again"
-  expect "repaired and re-attested clean in-session" \
-    "the repaired implementation must re-attest in one session"
-  if cmp -s "$SCENE8_MHS" "$MHS_APP"; then
-    echo "${BOLD}implementation byte-identical to the pre-tamper tree, and the${RESET}"
-    echo "${BOLD}model was never flagged — the ladder repaired the right artifact.${RESET}"
-  else
-    echo "DEMO ABORT: the implementation file did not return to its pre-tamper bytes" >&2
-    exit 1
-  fi
-  pause
-fi
-
 banner "DEMO COMPLETE" \
   "postponed, by design: episode-triggering monitor (external" \
   "scheduler), wall-clock repair timeouts, the executable artifact" \
   "class, blessing the report under the props class (laundered reports" \
   "refuted by lineage, not just the live hash), and a real spec-guided" \
-  "Rust implementation engine behind the scene 8 stand-in."
+  "Rust implementation engine behind the scene 2 stand-in."
