@@ -24,9 +24,10 @@ left for the escalation report.
 
 from __future__ import annotations
 
+import difflib
 import shutil
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
@@ -158,6 +159,110 @@ class SliceRestoreKS(KnowledgeSource):
         return True
 
 
+class RangeSliceRestoreKS(KnowledgeSource):
+    """
+    Block repair rung for a positional-range tier (readfile_range):
+    splice each violated slice back from the golden copy, locating the
+    live region by CONTENT ALIGNMENT (difflib over golden vs live
+    lines), not by position — so drift elsewhere in the file (an
+    inserted note above the slice) survives the repair and shifted
+    positions cannot make the splice land on the wrong lines. Only
+    divergent regions that overlap a violated slice's golden span are
+    restored; every other divergence is deliberately left alone.
+
+    Attribution comes from the refinement tier's verdict (refined_by),
+    dug out of history exactly as WholeFileRestoreKS does — by the time
+    a chain hands the key to this rung the controller has restored the
+    entry's original measurement, so the entry's own verdict is the
+    coarse tier's again. Falls back to the entry verdict when no
+    refinement verdict exists. Same repair-cannot-mint-trust contract as
+    the other restore rungs: it acts once and writes result=None for
+    fresh evaluation (pair with RestartEpisodeKS for in-session
+    standing).
+    """
+
+    name: str = "repair:slice"
+    partition: List[str] = []
+    max_attempts: int = 1
+    golden_root: Path
+    refined_by: str = ""
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if not isinstance(entry.result, Verdict):
+                continue
+            refine = (_latest_verdict(blackboard, key, self.refined_by)
+                      if self.refined_by else None)
+            verdict = entry.result if refine is None else refine
+            # violated golden spans per file: filepath -> [(start, end)]
+            # (1-based inclusive, the readfile_range convention)
+            spans: Dict[str, List[Tuple[int, int]]] = {}
+            labels: Dict[str, str] = {}
+            unrestorable: List[str] = []
+            for comp in verdict.failing():
+                label = comp.targ_id or comp.description
+                args = comp.args or {}
+                fp = args.get("filepath")
+                try:  # int-typed in fixtures; the verified summarizer
+                    # may round-trip them as strings
+                    s = int(args.get("start_index"))
+                    e = int(args.get("end_index"))
+                except (TypeError, ValueError):
+                    s = e = None
+                if not (fp and s is not None):
+                    unrestorable.append(label)
+                    continue
+                spans.setdefault(fp, []).append((s, e))
+                labels[f"{fp}:{s}:{e}"] = label
+            restored: List[str] = []
+            for fp, file_spans in sorted(spans.items()):
+                hit, missed = self._splice_file(Path(fp), file_spans)
+                restored.extend(labels[f"{fp}:{s}:{e}"] for s, e in hit)
+                unrestorable.extend(labels[f"{fp}:{s}:{e}"] for s, e in missed)
+            print(f"  {self.name}: restored {len(restored)} block(s) from golden"
+                  + (f", {len(unrestorable)} unrestorable" if unrestorable else ""))
+            blackboard.write_entry(
+                key=key, predicate=entry.predicate,
+                measurement=entry.measurement, result=None,
+            )
+
+    def _splice_file(self, live: Path, file_spans: List[Tuple[int, int]]
+                     ) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+        """Restore the violated spans in one file; returns (restored,
+        unrestorable) spans. Alignment: golden is the left sequence, so
+        each opcode's [i1, i2) range is in golden-line coordinates and
+        overlap with a violated golden span is a direct interval test."""
+        golden_copy = mirror_path(self.golden_root, live)
+        if not (live.is_file() and golden_copy.is_file()):
+            return [], list(file_spans)
+        live_lines = live.read_text().splitlines(keepends=True)
+        gold_lines = golden_copy.read_text().splitlines(keepends=True)
+        matcher = difflib.SequenceMatcher(
+            None, gold_lines, live_lines, autojunk=False)
+        out: List[str] = []
+        hit: set = set()
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == "equal":
+                out.extend(live_lines[j1:j2])
+                continue
+            # golden span (s, e) is 1-based inclusive -> 0-based [s-1, e);
+            # an insertion (i1 == i2) belongs to a span only strictly inside
+            def _overlaps(s: int, e: int) -> bool:
+                if i1 == i2:
+                    return s - 1 < i1 < e
+                return i1 < e and i2 > s - 1
+            overlapping = [(s, e) for s, e in file_spans if _overlaps(s, e)]
+            if overlapping:
+                out.extend(gold_lines[i1:i2])
+                hit.update(overlapping)
+            else:
+                out.extend(live_lines[j1:j2])
+        if hit:
+            live.write_text("".join(out))
+        return sorted(hit), sorted(set(file_spans) - hit)
+
+
 def console_gate(work_order: str) -> bool:
     """The default operator gate: block on stdin until the operator says
     what happened out-of-band. 'r' (or bare Enter) claims the repair is
@@ -224,12 +329,20 @@ class OutOfBandRepairKS(BlackBoxRepairKS):
                  f"repair (attempt {ctx.attempt}/{self.max_attempts})"]
         verdict = ctx.verdict
         if isinstance(verdict, Verdict):
+            # dedupe: bseq(both_paths) replicates prior evidence into
+            # every branch, so one violated event (e.g. a woven tool
+            # measurement) is witnessed once per branch — same
+            # violation, one work-order line
+            seen = set()
             for comp in verdict.failing():
                 label = comp.targ_id or comp.description or comp.target_asp
                 where = (comp.args or {}).get("filepath", "")
-                lines.append(f"    - {label}"
-                             + (f" [{where}]" if where else "")
-                             + (f": {comp.reason}" if comp.reason else ""))
+                line = (f"    - {label}"
+                        + (f" [{where}]" if where else "")
+                        + (f": {comp.reason}" if comp.reason else ""))
+                if line not in seen:
+                    seen.add(line)
+                    lines.append(line)
             if verdict.error:
                 lines.append(f"    protocol error: {verdict.error}")
         if self.report is not None:

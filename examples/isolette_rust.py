@@ -45,8 +45,12 @@ leaves a stale blessing that baseline verification refutes.
 
 Usage:
     python examples/isolette_rust.py [--frontend {aadl,sysml}]
-        [--check] [--provision] [--promote] [--tamper-verus] [--repair]
-        [--validate]
+        [--check] [--provision [--bless-props]] [--promote]
+        [--ready] [--status] [--verify] [--validate]
+        [--tamper-verus] [--tamper-note] [--tamper-impl]
+        [--tamper-impl-full] [--tamper-report] [--tamper-report-subst]
+        [--repair] [--immutable-model] [--repair-granularity {file,slice}]
+        [--restore-crates] [--repair-impl] [--regen-report] [--pause]
 
 --frontend   which model frontend's report drives the workflow
              (default: aadl — byte-identical to the pre-SysML behavior)
@@ -68,6 +72,35 @@ Usage:
              generated Rust; detection/attribution (and --repair)
 --validate   run the Verus semantic tier after a passing l1a
              (requires the Verus toolchain; cold builds are slow)
+
+Demo-workflow flags (examples/demo_isolette.sh rides on these; see
+docs/demo_isolette_script_summary.md for the scenes):
+
+--bless-props        with --provision: the spec-first sanctioning act —
+                     re-sign the props blessing over the current model
+                     files, no codegen (--promote is the full pipeline)
+--ready / --status   the readiness gate alone / the per-crate proof
+                     checklist (a verus-tier run rendered downgrade-only;
+                     tool-hash failures poison every cell to '?')
+--verify             always-run verification + report-rendering entries
+                     alongside the files entry (the three-entry shape)
+--immutable-model    whole-file restore straight off the l1a verdict +
+                     in-session re-attest (no interaction)
+--repair-granularity file|slice — the restore rung's repair unit, with
+                     in-session re-attest; slice = content-aligned splice
+--restore-crates     the proofs entry's restore rung: failing crates'
+                     hashed files from golden + in-session re-attest
+--repair-impl        the ladder: contracts-intact diagnosis, then the
+                     impl rung (crate restore), then re-attest
+--regen-report       the report entry's repair rung: re-emit the report
+                     via measured codegen (tool gate first)
+--pause              the out-of-band rung: block on a work order, YOU
+                     repair, fresh measurement judges the claim
+--tamper-note        benign drift outside every measured slice
+--tamper-impl        the exemplar's seeded bug (REQ-MHS-2 inverted)
+--tamper-impl-full   the pre-generated dummy bad implementation
+--tamper-report      delete one slice from the attestation report
+--tamper-report-subst  substitute one slice's span for another's
 """
 
 import argparse
@@ -78,15 +111,21 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import List
 
 from pybb import BlackboardController
 from pybb.attestation import (
     CvmSubprocessClient,
+    OutOfBandRepairKS,
     ProtocolDir,
+    RangeSliceRestoreKS,
+    RestartEpisodeKS,
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
+    Verdict,
     WholeFileRestoreKS,
+    attestation_request,
     changed_contracts,
     make_attestation_predicate,
     make_promotion_predicate,
@@ -97,6 +136,11 @@ from pybb.attestation import (
     request_provision,
     trust_summary,
 )
+from pybb.attestation.proof_status import render_checklist
+from pybb.attestation.snapshot import mirror_path
+from pybb.attestation.verus_status import verus_crate_checklist
+from pybb.blackboard import Blackboard
+from pybb.knowledge_source import KnowledgeSource
 from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import model_files_from_report, write_props_protocol_dir
 from pybb.attestation.targetmap import (
@@ -131,10 +175,18 @@ class Frontend:
     prefix: str         # protocol-id prefix (isolette_aadl_rust_ / isolette_sysmlv2_rust_)
     model_suffix: str   # model-language extension (--check, props scope)
     model_label: str    # human phrase for the props blessing description
+    # measure the report itself (hashed measure-then-use as its own
+    # always-run entry under --verify): every protocol dir is derived
+    # from the report, so targets bind to contracts only through its
+    # structure — the rendering must be anchored before it is trusted
+    report_protocol: bool = False
 
     @property
     def report(self) -> Path:
         return ATTESTATION_DIR / f"{self.name}_attestation_report.json"
+
+    @property
+    def report_id(self) -> str: return f"{self.prefix}_report"
 
     @property
     def l1a(self) -> str: return f"{self.prefix}_l1a"
@@ -156,7 +208,7 @@ FRONTENDS = {
     "aadl": Frontend(name="aadl", prefix="isolette_aadl_rust", model_suffix=".aadl",
                      model_label="AADL model file"),
     "sysml": Frontend(name="sysml", prefix="isolette_sysmlv2_rust", model_suffix=".sysml",
-                      model_label="SysML v2 model file"),
+                      model_label="SysML v2 model file", report_protocol=True),
 }
 
 # Just-in-time tool measurement: the verus toolchain is hashed in the
@@ -317,6 +369,59 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
     return ProtocolDir.load(str(d))
 
 
+def build_report_protocol(fe: Frontend) -> ProtocolDir:
+    """<p>_report: one hashfile measurement of the attestation report,
+    goldenbytes-appraised against its provisioned golden hash — the
+    measure-then-use anchor on the rendering every protocol dir is
+    derived from. The report is a plain (golden-copied) target, so scene
+    tampers self-clean at driver exit like any other; its REPAIR species
+    is regeneration (re-emit via measured codegen), never hand-editing."""
+    d = FIXTURES / fe.report_id
+    d.mkdir(exist_ok=True)
+    targ = f"{fe.prefix}_report_targ"
+    targets = {targ: {"filepath": str(fe.report), "env_var": "",
+                      "asp_targid": targ}}
+    hashfile_types = {
+        "hashfile": {"FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                     "ATTRS": []},
+        "sig": {"FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "ALL"}, "ATTRS": []},
+        "sig_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []},
+        "goldenbytes_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []},
+    }
+    session = {
+        "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
+        "Session_Context": {
+            "ASP_Types": hashfile_types,
+            "ASP_Comps": {"hashfile": "goldenbytes_appr", "sig": "sig_appr"},
+        },
+    }
+    manifest = {"ASPS": ["hashfile", "goldenbytes_appr", "sig", "sig_appr"],
+                "ASP_FS_MAP": {}, "POLICY": []}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {"ASP_ID": "hashfile", "ASP_TARG_ID": targ}}},
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}]},
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    (d / "asp_args.json").write_text(
+        json.dumps({"hashfile": targets}, indent=2) + "\n")
+    (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+    (d / "meta.json").write_text(json.dumps({
+        "name": "Isolette attestation-report rendering",
+        "description": "Whole-file hash of the HAMR attestation report — the "
+                       "authority every protocol dir is derived from. "
+                       "Measurement targets bind to contracts only through "
+                       "the report's structure, so the rendering itself is "
+                       "anchored measure-then-use before it is trusted. "
+                       "Repair species: regeneration via measured codegen.",
+        "copland": "lseq( lseq( hashfile(report), SIG ), APPR )",
+    }, indent=2) + "\n")
+    return ProtocolDir.load(str(d))
+
+
 def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
     """(Re)generate the frontend's protocol dirs from its report. The
     props definition is AM-owned: rewritten only under --promote
@@ -352,6 +457,9 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
         print(f"  {fe.props_id}: existing blessing kept "
               "(only --promote re-blesses the model)")
     protocols[fe.props_id] = ProtocolDir.load(str(props_dir))
+    if fe.report_protocol:
+        protocols[fe.report_id] = build_report_protocol(fe)
+        print(f"  {fe.report_id}: 1 report rendering target")
     protocols[fe.verus_id] = build_verus_protocol(fe)
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
@@ -384,6 +492,11 @@ def load_protocols(fe: Frontend, validate: bool = False) -> dict:
     else:
         protocols = {pid: ProtocolDir.load(str(FIXTURES / pid))
                      for pid in (*fe.protocol_ids, fe.props_id)}
+        if fe.report_protocol:
+            if not (FIXTURES / fe.report_id / "asp_args.json").is_file():
+                build_report_protocol(fe)
+            protocols[fe.report_id] = ProtocolDir.load(
+                str(FIXTURES / fe.report_id))
     if validate:
         protocols[fe.verus_id] = ProtocolDir.load(str(FIXTURES / fe.verus_id))
     return protocols
@@ -405,6 +518,8 @@ def provision_flow(fe: Frontend, protocols: dict,
     pids = list(fe.protocol_ids)
     if props is not None and (bless_props or props_unblessed):
         pids.append(fe.props_id)
+    if fe.report_id in protocols:
+        pids.append(fe.report_id)
     measured = {pid: protocols[pid] for pid in pids}
     for pid in (fe.verus_id, HAMR_TOOLS_ID, SYSML_LIBS_ID):
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
@@ -513,6 +628,49 @@ def promote_flow(fe: Frontend, protocols: dict) -> None:
     attest_episode(fe, protocols, repair=False, validate=True)
 
 
+class CrateFileRestoreKS(KnowledgeSource):
+    """
+    Whole-file repair rung for the VERIFICATION tier: the verus tier's
+    components carry a crate cwd, not a filepath, so the restore maps
+    each failing crate to its l1a-hashed (and therefore goldened) files
+    and restores those. The scope discipline is the crate boundary the
+    failing component attests: files of passing crates are never
+    touched. Same repair-cannot-mint-trust contract as the other
+    restore rungs — pair with RestartEpisodeKS so fresh measurement
+    judges the restore in-session.
+    """
+
+    name: str = "repair:whole-file:crate"
+    partition: List[str] = []
+    max_attempts: int = 1
+    golden_root: Path
+    hashed_files: List[str]  # the l1a protocol's filepaths (goldened)
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if not isinstance(entry.result, Verdict):
+                continue
+            crate_dirs = [Path(c.args["cwd"]) for c in entry.result.failing()
+                          if (c.args or {}).get("cwd")]
+            restored, unrestorable = [], []
+            for fp in sorted(self.hashed_files):
+                if not any(d in Path(fp).parents for d in crate_dirs):
+                    continue
+                golden_copy = mirror_path(self.golden_root, Path(fp))
+                if golden_copy.is_file():
+                    shutil.copy2(golden_copy, fp)
+                    restored.append(fp)
+                else:
+                    unrestorable.append(fp)
+            print(f"  {self.name}: restored {len(restored)} file(s) from golden"
+                  + (f", {len(unrestorable)} unrestorable" if unrestorable else ""))
+            blackboard.write_entry(
+                key=key, predicate=entry.predicate,
+                measurement=entry.measurement, result=None,
+            )
+
+
 def tamper_verus(fe: Frontend, protocols: dict) -> None:
     """Corrupt a line inside a Verus contract slice of the generated Rust."""
     l2 = protocols[fe.l2].asp_args["readfile_range"]
@@ -526,25 +684,398 @@ def tamper_verus(fe: Frontend, protocols: dict) -> None:
     print(f"Tampered Verus slice: {rs.name} line {args['start_index']} ({targ})")
 
 
+MHS_APP = (ISL_ROOT / "hamr" / "microkit" / "crates" / "thermostat_rt_mhs_mhs"
+           / "src" / "component" / "thermostat_rt_mhs_mhs_app.rs")
+
+
+def tamper_note(fe: Frontend, protocols: dict) -> None:
+    """Benign drift: an engineering note appended OUTSIDE every measured
+    slice of a hashed file — the whole-file hash fails, every contract
+    slice passes. Pairs with --tamper-verus for the slice-granularity
+    repair beat: the slice rung must restore only the violated block and
+    leave this note standing."""
+    with open(MHS_APP, "a") as f:
+        f.write("\n// engineering note: candidate sensor swap under review\n")
+    print(f"Appended a benign note to {MHS_APP.name} (outside every slice)")
+
+
+def tamper_impl(fe: Frontend, protocols: dict) -> None:
+    """The INSPECTA exemplar's own seeded bug: in NORMAL mode with the
+    temperature below the lower bound, command Off instead of On — the
+    REQ_MHS_2 ensures clause is genuinely FALSE of the implementation.
+    The edit lives in the developer-owned region: every contract slice
+    stays intact, so integrity attests clean at finer granularity and
+    only the verification tier refutes."""
+    import re
+    text = MHS_APP.read_text()
+    tampered, n = re.subn(
+        r"^(\s*)//(currentCmd = On_Off::Off; // seeded bug/error)\n"
+        r"(\s*)(currentCmd = On_Off::Onn;)",
+        r"\1\2\n\3//\4", text, count=1, flags=re.M)
+    if n == 0:
+        raise SystemExit("--tamper-impl: the seeded-bug lines were not found "
+                         f"in {MHS_APP}")
+    MHS_APP.write_text(tampered)
+    print(f"Tampered implementation: {MHS_APP.name} REQ-MHS-2 response "
+          "inverted (developer region; contract slices untouched)")
+
+
+def tamper_report(fe: Frontend, protocols: dict) -> None:
+    """Deletion: one Slice quietly removed from a contract report — the
+    authority now names one fewer measurement target, and every protocol
+    dir re-derived from it would measure less than the blessing
+    intended. Only the report's own byte anchor refutes."""
+    d = json.loads(fe.report.read_text())
+    for comp in d["reports"]:
+        for contract in comp.get("reports", []):
+            if len(contract.get("slices", [])) > 1:
+                gone = contract["slices"].pop()
+                fe.report.write_text(json.dumps(d, indent=2) + "\n")
+                print(f"Tampered report: deleted a {gone['kind']} slice from "
+                      f"{contract['id']} ({'_'.join(comp['idPath'])})")
+                return
+    raise SystemExit("--tamper-report: no multi-slice contract found")
+
+
+def tamper_report_subst(fe: Frontend, protocols: dict) -> None:
+    """Substitution: one slice's span swapped for a different span in
+    the same file — the slice count stays right, the structure stays
+    plausible, and a re-derived protocol would measure the WRONG lines
+    while every count-based check reads clean. Only the byte anchor
+    refutes."""
+    d = json.loads(fe.report.read_text())
+    spans = []  # (contract_id, slice) with line spans, per uri
+    for comp in d["reports"]:
+        for contract in comp.get("reports", []):
+            for s in contract.get("slices", []):
+                pos = s.get("pos", {})
+                if "beginLine" in pos:
+                    spans.append((contract["id"], s))
+    for i, (cid_a, a) in enumerate(spans):
+        for cid_b, b in spans[i + 1:]:
+            pa, pb = a["pos"], b["pos"]
+            if cid_a != cid_b and pa["uri"] == pb["uri"] \
+                    and pa["beginLine"] != pb["beginLine"]:
+                pa["beginLine"], pa["endLine"] = pb["beginLine"], pb["endLine"]
+                fe.report.write_text(json.dumps(d, indent=2) + "\n")
+                print(f"Tampered report: {cid_a}'s slice span substituted "
+                      f"with {cid_b}'s (same file, same slice count)")
+                return
+    raise SystemExit("--tamper-report-subst: no substitutable slice pair")
+
+
+class ReportRegenerateKS(KnowledgeSource):
+    """
+    The regeneration rung — neither restore nor synthesis: the report is
+    a RENDERING of the model through the codegen toolchain, so the
+    repair re-emits it (real codegen, in place) behind the tool gate
+    that anchors the emitter to its blessed hashes. Fresh measurement
+    then judges the regenerated rendering against the provisioned golden
+    (pair with RestartEpisodeKS).
+    """
+
+    name: str = "repair:regenerate-report"
+    partition: List[str] = []
+    max_attempts: int = 1
+    fe_name: str
+    tool_gate: object = None
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if self.tool_gate is not None:
+                error = self.tool_gate()
+                if error:
+                    print(f"  {self.name}: toolchain gate refused "
+                          f"regeneration: {error}")
+                    continue  # decline; handoff/escalation follows
+            desc = CODEGEN[self.fe_name]()
+            print(f"  {self.name}: regenerated the attestation report "
+                  f"from the model ({desc})")
+            blackboard.write_entry(
+                key=key, predicate=entry.predicate,
+                measurement=entry.measurement, result=None,
+            )
+
+
+# The pre-generated dummy bad implementation (scene 8's tamper stand-in
+# for a real-world bad implementation): the developer-owned compute
+# logic replaced wholesale — heat ON in INIT and FAILED modes, both
+# NORMAL responses inverted. It compiles fine; the blessed contracts
+# are genuinely FALSE of it, so no contract-side repair can help.
+DUMMY_BAD_IMPL = """match regulator_mode {
+
+          // ----- INIT Mode --------
+          Regulator_Mode::Init_Regulator_Mode => {
+              // DUMMY BAD IMPL: heat left ON during initialization
+              currentCmd = On_Off::Onn;
+          },
+
+          // ------ NORMAL Mode -------
+          Regulator_Mode::Normal_Regulator_Mode => {
+              if (currentTemp.degrees > upper.degrees) {
+                  // DUMMY BAD IMPL: inverted response when too hot
+                  currentCmd = On_Off::Onn;
+              } else if (currentTemp.degrees < lower.degrees) {
+                  // DUMMY BAD IMPL: inverted response when too cold
+                  currentCmd = On_Off::Off;
+              }
+          },
+
+          // ------ FAILED Mode -------
+          Regulator_Mode::Failed_Regulator_Mode => {
+              // DUMMY BAD IMPL: heat left ON after failure
+              currentCmd = On_Off::Onn;
+          }
+      }"""
+
+
+def dummy_bad_impl_text(text: str) -> str:
+    """The given app.rs source with its compute logic replaced by the
+    pre-generated dummy bad implementation (pure function — the demo
+    uses it to render the would-be tamper for a diff without touching
+    the live tree)."""
+    head, sep, rest = text.partition("match regulator_mode {")
+    if not sep:
+        raise SystemExit("dummy bad impl: no match block found")
+    _, sep2, tail = rest.partition(
+        "// -------------- Set values of output ports")
+    if not sep2:
+        raise SystemExit("dummy bad impl: no output-ports anchor found")
+    return head + DUMMY_BAD_IMPL + "\n\n      " + sep2 + tail
+
+
+def tamper_impl_full(fe: Frontend, protocols: dict) -> None:
+    """Swap in the pre-generated dummy bad implementation: the whole
+    match block of the developer-owned compute logic replaced. Every
+    contract slice stays byte-identical — the implementation is the
+    only artifact that moved."""
+    MHS_APP.write_text(dummy_bad_impl_text(MHS_APP.read_text()))
+    print(f"Tampered implementation: {MHS_APP.name} compute logic replaced "
+          "with the pre-generated DUMMY BAD IMPL (contract slices untouched)")
+
+
+class ContractsIntactDiagnosisKS(KnowledgeSource):
+    """
+    The ladder's diagnosis rung: before any repair, establish WHICH
+    artifact is at fault. For every failing crate it checks each blessed
+    contract slice of that crate's measured files against the golden
+    slice bytes (by content — the goldens were baseline-verified at
+    readiness). Contracts intact means the refutation cannot be repaired
+    on the contract side — the implementation is the artifact at fault —
+    and the rung DECLINES, handing the chain to the impl rung. The
+    exhaustion is the diagnosis.
+    """
+
+    name: str = "diagnose:contracts-intact"
+    partition: List[str] = []
+    max_attempts: int = 1
+    l2_targets: dict  # the l2 protocol's readfile_range asp_args
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        import base64
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if not isinstance(entry.result, Verdict):
+                continue
+            crate_dirs = [c.args["cwd"] for c in entry.result.failing()
+                          if (c.args or {}).get("cwd")]
+            intact, drifted = 0, []
+            live_norm = {}  # newline-stripped file bytes, the golden's form
+            for targ, args in sorted(self.l2_targets.items()):
+                fp = args.get("filepath", "")
+                if not any(fp.startswith(d.rstrip("/") + "/")
+                           for d in crate_dirs):
+                    continue
+                # readfile_range goldens are the slice's lines
+                # concatenated WITHOUT newlines; normalize the live file
+                # the same way and locate by content (insertion-robust)
+                if fp not in live_norm:
+                    live_norm[fp] = Path(fp).read_bytes() \
+                        .replace(b"\r\n", b"\n").replace(b"\n", b"")
+                golden = base64.b64decode(args.get("golden_b64", ""))
+                if golden and golden in live_norm[fp]:
+                    intact += 1
+                else:
+                    drifted.append(targ)
+            if drifted:
+                print(f"  {self.name}: {len(drifted)} contract slice(s) "
+                      "drifted — a contract-side repair applies first: "
+                      + ", ".join(drifted[:3]))
+            else:
+                print(f"  {self.name}: all {intact} contract slices of the "
+                      "failing crate(s) are byte-identical to golden — the "
+                      "IMPLEMENTATION is the artifact at fault; handing to "
+                      "the impl rung")
+            # diagnosis only: never writes, never repairs — the chain
+            # hands the key to the next rung either way
+
+
+# ── the progress view (--ready / --status) ────────────────────────────────────
+
+def ready_flow(fe: Frontend, protocols: dict):
+    """The standalone readiness gate: protocol configuration checks plus
+    verification of every signed golden baseline, no attestation."""
+    print(f"verifying {len(protocols)} signed baseline(s) "
+          f"({', '.join(sorted(protocols))}) ...", flush=True)
+    report = make_readiness_predicate(
+        protocols, baseline_root=GOLDEN_ROOT,
+        client=CvmSubprocessClient())(readiness_request(list(protocols)))
+    print(f"readiness: {'PASS' if report else 'FAIL'} "
+          f"(checked: {', '.join(report.checked)})")
+    if report.baseline_verified:
+        print("  signed baselines verified: "
+              + ", ".join(report.baseline_verified))
+    for p in (*report.problems, *report.baseline_problems):
+        print(f"  problem: {p}")
+    return report
+
+
+def status_flow(fe: Frontend, protocols: dict, ready: bool,
+                status: bool) -> None:
+    """The per-crate proof checklist, same semantics as the Rocq
+    driver's goals view: QUICK by default (one verification-tier run —
+    rows from the AM-owned crate list, cells from each crate's own
+    cargo-verus component, downgrade-only; a failed woven tool hash
+    poisons every cell to '?'). --ready additionally runs the readiness
+    gate first — alone it just prints the report; combined with
+    --status a failure poisons every cell."""
+    report = ready_flow(fe, protocols) if ready else None
+    if not status:
+        return
+    verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
+        attestation_request(fe.verus_id))
+    checklist = verus_crate_checklist(
+        verdict, protocols[fe.verus_id].asp_args["run_command_cargo_verus"])
+    if ready and not report:
+        problems = "; ".join((*report.problems, *report.baseline_problems))
+        checklist = checklist.poison(f"readiness failed: {problems[:200]}")
+    elif ready:
+        checklist = checklist.model_copy(update={"trusted": True})
+    print(render_checklist(checklist, subject="contract-bearing crates"))
+
+
 def attest_episode(fe: Frontend, protocols: dict, repair: bool,
-                   validate: bool = False) -> BlackboardController:
+                   validate: bool = False, granularity: str = "file",
+                   restart: bool = False, pause: bool = False,
+                   verify: bool = False, immutable: bool = False,
+                   restore_crates: bool = False, repair_impl: bool = False,
+                   regen_report: bool = False,
+                   tool_gate=None) -> BlackboardController:
+    """
+    One verification episode. The baseline shape is unchanged (files
+    entry at l1a, l2 refinement on failure, optional --validate
+    verus confirmation on pass, whole-file repair rung under --repair).
+    The demo modes compose on top:
+
+      immutable       the automated-pipeline ruling: measured files must
+                      never drift, so the failed l1a hash appraisal IS
+                      the repair order — whole-file restore straight off
+                      the l1a verdict, no l2 examination, no interaction
+      verify          a SECOND always-run episode entry, {prefix}:proofs,
+                      seeded at the verus tier — the verification class
+                      judged every episode regardless of what integrity
+                      finds (the Rocq example's three-entry shape)
+      restart         in-session re-attestation: RestartEpisodeKS after
+                      the repair rung, so a repaired entry ends the run
+                      judged by FRESH measurement, not escalated pending
+                      the next one
+      granularity     the repair unit under restart: "file" (whole-file
+                      restore) or "slice" (content-aligned splice of only
+                      the violated blocks — benign drift elsewhere in the
+                      file survives)
+      restore_crates  (with verify) the proofs entry's restore rung:
+                      failing crates' hashed files restored from golden
+      repair_impl     (with verify) the ladder: diagnosis first (the
+                      failing crates' contract slices checked against
+                      golden — intact contracts mean the IMPLEMENTATION
+                      is the artifact at fault), then the impl rung
+                      (crate-scoped restore, standing in for a
+                      spec-guided engine), then in-session re-attest
+      regen_report    (with verify) the report entry's repair rung: the
+                      rendering is REGENERATED from the model via
+                      measured codegen (tool gate first), then fresh
+                      measurement judges it
+      pause           the out-of-band rung on both entries' failure
+                      chains: the episode blocks on a work order, YOU
+                      repair, fresh measurement judges the claim
+    """
     controller = BlackboardController()
     client = CvmSubprocessClient()
     controller.register_predicate(
-        "attestation", make_attestation_predicate(client, protocols))
+        "attestation",
+        make_attestation_predicate(client, protocols,
+                                   archive_dir=REPO / "evidence"))
     controller.register_predicate("protocol_check",
                                   make_readiness_predicate(
                                       protocols, baseline_root=GOLDEN_ROOT,
                                       client=client))
-    fail_chain = [TierKS(protocol_id=fe.l2)]
-    if repair:
-        fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
-                                             refined_by=fe.l2))
+    files_key = f"{fe.prefix}:files"
+    proofs_key = f"{fe.prefix}:proofs"
+    report_key = f"{fe.prefix}:report"
+    with_report = verify and fe.report_id in protocols
+    siblings = [proofs_key] if verify else []
+
+    if immutable:
+        # refined_by = the entry's own l1a protocol: the hash verdict
+        # itself names the repair targets
+        fail_chain = [WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
+                                         refined_by=fe.l1a)]
+    else:
+        fail_chain = [TierKS(protocol_id=fe.l2)]
+        if repair or restart:
+            if granularity == "slice":
+                fail_chain.append(RangeSliceRestoreKS(golden_root=GOLDEN_ROOT,
+                                                      refined_by=fe.l2))
+            else:
+                fail_chain.append(WholeFileRestoreKS(golden_root=GOLDEN_ROOT,
+                                                     refined_by=fe.l2))
+    pause_ks = OutOfBandRepairKS(also=[]) if pause else None
+    if pause_ks is not None:
+        fail_chain.append(pause_ks)
+    if restart:
+        fail_chain.append(RestartEpisodeKS(budget=1, also=siblings))
+
+    proofs_chain = []
+    if verify:
+        if repair_impl:
+            proofs_chain.append(ContractsIntactDiagnosisKS(
+                l2_targets=protocols[fe.l2].asp_args["readfile_range"]))
+        if restore_crates or repair_impl:
+            proofs_chain.append(CrateFileRestoreKS(
+                golden_root=GOLDEN_ROOT,
+                hashed_files=[a["filepath"] for a in
+                              protocols[fe.l1a].asp_args["hashfile"].values()]))
+            proofs_chain.append(RestartEpisodeKS(
+                name="restart:proofs", budget=1, also=[files_key]))
+        if pause_ks is not None:
+            pause_ks.also = [files_key]
+            proofs_chain.append(pause_ks)
+
+    report_chain = []
+    if with_report and regen_report:
+        report_chain = [
+            ReportRegenerateKS(fe_name=fe.name, tool_gate=tool_gate),
+            RestartEpisodeKS(name="restart:report", budget=1),
+        ]
+
     confirm = [TierKS(protocol_id=fe.verus_id)] if validate else []
-    starter = StartAttestationKS(episodes={f"{fe.prefix}:files": fe.l1a})
-    for ks in (*confirm, *fail_chain, starter):
-        controller.add_ks(ks)
-    controller.route(f"{fe.prefix}:files", on_pass=confirm, on_fail=fail_chain)
+    episodes = {files_key: fe.l1a}
+    if verify:
+        episodes[proofs_key] = fe.verus_id
+    if with_report:
+        episodes[report_key] = fe.report_id
+    starter = StartAttestationKS(episodes=episodes)
+    seen = set()
+    for ks in (*confirm, *fail_chain, *proofs_chain, *report_chain, starter):
+        if id(ks) not in seen:
+            controller.add_ks(ks)
+            seen.add(id(ks))
+    controller.route(files_key, on_pass=confirm, on_fail=fail_chain)
+    if verify:
+        controller.route(proofs_key, on_pass=[], on_fail=proofs_chain)
+    if with_report:
+        controller.route(report_key, on_pass=[], on_fail=report_chain)
     controller.blackboard.write_entry(
         key=f"{fe.prefix}:ready", predicate="protocol_check",
         measurement=readiness_request(list(protocols)))
@@ -560,15 +1091,47 @@ def main() -> None:
                         default="aadl")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--provision", action="store_true")
+    parser.add_argument("--bless-props", action="store_true")
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
+    parser.add_argument("--tamper-note", action="store_true")
+    parser.add_argument("--tamper-impl", action="store_true")
+    parser.add_argument("--tamper-impl-full", action="store_true")
+    parser.add_argument("--tamper-report", action="store_true")
+    parser.add_argument("--tamper-report-subst", action="store_true")
     parser.add_argument("--repair", action="store_true")
     parser.add_argument("--validate", action="store_true")
+    parser.add_argument("--ready", action="store_true")
+    parser.add_argument("--status", action="store_true")
+    parser.add_argument("--verify", action="store_true")
+    parser.add_argument("--immutable-model", action="store_true")
+    parser.add_argument("--repair-granularity", choices=("file", "slice"),
+                        default=None)
+    parser.add_argument("--restore-crates", action="store_true")
+    parser.add_argument("--repair-impl", action="store_true")
+    parser.add_argument("--regen-report", action="store_true")
+    parser.add_argument("--pause", action="store_true")
     cli = parser.parse_args()
     fe = FRONTENDS[cli.frontend]
+    tampers = ((tamper_verus, cli.tamper_verus),
+               (tamper_note, cli.tamper_note),
+               (tamper_impl, cli.tamper_impl),
+               (tamper_impl_full, cli.tamper_impl_full),
+               (tamper_report, cli.tamper_report),
+               (tamper_report_subst, cli.tamper_report_subst))
 
     if cli.check:
         print_check(fe, load_protocols(fe))
+        return
+    if cli.ready or cli.status:
+        # the progress view: tamper flags apply first (a checklist over
+        # a deliberately broken tree is a demo beat), and NOTHING is
+        # restored on exit — the view must not mutate the tree
+        protocols = load_protocols(fe, validate=True)
+        for tamper, flag in tampers:
+            if flag:
+                tamper(fe, protocols)
+        status_flow(fe, protocols, ready=cli.ready, status=cli.status)
         return
     if cli.promote:
         protocols = load_protocols(fe, validate=True)
@@ -578,18 +1141,49 @@ def main() -> None:
         promote_flow(fe, protocols)
         return
     if cli.provision:
-        protocols = build_protocol_dirs(fe)
-        provision_flow(fe, protocols)
+        # --bless-props: the spec-first sanctioning act — re-sign the
+        # props blessing over the CURRENT model files (plus ordinary
+        # re-provisioning), without running codegen. The generated
+        # realization has not caught up yet; --promote is the sanctioned
+        # pipeline that makes it (tool gate -> real codegen -> proof
+        # gate -> gold -> re-bless).
+        protocols = build_protocol_dirs(fe, bless_props=cli.bless_props)
+        provision_flow(fe, protocols, bless_props=cli.bless_props)
         return
 
-    protocols = load_protocols(fe, validate=cli.validate)
+    restart = (cli.immutable_model or cli.repair_granularity is not None
+               or cli.restore_crates or cli.repair_impl)
+    granularity = cli.repair_granularity or "file"
+    protocols = load_protocols(fe, validate=cli.validate or cli.verify)
+    tool_gate = None
+    if cli.regen_report:
+        # the regeneration rung re-runs codegen: measure the emitter
+        # (and, for SysML, the pinned libraries) immediately before use
+        for tid in TOOL_GATE_IDS[fe.name]:
+            if (FIXTURES / tid / "asp_args.json").is_file():
+                protocols[tid] = ProtocolDir.load(str(FIXTURES / tid))
+        tool_gate = _combined_tool_gate(CvmSubprocessClient(), protocols,
+                                        TOOL_GATE_IDS[fe.name])
+    snapshot_ids = list(fe.protocol_ids)
+    if fe.report_id in protocols and mirror_path(GOLDEN_ROOT,
+                                                 fe.report).is_file():
+        # pre-bootstrap the report has no golden copy yet; readiness
+        # refuses the un-provisioned baseline on its own
+        snapshot_ids.append(fe.report_id)
     golden = TargetSnapshot.load(
-        {pid: protocols[pid] for pid in fe.protocol_ids}, GOLDEN_ROOT)
-    if cli.tamper_verus:
-        tamper_verus(fe, protocols)
+        {pid: protocols[pid] for pid in snapshot_ids}, GOLDEN_ROOT)
+    for tamper, flag in tampers:
+        if flag:
+            tamper(fe, protocols)
     try:
-        attest_episode(fe, protocols, repair=cli.repair, validate=cli.validate)
-        if cli.repair:
+        attest_episode(fe, protocols, repair=cli.repair,
+                       validate=cli.validate, granularity=granularity,
+                       restart=restart, pause=cli.pause, verify=cli.verify,
+                       immutable=cli.immutable_model,
+                       restore_crates=cli.restore_crates,
+                       repair_impl=cli.repair_impl,
+                       regen_report=cli.regen_report, tool_gate=tool_gate)
+        if cli.repair and not restart:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
             attest_episode(fe, protocols, repair=cli.repair,
                            validate=cli.validate)

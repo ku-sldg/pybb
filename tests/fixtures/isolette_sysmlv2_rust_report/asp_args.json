@@ -1,0 +1,11 @@
+{
+  "hashfile": {
+    "isolette_sysmlv2_rust_report_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/attestation/sysml_attestation_report.json",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_report_targ",
+      "golden_b64": "tfWgF68RRj5PY1uB/+/DP++2zjRsgKSoD2pAuCtCTdg=",
+      "golden_ts": "2026-08-17 10:32:05"
+    }
+  }
+}

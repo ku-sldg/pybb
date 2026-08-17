@@ -314,13 +314,14 @@ def goal_checklist(blessed_text: str, verdict, proofs_targ: str,
     return Checklist(rows=rows)
 
 
-def render_checklist(checklist: Checklist) -> str:
+def render_checklist(checklist: Checklist,
+                     subject: str = "goal properties") -> str:
     header = {
-        None: "goal properties (derived progress view — quick: baselines "
+        None: f"{subject} (derived progress view — quick: baselines "
               "not verified this run):",
-        True: "goal properties (derived progress view — signed baselines "
+        True: f"{subject} (derived progress view — signed baselines "
               "verified):",
-        False: "goal properties (derived progress view — BASELINES NOT "
+        False: f"{subject} (derived progress view — BASELINES NOT "
                "TRUSTED):",
     }[checklist.trusted]
     width = max((len(r.label) for r in checklist.rows), default=0)

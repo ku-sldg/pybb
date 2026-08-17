@@ -30,6 +30,18 @@ python examples/isolette_rust.py [--check] [--provision]
     [--tamper-verus] [--repair] [--validate]
 ```
 
+**The demo script**: `examples/demo_isolette.sh` walks the eight-scene
+demo workflow (the Rocq demo's outline) on the SysML frontend — see
+[demo_isolette_script_summary.md](demo_isolette_script_summary.md).
+The scenes ride on additional driver flags: `--ready` / `--status`
+(readiness gate and the per-crate proof checklist), `--verify` (the
+always-run verification + report-rendering entries), `--bless-props`
+(spec-first re-blessing under `--provision`), `--immutable-model` /
+`--repair-granularity slice` / `--restore-crates` / `--repair-impl` /
+`--regen-report` (repair rungs with in-session re-attestation),
+`--pause` (the out-of-band rung), and the `--tamper-*` arcs the scenes
+exercise.
+
 Arcs: `--tamper-verus --repair` corrupts a Verus contract slice in
 `thermostat_rt_mhs` — l1a detects, l2 attributes the exact slice,
 whole-file repair restores from golden, episode 2 verifies. `--validate`

@@ -1,0 +1,5 @@
+{
+  "name": "Isolette attestation-report rendering",
+  "description": "Whole-file hash of the HAMR attestation report \u2014 the authority every protocol dir is derived from. Measurement targets bind to contracts only through the report's structure, so the rendering itself is anchored measure-then-use before it is trusted. Repair species: regeneration via measured codegen.",
+  "copland": "lseq( lseq( hashfile(report), SIG ), APPR )"
+}

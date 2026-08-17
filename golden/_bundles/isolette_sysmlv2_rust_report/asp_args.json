@@ -1,0 +1,9 @@
+{
+  "hashfile": {
+    "isolette_sysmlv2_rust_report_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/attestation/sysml_attestation_report.json",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_report_targ"
+    }
+  }
+}

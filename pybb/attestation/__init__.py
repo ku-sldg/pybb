@@ -22,6 +22,7 @@ from .readiness import (
 )
 from .repair import (
     OutOfBandRepairKS,
+    RangeSliceRestoreKS,
     SliceRestoreKS,
     WholeFileRestoreKS,
     console_gate,
@@ -96,6 +97,7 @@ __all__ = [
     "readiness_request",
     "OutOfBandRepairKS",
     "console_gate",
+    "RangeSliceRestoreKS",
     "SliceRestoreKS",
     "BlackBoxRepairKS",
     "GoalContext",
