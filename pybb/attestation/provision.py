@@ -20,6 +20,12 @@ controller evaluates the provision partition before certify, so
 attestation entries in the same run always see freshly provisioned
 goldens.
 
+Re-provisioning is idempotent: when every extracted golden matches the
+installed one, the bundle, golden_ts stamps, and protocol dir are left
+byte-identical (golden_ts records when a golden last CHANGED, not when
+it was last provisioned). A force_timestamp request restores the
+stamp-everything behavior.
+
 Trust boundary: provisioning sources exclusively from the golden
 directory. Files land there only by deliberate out-of-band acts (see
 snapshot.py / capture_golden.py), so blackboard failure handling can never
@@ -33,6 +39,7 @@ import datetime
 import json
 import os
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
@@ -56,13 +63,24 @@ GOLDEN_COMPANIONS = ("goldenbytes_appr", "goldenevidence_appr", "model_slices_ap
 _BOOKKEEPING_KEYS = ("golden_b64", "golden_ts", "filepath_golden", "env_var_golden")
 
 
-def provision_request(protocol_id: str) -> dict:
-    """Measurement descriptor for a provisioning request."""
-    return {"protocol": protocol_id}
+def provision_request(protocol_id: str, force_timestamp: bool = False) -> dict:
+    """Measurement descriptor for a provisioning request.
+
+    force_timestamp stamps a fresh golden_ts (and installs the fresh
+    signed bundle) even when every extracted golden is unchanged;
+    otherwise a no-op re-provision leaves the tracked files untouched.
+    """
+    request = {"protocol": protocol_id}
+    if force_timestamp:
+        request["force_timestamp"] = True
+    return request
 
 
 def request_provision(
-    blackboard: Blackboard, protocol_id: str, predicate: str = "provision"
+    blackboard: Blackboard,
+    protocol_id: str,
+    predicate: str = "provision",
+    force_timestamp: bool = False,
 ) -> BlackboardEntry:
     """
     External-event API: write a provisioning request for one protocol into
@@ -73,7 +91,7 @@ def request_provision(
     return blackboard.write_entry(
         key=f"provision:{protocol_id}",
         predicate=predicate,
-        measurement=provision_request(protocol_id),
+        measurement=provision_request(protocol_id, force_timestamp=force_timestamp),
         partition="provision",
     )
 
@@ -258,7 +276,7 @@ def _provision(
     bundle_dir = Path(golden_root) / "_bundles" / protocol_id
     bundle_dir.mkdir(parents=True, exist_ok=True)
     bundle_path = bundle_dir / "provision_bundle.json"
-    bundle_path.write_text(json.dumps([response["PAYLOAD"], global_context]))
+    bundle_text = json.dumps([response["PAYLOAD"], global_context])
     # golden-rooted measurement args, so slice extraction reconstructs the
     # exact ASP_ARGS the evidence tree carries
     golden_args = {
@@ -268,34 +286,59 @@ def _provision(
         }
         for asp_id, targets in protocol.asp_args.items()
     }
-    (bundle_dir / "asp_args.json").write_text(json.dumps(golden_args, indent=2))
+    golden_args_text = json.dumps(golden_args, indent=2)
 
+    # extract from a staged copy of the fresh bundle: the installed bundle
+    # is replaced only when a golden changed (each run re-signs the
+    # evidence, so installing unconditionally would churn identical
+    # goldens), under force_timestamp, or when the installed copy is
+    # missing/stale
+    force = bool(measurement.get("force_timestamp"))
     ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     new_asp_args = copy.deepcopy(protocol.asp_args)
     provisioned = []
-    for asp_id, targets in protocol.asp_args.items():
-        if asp_id not in golden_ids:
-            continue
-        for targ_id in targets:
-            try:
-                golden_b64 = extract_fn(str(bundle_dir), asp_id, targ_id)
-            except Exception as e:
-                return ProvisionOutcome(protocol=protocol_id, error=str(e))
-            new_asp_args[asp_id][targ_id]["golden_b64"] = golden_b64
-            new_asp_args[asp_id][targ_id]["golden_ts"] = ts
-            provisioned.append(targ_id)
+    changed = False
+    with tempfile.TemporaryDirectory(dir=bundle_dir.parent) as staging:
+        (Path(staging) / "provision_bundle.json").write_text(bundle_text)
+        (Path(staging) / "asp_args.json").write_text(golden_args_text)
+        for asp_id, targets in protocol.asp_args.items():
+            if asp_id not in golden_ids:
+                continue
+            for targ_id, old_args in targets.items():
+                try:
+                    golden_b64 = extract_fn(staging, asp_id, targ_id)
+                except Exception as e:
+                    return ProvisionOutcome(protocol=protocol_id, error=str(e))
+                fresh = golden_b64 != old_args.get("golden_b64")
+                changed = changed or fresh
+                if fresh or force:
+                    new_asp_args[asp_id][targ_id]["golden_ts"] = ts
+                new_asp_args[asp_id][targ_id]["golden_b64"] = golden_b64
+                provisioned.append(targ_id)
+
+    stale_bundle = (
+        not bundle_path.is_file()
+        or not (bundle_dir / "asp_args.json").is_file()
+        or (bundle_dir / "asp_args.json").read_text() != golden_args_text
+    )
+    if changed or force or stale_bundle:
+        bundle_path.write_text(bundle_text)
+        (bundle_dir / "asp_args.json").write_text(golden_args_text)
 
     # install: shared ProtocolDir object first (same-run attestation sees
     # fresh goldens), then the protocol dir on disk. A prebuilt request
-    # bakes in old goldens and must not survive re-provisioning.
-    protocol.asp_args = new_asp_args
-    protocol.prebuilt_request = None
-    proto_dir = Path(protocol.path)
-    if proto_dir.is_dir():
-        (proto_dir / "asp_args.json").write_text(json.dumps(new_asp_args, indent=2))
-        stale = proto_dir / "cvm_request.json"
-        if stale.is_file():
-            stale.unlink()
+    # bakes in old goldens and must not survive re-provisioning; when
+    # nothing changed the baked-in goldens are still current, so the
+    # protocol dir is left byte-identical.
+    if new_asp_args != protocol.asp_args:
+        protocol.asp_args = new_asp_args
+        protocol.prebuilt_request = None
+        proto_dir = Path(protocol.path)
+        if proto_dir.is_dir():
+            (proto_dir / "asp_args.json").write_text(json.dumps(new_asp_args, indent=2))
+            stale = proto_dir / "cvm_request.json"
+            if stale.is_file():
+                stale.unlink()
 
     return ProvisionOutcome(
         protocol=protocol_id,

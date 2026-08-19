@@ -118,6 +118,51 @@ def test_success_installs_fresh_goldens_everywhere(tmp_path):
     assert "golden_b64" not in match_args["hashfile"]["t1"]
 
 
+def _reprovision_predicate(client, protocol, golden_root):
+    """A fresh predicate (fresh workflow run) over the same protocol."""
+    return make_provision_predicate(
+        client, {"p1": protocol}, golden_root,
+        extract_fn=lambda d, a, t: "FRESH",
+    )
+
+
+def test_unchanged_reprovision_is_a_byte_level_noop(tmp_path):
+    predicate, client, protocol, golden_root, live = _setup(tmp_path)
+    predicate(provision_request("p1"))
+    # simulate an aged install: distinguishable bundle signature, old stamp
+    bundle_path = golden_root / "_bundles" / "p1" / "provision_bundle.json"
+    bundle_path.write_text('["previously signed bundle"]')
+    protocol.asp_args["hashfile"]["t1"]["golden_ts"] = "2026-01-01 00:00:00"
+    proto_args = Path(protocol.path) / "asp_args.json"
+    proto_args.write_text(json.dumps(protocol.asp_args))
+
+    outcome = _reprovision_predicate(client, protocol, golden_root)(
+        provision_request("p1"))
+
+    assert outcome and outcome.provisioned == ["t1"]  # no-op is still success
+    assert bundle_path.read_text() == '["previously signed bundle"]'
+    assert protocol.asp_args["hashfile"]["t1"]["golden_ts"] == "2026-01-01 00:00:00"
+    on_disk = json.loads(proto_args.read_text())
+    assert on_disk["hashfile"]["t1"]["golden_ts"] == "2026-01-01 00:00:00"
+
+
+def test_force_timestamp_restamps_and_reinstalls(tmp_path):
+    predicate, client, protocol, golden_root, live = _setup(tmp_path)
+    predicate(provision_request("p1"))
+    bundle_path = golden_root / "_bundles" / "p1" / "provision_bundle.json"
+    bundle_path.write_text('["previously signed bundle"]')
+    protocol.asp_args["hashfile"]["t1"]["golden_ts"] = "2026-01-01 00:00:00"
+
+    outcome = _reprovision_predicate(client, protocol, golden_root)(
+        provision_request("p1", force_timestamp=True))
+
+    assert outcome
+    assert bundle_path.read_text() != '["previously signed bundle"]'
+    args = protocol.asp_args["hashfile"]["t1"]
+    assert args["golden_b64"] == "FRESH"
+    assert args["golden_ts"] != "2026-01-01 00:00:00"
+
+
 def test_provisioning_term_is_measurement_only_and_golden_rooted(tmp_path):
     predicate, client, protocol, golden_root, live = _setup(tmp_path)
 

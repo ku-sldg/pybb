@@ -503,7 +503,8 @@ def load_protocols(fe: Frontend, validate: bool = False) -> dict:
 
 
 def provision_flow(fe: Frontend, protocols: dict,
-                   bless_props: bool = False) -> None:
+                   bless_props: bool = False,
+                   force_timestamp: bool = False) -> None:
     """Capture golden and provision the report-derived goldens on the
     blackboard (the provisioning run signs each evidence bundle; tool
     hash goldens land measure-in-place). The props blessing is
@@ -531,7 +532,7 @@ def provision_flow(fe: Frontend, protocols: dict,
     ctl.register_predicate("provision",
                            make_provision_predicate(client, measured, GOLDEN_ROOT))
     for pid in measured:
-        request_provision(ctl.blackboard, pid)
+        request_provision(ctl.blackboard, pid, force_timestamp=force_timestamp)
     bb = ctl.run()
     for key, entry in bb.get_provision().items():
         print(f"  {key}: {len(entry.result.provisioned)} goldens provisioned")
@@ -1091,6 +1092,9 @@ def main() -> None:
                         default="aadl")
     parser.add_argument("--check", action="store_true")
     parser.add_argument("--provision", action="store_true")
+    parser.add_argument("--force-timestamp", action="store_true",
+                        help="stamp fresh golden_ts values even when the "
+                             "extracted goldens are unchanged")
     parser.add_argument("--bless-props", action="store_true")
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
@@ -1148,7 +1152,8 @@ def main() -> None:
         # pipeline that makes it (tool gate -> real codegen -> proof
         # gate -> gold -> re-bless).
         protocols = build_protocol_dirs(fe, bless_props=cli.bless_props)
-        provision_flow(fe, protocols, bless_props=cli.bless_props)
+        provision_flow(fe, protocols, bless_props=cli.bless_props,
+                       force_timestamp=cli.force_timestamp)
         return
 
     restart = (cli.immutable_model or cli.repair_granularity is not None
