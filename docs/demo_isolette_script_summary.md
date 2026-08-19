@@ -8,7 +8,7 @@ Rust isolette (the INSPECTA seL4/Microkit exemplar,
 example; where the ecosystems differ, the scene says so and shows the
 isolette's honest counterpart.
 
-**At a glance**: eight scenes; repair species exercised: whole-file
+**At a glance**: nine scenes; repair species exercised: whole-file
 restore, content-aligned slice splice, crate restore, sanctioned
 codegen catch-up, regeneration-from-model, out-of-band pause, and the
 principled refusal; three refusal properties at one gate (signature,
@@ -26,8 +26,8 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
 - Bootstrap provisioning if no blessed baseline exists.
 - The readiness gate: protocol configuration checks plus verification
   of every **signed golden baseline** (l1a hashes, l2 slices, the
-  blessed props model files, the verus tool hashes) before any
-  attestation runs.
+  blessed props model files, the verus tool hashes, the cheat tier's
+  proof-escape counts) before any attestation runs.
 
 ## Scene 1 — clean baseline
 
@@ -35,8 +35,10 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   whole-file hashes: SysML packages + contract-bearing Rust),
   **contracts** (67 report slices), **verification** (cargo-verus over
   7 crates, an ALWAYS-RUN entry — the Rocq example's three-entry
-  shape), the **report rendering** every protocol is derived from, with
-  the verus toolchain hashed measure-then-use in the same term.
+  shape), the **cheat tier** (per-crate proof-escape counts over the
+  same 7 crates — see scene 9), and the **report rendering** every
+  protocol is derived from, with the verus toolchain hashed
+  measure-then-use in the same term.
 - The per-crate proof checklist, all green.
 
 ## Scene 2 — implementation tamper: the ladder repairs the right artifact
@@ -156,12 +158,35 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   measured codegen toolchain**, so the rung re-emits it (tool gate
   first, then real codegen) and the restarted episode re-attests.
 
+## Scene 9 — proof cheat: verification success is not proof
+
+- `assume(false)` admits a verified contract ([diff&nbsp;D13](#d13))
+  inside a bridge file **no hash or slice tier covers**
+  (`thermostat_rt_mhs_mhs_api.rs` — Verus-verified but outside every
+  l1a and l2 target): the files tier stays green, the contracts tier
+  stays green, and cargo-verus reports the **same success** over the
+  hollow proof.
+- Only the cheat tier refuses: `cheat_scan_verus` re-counts the
+  proof-escape surface of each crate (assume, admit, external_body by
+  path class, bare external, assume_specification, axiom, broadcast —
+  the constructs Verus's own `--no-cheating` flag names, textually
+  scanned) and the count drift (assume 0 → 1) fails the exact-bytes
+  golden comparison, attributing the crate.
+- No repair rung **on purpose**: an admitted proof is never
+  machine-repairable — the refusal escalates to the administrator, and
+  the driver restores the tamper site from a pre-episode snapshot (the
+  cheat site has no golden mirror, deliberately).
+- The honest baseline the golden blesses: 86 `external_body` sites,
+  all in generated bridge/component platform-boundary files; zero
+  assume/admit/axiom anywhere.
+
 ## Throughout
 
 - **Opt-in VSCode diffs** at every artifact-modification beat: the
   seeded behavior bug (scene 5), the wrapper edit (scene 7), the
   deleted and substituted report slices (scene 8, pretty-printed
   JSON, shown BEFORE the arc — "see how innocent the tamper looks"),
+  the admitted contract (scene 9, same before-the-arc reveal),
   the dummy-bad-impl inversion (scene 2), the codegen re-splice after
   a benign bless (scene 3), and scene 6's trust-state attacks — the
   flipped evidence byte and the hand-edited golden (both
@@ -465,4 +490,24 @@ Slice count unchanged; the slice now points at a different contract's lines in t
 +        "endLine": 186,
          "endCol": 111,
          "offset": 9738,
+```
+
+<a id="d13"></a>
+### D13 — scene 9: the admitted contract
+
+One injected line: `put_heat_control`'s real `ensures` still stands in
+the text, but the proof context now contains `false` — everything
+downstream is vacuously provable, and cargo-verus reports the same
+success.
+
+```diff
+--- a/crates/thermostat_rt_mhs_mhs/src/bridge/thermostat_rt_mhs_mhs_api.rs
++++ b/crates/thermostat_rt_mhs_mhs/src/bridge/thermostat_rt_mhs_mhs_api.rs
+ -85,6 +85,7 
+         self.heat_control == value,
+     {
++      assume(false); // TAMPERED: proof admitted
+       self.api.unverified_put_heat_control(value);
+       self.heat_control = value;
+     }
 ```

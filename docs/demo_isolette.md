@@ -30,8 +30,9 @@ python examples/isolette_rust.py [--check] [--provision]
     [--tamper-verus] [--repair] [--validate]
 ```
 
-**The demo script**: `examples/demo_isolette.sh` walks the eight-scene
-demo workflow (the Rocq demo's outline) on the SysML frontend — see
+**The demo script**: `examples/demo_isolette.sh` walks the nine-scene
+demo workflow (the Rocq demo's outline, plus the proof-cheat scene) on
+the SysML frontend — see
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
 The scenes ride on additional driver flags: `--ready` / `--status`
 (readiness gate and the per-crate proof checklist), `--verify` (the
@@ -46,7 +47,11 @@ Arcs: `--tamper-verus --repair` corrupts a Verus contract slice in
 `thermostat_rt_mhs` — l1a detects, l2 attributes the exact slice,
 whole-file repair restores from golden, episode 2 verifies. `--validate`
 confirms a passing l1a with the Verus tier (warm caches recommended; cold
-builds are multi-minute and RUN_VERUS-gated in tests). The laundering
+builds are multi-minute and RUN_VERUS-gated in tests). `--tamper-cheat
+--verify` admits a verified contract with `assume(false)` in a file no
+hash or slice tier covers — every tier stays green including the verus
+run itself, and only the cheat tier (`<p>_cheat`, per-crate proof-escape
+counts vs an exact golden baseline) refuses and escalates. The laundering
 negative — re-provisioning the measurement baselines over a tampered
 golden tree, refuted only by the administrator's blessing — is an
 automated test; see `signed_baselines.md`.

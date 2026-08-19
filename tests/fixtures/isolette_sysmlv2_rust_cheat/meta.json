@@ -1,0 +1,5 @@
+{
+  "name": "Isolette Verus proof-escape scan (cheat tier)",
+  "description": "Per-crate counts of the constructs that make Verus verification succeed without proof (assume, admit, external_body by path class, bare external, assume_specification, axiom, broadcast), appraised as exact golden bytes. Complements the verus tier: that one witnesses THAT the proofs pass, this one measures HOW.",
+  "copland": "lseq( lseq( bseq( cheat_scan_verus\u00d77 ), SIG ), APPR )"
+}

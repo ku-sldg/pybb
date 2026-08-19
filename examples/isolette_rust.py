@@ -26,6 +26,10 @@ prefix isolette_aadl_rust_ for AADL, isolette_sysmlv2_rust_ for SysML):
     <p>_verus  [--validate] cargo-verus verify of every contract-bearing
                crate (7): the generated Verus contracts must PROVE against
                the implemented behavior
+    <p>_cheat  [--verify] proof-escape scan of the same crates: per-crate
+               counts of assume/admit/external_body/axiom & friends vs an
+               exact golden baseline — verification success is only
+               trusted alongside HOW it was obtained
     <p>_props  the administrator-blessed model files (whole-file, signed)
 
 One trust question — <p>:files — since every l2 slice lives inside an
@@ -70,6 +74,10 @@ Usage:
              verification episode against the new baseline
 --tamper-verus  corrupt a line inside a Verus contract slice of the
              generated Rust; detection/attribution (and --repair)
+--tamper-cheat  admit a verified contract with assume(false) in a file
+             no hash or slice tier covers: every other tier stays green,
+             the verus tier still reports success, only the cheat tier
+             refuses
 --validate   run the Verus semantic tier after a passing l1a
              (requires the Verus toolchain; cold builds are slow)
 
@@ -126,6 +134,7 @@ from pybb.attestation import (
     Verdict,
     WholeFileRestoreKS,
     attestation_request,
+    carry_goldens,
     changed_contracts,
     make_attestation_predicate,
     make_promotion_predicate,
@@ -199,6 +208,9 @@ class Frontend:
 
     @property
     def verus_id(self) -> str: return f"{self.prefix}_verus"
+
+    @property
+    def cheat_id(self) -> str: return f"{self.prefix}_cheat"
 
     @property
     def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
@@ -310,6 +322,17 @@ def derive_report_targets(fe: Frontend):
     return derive_targets_from_report(fe.report, prefix=fe.prefix)
 
 
+def _write_asp_args(d: Path, asp_args: dict) -> None:
+    """Write a regenerated asp_args.json, carrying existing golden
+    bookkeeping forward for unchanged targets: regeneration composed
+    with idempotent re-provisioning leaves an unchanged system
+    byte-identical."""
+    path = d / "asp_args.json"
+    if path.is_file():
+        carry_goldens(json.loads(path.read_text()), asp_args)
+    path.write_text(json.dumps(asp_args, indent=2) + "\n")
+
+
 def verus_crates(fe: Frontend) -> list:
     """Contract-bearing crates, from the report's Verus/Rust slices."""
     crates = set()
@@ -353,7 +376,7 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
         n_tools = len(asp_args.get("hashfile", {}))
     (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
+    _write_asp_args(d, asp_args)
     (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette Verus Verification (semantic tier)",
@@ -366,6 +389,79 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
     }, indent=2) + "\n")
     print(f"  {fe.verus_id}: {len(targets)} crates from report"
           + (f" + {n_tools} woven tool measurements" if n_tools else ""))
+    return ProtocolDir.load(str(d))
+
+
+def build_cheat_protocol(fe: Frontend) -> ProtocolDir:
+    """<p>_cheat: the proof-ESCAPE surface of every contract-bearing
+    crate. The verus tier witnesses that the proofs went through; this
+    tier measures HOW — per-crate counts of assume/admit/external_body
+    (by path class)/bare-external/assume_specification/axiom/broadcast,
+    as canonical JSON from cheat_scan_verus, appraised by exact golden
+    comparison (goldenbytes_appr). A proof admitted with assume(false)
+    leaves every other tier green — verification still reports success —
+    and shifts a count here."""
+    d = FIXTURES / fe.cheat_id
+    d.mkdir(exist_ok=True)
+    targets = with_asp_targids({
+        f"{fe.prefix}_{crate}_cheat_targ": {
+            "crate_dir": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
+        }
+        for crate in verus_crates(fe)
+    })
+    asp_args = {"cheat_scan_verus": targets}
+    nodes = [
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": "cheat_scan_verus",
+                         "ASP_TARG_ID": targ, "ASP_ARGS": args}}}
+        for targ, args in targets.items()
+    ]
+    acc = nodes[0]
+    for node in nodes[1:]:
+        acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+            acc,
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}]},
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
+    session = {
+        "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
+        "Session_Context": {
+            "ASP_Types": {
+                "cheat_scan_verus": {
+                    "FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "NONE"},
+                    "ATTRS": []},
+                "sig": {"FWD": {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "ALL"},
+                        "ATTRS": []},
+                "sig_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []},
+                "goldenbytes_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                                     "ATTRS": []},
+            },
+            "ASP_Comps": {"cheat_scan_verus": "goldenbytes_appr",
+                          "sig": "sig_appr"},
+        },
+    }
+    manifest = {"ASPS": ["cheat_scan_verus", "goldenbytes_appr", "sig",
+                         "sig_appr"],
+                "ASP_FS_MAP": {}, "POLICY": []}
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    _write_asp_args(d, asp_args)
+    (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+    (d / "meta.json").write_text(json.dumps({
+        "name": "Isolette Verus proof-escape scan (cheat tier)",
+        "description": "Per-crate counts of the constructs that make Verus "
+                       "verification succeed without proof (assume, admit, "
+                       "external_body by path class, bare external, "
+                       "assume_specification, axiom, broadcast), appraised "
+                       "as exact golden bytes. Complements the verus tier: "
+                       "that one witnesses THAT the proofs pass, this one "
+                       "measures HOW.",
+        "copland": f"lseq( lseq( bseq( cheat_scan_verus×{len(targets)} ), "
+                   "SIG ), APPR )",
+    }, indent=2) + "\n")
+    print(f"  {fe.cheat_id}: {len(targets)} crates scanned for proof escapes")
     return ProtocolDir.load(str(d))
 
 
@@ -406,8 +502,7 @@ def build_report_protocol(fe: Frontend) -> ProtocolDir:
         {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
     (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    (d / "asp_args.json").write_text(
-        json.dumps({"hashfile": targets}, indent=2) + "\n")
+    _write_asp_args(d, {"hashfile": targets})
     (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette attestation-report rendering",
@@ -435,7 +530,7 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
         template = "temp_control_aadl_slang_l1a" if pid.endswith("_l1a") else "temp_control_aadl_slang_l2"
         for f in ("session.json", "manifest.json"):
             shutil.copy2(FIXTURES / template / f, d / f)
-        (d / "asp_args.json").write_text(json.dumps(asp_args, indent=2) + "\n")
+        _write_asp_args(d, asp_args)
         (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in asp_args.values())} targets from report")
@@ -461,6 +556,7 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
         protocols[fe.report_id] = build_report_protocol(fe)
         print(f"  {fe.report_id}: 1 report rendering target")
     protocols[fe.verus_id] = build_verus_protocol(fe)
+    protocols[fe.cheat_id] = build_cheat_protocol(fe)
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
         "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
@@ -499,6 +595,9 @@ def load_protocols(fe: Frontend, validate: bool = False) -> dict:
                 str(FIXTURES / fe.report_id))
     if validate:
         protocols[fe.verus_id] = ProtocolDir.load(str(FIXTURES / fe.verus_id))
+        if not (FIXTURES / fe.cheat_id / "asp_args.json").is_file():
+            build_cheat_protocol(fe)
+        protocols[fe.cheat_id] = ProtocolDir.load(str(FIXTURES / fe.cheat_id))
     return protocols
 
 
@@ -521,6 +620,8 @@ def provision_flow(fe: Frontend, protocols: dict,
         pids.append(fe.props_id)
     if fe.report_id in protocols:
         pids.append(fe.report_id)
+    if fe.cheat_id in protocols:
+        pids.append(fe.cheat_id)
     measured = {pid: protocols[pid] for pid in pids}
     for pid in (fe.verus_id, HAMR_TOOLS_ID, SYSML_LIBS_ID):
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
@@ -687,6 +788,34 @@ def tamper_verus(fe: Frontend, protocols: dict) -> None:
 
 MHS_APP = (ISL_ROOT / "hamr" / "microkit" / "crates" / "thermostat_rt_mhs_mhs"
            / "src" / "component" / "thermostat_rt_mhs_mhs_app.rs")
+
+MHS_API = (ISL_ROOT / "hamr" / "microkit" / "crates" / "thermostat_rt_mhs_mhs"
+           / "src" / "bridge" / "thermostat_rt_mhs_mhs_api.rs")
+
+# tamper_cheat's injection point: the first statement of the verified
+# put_heat_control body in MHS_API — a file cargo-verus verifies but no
+# hash or slice tier measures
+CHEAT_MARKER = "self.api.unverified_put_heat_control(value);"
+CHEAT_LINE = "assume(false); // TAMPERED: proof admitted"
+
+
+def tamper_cheat(fe: Frontend, protocols: dict) -> None:
+    """The cheating prover: admit put_heat_control's contract with
+    assume(false). The file is Verus-verified but sits outside every
+    hash (l1a) and slice (l2) target, so the files and contracts tiers
+    stay green, and the verus tier still reports the same success —
+    only the cheat tier's count drift (assume 0 -> 1) refuses."""
+    src = MHS_API.read_text()
+    if CHEAT_LINE in src:
+        print(f"tamper-cheat: {MHS_API.name} already tampered")
+        return
+    if CHEAT_MARKER not in src:
+        raise SystemExit(f"tamper-cheat: injection marker not found in "
+                         f"{MHS_API.name} (codegen drift?)")
+    src = src.replace(CHEAT_MARKER, f"{CHEAT_LINE}\n      {CHEAT_MARKER}", 1)
+    MHS_API.write_text(src)
+    print(f"Admitted a verified contract: {CHEAT_LINE!r} injected into "
+          f"put_heat_control ({MHS_API.name})")
 
 
 def tamper_note(fe: Frontend, protocols: dict) -> None:
@@ -1014,8 +1143,12 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     files_key = f"{fe.prefix}:files"
     proofs_key = f"{fe.prefix}:proofs"
     report_key = f"{fe.prefix}:report"
+    cheats_key = f"{fe.prefix}:cheats"
     with_report = verify and fe.report_id in protocols
+    with_cheats = verify and fe.cheat_id in protocols
     siblings = [proofs_key] if verify else []
+    if with_cheats:
+        siblings.append(cheats_key)
 
     if immutable:
         # refined_by = the entry's own l1a protocol: the hash verdict
@@ -1064,6 +1197,10 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     episodes = {files_key: fe.l1a}
     if verify:
         episodes[proofs_key] = fe.verus_id
+    if with_cheats:
+        # the cheat tier: no repair chain on purpose — an admitted proof
+        # is never machine-repairable, the refusal must escalate
+        episodes[cheats_key] = fe.cheat_id
     if with_report:
         episodes[report_key] = fe.report_id
     starter = StartAttestationKS(episodes=episodes)
@@ -1075,6 +1212,8 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     controller.route(files_key, on_pass=confirm, on_fail=fail_chain)
     if verify:
         controller.route(proofs_key, on_pass=[], on_fail=proofs_chain)
+    if with_cheats:
+        controller.route(cheats_key, on_pass=[], on_fail=[])
     if with_report:
         controller.route(report_key, on_pass=[], on_fail=report_chain)
     controller.blackboard.write_entry(
@@ -1082,7 +1221,8 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         measurement=readiness_request(list(protocols)))
     controller.route(f"{fe.prefix}:ready", on_pass=[starter], on_fail=[])
     controller.run()
-    print(trust_summary(controller.blackboard, semantic=[fe.verus_id]))
+    semantic = [fe.verus_id] + ([fe.cheat_id] if with_cheats else [])
+    print(trust_summary(controller.blackboard, semantic=semantic))
     return controller
 
 
@@ -1098,6 +1238,7 @@ def main() -> None:
     parser.add_argument("--bless-props", action="store_true")
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
+    parser.add_argument("--tamper-cheat", action="store_true")
     parser.add_argument("--tamper-note", action="store_true")
     parser.add_argument("--tamper-impl", action="store_true")
     parser.add_argument("--tamper-impl-full", action="store_true")
@@ -1118,6 +1259,7 @@ def main() -> None:
     cli = parser.parse_args()
     fe = FRONTENDS[cli.frontend]
     tampers = ((tamper_verus, cli.tamper_verus),
+               (tamper_cheat, cli.tamper_cheat),
                (tamper_note, cli.tamper_note),
                (tamper_impl, cli.tamper_impl),
                (tamper_impl_full, cli.tamper_impl_full),
@@ -1177,6 +1319,10 @@ def main() -> None:
         snapshot_ids.append(fe.report_id)
     golden = TargetSnapshot.load(
         {pid: protocols[pid] for pid in snapshot_ids}, GOLDEN_ROOT)
+    # the cheat tamper site has no golden mirror (deliberately: it sits
+    # outside every hash/slice target), so the episode restores it from
+    # a pre-tamper snapshot instead
+    cheat_backup = MHS_API.read_text() if cli.tamper_cheat else None
     for tamper, flag in tampers:
         if flag:
             tamper(fe, protocols)
@@ -1196,6 +1342,9 @@ def main() -> None:
         restored = golden.restore()
         if restored:
             print(f"\nRestored {len(restored)} live target(s) from golden")
+        if cheat_backup is not None and MHS_API.read_text() != cheat_backup:
+            MHS_API.write_text(cheat_backup)
+            print(f"Restored {MHS_API.name} from the pre-tamper snapshot")
 
 
 if __name__ == "__main__":

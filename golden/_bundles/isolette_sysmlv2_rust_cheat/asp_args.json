@@ -1,0 +1,32 @@
+{
+  "cheat_scan_verus": {
+    "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+      "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_ma_ma_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mri_mri_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_cheat_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_cheat_targ": {
+      "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_cheat_targ"
+    }
+  }
+}

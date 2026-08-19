@@ -74,6 +74,15 @@
 #            is the REGENERATION species: the report is a rendering of
 #            the model through the measured codegen toolchain, so the
 #            rung re-emits it (tool gate first) and re-attests.
+#   scene 9  proof cheat -> assume(false) admits a verified contract in
+#            a bridge file NO hash or slice tier covers: the files tier
+#            stays green, the contracts tier stays green, and
+#            cargo-verus still reports the same success — verification
+#            passed, the proof is hollow. Only the cheat tier's
+#            proof-escape scan (assume/admit/external_body/axiom counts
+#            vs an exact golden baseline) refuses, attributing the
+#            crate. No repair rung on purpose: an admitted proof is
+#            never machine-repairable — the refusal escalates.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -106,6 +115,7 @@ GOLDEN_REGULATE="$REPO/golden$REGULATE"
 REPORT="$REPO/targets/isolette-microkit/hamr/microkit/attestation/sysml_attestation_report.json"
 MHS_APP="$REPO/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs"
 GOLDEN_MHS_APP="$REPO/golden$MHS_APP"
+MHS_API="$REPO/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/bridge/thermostat_rt_mhs_mhs_api.rs"
 PROPS_BUNDLE="$REPO/golden/_bundles/isolette_sysmlv2_rust_props/provision_bundle.json"
 PROPS_ARGS="$REPO/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json"
 VERUS_ARGS_FIXTURE="$REPO/tests/fixtures/isolette_sysmlv2_rust_verus/asp_args.json"
@@ -115,7 +125,7 @@ EVIDENCE="$REPO/evidence"
 NO_VSCODE=0
 RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6 7 8"
+SCENES="1 2 3 4 5 6 7 8 9"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -129,7 +139,7 @@ while [ $# -gt 0 ]; do
     --auto) AUTO="$2"; shift ;;
     --drift) DRIFT="$2"; shift ;;
     --restore-tools) RESTORE_TOOLS=1 ;;
-    -h|--help) sed -n '2,96p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,105p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -835,6 +845,47 @@ ex.tamper_report_subst(ex.FRONTENDS['sysml'], {})" )
     "the regeneration rung must re-emit the report via codegen"
   expect "isolette_sysmlv2_rust:report: all attested components intact" \
     "the regenerated report must re-attest clean"
+  pause
+fi
+
+if in_scenes 9; then
+  banner "SCENE 9 — proof cheat: verification success is not proof" \
+    "cargo-verus says 'verified, 0 errors' — but HOW? assume(false)" \
+    "admits a verified contract inside a bridge file that NO hash or" \
+    "slice tier covers: files green, contracts green, and the verus" \
+    "tier reports the same success over the hollow proof. Only the" \
+    "cheat tier's proof-escape scan — per-crate assume/admit/" \
+    "external_body/axiom counts against an exact golden baseline —" \
+    "refuses, attributing the crate. No repair rung on purpose: an" \
+    "admitted proof is never machine-repairable, so the refusal" \
+    "escalates to the administrator."
+  MHS_API_PRISTINE="$LOG_DIR/mhs_api.pristine.rs"
+  cp "$MHS_API" "$MHS_API_PRISTINE"
+  echo "First, see how innocent the cheat looks:"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
+  offer_diff "$MHS_API_PRISTINE" "$MHS_API" \
+    "the admitted contract (pristine vs cheating prover)"
+  cp "$MHS_API_PRISTINE" "$MHS_API"
+  echo
+  echo "Now the full episode over the cheating tree — watch which tier"
+  echo "refuses (the tampered crate recompiles, so the verus beat is"
+  echo "slower than usual):"
+  note_slow
+  run_driver --tamper-cheat --verify
+  expect "Admitted a verified contract" "the cheat tamper must apply"
+  expect "isolette_sysmlv2_rust:files: all attested components intact" \
+    "the files tier must stay green (the cheat site is unhashed)"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "cargo-verus must still report success over the admitted proof"
+  expect "isolette_sysmlv2_rust:cheats: integrity violation" \
+    "the cheat tier must refuse"
+  expect "thermostat_rt_mhs_mhs_cheat_targ" \
+    "the refusal must attribute the cheating crate"
+  expect "Restored thermostat_rt_mhs_mhs_api.rs" \
+    "the driver must restore the tamper site"
   pause
 fi
 
