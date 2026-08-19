@@ -63,6 +63,29 @@ GOLDEN_COMPANIONS = ("goldenbytes_appr", "goldenevidence_appr", "model_slices_ap
 _BOOKKEEPING_KEYS = ("golden_b64", "golden_ts", "filepath_golden", "env_var_golden")
 
 
+def carry_goldens(previous: dict, asp_args: dict) -> dict:
+    """
+    Copy golden bookkeeping (golden_b64/golden_ts/...) from a previous
+    asp_args map into freshly derived targets whose measurement args are
+    unchanged. Protocol-dir regeneration then composes with idempotent
+    re-provisioning: an unchanged system re-derives, re-provisions, and
+    ends byte-identical instead of re-stamping every golden as new.
+    """
+    for asp_id, targets in asp_args.items():
+        old_targets = previous.get(asp_id, {})
+        for targ_id, args in targets.items():
+            old = old_targets.get(targ_id)
+            if not old:
+                continue
+            if any(old.get(k) != v for k, v in args.items()
+                   if k not in _BOOKKEEPING_KEYS):
+                continue
+            for key in _BOOKKEEPING_KEYS:
+                if key in old and key not in args:
+                    args[key] = old[key]
+    return asp_args
+
+
 def provision_request(protocol_id: str, force_timestamp: bool = False) -> dict:
     """Measurement descriptor for a provisioning request.
 
@@ -311,9 +334,9 @@ def _provision(
                     return ProvisionOutcome(protocol=protocol_id, error=str(e))
                 fresh = golden_b64 != old_args.get("golden_b64")
                 changed = changed or fresh
+                new_asp_args[asp_id][targ_id]["golden_b64"] = golden_b64
                 if fresh or force:
                     new_asp_args[asp_id][targ_id]["golden_ts"] = ts
-                new_asp_args[asp_id][targ_id]["golden_b64"] = golden_b64
                 provisioned.append(targ_id)
 
     stale_bundle = (
@@ -335,7 +358,8 @@ def _provision(
         protocol.prebuilt_request = None
         proto_dir = Path(protocol.path)
         if proto_dir.is_dir():
-            (proto_dir / "asp_args.json").write_text(json.dumps(new_asp_args, indent=2))
+            (proto_dir / "asp_args.json").write_text(
+                json.dumps(new_asp_args, indent=2) + "\n")
             stale = proto_dir / "cvm_request.json"
             if stale.is_file():
                 stale.unlink()

@@ -10,6 +10,7 @@ from pathlib import Path
 from pybb import BlackboardController
 from pybb.attestation import (
     ProtocolDir,
+    carry_goldens,
     make_provision_predicate,
     provision_request,
     request_provision,
@@ -207,6 +208,27 @@ def test_memoized_per_lifetime(tmp_path):
     first = predicate(provision_request("p1"))
     again = predicate(provision_request("p1"))
     assert first is again and len(client.requests) == 1
+
+
+def test_carry_goldens_preserves_bookkeeping_for_unchanged_targets():
+    previous = {"hashfile": {
+        "t1": {"filepath": "/a", "env_var": "",
+               "golden_b64": "OLD", "golden_ts": "2026-01-01 00:00:00"},
+        "t2": {"filepath": "/b", "env_var": "",
+               "golden_b64": "KEEP?", "golden_ts": "2026-01-01 00:00:00"},
+    }}
+    derived = {"hashfile": {
+        "t1": {"filepath": "/a", "env_var": ""},          # unchanged args
+        "t2": {"filepath": "/b-moved", "env_var": ""},    # target moved
+        "t3": {"filepath": "/c", "env_var": ""},          # brand new
+    }}
+
+    carry_goldens(previous, derived)
+
+    assert derived["hashfile"]["t1"]["golden_b64"] == "OLD"
+    assert derived["hashfile"]["t1"]["golden_ts"] == "2026-01-01 00:00:00"
+    assert "golden_b64" not in derived["hashfile"]["t2"]  # args drift: no carry
+    assert "golden_b64" not in derived["hashfile"]["t3"]
 
 
 def test_full_blackboard_flow_success_and_failure(tmp_path):

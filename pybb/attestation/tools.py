@@ -42,6 +42,8 @@ import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Union
 
+from .provision import carry_goldens
+
 HOME = Path.home()
 WORKSPACE_BIN = HOME / "Claude_workspace" / "bin"
 ELAN_HOME = HOME / ".elan"
@@ -314,8 +316,11 @@ def build_tools_protocol_dir(proto_dir: Union[str, Path], prefix: str,
          "TERM_BODY": [_hashfile_chain(targets), _SIG]}, _APPR]}
     (proto_dir / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (proto_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    (proto_dir / "asp_args.json").write_text(
-        json.dumps({"hashfile": targets}, indent=2) + "\n")
+    asp_args = {"hashfile": targets}
+    args_path = proto_dir / "asp_args.json"
+    if args_path.is_file():
+        carry_goldens(json.loads(args_path.read_text()), asp_args)
+    args_path.write_text(json.dumps(asp_args, indent=2) + "\n")
     (proto_dir / "term.json").write_text(json.dumps(term, indent=2) + "\n")
     (proto_dir / "meta.json").write_text(json.dumps({
         "name": f"{prefix} toolchain measurement",

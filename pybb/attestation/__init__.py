@@ -67,6 +67,7 @@ from .promotion import (
 )
 from .provision import (
     ProvisionOutcome,
+    carry_goldens,
     make_provision_predicate,
     provision_request,
     request_provision,
@@ -127,6 +128,7 @@ __all__ = [
     "WholeFileRestoreKS",
     "ProvisionOutcome",
     "make_provision_predicate",
+    "carry_goldens",
     "provision_request",
     "request_provision",
     "DeclDiff",
