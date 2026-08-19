@@ -48,11 +48,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
-      "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjE4fX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_mt_ma_ma_verus_targ": {
       "exe_args": [
@@ -64,11 +65,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjExfX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_verus_targ": {
       "exe_args": [
@@ -80,11 +82,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjE0fX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_verus_targ": {
       "exe_args": [
@@ -96,11 +99,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjExfX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_verus_targ": {
       "exe_args": [
@@ -112,11 +116,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjExfX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_rt_mri_mri_verus_targ": {
       "exe_args": [
@@ -128,11 +133,12 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjE1fX0=",
+      "golden_ts": "2026-08-19 09:52:48"
     },
     "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_verus_targ": {
       "exe_args": [
@@ -144,11 +150,23 @@
         "--target",
         "aarch64-unknown-none",
         "--",
-        "--output-json",
-        "--time"
+        "--output-json"
       ],
       "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
-      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_verus_targ"
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjExfX0=",
+      "golden_ts": "2026-08-19 09:52:48"
+    },
+    "isolette_sysmlv2_rust_sys_nominal_proof_verus_targ": {
+      "exe_args": [
+        "verify",
+        "--",
+        "--output-json"
+      ],
+      "cwd": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof",
+      "asp_targid": "isolette_sysmlv2_rust_sys_nominal_proof_verus_targ",
+      "golden_b64": "eyJ2ZXJpZmljYXRpb24tcmVzdWx0cyI6eyJlbmNvdW50ZXJlZC1lcnJvciI6ZmFsc2UsImVuY291bnRlcmVkLXZpci1lcnJvciI6ZmFsc2UsImVycm9ycyI6MCwiaXMtdmVyaWZ5aW5nLWVudGlyZS1jcmF0ZSI6dHJ1ZSwic3VjY2VzcyI6dHJ1ZSwidmVyaWZpZWQiOjE4NjJ9fQ==",
+      "golden_ts": "2026-08-19 09:52:48"
     }
   }
 }

@@ -1,0 +1,872 @@
+{
+  "hashfile": {
+    "isolette_sysmlv2_rust_sysproof_src_actions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/actions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_actions_rs_targ",
+      "golden_b64": "UZ2Pz+G8h5SsFBB6N2PSpIbKso7BIUUQI8PXrziiEJw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_assertions_rs_targ",
+      "golden_b64": "gvB8joXDNx5mkr2C7MQPI1q6Fj0MdPNxdYTcCvXJHyY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_contracts_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/contracts.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_contracts_rs_targ",
+      "golden_b64": "z01I9deYl0gGa8TC2FsGCKwTZ4n6TzItzKr5SdNOKoM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_assertions_rs_targ",
+      "golden_b64": "LTuTKxT3+gcBh2JEsbeaNjZQLlDS0OsxCDKCG1Kq2xI=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_init_rs_targ",
+      "golden_b64": "50JFbm6rfDZqQ72aW/TCTLxUfmGe9HUIyQLSLLFUOPs=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "L/eBApkNh6jEQ6EpYQPFid7Pu5zxKshmbkt+Jh8vpOA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "0Iv8PJNwcHD+ks7glRojexYfOi+eKn2IMZSZXDUTc04=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "jBpSOQyi27Fcg9oKL07gro0hg4OlKcxYqwlYotWE8hg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_assertions_rs_targ",
+      "golden_b64": "o4618Gg7c0WsM0cZPGogG+4S8X258JHRWDwqGMetNAY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_init_rs_targ",
+      "golden_b64": "1Snw5xxOM3nRRK601ug98e2Z3aMZk0vuYaXgZtedMxA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "QeBFGa+JJz3Ii/5qkBrnH7mnxBDT7QkdsaaLf0bQkOw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "S2Em0S0hGDopTc6n59dKthFCyIw6zbjX++HtWrShcfA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/error_condition_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_error_condition_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "HGCDGaB4mo8+w5GZ6PkTluAKST2xzbQZZ1rftipj1rs=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_assertions_rs_targ",
+      "golden_b64": "Oed/Vm/g3USQ6Qt1aPBTFM5uPNOs3DmQ038xRPp8Eso=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_init_rs_targ",
+      "golden_b64": "LqgHvf/bm+WT05aNa//+uc8TUwowamT78KTBCiF/2U8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "RfJbMCxLJC5rDkWvYC+yfpaiTzJD1BVYSzy/lN5pY2c=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "uxZHvPPp65/RMRx/yJ0JnJ2o4q4GjM0nkwROEMCmzWM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "ctbPyI7DiubhOr+zLAkfzJzr2GjAjS8aChDvFY8gOQc=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_assertions_rs_targ",
+      "golden_b64": "B2thBY0pwHH+wF+889rr6K+7TqLXZQ4sRnXfP2S0n84=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_init_rs_targ",
+      "golden_b64": "PePM2nstexqfM8w/Ah6g6ZiRx5gy4HHkIysdxKdl72o=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "EcPPPs4LM3LJ2wHQYE4L6XDI9y9e+sdsYxBMiBurCgQ=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "aZhHq/pXBMy3tGvR8RemV0UM7rq/518BY8N2kLWKeDM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/failed_mode_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_failed_mode_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "PsYYkKWmz9xQ4ggP1Cfa2RaDlE5VHsucOgT9XBijS2E=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_assertions_rs_targ",
+      "golden_b64": "/MBLFrDGSmACwGZsO4z5pU1Xl4jTycSgqLt1WMzHnz8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_init_rs_targ",
+      "golden_b64": "7QXLSIgJhFS/jqYv/5m1kgnpeFsNMqlsrq/fPD3Szu8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "RvmRAd0eMOWQLxri94+cML2RcaUPSd+In5IUYzd80Bk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "x5mKfkiWTESX9ZHi16sMoBWV3oWaaoBqOccA2uzDw80=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "bGblm5pO60upaqmL9RlLNgp1B9t70Hls6oMWVqlhWMk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_assertions_rs_targ",
+      "golden_b64": "ezHgpTC/7fRN5Lv1aKhdJm1tPVBEr2UnFYQJrP4bob4=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_init_rs_targ",
+      "golden_b64": "2jGxZwoekgBLuf912g70Ii9yO2orjCGLfAzWXZl+iX8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "muCmyPSLe8mR5n6VnN4DIieVyy8fLXFz3Kz2wSQy6ug=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "m0UNiicYwB9ygZV6iq1xK6ugymdV+3tRCMSYl4Y6lUs=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/internal_failure_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_internal_failure_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "simh8ejvF/oGaNDZJ7Jb8v9xcan29svmFuZDopTLWFo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_assertions_rs_targ",
+      "golden_b64": "1cY1ZTE6ocnUH8gye7suYMT7GGAA4HcBosJrURwczcI=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_init_rs_targ",
+      "golden_b64": "cgyE45PHvDsaXohFBczEE0z8hjj1FoEUwZYsZCsgyyk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "4Nmf0ytIOvycMCaD98jr39H/i2jows7v1iGJhXffzaM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "W7PutEYvHj5/fH/cVGlFwwv5kK27+TsQqMf3EhNQRiA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "JmqgWwFPOhNE4n9aCilF0lLubh6nzCEZwHp7sT1jiXw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_assertions_rs_targ",
+      "golden_b64": "Xr+GGEjg7F7b6ro/uJ3+AE0oIBHxwiB9K5cf9yQ+Y2s=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_init_rs_targ",
+      "golden_b64": "jGAMo/dmQOgi7qURAUJtgecmNM2XfcRE+N6NC10Erws=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "NCQ6XrF/+wL1a+u0rZtDlftH6LHMDlIqhaNU1WeDLVY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "W47ldDObOmcai2R3J8at/XXYkAD5npeN9A08ZJ0oY+Y=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ct_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ct_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "FpLpobMhae2/7vxwiiTQsJ4rfJtAnHqhnLOnyGqSs3c=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_assertions_rs_targ",
+      "golden_b64": "uxPRa8c1qFyq/z0wsK67BqPGjBuOiriVHvEPysPMZy8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_init_rs_targ",
+      "golden_b64": "Qy/754Z0mGjKI9oJCrdlRHywsxbZOxsXtfFXP0YLKaY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "zML4JG0iREDBbdBP71qkmOQCzek889hUXI1uDhBDFtU=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "eliyVIIDttv3DzwUkM/LAFPN0PcZ6Q6q0jQoFrwrM9w=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_lat_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_lat_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "PQyuUNveeMJSdyrbV5CbFDq6nRaivjKpOIyopLVvXUo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_assertions_rs_targ",
+      "golden_b64": "43I2a+KK0PmNb5j/UHUoCeWAKQ+z8xr02GQAWy5IY28=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_init_rs_targ",
+      "golden_b64": "yJ0kcBhYV7p8lqO+k72rK8WxDUrdOQDku3jRNnqUTFM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "V1bzXIs5Jb671i6C+GZY1NsAPrm5fNkZg81JI4nOrUA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "FnIZnFWoBMbIASP6LM+VEZiLft5eDuK5mqN3RszJOuQ=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_ldt_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_ldt_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "TXEH5EQbosGHgK5lLnArSKpGBVTy39J4QmZuU2EVeHQ=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_assertions_rs_targ",
+      "golden_b64": "PYDZ3NejM+l39m3GquJskAwKh116rGmHFT2QQnje4I4=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_init_rs_targ",
+      "golden_b64": "kNa9CrHB2rT3ivJVqaHjfwLbgQ4EeYCwPKggrkgzd+Q=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_non_disabling_rs_targ",
+      "golden_b64": "DZcLExV4oNj6SiLbTkE8iAdCNgghkikdVC7KlSx158U=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_post_pre_rs_targ",
+      "golden_b64": "/8qWj8PaUMtrPaVRKXbVtsPe3PrLSPiUqu9gC92+NOQ=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_uat_alarm_on/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_uat_alarm_on_vc_sequential_rs_targ",
+      "golden_b64": "FKXZdWqTFNbWVnwPBA7ptoXDF+z/tsXBKTzXVHC+0Xo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_assertions_rs_targ",
+      "golden_b64": "/S0ipN5AvgkXMUzvIVeVSnN5NOePd9urbSmRok9BrJA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_init_rs_targ",
+      "golden_b64": "3VtDLOze8gE1TYWuI1raYfCslOZM3GdvSpSWOpuNkTo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "CEwTzNtQtDGN1N3IQw2W4Wz1DmBs3xON8n66/hX5WKw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "yjSa2UCj9ZXD9/WWGfZOB3yx+G3cbUkF3F07f41/Tqg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/invalid_udt_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_invalid_udt_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "JsG/AoH0QbrZT/Lp3BYE9zdRdvVN+3O6KPBDtrxgyVk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_lib_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/lib.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_lib_rs_targ",
+      "golden_b64": "vE3QYfDcPDe8obubarbvn+MDcS+0d0Tl7sZXThN9GHA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_assertions_rs_targ",
+      "golden_b64": "5vuAfg5/GLfD7CK5uZZ4Xl0brzLJlYxKiyYdPp/t5zM=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_init_rs_targ",
+      "golden_b64": "8BiUPFb1X2H8WOZK3PsstlzJhuTsF7n+K88WHwObf+c=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_non_disabling_rs_targ",
+      "golden_b64": "hPl/AQBq8kNFSRZgmjjMbfp8N2fE2kAFjd9Qwl+OwHY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_post_pre_rs_targ",
+      "golden_b64": "Tykzsscm0YMhWrGdg7CthtXfBz7UC8GnAJ4Gl5S9ZKo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_display_temp/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_display_temp_vc_sequential_rs_targ",
+      "golden_b64": "jT27Zo7R8y3Z74kxyppyNsQ39fmEtJq8p0IYKhHJd9Y=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_assertions_rs_targ",
+      "golden_b64": "ezYClC1RrunKJO772I7W9ChFXhv6gu0NirotBdgW+Qw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_init_rs_targ",
+      "golden_b64": "c7wJYIv0SWqcMNnnQzAgmVxaDCgH3jC/6FFIVqJjVBU=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_non_disabling_rs_targ",
+      "golden_b64": "3aKHDiSPJmEqO63P6sa6Th8JY65ZgXn61PbJwjofaRc=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_post_pre_rs_targ",
+      "golden_b64": "OqNJSgf3SAn/wdRhKmqw+3/MMWJC9OES4zPyqhtqFZc=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_vc_sequential_rs_targ",
+      "golden_b64": "nTXXFq+reMeXdVI8bAFKeN7fMufQHstb9td4wpqWaL8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_assertions_rs_targ",
+      "golden_b64": "Q/cjlCl+Ebk8Eavrc7ki/jdZ7GQbcwpWvwRA9oLfPws=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_init_rs_targ",
+      "golden_b64": "eRwNw+Tal2alBCa2+oOI+2EzQGXblpvfzk7IMw7/pt0=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_non_disabling_rs_targ",
+      "golden_b64": "Vy+Og3rMBikprLDv8qYItZckfjrviyJ25jd7HYBLN1M=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_post_pre_rs_targ",
+      "golden_b64": "X/ZAXOolCF87nW7UsYxz8hCW+n5QY/CcFTJTaKlrjWk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_alarm_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_alarm_off_vc_sequential_rs_targ",
+      "golden_b64": "nb3yKFFOlJ5sr9FpFhD4nbUFrRN6krOYQZxq6/6AD+s=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_assertions_rs_targ",
+      "golden_b64": "EaJb+4K+/eb5gnBTRo71CvcUQjWW2F97ZifbBpk5kEk=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_init_rs_targ",
+      "golden_b64": "Htpt6mvgFYJRwbVgT5ojsAi0cc286c7stTbsDWJ/EbI=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_non_disabling_rs_targ",
+      "golden_b64": "5itiv6B+UpDLxlO5HqEt6MqFP7PnQ+UP4JMMzc/u/Ic=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_post_pre_rs_targ",
+      "golden_b64": "ztXm95O0aW6gr2V7lXGibk4EdrcKeVoWmmWgkdwF3pg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_vc_sequential_rs_targ",
+      "golden_b64": "OE5ThEvXbEKk2YhI57YVP7sUGF4dvRmpwFktn2iVgv8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_assertions_rs_targ",
+      "golden_b64": "9D+izuS4lYowFT1XdiXngwOxi/C2WxNlAxAFAJMJDY4=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_init_rs_targ",
+      "golden_b64": "upS1OB7eF78+gJGoFAPfc4H/T86g0Uw0Cpf+vc5fUZw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_non_disabling_rs_targ",
+      "golden_b64": "zmtZ6GQR8rQAjOs+B+Gn6SC8AqUzUm5pp2uzQrh0U4s=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_post_pre_rs_targ",
+      "golden_b64": "OpCEM/Pwht04g/0U3Xmih+PSwiPVXrRWQuizOanLU3o=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/normal_mode_heat_off/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_normal_mode_heat_off_vc_sequential_rs_targ",
+      "golden_b64": "LrhgHd3v/ddlWQnwzPsdBo+2y5lqC1ArjacMaBphIM0=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_assertions_rs_targ",
+      "golden_b64": "hg7Vc0pA7bqpmzhOvw2t//BYQF6GitJCd8S1sbKpR5o=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_init_rs_targ",
+      "golden_b64": "X3yf/KKmY1xiFVwrAiVjSr0XWgn6Gct/b/LfcL/w8pg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_non_disabling_rs_targ",
+      "golden_b64": "QaxR+Ix8zoLed48YxBkXi9nApd2g0AeOvxvU8LLbLWo=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_post_pre_rs_targ",
+      "golden_b64": "Omk4PtBXCWi3YY7oPDuF9HZNKqb1htO0lshmmeEmf1U=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/regulator_failsafe_latching/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_regulator_failsafe_latching_vc_sequential_rs_targ",
+      "golden_b64": "fDEXvBUra3J7oHgF5uxUhouqS5cW/oiru+Ja/TjY4p8=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_assertions_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/assertions.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_assertions_rs_targ",
+      "golden_b64": "7SKOi9LnS7IMT1OU7ZNFTbHjtAV6Y4Ic5RP7ZcpOv8Q=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_mod_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/mod.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_mod_rs_targ",
+      "golden_b64": "PNfwVZPlYBe+nHserSPXlMaLpEybGGE2xsqlfceOrsA=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_init_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/vc_init.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_init_rs_targ",
+      "golden_b64": "bDyvJ+7Ep1y/qNsPX0rAk+m0UDk0zEHdyCIJQjZZ4Ao=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_non_disabling_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/vc_non_disabling.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_non_disabling_rs_targ",
+      "golden_b64": "EHxG/rvMRIPVINj0xCLHhpl8buH6YYclvU+5NXO71E4=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_post_pre_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/vc_post_pre.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_post_pre_rs_targ",
+      "golden_b64": "p6qq3y/edL7cp9dNfe0QvSJv1tjJIM1DuCdCOxW1OYw=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_sequential_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/state_var_and_specialization_exercise_3/vc_sequential.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_state_var_and_specialization_exercise_3_vc_sequential_rs_targ",
+      "golden_b64": "SPPbPOlyPoQ1XjJnSl2wQfD9g5dZ1poqHakoObYCy5U=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_system_state_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/system_state.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_system_state_rs_targ",
+      "golden_b64": "dF7tcjfOdUBAt/8JzM/ZaOT0i3t2oRO7F4P+H6P2Uk0=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_vc_commutativity_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/vc_commutativity.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_vc_commutativity_rs_targ",
+      "golden_b64": "z351XAXjMzUzJGDMqe7oterZCcK4OQExBozCxnzXfCg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_vc_integration_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/vc_integration.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_vc_integration_rs_targ",
+      "golden_b64": "8ofBtA4ab4yNFmLRMfbmPlv6E7HGWfR2REcIjWkkERg=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_src_write_frames_rs_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/src/write_frames.rs",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_src_write_frames_rs_targ",
+      "golden_b64": "viPjf3H0fhUfGFAzsb3w42k3lgoDD+xCSsoF60qi6Ng=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_cargo_toml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/Cargo.toml",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_cargo_toml_targ",
+      "golden_b64": "IHOrw+gC2f8aGZASJWywvx/7sFZodZJ1c9M50evWtXc=",
+      "golden_ts": "2026-08-19 09:52:33"
+    },
+    "isolette_sysmlv2_rust_sysproof_rust_toolchain_toml_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof/rust-toolchain.toml",
+      "env_var": "",
+      "asp_targid": "isolette_sysmlv2_rust_sysproof_rust_toolchain_toml_targ",
+      "golden_b64": "+gDrDYsKIDogs0DhVDPGe77XBPVruoIoWZUyiNvmtjY=",
+      "golden_ts": "2026-08-19 09:52:33"
+    }
+  }
+}

@@ -29,20 +29,78 @@
                               "TERM_BODY": [
                                 "both_paths",
                                 {
-                                  "TERM_CONSTRUCTOR": "asp",
-                                  "TERM_BODY": {
-                                    "ASP_CONSTRUCTOR": "ASPC",
-                                    "ASP_BODY": {
-                                      "ASP_ID": "cheat_scan_verus",
-                                      "ASP_TARG_ID": "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ",
-                                      "ASP_ARGS": {
-                                        "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
-                                        "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ",
-                                        "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo4LCJjb21wb25lbnQiOjMsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS9vcGVyYXRvcl9pbnRlcmZhY2Vfb2lwX29pdF9hcGkucnMiOnsiZXh0ZXJuYWxfYm9keSI6OH0sInNyYy9jb21wb25lbnQvb3BlcmF0b3JfaW50ZXJmYWNlX29pcF9vaXRfYXBwLnJzIjp7ImV4dGVybmFsX2JvZHkiOjN9fSwiZmlsZXNfc2Nhbm5lZCI6MTR9",
-                                        "golden_ts": "2026-08-19 08:33:41"
+                                  "TERM_CONSTRUCTOR": "bseq",
+                                  "TERM_BODY": [
+                                    "both_paths",
+                                    {
+                                      "TERM_CONSTRUCTOR": "bseq",
+                                      "TERM_BODY": [
+                                        "both_paths",
+                                        {
+                                          "TERM_CONSTRUCTOR": "bseq",
+                                          "TERM_BODY": [
+                                            "both_paths",
+                                            {
+                                              "TERM_CONSTRUCTOR": "asp",
+                                              "TERM_BODY": {
+                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                "ASP_BODY": {
+                                                  "ASP_ID": "cheat_scan_verus",
+                                                  "ASP_TARG_ID": "isolette_sysmlv2_rust_GUMBO_Library_cheat_targ",
+                                                  "ASP_ARGS": {
+                                                    "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library",
+                                                    "asp_targid": "isolette_sysmlv2_rust_GUMBO_Library_cheat_targ"
+                                                  }
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "TERM_CONSTRUCTOR": "asp",
+                                              "TERM_BODY": {
+                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                "ASP_BODY": {
+                                                  "ASP_ID": "cheat_scan_verus",
+                                                  "ASP_TARG_ID": "isolette_sysmlv2_rust_data_cheat_targ",
+                                                  "ASP_ARGS": {
+                                                    "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/data",
+                                                    "asp_targid": "isolette_sysmlv2_rust_data_cheat_targ"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "TERM_CONSTRUCTOR": "asp",
+                                          "TERM_BODY": {
+                                            "ASP_CONSTRUCTOR": "ASPC",
+                                            "ASP_BODY": {
+                                              "ASP_ID": "cheat_scan_verus",
+                                              "ASP_TARG_ID": "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ",
+                                              "ASP_ARGS": {
+                                                "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+                                                "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_cheat_targ"
+                                              }
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "TERM_CONSTRUCTOR": "asp",
+                                      "TERM_BODY": {
+                                        "ASP_CONSTRUCTOR": "ASPC",
+                                        "ASP_BODY": {
+                                          "ASP_ID": "cheat_scan_verus",
+                                          "ASP_TARG_ID": "isolette_sysmlv2_rust_sys_nominal_proof_cheat_targ",
+                                          "ASP_ARGS": {
+                                            "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/sys_nominal_proof",
+                                            "asp_targid": "isolette_sysmlv2_rust_sys_nominal_proof_cheat_targ"
+                                          }
+                                        }
                                       }
                                     }
-                                  }
+                                  ]
                                 },
                                 {
                                   "TERM_CONSTRUCTOR": "asp",
@@ -53,9 +111,7 @@
                                       "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_cheat_targ",
                                       "ASP_ARGS": {
                                         "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
-                                        "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_cheat_targ",
-                                        "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo1LCJjb21wb25lbnQiOjIsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X210X21hX21hX2FwaS5ycyI6eyJleHRlcm5hbF9ib2R5Ijo1fSwic3JjL2NvbXBvbmVudC90aGVybW9zdGF0X210X21hX21hX2FwcC5ycyI6eyJleHRlcm5hbF9ib2R5IjoyfX0sImZpbGVzX3NjYW5uZWQiOjE0fQ==",
-                                        "golden_ts": "2026-08-19 08:33:41"
+                                        "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_cheat_targ"
                                       }
                                     }
                                   }
@@ -71,9 +127,7 @@
                                   "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_cheat_targ",
                                   "ASP_ARGS": {
                                     "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
-                                    "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_cheat_targ",
-                                    "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo4LCJjb21wb25lbnQiOjIsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X210X21taV9tbWlfYXBpLnJzIjp7ImV4dGVybmFsX2JvZHkiOjh9LCJzcmMvY29tcG9uZW50L3RoZXJtb3N0YXRfbXRfbW1pX21taV9hcHAucnMiOnsiZXh0ZXJuYWxfYm9keSI6Mn19LCJmaWxlc19zY2FubmVkIjoxNH0=",
-                                    "golden_ts": "2026-08-19 08:33:41"
+                                    "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_cheat_targ"
                                   }
                                 }
                               }
@@ -89,9 +143,7 @@
                               "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_cheat_targ",
                               "ASP_ARGS": {
                                 "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
-                                "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_cheat_targ",
-                                "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo0LCJjb21wb25lbnQiOjIsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X210X21tbV9tbW1fYXBpLnJzIjp7ImV4dGVybmFsX2JvZHkiOjR9LCJzcmMvY29tcG9uZW50L3RoZXJtb3N0YXRfbXRfbW1tX21tbV9hcHAucnMiOnsiZXh0ZXJuYWxfYm9keSI6Mn19LCJmaWxlc19zY2FubmVkIjoxNX0=",
-                                "golden_ts": "2026-08-19 08:33:41"
+                                "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_cheat_targ"
                               }
                             }
                           }
@@ -107,9 +159,7 @@
                           "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_cheat_targ",
                           "ASP_ARGS": {
                             "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
-                            "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_cheat_targ",
-                            "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo1LCJjb21wb25lbnQiOjMsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21oc19taHNfYXBpLnJzIjp7ImV4dGVybmFsX2JvZHkiOjV9LCJzcmMvY29tcG9uZW50L3RoZXJtb3N0YXRfcnRfbWhzX21oc19hcHAucnMiOnsiZXh0ZXJuYWxfYm9keSI6M319LCJmaWxlc19zY2FubmVkIjoxN30=",
-                            "golden_ts": "2026-08-19 08:33:41"
+                            "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_cheat_targ"
                           }
                         }
                       }
@@ -125,9 +175,7 @@
                       "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_cheat_targ",
                       "ASP_ARGS": {
                         "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
-                        "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_cheat_targ",
-                        "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo5LCJjb21wb25lbnQiOjIsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21yaV9tcmlfYXBpLnJzIjp7ImV4dGVybmFsX2JvZHkiOjl9LCJzcmMvY29tcG9uZW50L3RoZXJtb3N0YXRfcnRfbXJpX21yaV9hcHAucnMiOnsiZXh0ZXJuYWxfYm9keSI6Mn19LCJmaWxlc19zY2FubmVkIjoxNX0=",
-                        "golden_ts": "2026-08-19 08:33:41"
+                        "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_cheat_targ"
                       }
                     }
                   }
@@ -143,9 +191,7 @@
                   "ASP_TARG_ID": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_cheat_targ",
                   "ASP_ARGS": {
                     "crate_dir": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
-                    "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_cheat_targ",
-                    "golden_b64": "eyJhZG1pdCI6MCwiYXNzdW1lIjowLCJhc3N1bWVfc3BlY2lmaWNhdGlvbiI6MCwiYXhpb20iOjAsImJyb2FkY2FzdCI6MCwiZXh0ZXJuYWwiOjAsImV4dGVybmFsX2JvZHkiOnsiYnJpZGdlIjo0LCJjb21wb25lbnQiOjIsIm90aGVyIjowfSwiZXh0ZXJuYWxfc3BlY2lmaWNhdGlvbiI6MCwiZmlsZXMiOnsic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21ybV9tcm1fYXBpLnJzIjp7ImV4dGVybmFsX2JvZHkiOjR9LCJzcmMvY29tcG9uZW50L3RoZXJtb3N0YXRfcnRfbXJtX21ybV9hcHAucnMiOnsiZXh0ZXJuYWxfYm9keSI6Mn19LCJmaWxlc19zY2FubmVkIjoxNH0=",
-                    "golden_ts": "2026-08-19 08:33:41"
+                    "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_cheat_targ"
                   }
                 }
               }

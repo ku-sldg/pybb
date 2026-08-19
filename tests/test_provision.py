@@ -223,12 +223,15 @@ def test_carry_goldens_preserves_bookkeeping_for_unchanged_targets():
         "t3": {"filepath": "/c", "env_var": ""},          # brand new
     }}
 
-    carry_goldens(previous, derived)
+    merged = carry_goldens(previous, derived)
 
-    assert derived["hashfile"]["t1"]["golden_b64"] == "OLD"
-    assert derived["hashfile"]["t1"]["golden_ts"] == "2026-01-01 00:00:00"
-    assert "golden_b64" not in derived["hashfile"]["t2"]  # args drift: no carry
-    assert "golden_b64" not in derived["hashfile"]["t3"]
+    assert merged["hashfile"]["t1"]["golden_b64"] == "OLD"
+    assert merged["hashfile"]["t1"]["golden_ts"] == "2026-01-01 00:00:00"
+    assert "golden_b64" not in merged["hashfile"]["t2"]  # args drift: no carry
+    assert "golden_b64" not in merged["hashfile"]["t3"]
+    # non-mutating: builders bake the input dicts into term.json nodes,
+    # where a leaked golden would go stale and poison appraisal
+    assert "golden_b64" not in derived["hashfile"]["t1"]
 
 
 def test_full_blackboard_flow_success_and_failure(tmp_path):

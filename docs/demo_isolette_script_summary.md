@@ -8,7 +8,7 @@ Rust isolette (the INSPECTA seL4/Microkit exemplar,
 example; where the ecosystems differ, the scene says so and shows the
 isolette's honest counterpart.
 
-**At a glance**: nine scenes; repair species exercised: whole-file
+**At a glance**: ten scenes; repair species exercised: whole-file
 restore, content-aligned slice splice, crate restore, sanctioned
 codegen catch-up, regeneration-from-model, out-of-band pause, and the
 principled refusal; three refusal properties at one gate (signature,
@@ -18,7 +18,7 @@ deterministic or out-of-band.
 **Running it**: `./examples/demo_isolette.sh` (interactive; `--help`
 for flags — `--scenes`, `--drift`, `--auto`, `--repair-strategy`,
 `--fast` for unattended, `--restore-tools` recovery). Warm cargo-verus
-caches recommended: every Verus tier run re-verifies 7 crates (~10 s
+caches recommended: every Verus tier run re-verifies 8 crates (~10 s
 warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
 
 ## Setup
@@ -34,11 +34,13 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
 - One attestation episode over every artifact class: **files** (13
   whole-file hashes: SysML packages + contract-bearing Rust),
   **contracts** (67 report slices), **verification** (cargo-verus over
-  7 crates, an ALWAYS-RUN entry — the Rocq example's three-entry
-  shape), the **cheat tier** (per-crate proof-escape counts over the
-  same 7 crates — see scene 9), and the **report rendering** every
-  protocol is derived from, with the verus toolchain hashed
-  measure-then-use in the same term.
+  8 crates — the 7 component crates + the system proof crate — an
+  ALWAYS-RUN entry whose evidence is the goldened verified COUNT, not
+  just errors==0), the **cheat tier** (per-crate proof-escape counts
+  over 10 crates — see scene 9), the **sysproof tier** (whole-file
+  hashes of the system proof crate — see scene 10), and the **report
+  rendering** every protocol is derived from, with the verus toolchain
+  hashed measure-then-use in the same term.
 - The per-crate proof checklist, all green.
 
 ## Scene 2 — implementation tamper: the ladder repairs the right artifact
@@ -178,7 +180,32 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   cheat site has no golden mirror, deliberately).
 - The honest baseline the golden blesses: 86 `external_body` sites,
   all in generated bridge/component platform-boundary files; zero
-  assume/admit/axiom anywhere.
+  assume/admit/axiom anywhere. The scan also covers the system proof
+  crate + the shared foundation crates (`data`, `GUMBO_Library` — a
+  smuggled broadcast axiom there would poison every proof), where the
+  only blessed escape is 26 `uninterp` action fns in `actions.rs`.
+
+## Scene 10 — the hollow system proof: count vs bytes
+
+- `sys_nominal_proof` is the **system-level compositional proof**
+  (~1862 obligations, one empty-bodied VC each, discharged by Verus).
+  Two attacks that add **no escape construct**, so the cheat scan stays
+  silent — a demonstration that "verification succeeded" is not
+  enough, and neither is "no cheats present."
+- **Beat 1 — SHRINK** ([diff&nbsp;D14](#d14)): comment out a proof
+  module. The crate still verifies (0 errors) but proves fewer
+  obligations, so the verus tier's **verified-COUNT** golden refuses
+  (1862 drops) — the reason the tier goldens the whole normalized
+  `verification-results`, not just `errors==0`. The sysproof hash
+  refuses too (lib.rs changed).
+- **Beat 2 — SWAP** ([diff&nbsp;D15](#d15)): drop a real VC and add a
+  trivial `ensures true` one, holding the count at 1862. The verus
+  tier goes **blind** (count preserved) and the cheat scan stays silent
+  (no escape construct) — **only** the whole-file **sysproof hash**
+  refuses, attributing the swapped VC file. Bytes anchor what a count
+  cannot. The sysproof crate is do-not-edit generated, so whole-file
+  hashing with no benign-drift allowance is correct; no repair rung —
+  the refusal escalates.
 
 ## Throughout
 
@@ -510,4 +537,43 @@ success.
        self.api.unverified_put_heat_control(value);
        self.heat_control = value;
      }
+```
+
+<a id="d14"></a>
+### D14 — scene 10 beat 1: the shrunken proof surface
+
+One commented module: the crate still verifies (0 errors) but proves
+fewer obligations, so the verified count drops below the golden 1862.
+
+```diff
+--- a/crates/sys_nominal_proof/src/lib.rs
++++ b/crates/sys_nominal_proof/src/lib.rs
+ -49,1 +49,1 
+-pub mod normal_display_temp;
++// pub mod normal_display_temp;  // COUNT TAMPER: module dropped
+```
+
+<a id="d15"></a>
+### D15 — scene 10 beat 2: drop-and-replace at constant count
+
+A real VC dropped, a trivial one added — the verified count stays 1862,
+so the verus tier is blind; only the whole-file hash sees the change.
+
+```diff
+--- a/crates/sys_nominal_proof/src/normal_display_temp/vc_sequential.rs
++++ b/crates/sys_nominal_proof/src/normal_display_temp/vc_sequential.rs
+ -19,7 +19,7 
+ verus! {
++pub proof fn dropped_and_replaced() ensures true {}
+ 
+-/** VC[1]: Pre-Assert -- before_oi |- OI compute assumes */
+-pub proof fn vc_pre_assert_oi(st: SystemState)
+-  requires
+-    true /* before_oi has no assertion */,
+-  ensures
+-    true /* no assertions at out-places */,
+-{}
+-
+ /** VC[2]: Next-Assert (task) ... */
+ pub proof fn vc_next_assert_task_oi(pre: SystemState, post: SystemState)
 ```

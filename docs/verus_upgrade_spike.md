@@ -104,6 +104,20 @@ generated artifacts; patching them locally is exactly the tampering the
 demo refuses). See
 [draft_hamr_verus_migration_report.md](draft_hamr_verus_migration_report.md).
 
+### What the upgrade would buy the attestation demo
+
+On the newer toolchain, `--output-json` gains a `func-details` object
+**keyed by fully-qualified function name** (2142 entries on
+`sys_nominal_proof`). Goldening that key SET — not just the verified
+cardinality — would catch drop-and-replace *semantically*: dropping
+`…::vc_pre_assert_oi` and adding `…::dropped_and_replaced` changes the
+set even at constant count. On the pinned toolchain the evidence is only
+the scalar count, so drop-and-replace is caught instead by the
+whole-file `sysproof` hash tier (see
+[cheat_tier_plan.md](cheat_tier_plan.md) §D and demo scene 10). The
+func-details-set golden is the upgrade-gated stronger form, and would
+let the `sysproof` hash tier relax to source that legitimately changes.
+
 ## Decision
 
 **Upgrade deferred.** The gate mechanism is proven, but the exemplar's

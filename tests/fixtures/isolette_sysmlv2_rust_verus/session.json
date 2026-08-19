@@ -51,7 +51,7 @@
       }
     },
     "ASP_Comps": {
-      "run_command_cargo_verus": "run_command_verus_appr",
+      "run_command_cargo_verus": "goldenbytes_appr",
       "hashfile": "goldenbytes_appr",
       "sig": "sig_appr"
     }

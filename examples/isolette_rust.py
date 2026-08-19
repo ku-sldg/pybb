@@ -114,6 +114,7 @@ docs/demo_isolette_script_summary.md for the scenes):
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -172,8 +173,20 @@ GOLDEN_ROOT = REPO / "golden"
 VERUS_ARGS = [
     "verify", "-Z", "build-std=core,alloc,compiler_builtins",
     "-Z", "build-std-features=compiler-builtins-mem",
-    "--target", "aarch64-unknown-none", "--", "--output-json", "--time",
+    "--target", "aarch64-unknown-none", "--", "--output-json",
 ]
+
+# The system-level compositional proof crate (HAMR-generated, report-
+# invisible: the report is component-scoped and never names it, so every
+# tier that covers it does so as an explicit AM-owned extra target).
+# Host-target verify: a pure proof crate, nothing runs on the image.
+SYS_PROOF_CRATE = "sys_nominal_proof"
+SYS_PROOF_VERUS_ARGS = ["verify", "--", "--output-json"]
+
+# Cheat-scan coverage beyond the report-derived component crates: the
+# system proof crate plus the shared foundation crates a smuggled
+# broadcast axiom would poison globally.
+CHEAT_EXTRA_CRATES = ("GUMBO_Library", "data", SYS_PROOF_CRATE)
 
 
 @dataclass(frozen=True)
@@ -211,6 +224,9 @@ class Frontend:
 
     @property
     def cheat_id(self) -> str: return f"{self.prefix}_cheat"
+
+    @property
+    def sysproof_id(self) -> str: return f"{self.prefix}_sysproof"
 
     @property
     def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
@@ -329,7 +345,7 @@ def _write_asp_args(d: Path, asp_args: dict) -> None:
     byte-identical."""
     path = d / "asp_args.json"
     if path.is_file():
-        carry_goldens(json.loads(path.read_text()), asp_args)
+        asp_args = carry_goldens(json.loads(path.read_text()), asp_args)
     path.write_text(json.dumps(asp_args, indent=2) + "\n")
 
 
@@ -347,13 +363,19 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
     verus toolchain measurements woven in per TOOL_CADENCE."""
     d = FIXTURES / fe.verus_id
     d.mkdir(exist_ok=True)
-    targets = with_asp_targids({
+    crate_args = {
         f"{fe.prefix}_{crate}_verus_targ": {
             "exe_args": VERUS_ARGS,
             "cwd": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
         }
         for crate in verus_crates(fe)
-    })
+    }
+    # the system proof crate: report-invisible, added explicitly
+    crate_args[f"{fe.prefix}_{SYS_PROOF_CRATE}_verus_targ"] = {
+        "exe_args": SYS_PROOF_VERUS_ARGS,
+        "cwd": str(ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE),
+    }
+    targets = with_asp_targids(crate_args)
     asp_args = {"run_command_cargo_verus": targets}
     nodes = [
         {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
@@ -369,6 +391,12 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
         acc, {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
     session = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "session.json").read_text())
     manifest = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "manifest.json").read_text())
+    # verified-count golden: the ASP emits canonical verification-results
+    # (deterministic), so appraisal is an exact golden comparison — a
+    # shrunken verified count (code moved out of verus!{}, a deleted VC
+    # module) refuses even though errors stays 0
+    session["Session_Context"]["ASP_Comps"]["run_command_cargo_verus"] = \
+        "goldenbytes_appr"
     n_tools = 0
     if TOOL_CADENCE == "per_use":
         asp_args, term, session, manifest = weave_tool_measurements(
@@ -381,10 +409,13 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette Verus Verification (semantic tier)",
         "description": "cargo-verus verify over every contract-bearing "
-                       "isolette crate (report-derived): the generated Verus "
-                       "contracts must PROVE against the implemented behavior. "
-                       "The verus toolchain is hashed in the same term, before "
-                       "the invocations (measure-then-use).",
+                       "isolette crate (report-derived) plus the system-level "
+                       "proof crate: the generated Verus contracts must PROVE "
+                       "against the implemented behavior, and the normalized "
+                       "verification results are goldened — the verified "
+                       "COUNT is pinned, not just errors==0. The verus "
+                       "toolchain is hashed in the same term, before the "
+                       "invocations (measure-then-use).",
         "copland": f"lseq( bseq( run_command_cargo_verus×{len(targets)} ), APPR )",
     }, indent=2) + "\n")
     print(f"  {fe.verus_id}: {len(targets)} crates from report"
@@ -407,7 +438,7 @@ def build_cheat_protocol(fe: Frontend) -> ProtocolDir:
         f"{fe.prefix}_{crate}_cheat_targ": {
             "crate_dir": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
         }
-        for crate in verus_crates(fe)
+        for crate in sorted({*verus_crates(fe), *CHEAT_EXTRA_CRATES})
     })
     asp_args = {"cheat_scan_verus": targets}
     nodes = [
@@ -462,6 +493,71 @@ def build_cheat_protocol(fe: Frontend) -> ProtocolDir:
                    "SIG ), APPR )",
     }, indent=2) + "\n")
     print(f"  {fe.cheat_id}: {len(targets)} crates scanned for proof escapes")
+    return ProtocolDir.load(str(d))
+
+
+def build_sysproof_protocol(fe: Frontend) -> ProtocolDir:
+    """<p>_sysproof: whole-file hashes of the system-level proof crate.
+    The report is component-scoped and never names sys_nominal_proof, so
+    this is an AM-owned extra tier (the tools-protocol pattern), not a
+    report derivation. Whole-file with NO benign-drift allowance is
+    correct: every file is do-not-edit generated, so any byte change is
+    either a sanctioned HAMR re-run (promote path) or tampering. This is
+    the layer that stops drop-one-add-trivial — deleting a real VC and
+    adding a dummy preserves the verified count, but not the bytes."""
+    d = FIXTURES / fe.sysproof_id
+    d.mkdir(exist_ok=True)
+    crate = ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE
+
+    def slug(p: Path) -> str:
+        rel = str(p.relative_to(crate))
+        return re.sub(r"[^A-Za-z0-9]+", "_", rel).strip("_").lower()
+
+    files = sorted((crate / "src").rglob("*.rs"))
+    files += [crate / "Cargo.toml", crate / "rust-toolchain.toml"]
+    targets = with_asp_targids({
+        f"{fe.prefix}_sysproof_{slug(p)}_targ": {
+            "filepath": str(p), "env_var": "",
+        }
+        for p in files
+    })
+    asp_args = {"hashfile": targets}
+    session = {
+        "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
+        "Session_Context": {
+            "ASP_Types": {
+                "hashfile": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
+                                     "EvInSig": "NONE"}, "ATTRS": []},
+                "sig": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
+                                "EvInSig": "ALL"}, "ATTRS": []},
+                "sig_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                             "ATTRS": []},
+                "goldenbytes_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                                     "ATTRS": []},
+            },
+            "ASP_Comps": {"hashfile": "goldenbytes_appr", "sig": "sig_appr"},
+        },
+    }
+    manifest = {"ASPS": ["hashfile", "goldenbytes_appr", "sig", "sig_appr"],
+                "ASP_FS_MAP": {}, "POLICY": []}
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    _write_asp_args(d, asp_args)
+    (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
+    (d / "meta.json").write_text(json.dumps({
+        "name": "Isolette system-proof crate integrity (sysproof tier)",
+        "description": "Whole-file hashes of every source of "
+                       "sys_nominal_proof — the HAMR-generated system-level "
+                       "compositional proof (one empty-bodied VC per "
+                       "obligation, discharged by Verus). Report-invisible, "
+                       "so covered as an AM-owned extra tier. Complements "
+                       "the verus tier's verified-count golden: dropping a "
+                       "real VC and adding a trivial one preserves the "
+                       "count, never the bytes.",
+        "copland": f"lseq( lseq( bseq( hashfile×{len(targets)} ), SIG ), "
+                   "APPR )",
+    }, indent=2) + "\n")
+    print(f"  {fe.sysproof_id}: {len(targets)} proof-crate files hashed")
     return ProtocolDir.load(str(d))
 
 
@@ -557,6 +653,7 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
         print(f"  {fe.report_id}: 1 report rendering target")
     protocols[fe.verus_id] = build_verus_protocol(fe)
     protocols[fe.cheat_id] = build_cheat_protocol(fe)
+    protocols[fe.sysproof_id] = build_sysproof_protocol(fe)
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
         "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
@@ -595,9 +692,11 @@ def load_protocols(fe: Frontend, validate: bool = False) -> dict:
                 str(FIXTURES / fe.report_id))
     if validate:
         protocols[fe.verus_id] = ProtocolDir.load(str(FIXTURES / fe.verus_id))
-        if not (FIXTURES / fe.cheat_id / "asp_args.json").is_file():
-            build_cheat_protocol(fe)
-        protocols[fe.cheat_id] = ProtocolDir.load(str(FIXTURES / fe.cheat_id))
+        for pid, build in ((fe.cheat_id, build_cheat_protocol),
+                           (fe.sysproof_id, build_sysproof_protocol)):
+            if not (FIXTURES / pid / "asp_args.json").is_file():
+                build(fe)
+            protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
     return protocols
 
 
@@ -622,6 +721,8 @@ def provision_flow(fe: Frontend, protocols: dict,
         pids.append(fe.report_id)
     if fe.cheat_id in protocols:
         pids.append(fe.cheat_id)
+    if fe.sysproof_id in protocols:
+        pids.append(fe.sysproof_id)
     measured = {pid: protocols[pid] for pid in pids}
     for pid in (fe.verus_id, HAMR_TOOLS_ID, SYSML_LIBS_ID):
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
@@ -816,6 +917,52 @@ def tamper_cheat(fe: Frontend, protocols: dict) -> None:
     MHS_API.write_text(src)
     print(f"Admitted a verified contract: {CHEAT_LINE!r} injected into "
           f"put_heat_control ({MHS_API.name})")
+
+
+SYS_PROOF_DIR = (ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE)
+SYS_PROOF_LIB = SYS_PROOF_DIR / "src" / "lib.rs"
+SYS_PROOF_VC = (SYS_PROOF_DIR / "src" / "normal_display_temp"
+                / "vc_sequential.rs")
+
+# tamper_proof_swap drops this unreferenced empty-bodied VC and adds a
+# trivial one, holding the verified count constant
+_SWAP_DROP = "pub proof fn vc_pre_assert_oi"
+_SWAP_ADD = ("verus! {\n"
+             "pub proof fn dropped_and_replaced() ensures true {}\n")
+
+
+def tamper_proof_count(fe: Frontend, protocols: dict) -> None:
+    """Shrink the verified surface: comment out one proof module of the
+    system proof crate. The crate still verifies (0 errors) but proves
+    fewer obligations — the verus tier's verified-count golden refuses
+    (1862 drops), and the sysproof hash refuses on lib.rs too."""
+    src = SYS_PROOF_LIB.read_text()
+    mod = "pub mod normal_display_temp;"
+    if mod not in src:
+        raise SystemExit(f"tamper-proof-count: '{mod}' not found "
+                         f"in {SYS_PROOF_LIB.name} (codegen drift?)")
+    src = src.replace(mod, f"// {mod}  // COUNT TAMPER: module dropped", 1)
+    SYS_PROOF_LIB.write_text(src)
+    print(f"Shrank the proof surface: commented out {mod!r} "
+          f"({SYS_PROOF_LIB.name})")
+
+
+def tamper_proof_swap(fe: Frontend, protocols: dict) -> None:
+    """Drop-and-replace at constant count: delete a real VC and add a
+    trivial one, so the verified count stays 1862 and the verus tier is
+    blind. Only the sysproof whole-file hash refuses — the attack the
+    count golden cannot catch."""
+    import re
+    src = SYS_PROOF_VC.read_text()
+    m = re.search(r'pub proof fn vc_pre_assert_oi.*?\n\{\}\n', src, re.S)
+    if not m:
+        raise SystemExit(f"tamper-proof-swap: vc_pre_assert_oi block not "
+                         f"found in {SYS_PROOF_VC.name} (codegen drift?)")
+    src = src[:m.start()] + src[m.end():]       # drop the real VC
+    src = src.replace("verus! {", _SWAP_ADD, 1)  # add the trivial one
+    SYS_PROOF_VC.write_text(src)
+    print(f"Swapped a proof: dropped vc_pre_assert_oi, added a trivial VC "
+          f"({SYS_PROOF_VC.name}) — verified count held at 1862")
 
 
 def tamper_note(fe: Frontend, protocols: dict) -> None:
@@ -1144,11 +1291,15 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     proofs_key = f"{fe.prefix}:proofs"
     report_key = f"{fe.prefix}:report"
     cheats_key = f"{fe.prefix}:cheats"
+    proofsrc_key = f"{fe.prefix}:proofsrc"
     with_report = verify and fe.report_id in protocols
     with_cheats = verify and fe.cheat_id in protocols
+    with_proofsrc = verify and fe.sysproof_id in protocols
     siblings = [proofs_key] if verify else []
     if with_cheats:
         siblings.append(cheats_key)
+    if with_proofsrc:
+        siblings.append(proofsrc_key)
 
     if immutable:
         # refined_by = the entry's own l1a protocol: the hash verdict
@@ -1201,6 +1352,11 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         # the cheat tier: no repair chain on purpose — an admitted proof
         # is never machine-repairable, the refusal must escalate
         episodes[cheats_key] = fe.cheat_id
+    if with_proofsrc:
+        # the system proof crate's byte integrity: do-not-edit generated,
+        # so any drift is a sanctioned HAMR re-run (promote path) or
+        # tampering — escalate, never machine-repair
+        episodes[proofsrc_key] = fe.sysproof_id
     if with_report:
         episodes[report_key] = fe.report_id
     starter = StartAttestationKS(episodes=episodes)
@@ -1214,6 +1370,8 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         controller.route(proofs_key, on_pass=[], on_fail=proofs_chain)
     if with_cheats:
         controller.route(cheats_key, on_pass=[], on_fail=[])
+    if with_proofsrc:
+        controller.route(proofsrc_key, on_pass=[], on_fail=[])
     if with_report:
         controller.route(report_key, on_pass=[], on_fail=report_chain)
     controller.blackboard.write_entry(
@@ -1239,6 +1397,13 @@ def main() -> None:
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
     parser.add_argument("--tamper-cheat", action="store_true")
+    parser.add_argument("--tamper-proof-count", action="store_true",
+                        help="drop a proof module of the system proof crate "
+                             "(verified-count golden + sysproof hash refuse)")
+    parser.add_argument("--tamper-proof-swap", action="store_true",
+                        help="drop a real VC and add a trivial one, holding "
+                             "the verified count (only the sysproof hash "
+                             "refuses)")
     parser.add_argument("--tamper-note", action="store_true")
     parser.add_argument("--tamper-impl", action="store_true")
     parser.add_argument("--tamper-impl-full", action="store_true")
@@ -1260,6 +1425,8 @@ def main() -> None:
     fe = FRONTENDS[cli.frontend]
     tampers = ((tamper_verus, cli.tamper_verus),
                (tamper_cheat, cli.tamper_cheat),
+               (tamper_proof_count, cli.tamper_proof_count),
+               (tamper_proof_swap, cli.tamper_proof_swap),
                (tamper_note, cli.tamper_note),
                (tamper_impl, cli.tamper_impl),
                (tamper_impl_full, cli.tamper_impl_full),
@@ -1319,10 +1486,16 @@ def main() -> None:
         snapshot_ids.append(fe.report_id)
     golden = TargetSnapshot.load(
         {pid: protocols[pid] for pid in snapshot_ids}, GOLDEN_ROOT)
-    # the cheat tamper site has no golden mirror (deliberately: it sits
-    # outside every hash/slice target), so the episode restores it from
-    # a pre-tamper snapshot instead
-    cheat_backup = MHS_API.read_text() if cli.tamper_cheat else None
+    # tamper sites with no golden mirror (the cheat site sits outside
+    # every hash/slice target by design; the sysproof crate is hashed
+    # but not snapshot-copied) are restored from a pre-tamper snapshot
+    src_backups = {
+        f: f.read_text()
+        for f, flag in ((MHS_API, cli.tamper_cheat),
+                        (SYS_PROOF_LIB, cli.tamper_proof_count),
+                        (SYS_PROOF_VC, cli.tamper_proof_swap))
+        if flag
+    }
     for tamper, flag in tampers:
         if flag:
             tamper(fe, protocols)
@@ -1342,9 +1515,10 @@ def main() -> None:
         restored = golden.restore()
         if restored:
             print(f"\nRestored {len(restored)} live target(s) from golden")
-        if cheat_backup is not None and MHS_API.read_text() != cheat_backup:
-            MHS_API.write_text(cheat_backup)
-            print(f"Restored {MHS_API.name} from the pre-tamper snapshot")
+        for f, original in src_backups.items():
+            if f.read_text() != original:
+                f.write_text(original)
+                print(f"Restored {f.name} from the pre-tamper snapshot")
 
 
 if __name__ == "__main__":

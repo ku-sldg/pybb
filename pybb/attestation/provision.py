@@ -65,12 +65,20 @@ _BOOKKEEPING_KEYS = ("golden_b64", "golden_ts", "filepath_golden", "env_var_gold
 
 def carry_goldens(previous: dict, asp_args: dict) -> dict:
     """
-    Copy golden bookkeeping (golden_b64/golden_ts/...) from a previous
-    asp_args map into freshly derived targets whose measurement args are
-    unchanged. Protocol-dir regeneration then composes with idempotent
-    re-provisioning: an unchanged system re-derives, re-provisions, and
-    ends byte-identical instead of re-stamping every golden as new.
+    Return a copy of asp_args with golden bookkeeping
+    (golden_b64/golden_ts/...) carried over from a previous asp_args map
+    for targets whose measurement args are unchanged. Protocol-dir
+    regeneration then composes with idempotent re-provisioning: an
+    unchanged system re-derives, re-provisions, and ends byte-identical
+    instead of re-stamping every golden as new.
+
+    Non-mutating on purpose: builders bake the SAME target dicts into
+    their term.json nodes, and node args take precedence over the
+    asp_args map at request build (inject_asp_args) — goldens leaked
+    into a term would go stale the moment provisioning installs fresh
+    ones, and the appraiser would compare against the stale copy.
     """
+    asp_args = copy.deepcopy(asp_args)
     for asp_id, targets in asp_args.items():
         old_targets = previous.get(asp_id, {})
         for targ_id, args in targets.items():

@@ -83,6 +83,15 @@
 #            vs an exact golden baseline) refuses, attributing the
 #            crate. No repair rung on purpose: an admitted proof is
 #            never machine-repairable — the refusal escalates.
+#   scene 10 the hollow SYSTEM proof -> two attacks on sys_nominal_proof
+#            (the compositional proof crate) that add no escape
+#            construct, so the cheat scan is silent. Beat 1 SHRINK:
+#            drop a proof module -> still 0 errors but fewer
+#            obligations, caught by the verus tier's verified-COUNT
+#            golden (and the sysproof hash). Beat 2 SWAP: drop a real
+#            VC + add a trivial one, holding the count -> the verus
+#            tier goes blind, and ONLY the whole-file sysproof hash
+#            refuses. Bytes anchor what a count cannot.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -125,7 +134,7 @@ EVIDENCE="$REPO/evidence"
 NO_VSCODE=0
 RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6 7 8 9"
+SCENES="1 2 3 4 5 6 7 8 9 10"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -139,7 +148,7 @@ while [ $# -gt 0 ]; do
     --auto) AUTO="$2"; shift ;;
     --drift) DRIFT="$2"; shift ;;
     --restore-tools) RESTORE_TOOLS=1 ;;
-    -h|--help) sed -n '2,105p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,114p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -886,6 +895,43 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
     "the refusal must attribute the cheating crate"
   expect "Restored thermostat_rt_mhs_mhs_api.rs" \
     "the driver must restore the tamper site"
+  pause
+fi
+
+if in_scenes 10; then
+  banner "SCENE 10 — the hollow system proof: count vs bytes" \
+    "sys_nominal_proof is the SYSTEM-level compositional proof (~1862" \
+    "obligations, one empty-bodied VC each, discharged by Verus)." \
+    "Two attacks the cheat scan can't see, because they add no escape" \
+    "construct. Beat 1: SHRINK — drop a proof module; the crate still" \
+    "verifies (0 errors) but proves less, so the verus tier's" \
+    "verified-COUNT golden refuses (not just errors==0). Beat 2:" \
+    "SWAP — drop a real VC and add a trivial one, holding the count at" \
+    "1862; the verus tier goes blind and ONLY the whole-file sysproof" \
+    "hash refuses. Bytes anchor what a count cannot."
+  note_slow
+  echo "${BOLD}beat 1 — shrink: a dropped proof module${RESET}"
+  run_driver --tamper-proof-count --verify
+  expect "Shrank the proof surface" "the count tamper must apply"
+  expect "isolette_sysmlv2_rust:proofs: integrity violation" \
+    "the verified-count golden must refuse the shrunken proof"
+  expect "sys_nominal_proof_verus_targ" \
+    "the refusal must attribute the system proof crate"
+  expect "isolette_sysmlv2_rust:proofsrc: integrity violation" \
+    "the sysproof hash must also refuse (lib.rs changed)"
+  pause
+  echo
+  echo "${BOLD}beat 2 — swap: drop-and-replace at constant count${RESET}"
+  echo "The verified count stays 1862, so the verus tier cannot see it:"
+  run_driver --tamper-proof-swap --verify
+  expect "verified count held at 1862" "the swap tamper must apply"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the verus tier must PASS (the count is preserved — its blind spot)"
+  expect "isolette_sysmlv2_rust:proofsrc: integrity violation" \
+    "only the sysproof whole-file hash must refuse"
+  expect "vc_sequential_rs_targ" \
+    "the refusal must attribute the swapped VC file"
+  expect "Restored vc_sequential.rs" "the driver must restore the site"
   pause
 fi
 

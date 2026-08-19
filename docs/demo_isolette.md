@@ -30,9 +30,9 @@ python examples/isolette_rust.py [--check] [--provision]
     [--tamper-verus] [--repair] [--validate]
 ```
 
-**The demo script**: `examples/demo_isolette.sh` walks the nine-scene
-demo workflow (the Rocq demo's outline, plus the proof-cheat scene) on
-the SysML frontend — see
+**The demo script**: `examples/demo_isolette.sh` walks the ten-scene
+demo workflow (the Rocq demo's outline, plus the proof-cheat and
+system-proof-integrity scenes) on the SysML frontend — see
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
 The scenes ride on additional driver flags: `--ready` / `--status`
 (readiness gate and the per-crate proof checklist), `--verify` (the
@@ -51,7 +51,12 @@ builds are multi-minute and RUN_VERUS-gated in tests). `--tamper-cheat
 --verify` admits a verified contract with `assume(false)` in a file no
 hash or slice tier covers — every tier stays green including the verus
 run itself, and only the cheat tier (`<p>_cheat`, per-crate proof-escape
-counts vs an exact golden baseline) refuses and escalates. The laundering
+counts vs an exact golden baseline) refuses and escalates.
+`--tamper-proof-count --verify` and `--tamper-proof-swap --verify` attack
+the system proof crate `sys_nominal_proof`: the first drops a proof
+module (verified-count golden refuses), the second drops a real VC and
+adds a trivial one at constant count (the verus tier goes blind — only
+the whole-file `<p>_sysproof` hash refuses). The laundering
 negative — re-provisioning the measurement baselines over a tampered
 golden tree, refuted only by the administrator's blessing — is an
 automated test; see `signed_baselines.md`.
@@ -74,7 +79,9 @@ no OSATE/phantom required for codegen) — and
 workflow off the SysML report under its own protocol namespace:
 
     isolette_sysmlv2_rust_l1a (13 hashes) / isolette_sysmlv2_rust_l2 (67 slices) / isolette_sysmlv2_rust_props (5 blessed
-    model files) / isolette_sysmlv2_rust_verus (7 crates) — entries isolette_sysmlv2_rust:files / isolette_sysmlv2_rust:ready
+    model files) / isolette_sysmlv2_rust_verus (8 crates, verified-count golden) /
+    isolette_sysmlv2_rust_cheat (10-crate proof-escape scan) / isolette_sysmlv2_rust_sysproof (proof-crate hashes)
+    — entries isolette_sysmlv2_rust:files / isolette_sysmlv2_rust:ready
 
 Verified properties:
 
