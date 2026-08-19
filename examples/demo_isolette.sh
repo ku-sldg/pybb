@@ -929,8 +929,8 @@ if in_scenes 10; then
     "the verus tier must PASS (the count is preserved — its blind spot)"
   expect "isolette_sysmlv2_rust:proofsrc: integrity violation" \
     "only the sysproof whole-file hash must refuse"
-  expect "vc_sequential_rs_targ" \
-    "the refusal must attribute the swapped VC file"
+  expect "hash drift: src/normal_display_temp/vc_sequential.rs" \
+    "the batched appraiser must attribute the swapped VC file by name"
   expect "Restored vc_sequential.rs" "the driver must restore the site"
   pause
 fi

@@ -1,7 +1,7 @@
 {
   "ASPS": [
-    "hashfile",
-    "goldenbytes_appr",
+    "hashfile_many",
+    "hashfile_many_appr",
     "sig",
     "sig_appr"
   ],

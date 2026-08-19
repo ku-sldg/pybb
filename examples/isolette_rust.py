@@ -497,67 +497,84 @@ def build_cheat_protocol(fe: Frontend) -> ProtocolDir:
 
 
 def build_sysproof_protocol(fe: Frontend) -> ProtocolDir:
-    """<p>_sysproof: whole-file hashes of the system-level proof crate.
-    The report is component-scoped and never names sys_nominal_proof, so
-    this is an AM-owned extra tier (the tools-protocol pattern), not a
-    report derivation. Whole-file with NO benign-drift allowance is
-    correct: every file is do-not-edit generated, so any byte change is
-    either a sanctioned HAMR re-run (promote path) or tampering. This is
-    the layer that stops drop-one-add-trivial — deleting a real VC and
-    adding a dummy preserves the verified count, but not the bytes."""
+    """<p>_sysproof: whole-file hashes of the system-level proof crate,
+    batched into ONE hashfile_many evidence blob. The report is
+    component-scoped and never names sys_nominal_proof, so this is an
+    AM-owned extra tier (the tools-protocol pattern), not a report
+    derivation. Whole-file with NO benign-drift allowance is correct:
+    every file is do-not-edit generated, so any byte change is either a
+    sanctioned HAMR re-run (promote path) or tampering. This is the
+    layer that stops drop-one-add-trivial — deleting a real VC and
+    adding a dummy preserves the verified count, but not the bytes.
+
+    Batched, not per-file: 124 hashfile targets made a 123-deep bseq
+    chain whose CVM cost is superlinear in chain length (~30s per
+    appraisal pass); one hashfile_many node hashes the same files into a
+    single canonical {relpath: sha256} map (~0.1s), the walk catches
+    ADDED files per-target lists cannot see, and the appraiser names
+    every drifted/missing/added path so attribution survives."""
     d = FIXTURES / fe.sysproof_id
     d.mkdir(exist_ok=True)
     crate = ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE
-
-    def slug(p: Path) -> str:
-        rel = str(p.relative_to(crate))
-        return re.sub(r"[^A-Za-z0-9]+", "_", rel).strip("_").lower()
-
-    files = sorted((crate / "src").rglob("*.rs"))
-    files += [crate / "Cargo.toml", crate / "rust-toolchain.toml"]
+    targ = f"{fe.prefix}_sysproof_crate_targ"
     targets = with_asp_targids({
-        f"{fe.prefix}_sysproof_{slug(p)}_targ": {
-            "filepath": str(p), "env_var": "",
+        targ: {
+            "root": str(crate),
+            "files": ["Cargo.toml", "rust-toolchain.toml"],
+            "walk_dirs": ["src"],
         }
-        for p in files
     })
-    asp_args = {"hashfile": targets}
+    asp_args = {"hashfile_many": targets}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {"ASP_ID": "hashfile_many", "ASP_TARG_ID": targ,
+                             "ASP_ARGS": targets[targ]}}},
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}]},
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
     session = {
         "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
         "Session_Context": {
             "ASP_Types": {
-                "hashfile": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
-                                     "EvInSig": "NONE"}, "ATTRS": []},
+                "hashfile_many": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
+                                          "EvInSig": "NONE"}, "ATTRS": []},
                 "sig": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
                                 "EvInSig": "ALL"}, "ATTRS": []},
                 "sig_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
                              "ATTRS": []},
-                "goldenbytes_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
-                                     "ATTRS": []},
+                "hashfile_many_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                                       "ATTRS": []},
             },
-            "ASP_Comps": {"hashfile": "goldenbytes_appr", "sig": "sig_appr"},
+            "ASP_Comps": {"hashfile_many": "hashfile_many_appr",
+                          "sig": "sig_appr"},
         },
     }
-    manifest = {"ASPS": ["hashfile", "goldenbytes_appr", "sig", "sig_appr"],
+    manifest = {"ASPS": ["hashfile_many", "hashfile_many_appr", "sig",
+                         "sig_appr"],
                 "ASP_FS_MAP": {}, "POLICY": []}
     (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     _write_asp_args(d, asp_args)
-    (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
+    (d / "term.json").write_text(json.dumps(term) + "\n")
+    n_files = len(list((crate / "src").rglob("*.rs"))) + 2
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette system-proof crate integrity (sysproof tier)",
         "description": "Whole-file hashes of every source of "
                        "sys_nominal_proof — the HAMR-generated system-level "
                        "compositional proof (one empty-bodied VC per "
-                       "obligation, discharged by Verus). Report-invisible, "
-                       "so covered as an AM-owned extra tier. Complements "
-                       "the verus tier's verified-count golden: dropping a "
-                       "real VC and adding a trivial one preserves the "
-                       "count, never the bytes.",
-        "copland": f"lseq( lseq( bseq( hashfile×{len(targets)} ), SIG ), "
+                       "obligation, discharged by Verus) — batched into one "
+                       "canonical relpath->sha256 evidence map. "
+                       "Report-invisible, so covered as an AM-owned extra "
+                       "tier. Complements the verus tier's verified-count "
+                       "golden: dropping a real VC and adding a trivial one "
+                       "preserves the count, never the bytes; the appraiser "
+                       "names every drifted, missing, and added file.",
+        "copland": f"lseq( lseq( hashfile_many({n_files} files), SIG ), "
                    "APPR )",
     }, indent=2) + "\n")
-    print(f"  {fe.sysproof_id}: {len(targets)} proof-crate files hashed")
+    print(f"  {fe.sysproof_id}: {n_files} proof-crate files hashed "
+          "(1 batched target)")
     return ProtocolDir.load(str(d))
 
 

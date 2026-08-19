@@ -38,7 +38,8 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   ALWAYS-RUN entry whose evidence is the goldened verified COUNT, not
   just errors==0), the **cheat tier** (per-crate proof-escape counts
   over 10 crates — see scene 9), the **sysproof tier** (whole-file
-  hashes of the system proof crate — see scene 10), and the **report
+  hashes of the system proof crate, batched into one
+  relpath→sha256 evidence map — see scene 10), and the **report
   rendering** every protocol is derived from, with the verus toolchain
   hashed measure-then-use in the same term.
 - The per-crate proof checklist, all green.
@@ -202,10 +203,12 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   trivial `ensures true` one, holding the count at 1862. The verus
   tier goes **blind** (count preserved) and the cheat scan stays silent
   (no escape construct) — **only** the whole-file **sysproof hash**
-  refuses, attributing the swapped VC file. Bytes anchor what a count
-  cannot. The sysproof crate is do-not-edit generated, so whole-file
-  hashing with no benign-drift allowance is correct; no repair rung —
-  the refusal escalates.
+  refuses, naming the swapped file in the refusal ("hash drift:
+  src/normal_display_temp/vc_sequential.rs" — the batched appraiser
+  carries per-file attribution in its reason). Bytes anchor what a
+  count cannot. The sysproof crate is do-not-edit generated, so
+  whole-file hashing with no benign-drift allowance is correct; no
+  repair rung — the refusal escalates.
 
 ## Throughout
 

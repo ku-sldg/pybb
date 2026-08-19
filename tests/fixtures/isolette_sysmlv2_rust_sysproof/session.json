@@ -4,7 +4,7 @@
   "PubKey_Mapping": {},
   "Session_Context": {
     "ASP_Types": {
-      "hashfile": {
+      "hashfile_many": {
         "FWD": {
           "FWD": "EXTEND",
           "_BODY": 1,
@@ -27,7 +27,7 @@
         },
         "ATTRS": []
       },
-      "goldenbytes_appr": {
+      "hashfile_many_appr": {
         "FWD": {
           "FWD": "REPLACE",
           "_BODY": 1
@@ -36,7 +36,7 @@
       }
     },
     "ASP_Comps": {
-      "hashfile": "goldenbytes_appr",
+      "hashfile_many": "hashfile_many_appr",
       "sig": "sig_appr"
     }
   }

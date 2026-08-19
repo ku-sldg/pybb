@@ -36,11 +36,24 @@ appraise semantically, not by golden bytes).
 The report is component-scoped and never names `sys_nominal_proof`
 (confirmed: 0 references), so it can't ride l1a's report derivation. Add
 an AM-owned hash protocol built like `build_tools_protocol_dir`:
-whole-file hash of `sys_nominal_proof/src/**/*.rs` + SIG + APPR,
-`goldenbytes_appr`, provisioned + readiness-checked. Whole-file (no
-benign-drift region) is correct for a do-not-edit generated crate. This
-is the layer that stops drop-one-add-trivial (which preserves the
-verified count) — any byte change refuses.
+whole-file hashes of `sys_nominal_proof` (Cargo.toml +
+rust-toolchain.toml + `src/**/*.rs`) + SIG + APPR, provisioned +
+readiness-checked. Whole-file (no benign-drift region) is correct for a
+do-not-edit generated crate. This is the layer that stops
+drop-one-add-trivial (which preserves the verified count) — any byte
+change refuses.
+
+**Revised to batched form** after the first shape proved prohibitively
+slow: 124 per-file `hashfile` targets made a 123-deep bseq chain whose
+CVM cost is superlinear in chain length (measured 13→0.09s, 67→6.4s,
+124→33s per appraisal pass; balanced tree only halves it), paid at
+every readiness gate AND every episode (`--ready` 40s, scene 1 86s).
+As-built: ONE `hashfile_many` target ({root, files, walk_dirs} →
+canonical {relpath: sha256-b64} map, `hashfile_many_appr` names every
+drifted/missing/added path in the refusal). Same coverage plus
+ADDED-file detection (the walk self-enumerates, so a new file drifts
+the evidence — per-file target lists can't see additions), attribution
+preserved in the verdict reason. `--ready` 40s→7s, scene 1 86s→16s.
 
 ## E. Wiring / docs / tests
 Re-provision; clean episode; `--tamper-cheat` scene 9; new checks:

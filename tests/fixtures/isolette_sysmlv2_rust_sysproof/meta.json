@@ -1,5 +1,5 @@
 {
   "name": "Isolette system-proof crate integrity (sysproof tier)",
-  "description": "Whole-file hashes of every source of sys_nominal_proof \u2014 the HAMR-generated system-level compositional proof (one empty-bodied VC per obligation, discharged by Verus). Report-invisible, so covered as an AM-owned extra tier. Complements the verus tier's verified-count golden: dropping a real VC and adding a trivial one preserves the count, never the bytes.",
-  "copland": "lseq( lseq( bseq( hashfile\u00d7124 ), SIG ), APPR )"
+  "description": "Whole-file hashes of every source of sys_nominal_proof \u2014 the HAMR-generated system-level compositional proof (one empty-bodied VC per obligation, discharged by Verus) \u2014 batched into one canonical relpath->sha256 evidence map. Report-invisible, so covered as an AM-owned extra tier. Complements the verus tier's verified-count golden: dropping a real VC and adding a trivial one preserves the count, never the bytes; the appraiser names every drifted, missing, and added file.",
+  "copland": "lseq( lseq( hashfile_many(124 files), SIG ), APPR )"
 }

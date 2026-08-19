@@ -55,7 +55,8 @@ _NULL_ASP = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "NULL"}
 # Companion appraisers whose measurement ASPs carry provisioned goldens.
 # model_slices_appr marks the signed golden-spec protocols: whole-file
 # evidence whose golden is the administrator-blessed file content.
-GOLDEN_COMPANIONS = ("goldenbytes_appr", "goldenevidence_appr", "model_slices_appr")
+GOLDEN_COMPANIONS = ("goldenbytes_appr", "goldenevidence_appr",
+                     "model_slices_appr", "hashfile_many_appr")
 
 # Dashboard bookkeeping fields stored in asp_args.json but never sent to the
 # CVM; they must not appear in the provisioning term's ASP_ARGS or the

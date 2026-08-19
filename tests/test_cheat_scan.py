@@ -55,23 +55,37 @@ def test_uninterp_is_a_scanned_category():
 
 
 def test_sysproof_protocol_covers_the_proof_crate():
+    import base64
     d = FIXTURES / "isolette_sysmlv2_rust_sysproof"
     asp_args = json.loads((d / "asp_args.json").read_text())
-    hashed = asp_args["hashfile"]
-    paths = {a["filepath"] for a in hashed.values()}
-    # every proof source is whole-file hashed
-    assert any(p.endswith("sys_nominal_proof/src/lib.rs") for p in paths)
-    assert any("sys_nominal_proof/src/actions.rs" in p for p in paths)
-    assert any("normal_display_temp/vc_sequential.rs" in p for p in paths)
-    # goldened by exact bytes, signed
+    # ONE batched target: 124 per-file hashfile nodes made a 123-deep
+    # bseq chain with superlinear CVM cost (~30s/pass); hashfile_many
+    # hashes the same files into a single canonical relpath->sha256 map
+    targets = asp_args["hashfile_many"]
+    assert len(targets) == 1
+    args = next(iter(targets.values()))
+    assert args["root"].endswith("crates/sys_nominal_proof")
+    assert set(args["files"]) == {"Cargo.toml", "rust-toolchain.toml"}
+    assert args["walk_dirs"] == ["src"]
+    # the provisioned golden covers every proof source, keyed by relpath
+    golden = json.loads(base64.b64decode(args["golden_b64"]))
+    assert "src/lib.rs" in golden
+    assert "src/actions.rs" in golden
+    assert "src/normal_display_temp/vc_sequential.rs" in golden
+    assert "Cargo.toml" in golden and len(golden) >= 120
+    # goldened with per-file attribution, signed
     session = json.loads((d / "session.json").read_text())
     comps = session["Session_Context"]["ASP_Comps"]
-    assert comps["hashfile"] == "goldenbytes_appr" and comps["sig"] == "sig_appr"
-    # the report never names it, so it is NOT report-derived overlap
+    assert comps["hashfile_many"] == "hashfile_many_appr"
+    assert comps["sig"] == "sig_appr"
+    # single node, no bseq chain in the term
+    term = (d / "term.json").read_text()
+    assert "bseq" not in term and '"SIG"' in term and '"APPR"' in term
+    # the report never names the proof crate: no overlap with l1a's files
     l1a = json.loads(
         (FIXTURES / "isolette_sysmlv2_rust_l1a" / "asp_args.json").read_text())
-    l1a_paths = {a["filepath"] for a in l1a["hashfile"].values()}
-    assert not (paths & l1a_paths)
+    assert not any("sys_nominal_proof" in a["filepath"]
+                   for a in l1a["hashfile"].values())
 
 
 def test_verus_tier_goldens_the_verified_count():
