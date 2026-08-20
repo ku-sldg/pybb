@@ -74,15 +74,21 @@
 #            is the REGENERATION species: the report is a rendering of
 #            the model through the measured codegen toolchain, so the
 #            rung re-emits it (tool gate first) and re-attests.
-#   scene 9  proof cheat -> assume(false) admits a verified contract in
-#            a bridge file NO hash or slice tier covers: the files tier
-#            stays green, the contracts tier stays green, and
-#            cargo-verus still reports the same success — verification
-#            passed, the proof is hollow. Only the cheat tier's
-#            proof-escape scan (assume/admit/external_body/axiom counts
-#            vs an exact golden baseline) refuses, attributing the
-#            crate. No repair rung on purpose: an admitted proof is
-#            never machine-repairable — the refusal escalates.
+#   scene 9  proof cheat -> two beats. Beat 1 (ADMIT): assume(false)
+#            admits a verified contract in a bridge file NO hash or slice
+#            tier covers; files/contracts green, cargo-verus reports the
+#            same success — the proof is hollow — and ONLY the cheat
+#            scan (assume/admit/external_body/axiom/broadcast/uninterp
+#            counts vs an exact golden) refuses, attributing the crate.
+#            Beat 2 (SMUGGLE): an external_body broadcast proof fn with
+#            'ensures false' planted in the shared GUMBO_Library — a
+#            foundation crate in no hashed/sliced file. It verifies
+#            clean on its own and is inert until a 'broadcast use' pulls
+#            it in, so it changes NO verified count: files, contracts,
+#            the verus count golden, the sysproof hash, and the report
+#            all stay green. Only the cheat scan — counting escape
+#            constructs, not proof outcomes — catches it, at the staging
+#            point, naming GUMBO_Library. No repair rung: escalates.
 #   scene 10 the hollow SYSTEM proof -> two attacks on sys_nominal_proof
 #            (the compositional proof crate) that add no escape
 #            construct, so the cheat scan is silent. Beat 1 SHRINK:
@@ -859,15 +865,17 @@ fi
 
 if in_scenes 9; then
   banner "SCENE 9 — proof cheat: verification success is not proof" \
-    "cargo-verus says 'verified, 0 errors' — but HOW? assume(false)" \
-    "admits a verified contract inside a bridge file that NO hash or" \
-    "slice tier covers: files green, contracts green, and the verus" \
-    "tier reports the same success over the hollow proof. Only the" \
-    "cheat tier's proof-escape scan — per-crate assume/admit/" \
-    "external_body/axiom counts against an exact golden baseline —" \
-    "refuses, attributing the crate. No repair rung on purpose: an" \
-    "admitted proof is never machine-repairable, so the refusal" \
-    "escalates to the administrator."
+    "cargo-verus says 'verified, 0 errors' — but HOW? Two beats, two" \
+    "escapes that pass every OUTCOME-based tier because they change no" \
+    "proof outcome. Beat 1 — ADMIT: assume(false) in a bridge file no" \
+    "hash or slice tier covers; files/contracts green, the verus tier" \
+    "reports the same success over the hollow proof. Beat 2 — SMUGGLE:" \
+    "an external_body broadcast axiom in the shared GUMBO_Library —" \
+    "verifies clean, inert until 'broadcast use', so even the verus" \
+    "count golden stays green. Both times ONLY the cheat scan, which" \
+    "counts escape CONSTRUCTS rather than outcomes, refuses — naming" \
+    "the crate. No repair rung: the refusal escalates."
+  echo "${BOLD}beat 1 — admit: a hollow proof the count cannot see${RESET}"
   MHS_API_PRISTINE="$LOG_DIR/mhs_api.pristine.rs"
   cp "$MHS_API" "$MHS_API_PRISTINE"
   echo "First, see how innocent the cheat looks:"
@@ -895,6 +903,53 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
     "the refusal must attribute the cheating crate"
   expect "Restored thermostat_rt_mhs_mhs_api.rs" \
     "the driver must restore the tamper site"
+  pause
+
+  echo
+  echo "${BOLD}beat 2 — smuggle: an escape the count cannot see either${RESET}"
+  echo "Beat 1's assume hid in the crate it poisons; this one hides in a"
+  echo "DIFFERENT crate. A smuggled axiom — an external_body broadcast"
+  echo "proof fn with 'ensures false' — planted in the SHARED"
+  echo "GUMBO_Library verifies clean on its own (the body is trusted),"
+  echo "and would inject 'false' into every importer's proof context the"
+  echo "moment a 'broadcast use' pulls it in. Until then it is inert, so"
+  echo "it changes NO verified count and sits in no hashed or sliced"
+  echo "file: files, contracts, the verus count golden, the sysproof"
+  echo "hash, and the report all stay green. Only the cheat scan — which"
+  echo "counts escape CONSTRUCTS, not proof outcomes — sees it, at the"
+  echo "staging point, before any proof consumes it. See how ordinary it"
+  echo "looks:"
+  GUMBO_PRISTINE="$LOG_DIR/gumbo.pristine.rs"
+  GUMBO_LIB_SRC="$REPO/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library/src/lib.rs"
+  cp "$GUMBO_LIB_SRC" "$GUMBO_PRISTINE"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+ex.tamper_broadcast(ex.FRONTENDS['sysml'], {})" )
+  offer_diff "$GUMBO_PRISTINE" "$GUMBO_LIB_SRC" \
+    "the smuggled axiom (pristine vs poisoned foundation crate)"
+  cp "$GUMBO_PRISTINE" "$GUMBO_LIB_SRC"
+  echo
+  echo "The full episode — every outcome-based tier is blind, only the"
+  echo "construct scan refuses:"
+  note_slow
+  run_driver --tamper-broadcast --verify
+  expect "Planted a smuggled axiom in GUMBO_Library" \
+    "the broadcast tamper must apply"
+  expect "isolette_sysmlv2_rust:files: all attested components intact" \
+    "the files tier must stay green (GUMBO_Library is report-invisible)"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the verus count golden must stay green (the axiom is inert — no \
+count change)"
+  expect "isolette_sysmlv2_rust:proofsrc: all attested components intact" \
+    "the sysproof hash must stay green (the proof crate is untouched)"
+  expect "isolette_sysmlv2_rust:report: all attested components intact" \
+    "the report tier must stay green"
+  expect "isolette_sysmlv2_rust:cheats: integrity violation" \
+    "only the cheat scan must refuse"
+  expect "GUMBO_Library_cheat_targ" \
+    "the cheat scan must name the foundation crate"
+  expect "Restored lib.rs" "the driver must restore the foundation crate"
   pause
 fi
 

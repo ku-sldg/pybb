@@ -78,6 +78,11 @@ Usage:
              no hash or slice tier covers: every other tier stays green,
              the verus tier still reports success, only the cheat tier
              refuses
+--tamper-broadcast  plant a smuggled axiom (external_body broadcast proof
+             fn, ensures false) in the shared GUMBO_Library: verifies
+             clean and inert until `broadcast use`, so every outcome-based
+             tier (files/contracts/verus/sysproof/report) stays green —
+             only the cheat scan refuses, naming the crate
 --validate   run the Verus semantic tier after a passing l1a
              (requires the Verus toolchain; cold builds are slow)
 
@@ -936,6 +941,54 @@ def tamper_cheat(fe: Frontend, protocols: dict) -> None:
           f"put_heat_control ({MHS_API.name})")
 
 
+GUMBO_LIB = (ISL_ROOT / "hamr" / "microkit" / "crates" / "GUMBO_Library"
+             / "src" / "lib.rs")
+
+# tamper_broadcast plants a smuggled axiom in the shared foundation crate:
+# an external_body proof fn (unchecked body) asserting a FALSE quantified
+# fact, marked broadcast so a later `broadcast use` would inject it into
+# every importer's proof context. It sits inside the GUMBO verus block.
+BROADCAST_MARKER = "  // END MARKER GUMBO VERUS MARKER"
+BROADCAST_AXIOM = (
+    "  // TAMPERED: smuggled proof-context poison (false, unchecked body)\n"
+    "  #[verifier::external_body]\n"
+    "  pub broadcast proof fn smuggled_axiom()\n"
+    "    ensures false\n"
+    "  {}\n")
+
+
+def tamper_broadcast(fe: Frontend, protocols: dict) -> None:
+    """Plant a smuggled axiom in the shared foundation crate
+    GUMBO_Library: an external_body (unchecked-body) broadcast proof fn
+    whose ensures is `false`. The body is trusted, so it verifies clean
+    on its own; once an importer says `broadcast use` it would inject
+    `false` into that proof context — every proof downstream becomes
+    vacuous.
+
+    Every OUTCOME-based tier stays green, because until a `broadcast use`
+    pulls it in the axiom is inert: it changes no verified count and
+    lives in no hashed or sliced file. files (GUMBO_Library is
+    report-invisible), contracts, the verus verified-count golden (the
+    importers' counts are unchanged — the axiom is not yet consumed),
+    the sysproof hash (the proof crate is untouched), and the report all
+    pass. Only the CHEAT tier — which counts escape CONSTRUCTS, not
+    proof outcomes — refuses, naming GUMBO_Library (broadcast 0->1,
+    external_body.other 0->1), catching the axiom at the staging point
+    before any proof consumes it."""
+    src = GUMBO_LIB.read_text()
+    if "smuggled_axiom" in src:
+        print(f"tamper-broadcast: {GUMBO_LIB.name} already tampered")
+        return
+    if BROADCAST_MARKER not in src:
+        raise SystemExit(f"tamper-broadcast: injection marker not found in "
+                         f"{GUMBO_LIB.name} (codegen drift?)")
+    src = src.replace(BROADCAST_MARKER, BROADCAST_AXIOM + BROADCAST_MARKER, 1)
+    GUMBO_LIB.write_text(src)
+    print(f"Planted a smuggled axiom in GUMBO_Library ({GUMBO_LIB.name}): "
+          "external_body broadcast proof fn, ensures false — verifies clean, "
+          "inert until `broadcast use` (only the cheat scan sees it)")
+
+
 SYS_PROOF_DIR = (ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE)
 SYS_PROOF_LIB = SYS_PROOF_DIR / "src" / "lib.rs"
 SYS_PROOF_VC = (SYS_PROOF_DIR / "src" / "normal_display_temp"
@@ -1414,6 +1467,12 @@ def main() -> None:
     parser.add_argument("--promote", action="store_true")
     parser.add_argument("--tamper-verus", action="store_true")
     parser.add_argument("--tamper-cheat", action="store_true")
+    parser.add_argument("--tamper-broadcast", action="store_true",
+                        help="plant a smuggled axiom (external_body broadcast "
+                             "proof fn, ensures false) in the shared "
+                             "GUMBO_Library — inert, so every outcome-based "
+                             "tier stays green; only the cheat scan refuses, "
+                             "naming the crate")
     parser.add_argument("--tamper-proof-count", action="store_true",
                         help="drop a proof module of the system proof crate "
                              "(verified-count golden + sysproof hash refuse)")
@@ -1442,6 +1501,7 @@ def main() -> None:
     fe = FRONTENDS[cli.frontend]
     tampers = ((tamper_verus, cli.tamper_verus),
                (tamper_cheat, cli.tamper_cheat),
+               (tamper_broadcast, cli.tamper_broadcast),
                (tamper_proof_count, cli.tamper_proof_count),
                (tamper_proof_swap, cli.tamper_proof_swap),
                (tamper_note, cli.tamper_note),
@@ -1509,6 +1569,7 @@ def main() -> None:
     src_backups = {
         f: f.read_text()
         for f, flag in ((MHS_API, cli.tamper_cheat),
+                        (GUMBO_LIB, cli.tamper_broadcast),
                         (SYS_PROOF_LIB, cli.tamper_proof_count),
                         (SYS_PROOF_VC, cli.tamper_proof_swap))
         if flag

@@ -114,3 +114,25 @@ def test_tamper_cheat_site_is_present_and_clean():
         (FIXTURES / "isolette_sysmlv2_rust_l1a" / "asp_args.json").read_text())
     hashed = {a["filepath"] for a in l1a["hashfile"].values()}
     assert str(example.MHS_API) not in hashed
+
+
+def test_tamper_broadcast_site_is_present_and_clean():
+    src = example.GUMBO_LIB.read_text()
+    assert src.count(example.BROADCAST_MARKER) == 1  # unique injection point
+    assert "smuggled_axiom" not in src  # tree starts honest
+    # the GUMBO_Library CRATE is report-invisible: covered by the cheat
+    # scan only, not the l1a hash or the verus tier (verified
+    # transitively). Its SysML model package sysml/GUMBO_Library.sysml is
+    # a separate, legitimately-hashed l1a target — check the crate path.
+    l1a = json.loads(
+        (FIXTURES / "isolette_sysmlv2_rust_l1a" / "asp_args.json").read_text())
+    assert not any("crates/GUMBO_Library" in a["filepath"]
+                   for a in l1a["hashfile"].values())
+    v = json.loads(
+        (FIXTURES / "isolette_sysmlv2_rust_verus" / "asp_args.json").read_text())
+    assert not any("crates/GUMBO_Library" in a["cwd"]
+                   for a in v["run_command_cargo_verus"].values())
+    # but it IS a cheat-scan target
+    cheat = json.loads((CHEAT_DIR / "asp_args.json").read_text())
+    assert any("GUMBO_Library" in a["crate_dir"]
+               for a in cheat["cheat_scan_verus"].values())

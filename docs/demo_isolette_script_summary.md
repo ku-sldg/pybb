@@ -163,28 +163,43 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
 
 ## Scene 9 — proof cheat: verification success is not proof
 
-- `assume(false)` admits a verified contract ([diff&nbsp;D13](#d13))
-  inside a bridge file **no hash or slice tier covers**
-  (`thermostat_rt_mhs_mhs_api.rs` — Verus-verified but outside every
-  l1a and l2 target): the files tier stays green, the contracts tier
-  stays green, and cargo-verus reports the **same success** over the
-  hollow proof.
-- Only the cheat tier refuses: `cheat_scan_verus` re-counts the
-  proof-escape surface of each crate (assume, admit, external_body by
-  path class, bare external, assume_specification, axiom, broadcast —
-  the constructs Verus's own `--no-cheating` flag names, textually
-  scanned) and the count drift (assume 0 → 1) fails the exact-bytes
-  golden comparison, attributing the crate.
-- No repair rung **on purpose**: an admitted proof is never
+Two beats, two proof escapes that pass every OUTCOME-based tier because
+they change no proof outcome — caught only by the cheat scan, which
+counts escape **constructs**.
+
+- **Beat 1 — ADMIT** ([diff&nbsp;D13](#d13)): `assume(false)` admits a
+  verified contract inside a bridge file **no hash or slice tier
+  covers** (`thermostat_rt_mhs_mhs_api.rs` — Verus-verified but outside
+  every l1a and l2 target). files/contracts green, and cargo-verus
+  reports the **same success** over the hollow proof — the verus
+  count golden is unchanged (an admit alters no count). Only the cheat
+  tier refuses: `cheat_scan_verus` re-counts the proof-escape surface
+  (assume, admit, external_body by path class, bare external,
+  assume_specification, axiom, broadcast, uninterp — the constructs
+  Verus's own `--no-cheating` flag names, textually scanned), and the
+  drift (assume 0 → 1) fails the exact-bytes golden, attributing the
+  crate.
+- **Beat 2 — SMUGGLE** ([diff&nbsp;D14](#d14)): an `external_body`
+  `broadcast proof fn` with `ensures false` planted in the shared
+  `GUMBO_Library` — a foundation crate no hash or slice tier covers.
+  It verifies clean on its own (the body is trusted) and is **inert
+  until a `broadcast use`** pulls it in, so it changes no verified
+  count: files, contracts, the **verus count golden**, the sysproof
+  hash, and the report all stay green. Only the cheat scan catches it,
+  at the staging point before any proof consumes it, naming
+  `GUMBO_Library` (broadcast 0 → 1, external_body.other 0 → 1). The
+  robust detector: a construct scan sees the escape even when every
+  outcome is still clean.
+- No repair rung **on purpose** (either beat): a proof escape is never
   machine-repairable — the refusal escalates to the administrator, and
   the driver restores the tamper site from a pre-episode snapshot (the
-  cheat site has no golden mirror, deliberately).
+  cheat sites have no golden mirror, deliberately).
 - The honest baseline the golden blesses: 86 `external_body` sites,
   all in generated bridge/component platform-boundary files; zero
-  assume/admit/axiom anywhere. The scan also covers the system proof
-  crate + the shared foundation crates (`data`, `GUMBO_Library` — a
-  smuggled broadcast axiom there would poison every proof), where the
-  only blessed escape is 26 `uninterp` action fns in `actions.rs`.
+  assume/admit/axiom/broadcast anywhere. The scan covers the seven
+  component crates, the system proof crate, and the shared foundation
+  crates (`data`, `GUMBO_Library`), where the only blessed escape is
+  26 `uninterp` action fns in `sys_nominal_proof/actions.rs`.
 
 ## Scene 10 — the hollow system proof: count vs bytes
 
@@ -193,13 +208,13 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   Two attacks that add **no escape construct**, so the cheat scan stays
   silent — a demonstration that "verification succeeded" is not
   enough, and neither is "no cheats present."
-- **Beat 1 — SHRINK** ([diff&nbsp;D14](#d14)): comment out a proof
+- **Beat 1 — SHRINK** ([diff&nbsp;D15](#d15)): comment out a proof
   module. The crate still verifies (0 errors) but proves fewer
   obligations, so the verus tier's **verified-COUNT** golden refuses
   (1862 drops) — the reason the tier goldens the whole normalized
   `verification-results`, not just `errors==0`. The sysproof hash
   refuses too (lib.rs changed).
-- **Beat 2 — SWAP** ([diff&nbsp;D15](#d15)): drop a real VC and add a
+- **Beat 2 — SWAP** ([diff&nbsp;D16](#d16)): drop a real VC and add a
   trivial `ensures true` one, holding the count at 1862. The verus
   tier goes **blind** (count preserved) and the cheat scan stays silent
   (no escape construct) — **only** the whole-file **sysproof hash**
@@ -216,7 +231,8 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   seeded behavior bug (scene 5), the wrapper edit (scene 7), the
   deleted and substituted report slices (scene 8, pretty-printed
   JSON, shown BEFORE the arc — "see how innocent the tamper looks"),
-  the admitted contract (scene 9, same before-the-arc reveal),
+  the admitted contract and the smuggled foundation axiom (scene 9's
+  two beats, same before-the-arc reveal),
   the dummy-bad-impl inversion (scene 2), the codegen re-splice after
   a benign bless (scene 3), and scene 6's trust-state attacks — the
   flipped evidence byte and the hand-edited golden (both
@@ -543,7 +559,29 @@ success.
 ```
 
 <a id="d14"></a>
-### D14 — scene 10 beat 1: the shrunken proof surface
+### D14 — scene 9 beat 2: the smuggled foundation axiom
+
+An `external_body` `broadcast proof fn` with `ensures false`, planted in
+the shared `GUMBO_Library`. The body is unchecked, so it verifies clean;
+inert until a `broadcast use` pulls it in, so no verified count moves.
+Only the construct scan sees it.
+
+```diff
+--- a/crates/GUMBO_Library/src/lib.rs
++++ b/crates/GUMBO_Library/src/lib.rs
+ -172,6 +172,11 
+     value.status == Isolette_Data_Model::ValueStatus::Valid
+   }
++  // TAMPERED: smuggled proof-context poison (false, unchecked body)
++  #[verifier::external_body]
++  pub broadcast proof fn smuggled_axiom()
++    ensures false
++  {}
+   // END MARKER GUMBO VERUS MARKER
+```
+
+<a id="d15"></a>
+### D15 — scene 10 beat 1: the shrunken proof surface
 
 One commented module: the crate still verifies (0 errors) but proves
 fewer obligations, so the verified count drops below the golden 1862.
@@ -556,8 +594,8 @@ fewer obligations, so the verified count drops below the golden 1862.
 +// pub mod normal_display_temp;  // COUNT TAMPER: module dropped
 ```
 
-<a id="d15"></a>
-### D15 — scene 10 beat 2: drop-and-replace at constant count
+<a id="d16"></a>
+### D16 — scene 10 beat 2: drop-and-replace at constant count
 
 A real VC dropped, a trivial one added — the verified count stays 1862,
 so the verus tier is blind; only the whole-file hash sees the change.
