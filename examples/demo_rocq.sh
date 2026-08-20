@@ -187,9 +187,17 @@ expect_absent() {  # expect_absent <pattern> <what went wrong>
   fi
 }
 
+sed_i() {  # sed_i <sed-args...> <file> — in-place sed, portable BSD/GNU
+  local f="${*: -1}" tmp
+  tmp="$(mktemp "$LOG_DIR/sed_i.XXXXXX")"
+  sed "${@:1:$#-1}" "$f" > "$tmp" && mv "$tmp" "$f"
+}
+
 # ── recovery: reinstall the canonical rocq wrapper and prove it ─────────────
 if [ "$RESTORE_TOOLS" = 1 ]; then
   WRAPPER="$HOME/Claude_workspace/bin/rocq"
+  # KEEP IN SYNC WITH scripts/install.sh (wrappers step): the installed
+  # wrapper must be byte-identical to this heredoc or the hash gate fails.
   cat > "$WRAPPER" <<'WRAPEOF'
 #!/usr/bin/env bash
 # Workspace wrapper: rocq (the Rocq Prover, opam switch 5.2)
@@ -287,7 +295,7 @@ in_scenes() { case " $SCENES " in *" $1 "*) return 0 ;; *) return 1 ;; esac }
 edit_spec() {  # edit_spec <sed-expr> <description>
   local before="$LOG_DIR/Props.v.before_edit"
   cp "$PROPS" "$before"
-  sed -i '' -E "$1" "$PROPS"
+  sed_i -E "$1" "$PROPS"
   if cmp -s "$before" "$PROPS"; then
     echo "DEMO ABORT: the scripted spec edit matched nothing ($2)" >&2
     exit 1
@@ -770,7 +778,7 @@ PYEOF
   echo "touch the model class, and readiness re-derives every contract"
   echo "slice from the blessed SIGNED bytes:"
   LAUNDERED_DURING_DEMO=1
-  sed -i '' 's/50 <= low sp/45 <= low sp/' "$PROPS"
+  sed_i 's/50 <= low sp/45 <= low sp/' "$PROPS"
   if cmp -s "$SCENE5_PROPS" "$PROPS"; then
     echo "DEMO ABORT: the laundering spec edit matched nothing" >&2
     exit 1

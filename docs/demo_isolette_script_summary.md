@@ -17,9 +17,11 @@ deterministic or out-of-band.
 
 **Running it**: `./examples/demo_isolette.sh` (interactive; `--help`
 for flags — `--scenes`, `--drift`, `--auto`, `--repair-strategy`,
-`--fast` for unattended, `--restore-tools` recovery). Warm cargo-verus
-caches recommended: every Verus tier run re-verifies 8 crates (~10 s
-warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
+`--fast` for unattended, `--restore-tools` recovery). Fresh machine:
+`scripts/install.sh` builds the stack and provisions the baselines —
+see [INSTALL.md](INSTALL.md). Warm cargo-verus caches recommended:
+every Verus tier run re-verifies 8 crates (~10 s warm, multi-minute
+cold); scene 3's codegen beats add ~1-2 min each.
 
 ## Setup
 
@@ -494,8 +496,8 @@ The bundle stays authentic; only the anchor to the signed evidence refutes.
 +++ b/~/Claude_workspace/bin/cargo-verus
  -3,3 +3,4 
  # (CVM child processes see this via CvmConfig.path_prepend).
- export PATH="/Users/adampetz/Claude_workspace/verus-arm64-macos:$HOME/.cargo/bin:$PATH"
- exec /Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus "$@"
+ export PATH="$HOME/Claude_workspace/verus-dist:$HOME/.cargo/bin:$PATH"
+ exec "$HOME/Claude_workspace/verus-dist/cargo-verus" "$@"
 +# drifted: innocuous-looking edit
 ```
 

@@ -14,8 +14,10 @@ scene-by-scene narrative with linked diffs of every artifact modified.
 
 **Running it**: `./examples/demo_rocq.sh` (interactive; `--help` for flags —
 `--scenes`, `--drift`, `--repair-strategy`, `--fast --auto` for unattended,
-`--restore-tools` recovery). Pinned checkouts: tag `rocq-demo-v2` (this
-eight-scene demo), `rocq-demo-v1` (the earlier five-scene version).
+`--restore-tools` recovery). Fresh machine: `scripts/install.sh` builds the
+stack and provisions the baselines — see [INSTALL.md](INSTALL.md). Pinned
+checkouts: tag `rocq-demo-v2` (this eight-scene demo), `rocq-demo-v1` (the
+earlier five-scene version).
 
 ## Setup
 

@@ -1,4 +1,11 @@
 # Mr. Pybb (Python Blackboard)
+
+**Install / run the demos:** see [docs/INSTALL.md](docs/INSTALL.md) —
+`scripts/install.sh` builds the full attestation stack (CVM, asp-libs,
+Rocq, Verus, Sireum/HAMR) and brings both interactive demo arcs
+(`examples/demo_rocq.sh`, `examples/demo_isolette.sh`) to a passing
+readiness gate.
+
 ## Vocabulary
 * **partition:** collection of keys a knowledge source looks at
 * **segment:** broader regions of blackboard. currently: **provision** (requests written by external events, e.g. to provision golden evidence; evaluated before certify each cycle, no knowledge-source chains — a failing request escalates immediately, a passing one remains as the record of provisioned state), **certify** (all other entries, entries with current work in progress, entries in good standing), **escalate** (entries that require user intervention)

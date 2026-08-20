@@ -38,6 +38,7 @@ the registry accepts new classes without redesign (register_tool).
 from __future__ import annotations
 
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Union
@@ -47,7 +48,10 @@ from .provision import carry_goldens
 HOME = Path.home()
 WORKSPACE_BIN = HOME / "Claude_workspace" / "bin"
 ELAN_HOME = HOME / ".elan"
-VERUS_DIST = HOME / "Claude_workspace" / "verus-arm64-macos"
+# platform-neutral symlink (scripts/install.sh points it at the unpacked
+# per-platform release, e.g. verus-arm64-macos or verus-x86-linux)
+VERUS_DIST = Path(os.environ.get(
+    "VERUS_DIST", str(HOME / "Claude_workspace" / "verus-dist")))
 SIREUM_STANDALONE = HOME / "Applications" / "Sireum"
 OSATE_PLUGINS = (HOME / ".sireum" / "phantom" / "osate-2.17.0-vfinal.app"
                  / "Contents" / "Eclipse" / "plugins")

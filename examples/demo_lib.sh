@@ -105,6 +105,12 @@ expect_absent() {  # expect_absent <pattern> <what went wrong>
 
 has_tty() { { : </dev/tty; } 2>/dev/null; }
 
+sed_i() {  # sed_i <sed-args...> <file> — in-place sed, portable BSD/GNU
+  local f="${*: -1}" tmp
+  tmp="$(mktemp "$LOG_DIR/sed_i.XXXXXX")"
+  sed "${@:1:$#-1}" "$f" > "$tmp" && mv "$tmp" "$f"
+}
+
 show_diff() {  # show_diff <golden-copy> <live-copy> — always shown
   if [ "$NO_VSCODE" = 0 ] && command -v code >/dev/null 2>&1; then
     echo "opening the diff in VSCode (golden vs proposed) ..."

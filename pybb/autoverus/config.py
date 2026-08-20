@@ -27,8 +27,10 @@ from .shell import VIA_WSL, ShellError, run_shell, to_wsl_path
 # ==========================================================================
 
 # The Verus binary itself, not a directory. It does NOT need to be on PATH
-# -- this path is what puts it there for AutoVerus.
-VERUS = "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus"
+# -- this path is what puts it there for AutoVerus. The default resolves
+# the installer's platform-neutral verus-dist symlink to an absolute path
+# at import time (expanduser output satisfies the no-~/no-$ rule above).
+VERUS = os.path.join(os.path.expanduser("~"), "Claude_workspace/verus-dist/verus")
 
 # Your verus-proof-synthesis checkout. Point at the checkout root; if
 # yours predates upstream's code/ -> autoverus/ rename, point at the

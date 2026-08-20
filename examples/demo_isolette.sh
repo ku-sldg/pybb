@@ -185,12 +185,14 @@ note_slow() { echo "${DIM}(measurements running — first output can take ~30-60
 
 # ── recovery: reinstall the canonical cargo-verus wrapper and prove it ──────
 if [ "$RESTORE_TOOLS" = 1 ]; then
+  # KEEP IN SYNC WITH scripts/install.sh (wrappers step): the installed
+  # wrapper must be byte-identical to this heredoc or the hash gate fails.
   cat > "$VERUS_WRAPPER" <<'WRAPEOF'
 #!/usr/bin/env bash
 # Workspace wrapper: cargo-verus with the Verus distribution and cargo on PATH
 # (CVM child processes see this via CvmConfig.path_prepend).
-export PATH="/Users/adampetz/Claude_workspace/verus-arm64-macos:$HOME/.cargo/bin:$PATH"
-exec /Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus "$@"
+export PATH="$HOME/Claude_workspace/verus-dist:$HOME/.cargo/bin:$PATH"
+exec "$HOME/Claude_workspace/verus-dist/cargo-verus" "$@"
 WRAPEOF
   chmod +x "$VERUS_WRAPPER"
   echo "reinstalled the canonical wrapper at $VERUS_WRAPPER"
@@ -277,7 +279,7 @@ in_scenes() { case " $SCENES " in *" $1 "*) return 0 ;; *) return 1 ;; esac }
 edit_spec() {  # edit_spec <sed-expr> <description>
   local before="$LOG_DIR/Regulate.sysml.before_edit"
   cp "$REGULATE" "$before"
-  sed -i '' -E "$1" "$REGULATE"
+  sed_i -E "$1" "$REGULATE"
   if cmp -s "$before" "$REGULATE"; then
     echo "DEMO ABORT: the scripted spec edit matched nothing ($2)" >&2
     exit 1

@@ -80,7 +80,7 @@ TAMPER_LINE = "        exists |k: int| 0 <= k < i && nums@[k] == max,\n"
 
 # The verus toolchain, measured in the same term as every invocation
 # (measure-then-use). The wrapper is what CVM children resolve via PATH.
-_DISTRO = Path.home() / "Claude_workspace" / "verus-arm64-macos"
+_DISTRO = Path.home() / "Claude_workspace" / "verus-dist"
 register_tool("verus", [
     str(Path.home() / "Claude_workspace" / "bin" / "verus"),
     str(_DISTRO / "verus"),

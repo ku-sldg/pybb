@@ -8,21 +8,21 @@
       "asp_targid": "tool_cargo_verus_cargo_verus_targ"
     },
     "tool_cargo_verus_cargo_verus_2_targ": {
-      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/cargo-verus",
+      "filepath": "/Users/adampetz/Claude_workspace/verus-dist/cargo-verus",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_cargo_verus_2_targ"
     },
     "tool_cargo_verus_rust_verify_targ": {
-      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/rust_verify",
+      "filepath": "/Users/adampetz/Claude_workspace/verus-dist/rust_verify",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
       "asp_targid": "tool_cargo_verus_rust_verify_targ"
     },
     "tool_cargo_verus_verus_targ": {
-      "filepath": "/Users/adampetz/Claude_workspace/verus-arm64-macos/verus",
+      "filepath": "/Users/adampetz/Claude_workspace/verus-dist/verus",
       "env_var": "",
       "measure_in_place": true,
       "metadata": "tool::cargo-verus",
