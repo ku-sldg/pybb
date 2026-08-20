@@ -29,13 +29,16 @@
 #            codegen), so the blessed model attests clean while the
 #            generated realization has not caught up — the catch-up is
 #            the SANCTIONED pipeline (--promote: tool gate -> real
-#            SysML codegen -> Verus proof gate -> gold -> re-bless).
-#            Two selectable flavors: benign (a semantically equivalent
-#            restatement; the regenerated contracts still PROVE) or
-#            breaking (REQ_MHS_1's initialize guarantee flipped Off ->
-#            Onn — codegen accepts it, the implementation cannot honor
-#            it -> the proof gate REFUSES the catch-up; the old
-#            baseline stays in place).
+#            SysML codegen -> gold -> re-bless). Promotion NEVER
+#            verifies: blessing is authority, and whether the impl
+#            proves against the blessed spec is the following episode's
+#            honest measurement. Two selectable flavors: benign (a
+#            semantically equivalent restatement; the regenerated
+#            contracts still PROVE, episode green) or breaking
+#            (REQ_MHS_1's initialize guarantee flipped Off -> Onn —
+#            codegen accepts it, gold MOVES, and the episode reports the
+#            Verus tier RED because the implementation cannot honor the
+#            blessed spec; walk back or fix the impl).
 #   scene 4  restore at two grains: --immutable-model (the failed hash
 #            appraisal IS the repair order — whole-file restore +
 #            in-session re-attest, no interaction) and
@@ -84,20 +87,20 @@
 #            'ensures false' planted in the shared GUMBO_Library — a
 #            foundation crate in no hashed/sliced file. It verifies
 #            clean on its own and is inert until a 'broadcast use' pulls
-#            it in, so it changes NO verified count: files, contracts,
-#            the verus count golden, the sysproof hash, and the report
-#            all stay green. Only the cheat scan — counting escape
+#            it in, so it changes NO proof outcome: files, contracts,
+#            the verus tier (errors==0), the sysproof hash, and the
+#            report all stay green. Only the cheat scan — counting escape
 #            constructs, not proof outcomes — catches it, at the staging
 #            point, naming GUMBO_Library. No repair rung: escalates.
 #   scene 10 the hollow SYSTEM proof -> two attacks on sys_nominal_proof
 #            (the compositional proof crate) that add no escape
-#            construct, so the cheat scan is silent. Beat 1 SHRINK:
-#            drop a proof module -> still 0 errors but fewer
-#            obligations, caught by the verus tier's verified-COUNT
-#            golden (and the sysproof hash). Beat 2 SWAP: drop a real
-#            VC + add a trivial one, holding the count -> the verus
-#            tier goes blind, and ONLY the whole-file sysproof hash
-#            refuses. Bytes anchor what a count cannot.
+#            construct (cheat scan silent) AND change no verification
+#            outcome (Verus tier silent — it judges correctness, not
+#            surface size). Beat 1 SHRINK: drop a proof module -> the
+#            smaller crate still verifies (0 errors). Beat 2 SWAP: drop
+#            a real VC + add a trivial one. Both leave every
+#            verification green; ONLY the whole-file sysproof hash
+#            refuses. Bytes anchor what a proof outcome cannot.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -371,8 +374,10 @@ if in_scenes 3; then
     "episode) then asks for your ruling. Blessing is SPEC-FIRST:" \
     "--provision --bless-props re-signs the props class over the new" \
     "spec, no codegen — whether the generated realization has caught" \
-    "up is the SANCTIONED PIPELINE's question (--promote: tool gate ->" \
-    "real SysML codegen -> Verus proof gate -> gold -> re-bless)."
+    "up is the SANCTIONED PIPELINE's job (--promote: tool gate -> real" \
+    "SysML codegen -> gold -> re-bless). Promotion NEVER verifies —" \
+    "the episode after it reports the Verus tier honestly (RED for a" \
+    "blessed-but-unmet spec)."
   if ! ( cd "$REPO" && git diff --quiet -- targets/isolette-microkit ); then
     echo "DEMO ABORT: targets/isolette-microkit has uncommitted changes —" >&2
     echo "scene 3's codegen catch-up restores via git checkout" >&2
@@ -446,14 +451,17 @@ if in_scenes 3; then
       echo
       echo "${BOLD}The spec is blessed; the generated realization has not caught up${RESET}"
       echo "${BOLD}(the contracts inside the crates still render the OLD statements).${RESET}"
-      echo "${BOLD}The catch-up is the sanctioned pipeline — real codegen, gated:${RESET}"
+      echo "${BOLD}The catch-up is the sanctioned pipeline — real codegen. It NEVER${RESET}"
+      echo "${BOLD}verifies: blessing is authority, and whether the implementation${RESET}"
+      echo "${BOLD}proves against the blessed spec is the episode's honest measurement,${RESET}"
+      echo "${BOLD}not a precondition of gold moving:${RESET}"
       cp "$MHS_APP" "$LOG_DIR/mhs_app.rs.precodegen"
       run_driver --promote
+      expect "targets regenerated" "promote must move gold — no verification gate"
       if [ "$drift" = "benign" ]; then
-        expect "proofs validated" \
-          "the regenerated contracts must PROVE against the implementation"
         expect "all attested components intact" \
-          "the promoted baseline must attest clean"
+          "the promoted baseline attests clean — the impl already meets the \
+equivalent restatement"
         offer_diff "$LOG_DIR/mhs_app.rs.precodegen" "$MHS_APP" \
           "the machine-regenerated contract (what codegen re-spliced into the developer-owned file)"
         echo
@@ -463,20 +471,22 @@ if in_scenes 3; then
         expect_absent "✗" "no crate may stay refuted after the catch-up"
         expect_absent "?" "no crate may stay unjudged after the catch-up"
       else
-        expect "REFUSED" "the proof gate must refuse the catch-up"
-        expect "regenerated project does not verify" \
-          "the refusal must name the semantic failure"
-        expect "thermostat_rt_mhs_mhs" \
-          "the refusal must name the crate that cannot honor the spec"
+        # promotion moved gold WITHOUT verifying; the episode that follows
+        # measures the new baseline and reports the Verus tier RED
+        expect "confirmation failed (isolette_sysmlv2_rust_verus)" \
+          "the episode must report the Verus tier RED against the new baseline"
+        expect "thermostat_rt_mhs_mhs_verus_targ" \
+          "the RED tier must name the crate that cannot honor the spec"
         echo
-        echo "${BOLD}The sanction stood — the spec IS blessed — but the realization${RESET}"
-        echo "${BOLD}cannot honor it: the implementation initializes the heat control${RESET}"
-        echo "${BOLD}Off where the flipped REQ_MHS_1 now demands On.${RESET}"
-        echo "${BOLD}The proof gate refused BEFORE gold moved: the old baseline is${RESET}"
-        echo "${BOLD}fully in place, and the honest exits are an implementation fix${RESET}"
-        echo "${BOLD}(the ladder scene 2 demonstrated) or the administrator walking${RESET}"
-        echo "${BOLD}the sanction${RESET}"
-        echo "${BOLD}back. The demo walks it back:${RESET}"
+        echo "${BOLD}Gold MOVED — the spec is blessed and the baseline is the new${RESET}"
+        echo "${BOLD}spec — but the implementation cannot honor it: it initializes${RESET}"
+        echo "${BOLD}the heat control Off where the flipped REQ_MHS_1 now demands On,${RESET}"
+        echo "${BOLD}so the Verus tier attests RED (both the mhs crate and the${RESET}"
+        echo "${BOLD}system proof that composes it). This is the HONEST state: you${RESET}"
+        echo "${BOLD}blessed a spec your implementation does not yet meet. The exits${RESET}"
+        echo "${BOLD}are an implementation fix (the ladder scene 2 demonstrated) or${RESET}"
+        echo "${BOLD}the administrator walking the sanction back. The demo walks it${RESET}"
+        echo "${BOLD}back — restoring the tree and re-blessing the original spec:${RESET}"
         ( cd "$REPO" && git checkout -- targets/isolette-microkit )
         run_driver --provision --bless-props
         BLESSED_DURING_DEMO=0
@@ -872,10 +882,10 @@ if in_scenes 9; then
     "reports the same success over the hollow proof. Beat 2 — SMUGGLE:" \
     "an external_body broadcast axiom in the shared GUMBO_Library —" \
     "verifies clean, inert until 'broadcast use', so even the verus" \
-    "count golden stays green. Both times ONLY the cheat scan, which" \
+    "tier (errors==0) stays green. Both times ONLY the cheat scan, which" \
     "counts escape CONSTRUCTS rather than outcomes, refuses — naming" \
     "the crate. No repair rung: the refusal escalates."
-  echo "${BOLD}beat 1 — admit: a hollow proof the count cannot see${RESET}"
+  echo "${BOLD}beat 1 — admit: a hollow proof every outcome-tier passes${RESET}"
   MHS_API_PRISTINE="$LOG_DIR/mhs_api.pristine.rs"
   cp "$MHS_API" "$MHS_API_PRISTINE"
   echo "First, see how innocent the cheat looks:"
@@ -906,15 +916,15 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
   pause
 
   echo
-  echo "${BOLD}beat 2 — smuggle: an escape the count cannot see either${RESET}"
+  echo "${BOLD}beat 2 — smuggle: an escape every outcome-tier passes too${RESET}"
   echo "Beat 1's assume hid in the crate it poisons; this one hides in a"
   echo "DIFFERENT crate. A smuggled axiom — an external_body broadcast"
   echo "proof fn with 'ensures false' — planted in the SHARED"
   echo "GUMBO_Library verifies clean on its own (the body is trusted),"
   echo "and would inject 'false' into every importer's proof context the"
   echo "moment a 'broadcast use' pulls it in. Until then it is inert, so"
-  echo "it changes NO verified count and sits in no hashed or sliced"
-  echo "file: files, contracts, the verus count golden, the sysproof"
+  echo "it changes NO proof outcome and sits in no hashed or sliced"
+  echo "file: files, contracts, the verus tier (errors==0), the sysproof"
   echo "hash, and the report all stay green. Only the cheat scan — which"
   echo "counts escape CONSTRUCTS, not proof outcomes — sees it, at the"
   echo "staging point, before any proof consumes it. See how ordinary it"
@@ -939,8 +949,8 @@ ex.tamper_broadcast(ex.FRONTENDS['sysml'], {})" )
   expect "isolette_sysmlv2_rust:files: all attested components intact" \
     "the files tier must stay green (GUMBO_Library is report-invisible)"
   expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
-    "the verus count golden must stay green (the axiom is inert — no \
-count change)"
+    "the verus tier must stay green (errors==0 — the axiom is inert, no \
+proof-outcome change)"
   expect "isolette_sysmlv2_rust:proofsrc: all attested components intact" \
     "the sysproof hash must stay green (the proof crate is untouched)"
   expect "isolette_sysmlv2_rust:report: all attested components intact" \
@@ -954,34 +964,41 @@ count change)"
 fi
 
 if in_scenes 10; then
-  banner "SCENE 10 — the hollow system proof: count vs bytes" \
+  banner "SCENE 10 — the hollow system proof: verification vs bytes" \
     "sys_nominal_proof is the SYSTEM-level compositional proof (~1862" \
     "obligations, one empty-bodied VC each, discharged by Verus)." \
-    "Two attacks the cheat scan can't see, because they add no escape" \
-    "construct. Beat 1: SHRINK — drop a proof module; the crate still" \
-    "verifies (0 errors) but proves less, so the verus tier's" \
-    "verified-COUNT golden refuses (not just errors==0). Beat 2:" \
-    "SWAP — drop a real VC and add a trivial one, holding the count at" \
-    "1862; the verus tier goes blind and ONLY the whole-file sysproof" \
-    "hash refuses. Bytes anchor what a count cannot."
+    "Two attacks the cheat scan can't see (no escape construct) that" \
+    "the Verus tier ALSO can't see (it judges correctness — does it" \
+    "verify? — not surface size). Beat 1: SHRINK — drop a proof" \
+    "module; the smaller crate still verifies (0 errors). Beat 2:" \
+    "SWAP — drop a real VC and add a trivial one. Both leave every" \
+    "verification green; ONLY the whole-file sysproof hash refuses." \
+    "Bytes anchor what a proof outcome cannot."
   note_slow
   echo "${BOLD}beat 1 — shrink: a dropped proof module${RESET}"
+  echo "Commenting out a proof module leaves the crate still VERIFYING"
+  echo "(the remaining obligations discharge, errors==0), so the Verus"
+  echo "tier — which judges correctness, not surface size — stays green."
+  echo "The shrink carries no verification signal; only the bytes changed,"
+  echo "so the whole-file sysproof hash is what refuses:"
   run_driver --tamper-proof-count --verify
   expect "Shrank the proof surface" "the count tamper must apply"
-  expect "isolette_sysmlv2_rust:proofs: integrity violation" \
-    "the verified-count golden must refuse the shrunken proof"
-  expect "sys_nominal_proof_verus_targ" \
-    "the refusal must attribute the system proof crate"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the Verus tier stays green — a smaller proof still verifies (errors==0)"
   expect "isolette_sysmlv2_rust:proofsrc: integrity violation" \
-    "the sysproof hash must also refuse (lib.rs changed)"
+    "the whole-file sysproof hash must refuse (lib.rs changed)"
+  expect "hash drift: src/lib.rs" \
+    "the batched appraiser must name the dropped-module file"
   pause
   echo
-  echo "${BOLD}beat 2 — swap: drop-and-replace at constant count${RESET}"
-  echo "The verified count stays 1862, so the verus tier cannot see it:"
+  echo "${BOLD}beat 2 — swap: drop-and-replace, still verifying${RESET}"
+  echo "The swapped crate still verifies (a trivial VC proves as readily"
+  echo "as the real one), so the Verus tier — judging correctness — stays"
+  echo "green, and the count is beside the point:"
   run_driver --tamper-proof-swap --verify
   expect "verified count held at 1862" "the swap tamper must apply"
   expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
-    "the verus tier must PASS (the count is preserved — its blind spot)"
+    "the verus tier must PASS (it still verifies — correctness, not surface)"
   expect "isolette_sysmlv2_rust:proofsrc: integrity violation" \
     "only the sysproof whole-file hash must refuse"
   expect "hash drift: src/normal_display_temp/vc_sequential.rs" \

@@ -54,9 +54,10 @@ run itself, and only the cheat tier (`<p>_cheat`, per-crate proof-escape
 counts vs an exact golden baseline) refuses and escalates.
 `--tamper-proof-count --verify` and `--tamper-proof-swap --verify` attack
 the system proof crate `sys_nominal_proof`: the first drops a proof
-module (verified-count golden refuses), the second drops a real VC and
-adds a trivial one at constant count (the verus tier goes blind — only
-the whole-file `<p>_sysproof` hash refuses). The laundering
+module, the second drops a real VC and adds a trivial one — both leave
+the crate still verifying (errors==0), so the Verus tier stays green and
+only the whole-file `<p>_sysproof` hash refuses (surface-integrity is a
+different question from correctness). The laundering
 negative — re-provisioning the measurement baselines over a tampered
 golden tree, refuted only by the administrator's blessing — is an
 automated test; see `signed_baselines.md`.
@@ -79,7 +80,7 @@ no OSATE/phantom required for codegen) — and
 workflow off the SysML report under its own protocol namespace:
 
     isolette_sysmlv2_rust_l1a (13 hashes) / isolette_sysmlv2_rust_l2 (67 slices) / isolette_sysmlv2_rust_props (5 blessed
-    model files) / isolette_sysmlv2_rust_verus (8 crates, verified-count golden) /
+    model files) / isolette_sysmlv2_rust_verus (8 crates, errors==0 correctness) /
     isolette_sysmlv2_rust_cheat (10-crate proof-escape scan) / isolette_sysmlv2_rust_sysproof (proof-crate hashes)
     — entries isolette_sysmlv2_rust:files / isolette_sysmlv2_rust:ready
 
@@ -150,7 +151,7 @@ props blessing covers untouched files and stayed valid).
 
 The migration also surfaced — and forced the fix of — a latent
 appraiser bug: COLD cargo-verus builds pollute stdout ahead of the
-verification JSON, and the post-codegen proof gate is ALWAYS cold, so
-the gate refused spuriously on first run (fail-closed, wrong reason).
+verification JSON, and a post-codegen run is ALWAYS cold, so the Verus
+tier judged spuriously on first run (fail-closed, wrong reason).
 `run_command_verus_appr` (asp-libs) now extracts the JSON robustly;
 verdicts depend only on verification results, never build temperature.

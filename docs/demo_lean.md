@@ -117,11 +117,13 @@ blessing is not (`changed_decls(props_protocol=...)`,
 `tests/test_integration_lean.py::test_check_sees_through_laundered_l2_goldens`).
 
 `--promote` is the sanctioning pipeline, gates before gold: behavior gate
-(`lake build` + vectors vs sanctioned expecteds) → proof gate (`temp_control_lean_verification`
-must prove, toolchain measured in the same term) → syntax-scan target
+(`lake build` + vectors vs sanctioned expecteds) → syntax-scan target
 regeneration (a new theorem becomes a new *named* l2 target) → gold moves →
 full provisioning including the props re-blessing → verification episode.
-A refused gate leaves the old baseline fully in place: the promote request
+Promotion NEVER verifies: blessing is an authority act, and whether the
+implementation proves against the blessed spec is that episode's honest
+measurement (RED for a blessed-but-unmet spec).
+A refused gate (behavior/codegen) leaves the old baseline fully in place: the promote request
 runs alone on the blackboard, and provision requests are only written after
 its outcome is known good. There is no `codegen_fn` for Lean — the
 sanctioned build plays that role.

@@ -124,9 +124,13 @@ let the `sysproof` hash tier relax to source that legitimately changes.
 generated component code can't compile under new Verus until HAMR
 migrates, and the crate the gate matters most for (`sys_nominal_proof`)
 needs #2568's per-module policies anyway. The cheat tier
-(`cheat_scan_verus`, scene 9) plus the verified-count golden cover every
-crate today. Revisit when (a) HAMR targets a newer Verus, or (b) #2568
-merges. Upstream drafts:
+(`cheat_scan_verus`, scene 9) plus the errors==0 Verus tier and the
+sysproof hash cover the escape/surface-shrink surface today. (The
+verified-count golden this spike originally paired with was later
+reverted when promotion was decoupled from verification — the Verus
+tier now judges correctness, errors==0; see
+[cheat_tier_plan.md](cheat_tier_plan.md) §C.) Revisit when (a) HAMR
+targets a newer Verus, or (b) #2568 merges. Upstream drafts:
 [draft_hamr_verus_migration_report.md](draft_hamr_verus_migration_report.md),
 [draft_verus_2568_comment.md](draft_verus_2568_comment.md).
 

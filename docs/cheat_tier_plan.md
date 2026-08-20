@@ -1,8 +1,16 @@
 # Plan: cheat-tier hardening (uninterp + verified-count + proof-crate hash)
 
-**STATUS: implemented** (asp-libs `9de558a`; pybb — cheat/verus/sysproof
-tiers, scenes 9–10, tests). All three attack classes validated
-end-to-end. Sections below are the as-built design.
+**STATUS: implemented, then section C SUPERSEDED.** The verified-count
+golden (C) was reverted when promotion was decoupled from verification:
+a promotion that blesses a broken spec must not capture failing
+verification-results as the golden and then match them (a golden of
+failure attests green). The Verus tier now judges CORRECTNESS
+(`run_command_verus_appr`, errors==0), so a blessed-but-unmet spec
+attests RED honestly; surface-shrink coverage moved to the hash tiers
+(sysproof for the proof crate; the component-contract-file gap is a
+tracked follow-up — see "Superseded" note in C). The cheat scan (A) and
+the sysproof hash (D) stand as built. Sections below are the original
+as-built design; read C with its superseding note.
 
 Finalized after the Verus-upgrade spike (see
 [verus_upgrade_spike.md](verus_upgrade_spike.md)). `--no-cheating`
@@ -24,6 +32,18 @@ reads `verification-results`. Temp_control/find_max unaffected (they
 appraise semantically, not by golden bytes).
 
 ## C. isolette verus tier: verified-count golden + system proof crate
+> **SUPERSEDED** (promotion/verification decoupling). The count golden
+> is reverted to `run_command_verus_appr` (errors==0). Rationale: with
+> promotion no longer verifying, a broken-spec bless would provision the
+> failing `verification-results` AS the golden and then match it →
+> false green. Correctness (errors==0) reports RED honestly instead.
+> `sys_nominal_proof` stays an 8th verus target (now judged errors==0,
+> not a pinned count). `--time` still dropped. Surface-shrink coverage:
+> sysproof hash (D) for the proof crate; the 10 unhashed contract-bearing
+> component files (incl. the deliberately-unhashed scene-9 cheat site
+> `mhs_api.rs`) are a tracked follow-up needing per-file/scene decisions.
+
+*(original plan:)*
 - Switch `run_command_cargo_verus`'s companion appraiser to
   `goldenbytes_appr` (exact bytes vs golden). Provisioning goldens each
   crate's `verification-results`; drift (verified-count shrink, errors,
@@ -67,8 +87,9 @@ normalized-evidence shape test. Record the func-details-set golden
 Scan (A + existing categories): introduce-an-escape attacks —
 assume/admit/external_body(by path)/bare-external/assume_specification/
 external_*_specification/axiom/broadcast/uninterp, per-crate vs pinned
-counts. Verified-count golden (C): shrink-the-surface attacks (code out
-of `verus!{}`, deleted/emptied modules, success-flag games) that carry
-no textual tell. Proof-crate hash (D): drop-and-replace at constant
+counts. ~~Verified-count golden (C)~~ SUPERSEDED — shrink-the-surface
+attacks (code out of `verus!{}`, deleted/emptied modules) are now the
+hash tiers' job (D for the proof crate; component-contract-file gap
+tracked). Proof-crate hash (D): drop-and-replace at constant
 count. Residual gaps (documented): contract-weakening (caught by
 l2+props elsewhere), vacuous `requires false` (no native Verus check).

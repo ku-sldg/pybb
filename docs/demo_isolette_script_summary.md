@@ -35,8 +35,9 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   whole-file hashes: SysML packages + contract-bearing Rust),
   **contracts** (67 report slices), **verification** (cargo-verus over
   8 crates — the 7 component crates + the system proof crate — an
-  ALWAYS-RUN entry whose evidence is the goldened verified COUNT, not
-  just errors==0), the **cheat tier** (per-crate proof-escape counts
+  ALWAYS-RUN entry judging CORRECTNESS, errors==0, so a
+  blessed-but-unmet spec attests RED honestly), the **cheat tier**
+  (per-crate proof-escape counts
   over 10 crates — see scene 9), the **sysproof tier** (whole-file
   hashes of the system proof crate, batched into one
   relpath→sha256 evidence map — see scene 10), and the **report
@@ -75,13 +76,20 @@ warm, multi-minute cold); scene 3's codegen beats add ~1-2 min each.
   **sanctioned pipeline** (`--promote`): tool gate (HAMR + pinned
   sysml-aadl-libraries hashed just before use) -> **real SysML
   codegen** (re-splices the contract marker regions inside the
-  developer-owned app.rs) -> **Verus proof gate** -> gold moves ->
-  props re-blessed. Benign: the regenerated contracts prove, with the
-  codegen re-splice shown as a diff ([diff&nbsp;D4](#d4)). Breaking:
-  the proof gate
-  **refuses** before gold moves — the old baseline stays fully in
-  place, and the honest exits are an implementation fix (scene 2's
-  ladder) or walking the sanction back.
+  developer-owned app.rs) -> gold moves -> props re-blessed.
+  **Promotion never verifies**: blessing is an authority act, and
+  whether the implementation proves against the blessed spec is the
+  following episode's honest measurement.
+  - **Benign**: the regenerated contracts prove, the episode confirms
+    clean (Verus green), with the codegen re-splice shown as a diff
+    ([diff&nbsp;D4](#d4)).
+  - **Breaking**: gold **moves** (no verification gate); the episode
+    against the new baseline reports the **Verus tier RED** — both the
+    `mhs` crate and the `sys_nominal_proof` system proof that composes
+    it cannot honor the flipped REQ_MHS_1. This is the honest state:
+    a spec blessed that the implementation does not yet meet. The exits
+    are an implementation fix (scene 2's ladder) or walking the
+    sanction back (restore the tree, re-bless the original spec).
 
 ## Scene 4 — restore, at two grains
 
@@ -171,8 +179,8 @@ counts escape **constructs**.
   verified contract inside a bridge file **no hash or slice tier
   covers** (`thermostat_rt_mhs_mhs_api.rs` — Verus-verified but outside
   every l1a and l2 target). files/contracts green, and cargo-verus
-  reports the **same success** over the hollow proof — the verus
-  count golden is unchanged (an admit alters no count). Only the cheat
+  reports the **same success** over the hollow proof — the Verus tier
+  (errors==0) is green (an admit changes no proof outcome). Only the cheat
   tier refuses: `cheat_scan_verus` re-counts the proof-escape surface
   (assume, admit, external_body by path class, bare external,
   assume_specification, axiom, broadcast, uninterp — the constructs
@@ -183,9 +191,10 @@ counts escape **constructs**.
   `broadcast proof fn` with `ensures false` planted in the shared
   `GUMBO_Library` — a foundation crate no hash or slice tier covers.
   It verifies clean on its own (the body is trusted) and is **inert
-  until a `broadcast use`** pulls it in, so it changes no verified
-  count: files, contracts, the **verus count golden**, the sysproof
-  hash, and the report all stay green. Only the cheat scan catches it,
+  until a `broadcast use`** pulls it in, so it changes no proof
+  outcome: files, contracts, the **Verus tier** (errors==0), the
+  sysproof hash, and the report all stay green. Only the cheat scan
+  catches it,
   at the staging point before any proof consumes it, naming
   `GUMBO_Library` (broadcast 0 → 1, external_body.other 0 → 1). The
   robust detector: a construct scan sees the escape even when every
@@ -201,27 +210,29 @@ counts escape **constructs**.
   crates (`data`, `GUMBO_Library`), where the only blessed escape is
   26 `uninterp` action fns in `sys_nominal_proof/actions.rs`.
 
-## Scene 10 — the hollow system proof: count vs bytes
+## Scene 10 — the hollow system proof: verification vs bytes
 
 - `sys_nominal_proof` is the **system-level compositional proof**
   (~1862 obligations, one empty-bodied VC each, discharged by Verus).
-  Two attacks that add **no escape construct**, so the cheat scan stays
-  silent — a demonstration that "verification succeeded" is not
-  enough, and neither is "no cheats present."
+  Two attacks that add **no escape construct** (cheat scan silent) AND
+  change **no verification outcome** (the Verus tier judges
+  correctness — does it verify? — not surface size) — a demonstration
+  that "verification succeeded" is not enough, and neither is "no
+  cheats present." Only the bytes tell.
 - **Beat 1 — SHRINK** ([diff&nbsp;D15](#d15)): comment out a proof
-  module. The crate still verifies (0 errors) but proves fewer
-  obligations, so the verus tier's **verified-COUNT** golden refuses
-  (1862 drops) — the reason the tier goldens the whole normalized
-  `verification-results`, not just `errors==0`. The sysproof hash
-  refuses too (lib.rs changed).
+  module. The smaller crate **still verifies** (0 errors), so the
+  Verus tier stays green — the shrink carries no verification signal.
+  Only the whole-file **sysproof hash** refuses (lib.rs changed),
+  naming the file ("hash drift: src/lib.rs"). A cleaner demonstration
+  of why the hash tier exists: correctness and surface-integrity are
+  different questions.
 - **Beat 2 — SWAP** ([diff&nbsp;D16](#d16)): drop a real VC and add a
-  trivial `ensures true` one, holding the count at 1862. The verus
-  tier goes **blind** (count preserved) and the cheat scan stays silent
-  (no escape construct) — **only** the whole-file **sysproof hash**
-  refuses, naming the swapped file in the refusal ("hash drift:
+  trivial `ensures true` one. The crate still verifies and the cheat
+  scan stays silent (no escape construct) — **only** the whole-file
+  **sysproof hash** refuses, naming the swapped file ("hash drift:
   src/normal_display_temp/vc_sequential.rs" — the batched appraiser
   carries per-file attribution in its reason). Bytes anchor what a
-  count cannot. The sysproof crate is do-not-edit generated, so
+  proof outcome cannot. The sysproof crate is do-not-edit generated, so
   whole-file hashing with no benign-drift allowance is correct; no
   repair rung — the refusal escalates.
 
@@ -334,7 +345,7 @@ Semantically equivalent (`x <= y` -> `y >= x`), in both components carrying the 
 <a id="d3"></a>
 ### D3 — scene 3 (breaking): REQ_MHS_1's initialize guarantee flipped
 
-Codegen accepts it; the implementation initializes the heat control Off, so the catch-up's proof gate must refuse.
+Codegen accepts it and gold moves (promotion never verifies); the implementation initializes the heat control Off, so the episode against the new baseline reports the Verus tier RED.
 
 ```diff
 --- a/sysml/Regulate.sysml
