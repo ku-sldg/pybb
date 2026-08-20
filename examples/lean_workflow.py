@@ -554,9 +554,10 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
       1. detection report (informational — what is being sanctioned)
       2. promotion request on the blackboard; its predicate runs the gates
          and moves gold: behavior gate (lake build + vectors vs the
-         sanctioned expecteds), proof gate (the verification class must
-         prove, lean toolchain measured in the same term), syntax-scan
-         contract regeneration, golden capture
+         sanctioned expecteds), syntax-scan contract regeneration,
+         golden capture. Promotion NEVER verifies: whether the
+         implementation proves against the blessed spec is the following
+         episode's honest measurement, not a precondition of gold moving
       3. only after the promote outcome is good: regenerate the AM-owned
          config (tier dirs with the sanctioned expecteds, the model
          blessing definition, the build event) and provision EVERYTHING,
@@ -575,9 +576,7 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
               f"{exec_targets[cfg.exec_targ(key)]['expected']}")
 
     print("\n=== promotion episode (gates, then gold moves) ===")
-    client = CvmSubprocessClient()
     gated = {pid: protocols[pid] for pid in cfg.protocol_ids}
-    gated[cfg.verification_id] = protocols[cfg.verification_id]
     ctl = BlackboardController()
     ctl.register_predicate("promotion", make_promotion_predicate(
         gated, GOLDEN_ROOT,
@@ -585,8 +584,6 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
                                                     prefix=cfg.prefix,
                                                     files=cfg.contracts_abs),
         codegen_fn=make_codegen_fn(cfg, exec_targets),
-        client=client,
-        validate_with=cfg.verification_id,
     ))
     ctl.blackboard.write_entry(
         key=f"promote:{cfg.prefix}", predicate="promotion",
@@ -595,9 +592,10 @@ def promote_flow(cfg: LeanExampleConfig, protocols: dict,
     for key, entry in bb.get_escalate().items():
         raise SystemExit(f"  {key}: REFUSED - {entry.result.error}")
     outcome = bb.provision[f"promote:{cfg.prefix}"].result
-    print(f"  promote:{cfg.prefix}: {outcome.codegen}; proofs validated; "
+    print(f"  promote:{cfg.prefix}: {outcome.codegen}; "
           f"targets regenerated={outcome.targets}; "
-          f"{outcome.captured} files -> golden")
+          f"{outcome.captured} files -> golden "
+          "(no verification — the episode judges the new baseline)")
 
     print("\n=== provisioning the new baseline (model re-blessed) ===")
     fresh = build_protocol_dirs(cfg, bless_model=True,

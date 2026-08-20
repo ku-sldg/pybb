@@ -14,12 +14,17 @@ promotion pipeline:
   1. codegen_fn() — re-run HAMR codegen on the sanctioned model (pluggable:
      real deployments configure `sireum hamr phantom` + `sireum hamr
      codegen`; the demo injects a simulation)
-  2. optional validation gate (opt-in): the semantic protocol must pass on
-     the regenerated project before gold may move
-  3. derive fresh target maps from the new content (targetmap syntax scan)
+  2. derive fresh target maps from the new content (targetmap syntax scan)
      and install them into the shared ProtocolDirs — terms and asp_args
      regenerated, golden values cleared, stale prebuilts dropped
-  4. capture the watched files into the golden directory: gold moves
+  3. capture the watched files into the golden directory: gold moves
+
+Promotion never VERIFIES: blessing is an authority act, and whether the
+implementation proves against the blessed spec is a measurement — the
+attestation episode that follows reports it honestly (a blessed-but-unmet
+spec attests with a RED verification tier until the implementation
+catches up). The only gates are mechanics and authenticity: codegen must
+succeed, and the opt-in tool gate must bless the emitter.
 
 The per-protocol provision requests written AFTER the promote request
 (the provision partition evaluates in write order — `request_promotion`
@@ -258,7 +263,6 @@ class PromotionOutcome(BaseModel):
 
     model: str
     codegen: str = ""              # description of the codegen run
-    validated: Optional[bool] = None  # None = gate not requested
     captured: int = 0              # watched files synced into golden/
     targets: Dict[str, int] = {}   # protocol id -> regenerated target count
     error: str = ""
@@ -272,8 +276,6 @@ def make_promotion_predicate(
     golden_root: Path,
     spec: Optional[dict] = None,
     codegen_fn: Callable[[], str] = lambda: "no codegen configured",
-    client: Any = None,
-    validate_with: Optional[str] = None,
     targets_fn: Optional[Callable[[], Dict[str, Dict[str, dict]]]] = None,
     tool_gate: Optional[Callable[[], Optional[str]]] = None,
 ) -> Callable[[dict], PromotionOutcome]:
@@ -283,12 +285,18 @@ def make_promotion_predicate(
     see tools.make_tool_gate) measures the codegen toolchain IMMEDIATELY
     BEFORE codegen_fn runs and refuses promotion on drift from the
     blessed hashes — every report/codegen event is bound to a measured
-    emitter. `validate_with` (opt-in)
-    names a semantic protocol that must pass, via `client`, before gold
-    moves. Target derivation backend: `targets_fn` (e.g. a
+    emitter. Target derivation backend: `targets_fn` (e.g. a
     derive_targets_from_report closure — the HAMR attestation report as
     the authoritative source of golden slices), else the syntax scan over
     `spec`. Memoized on the measurement per predicate lifetime.
+
+    Promotion NEVER verifies. Blessing is an authority act (the
+    administrator declares this spec the target); whether the current
+    implementation proves against it is a measurement, reported honestly
+    by the attestation episode that follows — a blessed-but-unmet spec
+    attests with a RED verification tier until the implementation
+    catches up. The only refusals here are mechanics and authenticity:
+    codegen must succeed, and the tool gate must bless the emitter.
     """
     if targets_fn is None:
         assert spec is not None, "need spec (syntax scan) or targets_fn (report)"
@@ -299,8 +307,8 @@ def make_promotion_predicate(
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
             cache[key] = _promote(
-                protocols, golden_root, targets_fn, codegen_fn, client,
-                validate_with, measurement, tool_gate,
+                protocols, golden_root, targets_fn, codegen_fn,
+                measurement, tool_gate,
             )
         return cache[key]
 
@@ -312,8 +320,6 @@ def _promote(
     golden_root: Path,
     targets_fn: Callable[[], Dict[str, Dict[str, dict]]],
     codegen_fn: Callable[[], str],
-    client: Any,
-    validate_with: Optional[str],
     measurement: dict,
     tool_gate: Optional[Callable[[], Optional[str]]] = None,
 ) -> PromotionOutcome:
@@ -331,45 +337,13 @@ def _promote(
     except Exception as e:
         return PromotionOutcome(model=model, error=f"codegen failed: {e}")
 
-    validated: Optional[bool] = None
-    if validate_with is not None:
-        protocol = protocols.get(validate_with)
-        if protocol is None or client is None:
-            return PromotionOutcome(
-                model=model, codegen=codegen,
-                error=f"validation gate needs client and protocol '{validate_with}'",
-            )
-        # interpret exactly as an episode would (verified appraisal
-        # summary primary) — the gate must not judge evidence more
-        # leniently than attestation does
-        from .knowledge_sources import (attestation_request,
-                                        make_attestation_predicate)
-        try:
-            verdict = make_attestation_predicate(
-                client, {validate_with: protocol}
-            )(attestation_request(validate_with))
-        except Exception as e:
-            return PromotionOutcome(model=model, codegen=codegen,
-                                    error=f"validation gate failed: {e}")
-        validated = bool(verdict.passed)
-        if not validated:
-            failing = sorted({c.targ_id or c.description
-                              for c in verdict.failing()})
-            detail = ("; failing: " + ", ".join(failing) if failing
-                      else f"; {verdict.error}" if verdict.error else "")
-            return PromotionOutcome(
-                model=model, codegen=codegen, validated=False,
-                error="validation gate failed: regenerated project "
-                      "does not verify" + detail,
-            )
-
     # new target maps from the regenerated content, installed into the
     # shared ProtocolDirs (goldens cleared; provisioning refills them)
     try:
         derived = targets_fn()
     except OSError as e:
         return PromotionOutcome(model=model, codegen=codegen,
-                                validated=validated, error=f"target derivation failed: {e}")
+                                error=f"target derivation failed: {e}")
     targets = {}
     for pid, asp_args in derived.items():
         if pid in protocols:
@@ -380,10 +354,10 @@ def _promote(
         snapshot = TargetSnapshot.capture(protocols, dest=golden_root)
     except OSError as e:
         return PromotionOutcome(model=model, codegen=codegen,
-                                validated=validated, targets=targets,
+                                targets=targets,
                                 error=f"golden capture failed: {e}")
 
     return PromotionOutcome(
-        model=model, codegen=codegen, validated=validated,
+        model=model, codegen=codegen,
         captured=len(snapshot.files), targets=targets,
     )

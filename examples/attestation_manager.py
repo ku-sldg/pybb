@@ -157,8 +157,6 @@ def cmd_promote(protocols, golden_root, cli) -> None:
     controller.register_predicate("promotion", make_promotion_predicate(
         protocols, golden_root, TEMP_CONTROL_SPEC,
         codegen_fn=make_codegen_fn(cli.codegen_cmd),
-        client=client,
-        validate_with="temp_control_aadl_slang_validation" if cli.validate else None,
     ))
     controller.register_predicate("provision", make_provision_predicate(
         client, protocols, golden_root))

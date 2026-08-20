@@ -67,11 +67,13 @@ Usage:
 --promote    the sanctioned pipeline: tool gate (HAMR toolchain + for
              SysML the pinned sysml-aadl-libraries, measured immediately
              before use) -> REAL codegen in place (the report
-             regenerates; SysML needs no OSATE) -> proof gate (the Verus
-             tier must prove against the regenerated contracts) ->
-             report-driven target regeneration -> gold moves -> full
-             provisioning INCLUDING the props re-blessing -> a
-             verification episode against the new baseline
+             regenerates; SysML needs no OSATE) -> report-driven target
+             regeneration -> gold moves -> full provisioning INCLUDING
+             the props re-blessing -> a verification episode against the
+             new baseline. Promotion NEVER verifies: blessing is
+             authority; whether the impl meets the blessed spec is that
+             episode's honest measurement (RED for a blessed-but-unmet
+             spec)
 --tamper-verus  corrupt a line inside a Verus contract slice of the
              generated Rust; detection/attribution (and --repair)
 --tamper-cheat  admit a verified contract with assume(false) in a file
@@ -343,14 +345,21 @@ def derive_report_targets(fe: Frontend):
     return derive_targets_from_report(fe.report, prefix=fe.prefix)
 
 
-def _write_asp_args(d: Path, asp_args: dict) -> None:
+def _write_asp_args(d: Path, asp_args: dict, no_golden: tuple = ()) -> None:
     """Write a regenerated asp_args.json, carrying existing golden
     bookkeeping forward for unchanged targets: regeneration composed
     with idempotent re-provisioning leaves an unchanged system
-    byte-identical."""
+    byte-identical. `no_golden` names ASP ids that are NOT golden
+    companions (e.g. run_command_cargo_verus under errors==0 appraisal):
+    any golden bookkeeping carried onto their targets is stripped, so a
+    non-companion never accumulates stale goldens."""
     path = d / "asp_args.json"
     if path.is_file():
         asp_args = carry_goldens(json.loads(path.read_text()), asp_args)
+    for asp_id in no_golden:
+        for args in asp_args.get(asp_id, {}).values():
+            args.pop("golden_b64", None)
+            args.pop("golden_ts", None)
     path.write_text(json.dumps(asp_args, indent=2) + "\n")
 
 
@@ -396,12 +405,14 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
         acc, {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
     session = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "session.json").read_text())
     manifest = json.loads((FIXTURES / "temp_control_aadl_rust_verus" / "manifest.json").read_text())
-    # verified-count golden: the ASP emits canonical verification-results
-    # (deterministic), so appraisal is an exact golden comparison — a
-    # shrunken verified count (code moved out of verus!{}, a deleted VC
-    # module) refuses even though errors stays 0
-    session["Session_Context"]["ASP_Comps"]["run_command_cargo_verus"] = \
-        "goldenbytes_appr"
+    # correctness appraisal (errors == 0, run_command_verus_appr from the
+    # template session): the tier judges whether the implementation
+    # PROVES against the blessed contracts, honestly RED for a
+    # blessed-but-unmet spec. Deliberately NOT a golden comparison — a
+    # broken-spec promotion must not capture failing results as the
+    # golden and then match them (a golden of failure attests green).
+    # Surface-shrink at errors==0 is the hash tiers' job: sysproof for
+    # the proof crate, l1a + the contract-file hashes for components.
     n_tools = 0
     if TOOL_CADENCE == "per_use":
         asp_args, term, session, manifest = weave_tool_measurements(
@@ -409,18 +420,18 @@ def build_verus_protocol(fe: Frontend) -> ProtocolDir:
         n_tools = len(asp_args.get("hashfile", {}))
     (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
     (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    _write_asp_args(d, asp_args)
+    _write_asp_args(d, asp_args, no_golden=("run_command_cargo_verus",))
     (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
     (d / "meta.json").write_text(json.dumps({
         "name": "Isolette Verus Verification (semantic tier)",
         "description": "cargo-verus verify over every contract-bearing "
                        "isolette crate (report-derived) plus the system-level "
                        "proof crate: the generated Verus contracts must PROVE "
-                       "against the implemented behavior, and the normalized "
-                       "verification results are goldened — the verified "
-                       "COUNT is pinned, not just errors==0. The verus "
-                       "toolchain is hashed in the same term, before the "
-                       "invocations (measure-then-use).",
+                       "against the implemented behavior (errors == 0 — "
+                       "honestly RED for a blessed-but-unmet spec; "
+                       "surface-shrink at errors==0 is the hash tiers' job). "
+                       "The verus toolchain is hashed in the same term, "
+                       "before the invocations (measure-then-use).",
         "copland": f"lseq( bseq( run_command_cargo_verus×{len(targets)} ), APPR )",
     }, indent=2) + "\n")
     print(f"  {fe.verus_id}: {len(targets)} crates from report"
@@ -571,9 +582,10 @@ def build_sysproof_protocol(fe: Frontend) -> ProtocolDir:
                        "obligation, discharged by Verus) — batched into one "
                        "canonical relpath->sha256 evidence map. "
                        "Report-invisible, so covered as an AM-owned extra "
-                       "tier. Complements the verus tier's verified-count "
-                       "golden: dropping a real VC and adding a trivial one "
-                       "preserves the count, never the bytes; the appraiser "
+                       "tier. Catches surface-shrink the Verus tier "
+                       "(errors==0) cannot see: dropping a real VC — or "
+                       "dropping one and adding a trivial one — leaves the "
+                       "crate verifying but changes the bytes; the appraiser "
                        "names every drifted, missing, and added file.",
         "copland": f"lseq( lseq( hashfile_many({n_files} files), SIG ), "
                    "APPR )",
@@ -802,19 +814,23 @@ def promote_flow(fe: Frontend, protocols: dict) -> None:
          the gates and moves gold: tool gate (HAMR toolchain, and for
          SysML the pinned libraries, measured immediately before use) ->
          real codegen IN PLACE (the report regenerates — the one step
-         re-provisioning alone can never do) -> proof gate (the Verus
-         tier: implemented crates must still prove against the
-         regenerated contracts) -> report-driven target regeneration ->
-         golden capture
+         re-provisioning alone can never do) -> report-driven target
+         regeneration -> golden capture. NO verification: blessing is
+         the administrator's authority act; whether the implementation
+         proves against the blessed spec is the next episode's honest
+         measurement, not a precondition of gold moving
       3. only after the promote outcome is good: rebuild the AM-owned
          dirs from the NEW report (props blessing definition, verus
          crate list) and provision everything, props included — the
          re-blessing
-      4. verification episode against the new baseline
+      4. verification episode against the new baseline — where a
+         blessed-but-unmet spec shows a RED verification tier until the
+         implementation catches up
 
     Steps 2 and 3 are deliberately two blackboard runs: a refused gate
-    must leave the old baseline fully in place, so no provision request
-    exists until the promotion outcome is known good.
+    (tool drift, failed codegen) must leave the old baseline fully in
+    place, so no provision request exists until the promotion outcome is
+    known good.
     """
     print("=== sanction review (contract diff) ===")
     print_check(fe, protocols)
@@ -828,8 +844,6 @@ def promote_flow(fe: Frontend, protocols: dict) -> None:
         gated, GOLDEN_ROOT,
         targets_fn=lambda: derive_report_targets(fe),
         codegen_fn=CODEGEN[fe.name],
-        client=client,
-        validate_with=fe.verus_id,
         tool_gate=_combined_tool_gate(client, protocols,
                                       TOOL_GATE_IDS[fe.name]),
     ))
@@ -840,9 +854,10 @@ def promote_flow(fe: Frontend, protocols: dict) -> None:
     for key, entry in bb.get_escalate().items():
         raise SystemExit(f"  {key}: REFUSED - {entry.result.error}")
     outcome = bb.provision[f"promote:{fe.prefix}"].result
-    print(f"  promote:{fe.prefix}: {outcome.codegen}; proofs validated; "
+    print(f"  promote:{fe.prefix}: {outcome.codegen}; "
           f"targets regenerated={outcome.targets}; "
-          f"{outcome.captured} files -> golden")
+          f"{outcome.captured} files -> golden "
+          "(no verification — the episode judges the new baseline)")
 
     print("\n=== provisioning the new baseline (props re-blessed) ===")
     fresh = build_protocol_dirs(fe, bless_props=True)
@@ -966,10 +981,10 @@ def tamper_broadcast(fe: Frontend, protocols: dict) -> None:
     vacuous.
 
     Every OUTCOME-based tier stays green, because until a `broadcast use`
-    pulls it in the axiom is inert: it changes no verified count and
+    pulls it in the axiom is inert: it changes no proof outcome and
     lives in no hashed or sliced file. files (GUMBO_Library is
-    report-invisible), contracts, the verus verified-count golden (the
-    importers' counts are unchanged — the axiom is not yet consumed),
+    report-invisible), contracts, the verus tier (errors==0 — the
+    importers still verify, the axiom is not yet consumed),
     the sysproof hash (the proof crate is untouched), and the report all
     pass. Only the CHEAT tier — which counts escape CONSTRUCTS, not
     proof outcomes — refuses, naming GUMBO_Library (broadcast 0->1,
@@ -1003,9 +1018,9 @@ _SWAP_ADD = ("verus! {\n"
 
 def tamper_proof_count(fe: Frontend, protocols: dict) -> None:
     """Shrink the verified surface: comment out one proof module of the
-    system proof crate. The crate still verifies (0 errors) but proves
-    fewer obligations — the verus tier's verified-count golden refuses
-    (1862 drops), and the sysproof hash refuses on lib.rs too."""
+    system proof crate. The crate still verifies (0 errors) — the Verus
+    tier judges correctness, not surface size, so it stays GREEN. Only
+    the sysproof whole-file hash refuses (lib.rs changed)."""
     src = SYS_PROOF_LIB.read_text()
     mod = "pub mod normal_display_temp;"
     if mod not in src:
@@ -1018,10 +1033,11 @@ def tamper_proof_count(fe: Frontend, protocols: dict) -> None:
 
 
 def tamper_proof_swap(fe: Frontend, protocols: dict) -> None:
-    """Drop-and-replace at constant count: delete a real VC and add a
-    trivial one, so the verified count stays 1862 and the verus tier is
-    blind. Only the sysproof whole-file hash refuses — the attack the
-    count golden cannot catch."""
+    """Drop-and-replace: delete a real VC and add a trivial one. The
+    crate still verifies (0 errors), so the Verus tier (correctness)
+    stays green and the cheat scan stays silent (no escape construct).
+    Only the sysproof whole-file hash refuses — the surface changed
+    even though every proof outcome is clean."""
     import re
     src = SYS_PROOF_VC.read_text()
     m = re.search(r'pub proof fn vc_pre_assert_oi.*?\n\{\}\n', src, re.S)
@@ -1475,10 +1491,11 @@ def main() -> None:
                              "naming the crate")
     parser.add_argument("--tamper-proof-count", action="store_true",
                         help="drop a proof module of the system proof crate "
-                             "(verified-count golden + sysproof hash refuse)")
+                             "(still verifies — Verus green; only the "
+                             "sysproof hash refuses)")
     parser.add_argument("--tamper-proof-swap", action="store_true",
-                        help="drop a real VC and add a trivial one, holding "
-                             "the verified count (only the sysproof hash "
+                        help="drop a real VC and add a trivial one, still "
+                             "verifying (Verus green; only the sysproof hash "
                              "refuses)")
     parser.add_argument("--tamper-note", action="store_true")
     parser.add_argument("--tamper-impl", action="store_true")

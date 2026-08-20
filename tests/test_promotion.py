@@ -18,7 +18,6 @@ from pybb.attestation import (
     promotion_request,
     request_promotion,
 )
-from pybb.attestation.client import AttestationClient
 from pybb.attestation.snapshot import mirror_path
 
 
@@ -126,46 +125,23 @@ def test_codegen_failure_stops_the_pipeline(tmp_path):
     assert "readfile_range" not in protocols["temp_control_aadl_slang_l2"].asp_args  # targets untouched
 
 
-class _GateClient(AttestationClient):
-    def __init__(self, ok: bool):
-        raw = [base64.b64encode(b"" if ok else b"tests failed").decode()]
-        et = {"EvidenceT_CONSTRUCTOR": "asp_evt", "EvidenceT_BODY": [
-            "P0", {"ASP_ID": "x_appr", "ASP_ARGS": {}},
-            {"EvidenceT_CONSTRUCTOR": "mt_evt"}]}
-        self.response = {"TYPE": "RESPONSE", "ACTION": "RUN", "SUCCESS": True,
-                         "PAYLOAD": [{"RawEv": raw}, et]}
-
-    def run_protocol(self, protocol):
-        return self.response
-
-
-def test_validation_gate_blocks_promotion(tmp_path):
+def test_promotion_never_validates_moves_gold_regardless(tmp_path):
+    # Promotion is an authority act: it moves gold on a sanctioned change
+    # WITHOUT verifying. Whether the implementation proves against the
+    # blessed spec is the following episode's honest measurement — a
+    # blessed-but-unmet spec attests RED, it does not block the blessing.
     aadl, comp = _model_tree(tmp_path)
     protocols = _protocols(tmp_path, aadl, comp)
-    protocols["val"] = protocols["temp_control_aadl_slang_l1a"].model_copy()
     predicate = make_promotion_predicate(
         protocols, tmp_path / "golden", _spec(aadl, comp),
-        codegen_fn=lambda: "ran", client=_GateClient(ok=False),
-        validate_with="val")
+        codegen_fn=lambda: "ran")
 
     outcome = predicate(promotion_request("sys"))
 
-    assert not outcome and outcome.validated is False
-    assert "does not verify" in outcome.error
-    assert not (tmp_path / "golden").exists()
-
-
-def test_validation_gate_passes_when_project_verifies(tmp_path):
-    aadl, comp = _model_tree(tmp_path)
-    protocols = _protocols(tmp_path, aadl, comp)
-    protocols["val"] = protocols["temp_control_aadl_slang_l1a"].model_copy()
-    predicate = make_promotion_predicate(
-        protocols, tmp_path / "golden", _spec(aadl, comp),
-        codegen_fn=lambda: "ran", client=_GateClient(ok=True),
-        validate_with="val")
-
-    outcome = predicate(promotion_request("sys"))
-    assert outcome and outcome.validated is True
+    assert outcome and outcome.captured > 0  # gold moved
+    assert (tmp_path / "golden").exists()
+    # no verification concept survives on the outcome
+    assert not hasattr(outcome, "validated")
 
 
 def test_promotion_runs_before_provisioning_in_partition_order(tmp_path):

@@ -443,11 +443,9 @@ def test_sanctioned_spec_change_promoted_and_reblessed(tmp_path, sanctioned_edit
     predicate = make_promotion_predicate(
         protocols, golden_tmp,
         targets_fn=lambda: derive_targets_from_lean(LEAN_ROOT, prefix="temp_control_lean"),
-        codegen_fn=make_codegen_fn(resolved_exec_targets()),
-        client=client, validate_with="temp_control_lean_verification")
+        codegen_fn=make_codegen_fn(resolved_exec_targets()))
     outcome = predicate(promotion_request("lean"))
     assert outcome, outcome.error
-    assert outcome.validated is True
     assert outcome.targets == {"temp_control_lean_contracts": 16}
     assert "temp_control_lean_spec_fanOff_only_if_cold_or_held_targ" \
         in protocols["temp_control_lean_contracts"].asp_args["readfile_range"]

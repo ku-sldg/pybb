@@ -1,5 +1,5 @@
 {
   "name": "Isolette Verus Verification (semantic tier)",
-  "description": "cargo-verus verify over every contract-bearing isolette crate (report-derived) plus the system-level proof crate: the generated Verus contracts must PROVE against the implemented behavior, and the normalized verification results are goldened \u2014 the verified COUNT is pinned, not just errors==0. The verus toolchain is hashed in the same term, before the invocations (measure-then-use).",
+  "description": "cargo-verus verify over every contract-bearing isolette crate (report-derived) plus the system-level proof crate: the generated Verus contracts must PROVE against the implemented behavior (errors == 0 \u2014 honestly RED for a blessed-but-unmet spec; surface-shrink at errors==0 is the hash tiers' job). The verus toolchain is hashed in the same term, before the invocations (measure-then-use).",
   "copland": "lseq( bseq( run_command_cargo_verus\u00d78 ), APPR )"
 }

@@ -88,21 +88,23 @@ def test_sysproof_protocol_covers_the_proof_crate():
                    for a in l1a["hashfile"].values())
 
 
-def test_verus_tier_goldens_the_verified_count():
-    v = json.loads(
-        (FIXTURES / "isolette_sysmlv2_rust_verus" / "asp_args.json").read_text())
-    import base64
-    sys_t = next(t for t, a in v["run_command_cargo_verus"].items()
-                 if "sys_nominal_proof" in a["cwd"])
-    args = v["run_command_cargo_verus"][sys_t]
-    assert "--time" not in args["exe_args"]  # timings dropped for determinism
-    results = json.loads(base64.b64decode(args["golden_b64"]))["verification-results"]
-    assert results["verified"] == 1862 and results["errors"] == 0
-    # count is pinned by exact golden bytes, not just errors==0
+def test_verus_tier_judges_correctness_not_a_golden():
+    # The Verus tier judges CORRECTNESS (errors == 0), so a
+    # blessed-but-unmet spec attests RED honestly — it is deliberately
+    # NOT a golden comparison (a broken-spec promotion must not capture
+    # failing results as the golden and then match them). Surface-shrink
+    # at errors==0 is the hash tiers' job.
     session = json.loads(
         (FIXTURES / "isolette_sysmlv2_rust_verus" / "session.json").read_text())
     assert session["Session_Context"]["ASP_Comps"]["run_command_cargo_verus"] \
-        == "goldenbytes_appr"
+        == "run_command_verus_appr"
+    v = json.loads(
+        (FIXTURES / "isolette_sysmlv2_rust_verus" / "asp_args.json").read_text())
+    # cargo-verus targets are NOT golden companions: no count golden blessed
+    assert not any(a.get("golden_b64")
+                   for a in v["run_command_cargo_verus"].values())
+    assert any("sys_nominal_proof" in a["cwd"]
+               for a in v["run_command_cargo_verus"].values())
 
 
 def test_tamper_cheat_site_is_present_and_clean():
