@@ -329,6 +329,14 @@ do_verus() {
     xattr -dr com.apple.quarantine "$VERUS_DIST_DIR" 2>/dev/null || true
   fi
   ln -sfn "$VERUS_DIST_DIR" "$VERUS_DIST_LINK"
+  # surface what --version actually says (the probe suppresses stderr) —
+  # this is the first thing to read when a fresh platform misbehaves
+  echo "verus --version reports:"
+  "$VERUS_DIST_LINK/verus" --version || echo "(verus --version exited $?)"
+  if [ "$PLATFORM" = linux ] && command -v ldd >/dev/null 2>&1; then
+    echo "dynamic deps:"
+    ldd "$VERUS_DIST_DIR/verus" || true
+  fi
 }
 
 probe_sireum() {
