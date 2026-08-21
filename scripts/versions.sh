@@ -26,6 +26,22 @@ CET_URL="https://github.com/ku-sldg/copland-evidence-tools.git"
 SYSML_LIBS_URL="https://github.com/santoslab/sysml-aadl-libraries.git"
 KU_SLDG_OPAM_REPO="https://github.com/ku-sldg/opam-repo.git"
 
+# out_has <pattern> <cmd...> — run cmd, test its output for <pattern>.
+# Captures output FIRST: a bare `cmd | grep -q` under pipefail can fail
+# on a successful match when grep's early exit SIGPIPEs the producer
+# (timing-dependent — passed on macOS, failed on Linux CI).
+out_has() {
+  local pattern="$1" out; shift
+  out="$("$@" 2>/dev/null)" || true
+  grep -q -- "$pattern" <<<"$out"
+}
+
+out_has_line() {  # same, but exact whole-line match (grep -x)
+  local pattern="$1" out; shift
+  out="$("$@" 2>/dev/null)" || true
+  grep -qx -- "$pattern" <<<"$out"
+}
+
 # Everything except the pybb repo itself hangs off this fixed layout
 # (Path.home()-derived constants throughout pybb/attestation and the
 # example drivers).

@@ -201,8 +201,8 @@ do_prereqs() {
 
 probe_rustup() {
   have rustup \
-    && rustup toolchain list 2>/dev/null | grep -q "^stable" \
-    && rustup toolchain list 2>/dev/null | grep -q "$RUST_NIGHTLY"
+    && out_has "^stable" rustup toolchain list \
+    && out_has "$RUST_NIGHTLY" rustup toolchain list
 }
 
 do_rustup() {
@@ -220,8 +220,8 @@ do_rustup() {
 }
 
 probe_opam_switch() {
-  opam switch list --short 2>/dev/null | grep -qx "$OPAM_SWITCH" \
-    && opam repo list --all --short 2>/dev/null | grep -q "ku-sldg"
+  out_has_line "$OPAM_SWITCH" opam switch list --short \
+    && out_has "ku-sldg" opam repo list --all --short
 }
 
 do_opam_switch() {
@@ -236,12 +236,12 @@ do_opam_switch() {
       opam init --bare --no-setup --disable-sandboxing -y
     fi
   fi
-  opam switch list --short 2>/dev/null | grep -qx "$OPAM_SWITCH" \
+  out_has_line "$OPAM_SWITCH" opam switch list --short \
     || opam switch create "$OPAM_SWITCH" "$OCAML_COMPILER" -y
-  opam repo list --all --short 2>/dev/null | grep -q "coq-released" \
+  out_has "coq-released" opam repo list --all --short \
     || opam repo add coq-released https://coq.inria.fr/opam/released \
          --all-switches --set-default
-  opam repo list --all --short 2>/dev/null | grep -q "ku-sldg" \
+  out_has "ku-sldg" opam repo list --all --short \
     || opam repo add ku-sldg/opam-repo "$KU_SLDG_OPAM_REPO" \
          --all-switches --set-default
 }
@@ -302,7 +302,7 @@ do_build_evidence_tools() {
 
 probe_verus() {
   [ -x "$VERUS_DIST_LINK/verus" ] \
-    && "$VERUS_DIST_LINK/verus" --version 2>/dev/null | grep -q "$VERUS_VERSION"
+    && out_has "$VERUS_VERSION" "$VERUS_DIST_LINK/verus" --version
 }
 
 do_verus() {
@@ -342,8 +342,7 @@ do_verus() {
 probe_sireum() {
   [ "$SKIP_SIREUM" = 1 ] && return 0
   [ -x "$SIREUM_HOME_DIR/bin/sireum" ] \
-    && "$SIREUM_HOME_DIR/bin/sireum" --version 2>/dev/null \
-       | grep -q "$SIREUM_TAG"
+    && out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version
 }
 
 do_sireum() {
@@ -363,7 +362,7 @@ do_sireum() {
     mkdir -p "$(dirname "$SIREUM_HOME_DIR")"
     mv "$extracted" "$SIREUM_HOME_DIR"
     rm -rf "$tmp"
-  elif ! "$SIREUM_HOME_DIR/bin/sireum" --version 2>/dev/null | grep -q "$SIREUM_TAG"; then
+  elif ! out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version; then
     die "$SIREUM_HOME_DIR exists but is not Sireum v$SIREUM_TAG —
     move it aside and re-run (the isolette baselines are pinned to that release)"
   fi

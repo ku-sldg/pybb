@@ -50,7 +50,7 @@ else
 fi
 
 echo "opam switch $OPAM_SWITCH:"
-if opam switch list --short 2>/dev/null | grep -qx "$OPAM_SWITCH"; then
+if out_has_line "$OPAM_SWITCH" opam switch list --short; then
   ok "switch '$OPAM_SWITCH' exists"
   v="$("$HOME/.opam/$OPAM_SWITCH/bin/rocq" --version 2>/dev/null)"
   case "$v" in *"$ROCQ_VERSION"*) ok "rocq $ROCQ_VERSION" ;;
@@ -93,7 +93,7 @@ ref_is "$WORKSPACE/sysml-aadl-libraries" "" "$SYSML_LIBS_COMMIT" \
 
 echo "verus + rust:"
 if [ -x "$VERUS_DIST_LINK/verus" ] \
-   && "$VERUS_DIST_LINK/verus" --version 2>/dev/null | grep -q "$VERUS_VERSION"; then
+   && out_has "$VERUS_VERSION" "$VERUS_DIST_LINK/verus" --version; then
   ok "verus $VERUS_VERSION via $VERUS_DIST_LINK"
 else
   bad "verus $VERUS_VERSION not found via $VERUS_DIST_LINK"
@@ -104,7 +104,7 @@ if [ -f "$TOOLCHAIN_TOML" ]; then
   [ "$pinned" = "$RUST_NIGHTLY" ] && ok "rust nightly pin matches crates ($RUST_NIGHTLY)" \
     || bad "versions.sh RUST_NIGHTLY=$RUST_NIGHTLY but crates pin $pinned"
 fi
-if have rustup && rustup toolchain list 2>/dev/null | grep -q "$RUST_NIGHTLY"; then
+if have rustup && out_has "$RUST_NIGHTLY" rustup toolchain list; then
   ok "rust $RUST_NIGHTLY installed"
 else
   bad "rust $RUST_NIGHTLY not installed (rustup toolchain install $RUST_NIGHTLY ...)"
@@ -112,7 +112,7 @@ fi
 
 echo "sireum:"
 if [ -x "$SIREUM_HOME_DIR/bin/sireum" ]; then
-  "$SIREUM_HOME_DIR/bin/sireum" --version 2>/dev/null | grep -q "$SIREUM_TAG" \
+  out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version \
     && ok "sireum v$SIREUM_TAG at $SIREUM_HOME_DIR" \
     || bad "$SIREUM_HOME_DIR present but not v$SIREUM_TAG"
 else
