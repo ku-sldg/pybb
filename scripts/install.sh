@@ -508,6 +508,14 @@ probe_provision_isolette() {
 
 do_provision_isolette() {
   [ "$SKIP_SIREUM" = 1 ] && return 0
+  # provisioning RUNS the verus tier, and cold cargo-verus builds pollute
+  # stdout, poisoning the tier's signed evidence (known asp-libs JSON
+  # appraiser limitation — warm builds are clean). A throwaway first pass
+  # warms the caches; the real blessing then signs clean warm evidence.
+  echo "${DIM}(warm-up provisioning pass — cold Verus crate builds are
+ multi-minute and their evidence is discarded)${RESET}"
+  ( cd "$REPO" && "$REPO/.venv/bin/python" examples/isolette_rust.py \
+      --frontend sysml --provision ) || true
   echo "${DIM}(provisioning + blessing the isolette baselines)${RESET}"
   ( cd "$REPO" && "$REPO/.venv/bin/python" examples/isolette_rust.py \
       --frontend sysml --provision --bless-props )
