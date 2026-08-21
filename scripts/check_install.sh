@@ -106,8 +106,12 @@ if [ -f "$TOOLCHAIN_TOML" ]; then
 fi
 if have rustup && out_has "^$VERUS_TOOLCHAIN" rustup toolchain list; then
   ok "rust $VERUS_TOOLCHAIN installed (verus launch toolchain)"
+  out_has "rust-src (installed)" \
+      rustup component list --toolchain "$VERUS_TOOLCHAIN" \
+    && ok "rust-src in $VERUS_TOOLCHAIN (cargo-verus build-std)" \
+    || bad "rust-src missing from $VERUS_TOOLCHAIN (rustup component add rust-src --toolchain $VERUS_TOOLCHAIN)"
 else
-  bad "rust $VERUS_TOOLCHAIN not installed — the verus launcher requires it (rustup toolchain install $VERUS_TOOLCHAIN)"
+  bad "rust $VERUS_TOOLCHAIN not installed — the verus launcher requires it (rustup toolchain install $VERUS_TOOLCHAIN -c rust-src)"
 fi
 if have rustup && out_has "$RUST_NIGHTLY" rustup toolchain list; then
   ok "rust $RUST_NIGHTLY installed"

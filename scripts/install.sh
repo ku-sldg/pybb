@@ -203,7 +203,9 @@ probe_rustup() {
   have rustup \
     && out_has "^stable" rustup toolchain list \
     && out_has "$RUST_NIGHTLY" rustup toolchain list \
-    && out_has "^$VERUS_TOOLCHAIN" rustup toolchain list
+    && out_has "^$VERUS_TOOLCHAIN" rustup toolchain list \
+    && out_has "rust-src (installed)" \
+         rustup component list --toolchain "$VERUS_TOOLCHAIN"
 }
 
 do_rustup() {
@@ -219,8 +221,10 @@ do_rustup() {
   rustup toolchain install "$RUST_NIGHTLY" \
     -c rustfmt -c rust-src -c rustc-dev -c llvm-tools-preview -c rust-analyzer
   # the verus launcher refuses to run without the exact toolchain the
-  # release binaries were built with
-  rustup toolchain install "$VERUS_TOOLCHAIN"
+  # release binaries were built with — and cargo-verus builds run UNDER
+  # that toolchain (overriding the crates' rust-toolchain.toml), so it
+  # needs rust-src for the isolette crates' -Z build-std flow
+  rustup toolchain install "$VERUS_TOOLCHAIN" -c rust-src
 }
 
 probe_opam_switch() {
