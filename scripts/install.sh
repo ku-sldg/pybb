@@ -395,6 +395,13 @@ do_sireum() {
   # bin/<platform>/java (the CLI tar ships no JVM) and the graal jars;
   # SIREUM_NO_SETUP skips IDE setup and present artifacts are kept
   if [ ! -x "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/java/bin/java" ]; then
+    # the CLI tar ships versions.properties but NOT bin/init.sh — fetch
+    # it from the kekinian repo at the same pinned tag
+    if [ ! -f "$SIREUM_HOME_DIR/bin/init.sh" ]; then
+      curl -fL -o "$SIREUM_HOME_DIR/bin/init.sh" \
+        "https://raw.githubusercontent.com/sireum/kekinian/${SIREUM_TAG}/bin/init.sh"
+      chmod +x "$SIREUM_HOME_DIR/bin/init.sh"
+    fi
     ( cd "$SIREUM_HOME_DIR" && SIREUM_NO_SETUP=true bash bin/init.sh )
   fi
   if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
