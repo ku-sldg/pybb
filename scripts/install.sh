@@ -346,6 +346,7 @@ do_verus() {
 probe_sireum() {
   [ "$SKIP_SIREUM" = 1 ] && return 0
   [ -x "$SIREUM_HOME_DIR/bin/sireum" ] \
+    && [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] \
     && out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version
 }
 
@@ -369,6 +370,15 @@ do_sireum() {
   elif ! out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version; then
     die "$SIREUM_HOME_DIR exists but is not Sireum v$SIREUM_TAG —
     move it aside and re-run (the isolette baselines are pinned to that release)"
+  fi
+  # the CLI tar ships native launchers but NOT bin/sireum.jar — the
+  # kernel jar the hamr_tools protocol measures (init.sh fetches it
+  # lazily; provisioning needs it present NOW)
+  if [ ! -f "$SIREUM_HOME_DIR/bin/sireum.jar" ]; then
+    echo "downloading sireum.jar (the measured kernel jar)"
+    curl -fL -o "$SIREUM_HOME_DIR/bin/sireum.jar" \
+      "https://github.com/sireum/kekinian/releases/download/${SIREUM_TAG}/sireum.jar"
+    chmod +x "$SIREUM_HOME_DIR/bin/sireum.jar"
   fi
   mkdir -p "$WORKSPACE/.sireum_cache"
   # first run bootstraps further downloads — do it now, not mid-demo

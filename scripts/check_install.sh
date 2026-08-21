@@ -120,6 +120,9 @@ if [ -x "$SIREUM_HOME_DIR/bin/sireum" ]; then
   out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version \
     && ok "sireum v$SIREUM_TAG at $SIREUM_HOME_DIR" \
     || bad "$SIREUM_HOME_DIR present but not v$SIREUM_TAG"
+  [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] \
+    && ok "sireum.jar present (measured by hamr_tools)" \
+    || bad "bin/sireum.jar missing — hamr_tools provisioning needs it (scripts/install.sh --from sireum)"
 else
   skip "sireum absent (demo_isolette scenes 3/8 + its readiness gate need it)"
 fi
