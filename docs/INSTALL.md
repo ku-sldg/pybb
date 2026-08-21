@@ -104,6 +104,26 @@ scripts/check_install.sh           # component checks
 scripts/check_install.sh --ready   # + both readiness gates (~1-2 min)
 ```
 
+## Release verification (CI)
+
+An on-demand GitHub Actions workflow,
+[`.github/workflows/install-test.yml`](../.github/workflows/install-test.yml),
+runs the full clean-machine experience — `install.sh` →
+`check_install.sh --ready` → both demo arcs unattended — on fresh
+`ubuntu-24.04` (x86_64) and `macos-15` (Apple Silicon) runners. It is
+dispatched manually before releases, not scheduled:
+
+```bash
+gh workflow run install-test.yml --ref dev -f platform=both -f mode=full
+```
+
+(or the Actions tab → install-test → Run workflow). Inputs: `platform`
+(`both`/`linux`/`macos`), `mode` (`full`, ~2–4 h per platform; or
+`dry-run`, a ~2-minute probe-only plumbing check), and `run_demos`. Demo
+logs are uploaded as run artifacts (`install-logs-<platform>`). GitHub
+lists the workflow from `main`, but dispatching with `--ref dev` runs
+dev's copy against dev's code.
+
 ## Why the installer re-provisions and re-blesses
 
 The repository ships signed golden baselines (`golden/`,

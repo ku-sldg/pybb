@@ -189,8 +189,10 @@ do_prereqs() {
     build-essential git curl unzip xz-utils m4 pkg-config libgmp-dev
     libzmq3-dev python3 (>=3.11) python3-venv opam (>=2.1)"
     sudo apt-get update
+    # bubblewrap: opam's build sandbox (see do_opam_switch for the fallback
+    # when the kernel restricts unprivileged user namespaces)
     sudo apt-get install -y build-essential git curl unzip xz-utils m4 \
-      pkg-config libgmp-dev libzmq3-dev python3 python3-venv
+      pkg-config libgmp-dev libzmq3-dev bubblewrap python3 python3-venv
     have opam || sudo apt-get install -y opam \
       || die "could not install opam via apt — see https://opam.ocaml.org/doc/Install.html"
   fi
@@ -223,7 +225,17 @@ probe_opam_switch() {
 }
 
 do_opam_switch() {
-  [ -d "$HOME/.opam" ] || opam init --bare --no-setup -y
+  if [ ! -d "$HOME/.opam" ]; then
+    # Ubuntu 23.10+ restricts unprivileged user namespaces (AppArmor),
+    # which can break opam's bubblewrap sandbox even when installed —
+    # fall back to unsandboxed builds with a warning (common on CI)
+    if ! opam init --bare --no-setup -y; then
+      echo "warning: opam init failed with sandboxing — retrying with"
+      echo "--disable-sandboxing (opam builds will run unsandboxed)"
+      rm -rf "$HOME/.opam"
+      opam init --bare --no-setup --disable-sandboxing -y
+    fi
+  fi
   opam switch list --short 2>/dev/null | grep -qx "$OPAM_SWITCH" \
     || opam switch create "$OPAM_SWITCH" "$OCAML_COMPILER" -y
   opam repo list --all --short 2>/dev/null | grep -q "coq-released" \
