@@ -1326,7 +1326,7 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
         return
 
     if cli.provision:
-        protocols = build_protocol_dirs(cfg)
+        protocols = build_protocol_dirs(cfg, bless_model=cli.bless_model)
         provision_flow(cfg, protocols, bless_model=cli.bless_model,
                        bless_tools=cli.bless_tools)
         return
