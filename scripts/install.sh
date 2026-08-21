@@ -250,7 +250,7 @@ probe_clone_repos() {
   repo_at_ref "$WORKSPACE/cvm" "$CVM_BRANCH" \
     && repo_at_ref "$WORKSPACE/asp-libs" "$ASP_LIBS_BRANCH" \
     && { [ "$SKIP_CET" = 1 ] \
-         || repo_at_ref "$WORKSPACE/copland-evidence-tools" "$CET_BRANCH"; } \
+         || repo_at_ref "$WORKSPACE/copland-evidence-tools" "" "$CET_COMMIT"; } \
     && { [ "$SKIP_SIREUM" = 1 ] \
          || repo_at_ref "$WORKSPACE/sysml-aadl-libraries" "" "$SYSML_LIBS_COMMIT"; }
 }
@@ -260,7 +260,7 @@ do_clone_repos() {
   clone_pinned "$CVM_URL" "$WORKSPACE/cvm" "$CVM_BRANCH"
   clone_pinned "$ASP_LIBS_URL" "$WORKSPACE/asp-libs" "$ASP_LIBS_BRANCH"
   [ "$SKIP_CET" = 1 ] \
-    || clone_pinned "$CET_URL" "$WORKSPACE/copland-evidence-tools" "$CET_BRANCH"
+    || clone_pinned "$CET_URL" "$WORKSPACE/copland-evidence-tools" "" "$CET_COMMIT"
   # pinned no newer than the Sireum release: newer library commits crash
   # older frontends (see examples/isolette_rust.py)
   [ "$SKIP_SIREUM" = 1 ] \

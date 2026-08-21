@@ -31,7 +31,7 @@ pybb, so the layout is **fixed** — the installer creates it:
 | pybb (this repo, `dev` branch) | — | anywhere; `~/Claude_workspace/pybb` recommended |
 | CVM (`ku-sldg/cvm`) | branch `fix/explicit-stdin-flag` | `~/Claude_workspace/cvm` |
 | asp-libs (`ku-sldg/asp-libs`) | branch `hamr-asps` | `~/Claude_workspace/asp-libs` |
-| copland-evidence-tools (optional) | branch `req-file-input` | `~/Claude_workspace/copland-evidence-tools` |
+| copland-evidence-tools (optional) | commit `9ac916b` (main) | `~/Claude_workspace/copland-evidence-tools` |
 | Rocq Prover (opam switch **named `5.2`**, OCaml 5.2.0) | coq 9.0.1 | `~/.opam/5.2` |
 | Verus (binary release) | 0.2026.01.23.1650a05 | `~/Claude_workspace/verus-<plat>` + symlink `~/Claude_workspace/verus-dist` |
 | Rust (rustup) | nightly-2026-01-25 (+ stable) | `~/.rustup`, `~/.cargo` |

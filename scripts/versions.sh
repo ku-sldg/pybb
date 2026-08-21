@@ -11,7 +11,9 @@ RUST_NIGHTLY="nightly-2026-01-25"
 SYSML_LIBS_COMMIT="9016cbcceefa92f0068e1811923704dd261d15f1"
 CVM_BRANCH="fix/explicit-stdin-flag"
 ASP_LIBS_BRANCH="hamr-asps"
-CET_BRANCH="req-file-input"
+# the req-file-input feature branch was merged upstream (PR #2) and
+# deleted — pin the merge commit on main
+CET_COMMIT="9ac916b40e6eb59fb64f5b9dc7790002e3a8e362"
 # The switch NAME must be exactly "5.2": the rocq/dune wrappers and
 # examples/rocq_workflow.py hardcode ~/.opam/5.2/bin.
 OPAM_SWITCH="5.2"

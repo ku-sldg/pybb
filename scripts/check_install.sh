@@ -84,9 +84,9 @@ ref_is "$WORKSPACE/cvm" "$CVM_BRANCH" && ok "cvm on $CVM_BRANCH" \
   || bad "cvm not on branch $CVM_BRANCH"
 ref_is "$WORKSPACE/asp-libs" "$ASP_LIBS_BRANCH" && ok "asp-libs on $ASP_LIBS_BRANCH" \
   || bad "asp-libs not on branch $ASP_LIBS_BRANCH"
-ref_is "$WORKSPACE/copland-evidence-tools" "$CET_BRANCH" \
-  && ok "copland-evidence-tools on $CET_BRANCH" \
-  || skip "copland-evidence-tools not on $CET_BRANCH (optional)"
+ref_is "$WORKSPACE/copland-evidence-tools" "" "$CET_COMMIT" \
+  && ok "copland-evidence-tools at ${CET_COMMIT:0:9}" \
+  || skip "copland-evidence-tools not at ${CET_COMMIT:0:9} (optional)"
 ref_is "$WORKSPACE/sysml-aadl-libraries" "" "$SYSML_LIBS_COMMIT" \
   && ok "sysml-aadl-libraries at ${SYSML_LIBS_COMMIT:0:9}" \
   || bad "sysml-aadl-libraries not at pinned commit ${SYSML_LIBS_COMMIT:0:9} (isolette)"
