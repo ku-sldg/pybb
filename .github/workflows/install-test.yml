@@ -1,0 +1,145 @@
+# install-test — on-demand clean-machine verification of scripts/install.sh
+# and both demo arcs. Dispatched manually (Actions UI or `gh workflow run`)
+# before releases; not scheduled.
+#
+# GitHub only lists workflow_dispatch workflows that exist on the DEFAULT
+# branch (main), so this file is cherry-picked to main; dispatch runs
+# against `dev` use dev's copy of this file and dev's code:
+#
+#   gh workflow run install-test.yml --ref dev -f platform=both -f mode=full
+#
+# mode=dry-run is a ~2-minute plumbing check (install.sh --dry-run only) —
+# use it after editing this workflow before burning hours on a full run.
+
+name: install-test
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: which platform job(s) to run
+        type: choice
+        options: [both, linux, macos]
+        default: both
+      mode:
+        description: full install vs. quick --dry-run plumbing check
+        type: choice
+        options: [full, dry-run]
+        default: full
+      run_demos:
+        description: run both demo arcs after install (full mode only)
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: install-test-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  linux:
+    if: ${{ inputs.platform != 'macos' }}
+    runs-on: ubuntu-24.04   # x86_64 — matches the installer's Linux target
+    timeout-minutes: 330
+    steps:
+      - name: Free disk space
+        if: ${{ inputs.mode == 'full' }}
+        run: |
+          df -h /
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet \
+                      /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          sudo docker system prune -af >/dev/null 2>&1 || true
+          df -h /
+
+      - uses: actions/checkout@v4
+
+      - name: install.sh (dry-run)
+        if: ${{ inputs.mode == 'dry-run' }}
+        run: scripts/install.sh --dry-run
+
+      - name: install.sh
+        if: ${{ inputs.mode == 'full' }}
+        run: scripts/install.sh
+
+      - name: check_install.sh --ready
+        if: ${{ inputs.mode == 'full' }}
+        run: scripts/check_install.sh --ready
+
+      - name: demo_rocq.sh (unattended)
+        if: ${{ inputs.mode == 'full' && inputs.run_demos }}
+        run: examples/demo_rocq.sh --fast --auto bless --no-vscode
+
+      - name: demo_isolette.sh (unattended)
+        if: ${{ inputs.mode == 'full' && inputs.run_demos }}
+        run: examples/demo_isolette.sh --fast --auto bless --no-vscode
+
+      - name: baseline rewrites (informational)
+        if: ${{ inputs.mode == 'full' }}
+        run: |
+          echo "expected local baseline rewrites from provisioning on this runner:"
+          git status --short tests/fixtures golden || true
+
+      - name: Collect demo logs
+        if: always()
+        run: |
+          mkdir -p ci-logs
+          cp -R "${TMPDIR:-/tmp}"/demo_rocq.* "${TMPDIR:-/tmp}"/demo_isolette.* \
+            ci-logs/ 2>/dev/null || true
+          ls -la ci-logs || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: install-logs-linux
+          path: ci-logs/
+          if-no-files-found: ignore
+
+  macos:
+    if: ${{ inputs.platform != 'linux' }}
+    runs-on: macos-15   # Apple Silicon — macos-13 is x86_64, unsupported
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install.sh (dry-run)
+        if: ${{ inputs.mode == 'dry-run' }}
+        run: scripts/install.sh --dry-run
+
+      - name: install.sh
+        if: ${{ inputs.mode == 'full' }}
+        run: scripts/install.sh
+
+      - name: check_install.sh --ready
+        if: ${{ inputs.mode == 'full' }}
+        run: scripts/check_install.sh --ready
+
+      - name: demo_rocq.sh (unattended)
+        if: ${{ inputs.mode == 'full' && inputs.run_demos }}
+        run: examples/demo_rocq.sh --fast --auto bless --no-vscode
+
+      - name: demo_isolette.sh (unattended)
+        if: ${{ inputs.mode == 'full' && inputs.run_demos }}
+        run: examples/demo_isolette.sh --fast --auto bless --no-vscode
+
+      - name: baseline rewrites (informational)
+        if: ${{ inputs.mode == 'full' }}
+        run: |
+          echo "expected local baseline rewrites from provisioning on this runner:"
+          git status --short tests/fixtures golden || true
+
+      - name: Collect demo logs
+        if: always()
+        run: |
+          mkdir -p ci-logs
+          cp -R "${TMPDIR:-/tmp}"/demo_rocq.* "${TMPDIR:-/tmp}"/demo_isolette.* \
+            ci-logs/ 2>/dev/null || true
+          ls -la ci-logs || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: install-logs-macos
+          path: ci-logs/
+          if-no-files-found: ignore
