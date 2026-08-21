@@ -57,11 +57,13 @@ case "$(uname -s)/$(uname -m)" in
     PLATFORM=macos
     VERUS_PLAT=arm64-macos
     SIREUM_PLAT=mac-arm64
+    SIREUM_BIN_PLAT=mac       # bin/<plat>/ dir inside the Sireum install
     ;;
   Linux/x86_64)
     PLATFORM=linux
     VERUS_PLAT=x86-linux
     SIREUM_PLAT=linux-amd64
+    SIREUM_BIN_PLAT=linux
     ;;
   *)
     echo "unsupported platform: $(uname -s)/$(uname -m)" >&2

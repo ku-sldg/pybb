@@ -127,6 +127,12 @@ if [ -x "$SIREUM_HOME_DIR/bin/sireum" ]; then
   [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] \
     && ok "sireum.jar present (measured by hamr_tools)" \
     || bad "bin/sireum.jar missing — hamr_tools provisioning needs it (scripts/install.sh --from sireum)"
+  [ -x "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/java/bin/java" ] \
+    && ok "bundled JVM present (bin/$SIREUM_BIN_PLAT/java)" \
+    || bad "bundled JVM missing — run: cd $SIREUM_HOME_DIR && SIREUM_NO_SETUP=true bash bin/init.sh"
+  if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
+    bad "linux native-image sireum still enabled — it crashes hamr codegen (scripts/install.sh --from sireum disables it)"
+  fi
 else
   skip "sireum absent (demo_isolette scenes 3/8 + its readiness gate need it)"
 fi

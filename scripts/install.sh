@@ -349,9 +349,16 @@ do_verus() {
 
 probe_sireum() {
   [ "$SKIP_SIREUM" = 1 ] && return 0
-  [ -x "$SIREUM_HOME_DIR/bin/sireum" ] \
-    && [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] \
-    && out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version
+  [ -x "$SIREUM_HOME_DIR/bin/sireum" ] || return 1
+  [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] || return 1
+  # bundled JVM (the CLI tar ships none; init.sh provisions it)
+  [ -x "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/java/bin/java" ] || return 1
+  # on Linux the native-image binary must be disabled (it crashes in
+  # hamr codegen reflection) so the launcher takes the JVM path
+  if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
+    return 1
+  fi
+  out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version
 }
 
 do_sireum() {
@@ -384,8 +391,23 @@ do_sireum() {
       "https://github.com/sireum/kekinian/releases/download/${SIREUM_TAG}/sireum.jar"
     chmod +x "$SIREUM_HOME_DIR/bin/sireum.jar"
   fi
+  # official bootstrap: fetches the pinned BellSoft JDK into
+  # bin/<platform>/java (the CLI tar ships no JVM) and the graal jars;
+  # SIREUM_NO_SETUP skips IDE setup and present artifacts are kept
+  if [ ! -x "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/java/bin/java" ]; then
+    ( cd "$SIREUM_HOME_DIR" && SIREUM_NO_SETUP=true bash bin/init.sh )
+  fi
+  if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
+    # the linux native-image binary crashes in hamr codegen (MSDParser's
+    # structural-typing reflection is not registered in the image) —
+    # disable it so the launcher uses the JVM path, the configuration
+    # macOS runs (it has no native binary at all)
+    mv "$SIREUM_HOME_DIR/bin/linux/sireum" \
+       "$SIREUM_HOME_DIR/bin/linux/sireum.native-disabled"
+  fi
   mkdir -p "$WORKSPACE/.sireum_cache"
-  # first run bootstraps further downloads — do it now, not mid-demo
+  # first run bootstraps further downloads (and trains the AOT cache on
+  # the JVM path) — do it now, not mid-demo
   "$SIREUM_HOME_DIR/bin/sireum" --version >/dev/null
 }
 
