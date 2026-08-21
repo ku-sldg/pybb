@@ -14,8 +14,8 @@ demo arcs running with a passing attestation readiness gate:
 
 | Platform | Status |
 |---|---|
-| macOS arm64 (Apple Silicon) | tested |
-| Linux x86_64 (Debian/Ubuntu) | written to spec, **untested** — please report problems and successes |
+| macOS arm64 (Apple Silicon) | tested (maintainer machine + CI) |
+| Linux x86_64 (Debian/Ubuntu) | tested (CI: fresh ubuntu-24.04, full install + both demos, 2026-08-21) |
 
 Not covered: Intel macOS, Windows/WSL. The Lean examples (not part of
 these two demos) are additionally macOS-only as written (`.dylib`
@@ -45,9 +45,10 @@ and the isolette crates pin the matching Rust nightly and Verus crate
 versions. sysml-aadl-libraries must be **no newer than the Sireum
 release** (newer library commits crash older frontends).
 
-Budget roughly **10–15 GB of disk** and **45–90 minutes** (the opam/coq
-build of the CVM dominates; the first isolette Verus run later cold-builds
-its crates for several more minutes).
+Budget roughly **10–15 GB of disk** and **25–90 minutes** depending on
+hardware and network (a 4-vCPU CI runner completes in ~25; the opam/coq
+build of the CVM dominates; the first isolette Verus run later
+cold-builds its crates for several more minutes).
 
 ## Prerequisites
 
@@ -118,7 +119,7 @@ gh workflow run install-test.yml --ref dev -f platform=both -f mode=full
 ```
 
 (or the Actions tab → install-test → Run workflow). Inputs: `platform`
-(`both`/`linux`/`macos`), `mode` (`full`, ~2–4 h per platform; or
+(`both`/`linux`/`macos`), `mode` (`full`, ~40–60 min per platform; or
 `dry-run`, a ~2-minute probe-only plumbing check), and `run_demos`. Demo
 logs are uploaded as run artifacts (`install-logs-<platform>`). GitHub
 lists the workflow from `main`, but dispatching with `--ref dev` runs
