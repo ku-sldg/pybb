@@ -1,0 +1,126 @@
+{
+  "hashfile_many": {
+    "isolette_sysmlv2_rust_GUMBO_Library_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_GUMBO_Library_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_data_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/data",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_data_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_operator_interface_oip_oit_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/bridge/operator_interface_oip_oit_api.rs",
+        "src/component/operator_interface_oip_oit_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_ma_ma_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_mt_ma_ma_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/bridge/thermostat_mt_mmi_mmi_api.rs",
+        "src/component/thermostat_mt_mmi_mmi_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_mt_mmm_mmm_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mhs_mhs_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mri_mri_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mri_mri_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_gensrc_targ"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mrm_mrm_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_gensrc_targ"
+    }
+  }
+}

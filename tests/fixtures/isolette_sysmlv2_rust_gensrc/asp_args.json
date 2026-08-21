@@ -1,0 +1,144 @@
+{
+  "hashfile_many": {
+    "isolette_sysmlv2_rust_GUMBO_Library_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_GUMBO_Library_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoicFBTT1ZuSkpPR0YvZ1JZVGlFNjUrZVhPUGdIekNTRXI2VERlcndCdXBNOD0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvbGliLnJzIjoiUWJ5dko3V2JHdnpCZVVqaXJxZnFYeGE1ZjZqbVp2RjkxbUJrQ1E5TlRycz0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_data_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/data",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_data_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiemZpaVplQnhGaDRDbDQ1NHVndm03YmNoNGNYRnlwZ3BFaC9Dc0ZzRzdZaz0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9GYWlsdXJlX0ZsYWdfaS5ycyI6Ik1lSjMxV3k1QnVRMkZjd2NBcHE1TXJHQ2ZCL3F1bmk4cDZDM0Q3cTdaWVk9Iiwic3JjL0lzb2xldHRlX0RhdGFfTW9kZWwvTW9uaXRvcl9Nb2RlLnJzIjoibzQ2TUtqQmdhdTBUcU5RbWUvQ0pFSTBhZ093QVg4bmFXRzNVYjRTa3dBYz0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9Pbl9PZmYucnMiOiJkeGN6RThlWVFBakgrWHdsY0k1K0NPdW5wZTdCV3FscFVjMVE1cXA3NkNRPSIsInNyYy9Jc29sZXR0ZV9EYXRhX01vZGVsL1BoeXNpY2FsVGVtcF9pLnJzIjoiSXlndVphRzIrZ0JxMEVjRkh1RDhwbmp4WHF3cEpVdmhJempZMDgzRUh6Zz0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9SZWd1bGF0b3JfTW9kZS5ycyI6Im5IK1E4cUtIbzA5bjgrSDVtSzV1WHcyVWZyeUpLczVGL1Jocy9UczZ6TTQ9Iiwic3JjL0lzb2xldHRlX0RhdGFfTW9kZWwvU3RhdHVzLnJzIjoiMDVhMHMxZUxCTzJlMFIvTW9PU1Z2Zm9DNHowV0pJcWxadXNEY0RZRGxJcz0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9UZW1wV3N0YXR1c19pLnJzIjoiN09HdkpHdmxDVEJxZUVWNUV5R1Bua0M2bWZZM3VmaTcxTlNZYkJ2eHJrdz0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9UZW1wX2kucnMiOiJRcDVIQkVwVFgyVVdaMllQVVBXT0d6bHF6UjhHTktVeVFaQm9CclpBSEpFPSIsInNyYy9Jc29sZXR0ZV9EYXRhX01vZGVsL1ZhbHVlU3RhdHVzLnJzIjoiOENnU1pUdDFKc0RHL2FuQ1NwNDZqTTFTa2FIRFlSdnpEcjVEbG4reGFrST0iLCJzcmMvSXNvbGV0dGVfRGF0YV9Nb2RlbC9tb2QucnMiOiJIZGU5b1U2aHM2WTlJdk9JcHkxT3Z4VzdKbERnL1JNVVp4RHhJUi8wVDg4PSIsInNyYy9Jc29sZXR0ZV9FbnZpcm9ubWVudC9IZWF0LnJzIjoiUW43bVl2VE41bDBaWlp3TVBMVU5ZT1FsSkxvaktjN2dUSHlQQzFZNlZWbz0iLCJzcmMvSXNvbGV0dGVfRW52aXJvbm1lbnQvbW9kLnJzIjoiMkY4REJuZ1RkckpFL1htaEN1dFltaTEzSU9JdWthNmxlZk1pRzd5NVhrRT0iLCJzcmMvbGliLnJzIjoid0hFTEJPK3llS2R0Q0dvUHVUVlZlQU8wWG1IU3JHUkgrcTZmZjJoNk5mYz0iLCJzcmMvc2JfZXZlbnRfY291bnRlci5ycyI6IlBJNm1PbHV0RkdYNEE1eW1WWUJEN3pTODZLRG1FMGJlN0NicE5ZN2ZrdU09Iiwic3JjL3NiX21pY3Jva2l0X3R5cGVzLnJzIjoieVRoVG50bjcwamVKRWdPNCsxMDBRNWQ4U0tSWFpPUXdpV202L1lDNjhxcz0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_operator_interface_oip_oit_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/bridge/operator_interface_oip_oit_api.rs",
+        "src/component/operator_interface_oip_oit_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_operator_interface_oip_oit_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoialc0VTFMUFVVNWdScXVGTXRUNjkyUW4vaWFPbW90aFM5V2lBa0dvSFNCaz0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6Ikh5QVhJdnoxaXJIdzFoclp1ekNUWTFRZXNlcWwweG1IVEgyaVFFb2F4WG89Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJvaHc5T0tZd0JTbG9Ick5KWmN0ZzRUTUk3ZURsZFhJLzhXcUkxZk1PUVJZPSIsInNyYy9icmlkZ2Uvb3BlcmF0b3JfaW50ZXJmYWNlX29pcF9vaXRfR1VNQk9YLnJzIjoiam5uNnVnb1U3Zk5YQjduaDY3R0w1a1lUdVd1UmJISDZDdTJiUmVWblB2WT0iLCJzcmMvY29tcG9uZW50L21vZC5ycyI6IktnUWxkZVp5c2pEd3pJSkIwRGtoeUREQXF5NWFtUGgza2h1bGU2TVJ6OFk9Iiwic3JjL2xpYi5ycyI6Imc5alFXcFFDTUprc21zUkc3OUR0WXdEMlM5ZlFjdjdRdWFpQlhHMWhDYWM9Iiwic3JjL2xvZ2dpbmcucnMiOiJTYk1MSUU4ZVRhdnB5ZGRSVFNTM2pTUkxrT2VOb3Fkd0U0UlBPc1ZsUFhBPSIsInNyYy90ZXN0L21vZC5ycyI6IkdOVERYanVjR0NpZ2JrNzVRT2hNazdJRmltK1o3bWx2WDJWY2FoSExPeDA9Iiwic3JjL3Rlc3QvdGVzdHMucnMiOiJvNXBpc0pKN0JKelB1YVNQRDc5ZEp4YXJrWWViZkx4VjhjdjBYZW1MZW40PSIsInNyYy90ZXN0L3V0aWwvY2JfYXBpcy5ycyI6IkRCcVpVVHYzMXZJbEUxWUsyc3pZN1o2cGMzRWtseWg3a1FScWN5OXN0RTQ9Iiwic3JjL3Rlc3QvdXRpbC9nZW5lcmF0b3JzLnJzIjoiaVdyUzFxRmNNVjAwLzFQa05XUzZBWitGVWcrR1VTRHNvV3N1RWJTQU1Vdz0iLCJzcmMvdGVzdC91dGlsL21vZC5ycyI6Im04Nkg4U2Z0WktrQkcxelNsT2JFcm8rZ0F1QmV0eDdOdWpHbm5LaVNNZkk9Iiwic3JjL3Rlc3QvdXRpbC90ZXN0X2FwaXMucnMiOiJ6ZmhjVGI3TTZScU5RbUZ5TTIwaDhXNCt0YTFFNjR2T0N0NVM4YmtCRjQwPSJ9",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_ma_ma_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_mt_ma_ma_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_ma_ma_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiL3RhSWhXYk90ZDlWZHNDMmhVdHQ2bG9kSDNScXY1NE8yQThibmtheisxbz0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6InJRTWRRS3VCVk1mRnNNTGxrMWFVUWVHcjlFakRsdmFJUnJySVZCTlljSlk9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJ2b01maTJoc3QvOWJ5NXBUU0R2UTJzSjRxZUxDYnZodmNWR0lSTi8xWnJNPSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9tdF9tYV9tYV9HVU1CT1gucnMiOiJhaDBwaWJYTmFQRFBPRmliT3AycjV2MG1UOWhyOEVRS3Vla1JhSWR0UnY0PSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9tdF9tYV9tYV9hcGkucnMiOiJuTEs4QmhVemNEWC9FcDlyR1NtdEU3MTNhRVRqRDZGT3VtM0VST3p4TDFJPSIsInNyYy9jb21wb25lbnQvbW9kLnJzIjoiL2xlSDFFZHpYanpFRlNadWEzSGFJakxXMVd5SGhROTJkWVFSdzY5Sm5WZz0iLCJzcmMvbGliLnJzIjoiMVNUN1g4bDBnMTNGR3F4a2o2WWY5cG9zWVBTYXc4NWcycE4zazBSVTd4Yz0iLCJzcmMvbG9nZ2luZy5ycyI6IlNiTUxJRThlVGF2cHlkZFJUU1MzalNSTGtPZU5vcWR3RTRSUE9zVmxQWEE9Iiwic3JjL3Rlc3QvbW9kLnJzIjoiR05URFhqdWNHQ2lnYms3NVFPaE1rN0lGaW0rWjdtbHZYMlZjYWhITE94MD0iLCJzcmMvdGVzdC90ZXN0cy5ycyI6Im43Y24wWEVnZ3ZjY0gzZnZjeHo4NmxzMUt2dWhCYzE1bWgxTnFPSGxFS009Iiwic3JjL3Rlc3QvdXRpbC9jYl9hcGlzLnJzIjoiYU9ISVp3R2M1Y0FEZ1R2cHlMVWFUNzBJbXlhRHJ4dzZ2d2d4NjZQZC9GYz0iLCJzcmMvdGVzdC91dGlsL2dlbmVyYXRvcnMucnMiOiJpV3JTMXFGY01WMDAvMVBrTldTNkFaK0ZVZytHVVNEc29Xc3VFYlNBTVV3PSIsInNyYy90ZXN0L3V0aWwvbW9kLnJzIjoibTg2SDhTZnRaS2tCRzF6U2xPYkVybytnQXVCZXR4N051akdubktpU01mST0iLCJzcmMvdGVzdC91dGlsL3Rlc3RfYXBpcy5ycyI6ImU5a1Q5MkpSZHdKdk82My9lMThvT3BwNlp1OGQ0QUVrN3hEeHF5THRYZGc9In0=",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/bridge/thermostat_mt_mmi_mmi_api.rs",
+        "src/component/thermostat_mt_mmi_mmi_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmi_mmi_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoidTZ4UnNLOExuc29BMHR2MFFmb2lMS3crNDVMWEliY2tHaTZrMlpCMVdxQT0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6IktHVTZ4cTlleWxjbVpndFM0UmkxTndRQlVFRFBmTUl1VDZPZExRcE9SMXM9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJtS1E5M09Cb3AvMmRzUURvZThqUjUvckR1OFphR1krTHJLakxJSVdXejR3PSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9tdF9tbWlfbW1pX0dVTUJPWC5ycyI6Im1OYVVjOVFFUWpScUFwaDNNMHZmYTlFNjhZNU5aRjNIZVJmelYwMjZBODA9Iiwic3JjL2NvbXBvbmVudC9tb2QucnMiOiJ1MFN4Z2FxTWk0VDRMZWViVm1obzkzNjRGZkRaOE5MOG9EelVqdTArb1VzPSIsInNyYy9saWIucnMiOiJLRHRXQ2lLQkdvRE1obU9Ia2F5LzhFNXdGanVxN0xWa0laTjR1NVlGVjlVPSIsInNyYy9sb2dnaW5nLnJzIjoiU2JNTElFOGVUYXZweWRkUlRTUzNqU1JMa09lTm9xZHdFNFJQT3NWbFBYQT0iLCJzcmMvdGVzdC9tb2QucnMiOiJHTlREWGp1Y0dDaWdiazc1UU9oTWs3SUZpbStaN21sdlgyVmNhaEhMT3gwPSIsInNyYy90ZXN0L3Rlc3RzLnJzIjoiSGV6Y1pla3Byb3hVVmRiSUUvNnJ1V0NoK0NhUjFVLzNIeVpxMWJrZXhpRT0iLCJzcmMvdGVzdC91dGlsL2NiX2FwaXMucnMiOiJKaTdVTmhEKzMrTlpRUnc3VFhnUnRHbjN2NGp5MGdwSURLdURHekZsNVNJPSIsInNyYy90ZXN0L3V0aWwvZ2VuZXJhdG9ycy5ycyI6ImlXclMxcUZjTVYwMC8xUGtOV1M2QVorRlVnK0dVU0Rzb1dzdUViU0FNVXc9Iiwic3JjL3Rlc3QvdXRpbC9tb2QucnMiOiJtODZIOFNmdFpLa0JHMXpTbE9iRXJvK2dBdUJldHg3TnVqR25uS2lTTWZJPSIsInNyYy90ZXN0L3V0aWwvdGVzdF9hcGlzLnJzIjoiNWpOai82RmRoT1hsMmFiN3VQNVMzR0t2clEvSS9UbmtQbXA0ODVCbUFtWT0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_mt_mmm_mmm_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_mt_mmm_mmm_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiSGwwcFhFckVvakFSaFZ2UlZvMlQweUxWSDdZVlUxMVZnTmM2RHlTbEdjcz0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6IjBTdWgvWnhJZFB6SkFFQmlyNkwyaStkdEFEeUNKWWRxbW5JQisvRVJGcFE9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJWcHRrZ3AzTkc5UWFBSlYzajZwWkZnRDJwMWNxNjcwTjF6TGNWd3Z6eXBRPSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9tdF9tbW1fbW1tX0dVTUJPWC5ycyI6IkhNRnBaa09oaVhQRTdsbjFac0FUQmQ3cTMvajVkazhYeERsWDEwdlhLUXc9Iiwic3JjL2JyaWRnZS90aGVybW9zdGF0X210X21tbV9tbW1fYXBpLnJzIjoiK1ZNQ2tCQStRcUE1cjNrRUpBeS90MXZsaVpDbXUyTXhCZWhERnZkRGo1ND0iLCJzcmMvY29tcG9uZW50L21vZC5ycyI6IklEeTJVNTZwN2h1VVRQMTdDSWZZK2NMRXM1ak16TkpSdEJ4VU1LWmNleGM9Iiwic3JjL2xpYi5ycyI6Iko5NHVYdmdyMm1qU2h3SkFhWnY2bURlU29PYmhDSlEvOC9hL2grNXh2OVk9Iiwic3JjL2xvZ2dpbmcucnMiOiJTYk1MSUU4ZVRhdnB5ZGRSVFNTM2pTUkxrT2VOb3Fkd0U0UlBPc1ZsUFhBPSIsInNyYy90ZXN0L0pIX3Rlc3RzLnJzIjoiR3c3SndHRmllaEMzRkZERHNKQm91bWxIUXZEbjY4Wm43MmNvazBPaUtXbz0iLCJzcmMvdGVzdC9tb2QucnMiOiJHTlREWGp1Y0dDaWdiazc1UU9oTWs3SUZpbStaN21sdlgyVmNhaEhMT3gwPSIsInNyYy90ZXN0L3Rlc3RzLnJzIjoibitsMUpqNk9wVWtGbkVkQk1zN3A3TUQ2TFFRcVhjbjl3OEk0NDhWNVBkcz0iLCJzcmMvdGVzdC91dGlsL2NiX2FwaXMucnMiOiJOM0htMm9XZFduNjBjMGV5cEg2TGMrVkhZWjJNKzRnS01KaS96dGpQS0gwPSIsInNyYy90ZXN0L3V0aWwvZ2VuZXJhdG9ycy5ycyI6ImlXclMxcUZjTVYwMC8xUGtOV1M2QVorRlVnK0dVU0Rzb1dzdUViU0FNVXc9Iiwic3JjL3Rlc3QvdXRpbC9tb2QucnMiOiJtODZIOFNmdFpLa0JHMXpTbE9iRXJvK2dBdUJldHg3TnVqR25uS2lTTWZJPSIsInNyYy90ZXN0L3V0aWwvdGVzdF9hcGlzLnJzIjoiTGFQVGRHeUU1VUFUVWoxZmRnUm9Mbnc0WVRvSGE5VDJNSm9iTUIrU21EUT0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mhs_mhs_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mhs_mhs_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiS3Z3V0dJVzBmakJia1lxcUJjUVhyYWVhemZWZmJaa0VKTGovaEFBelZXRT0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6IjVtVHAwSWVGVkhYSUtTYlhQdTQvUjduanI4cFhuRUFncjFXb3MzTEtjYVE9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJRa0NSb2Jxb0RXYTZsL2VYRDFpNWtzTUVIQUJNVzBJbktVMkNjSGlGYXpzPSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9ydF9taHNfbWhzX0dVTUJPWC5ycyI6InBCbzhOSmpNOFdkVFR4Mnc3blJlRk4zbEJITmtRd2NrUGtMMDlBRU1IQlE9Iiwic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21oc19taHNfYXBpLnJzIjoiUHQ2aDVaQmkzNzJXK2p0V3lMZmNONXZHV2xpVkVnbFBNb0tqL0VpeEhqTT0iLCJzcmMvY29tcG9uZW50L21vZC5ycyI6InR1Ny9pNUNhdFl5Y0F0dUtWdkRFRlB6bHhIZGN5VHZiN3pTeVM2a2NwSzg9Iiwic3JjL2xpYi5ycyI6IkNTcU45VThXeGg0Q0h1eEpHTk1XZm0wRVNzOTdjNDRYeHdxRHV3L0I3a009Iiwic3JjL2xvZ2dpbmcucnMiOiJTYk1MSUU4ZVRhdnB5ZGRSVFNTM2pTUkxrT2VOb3Fkd0U0UlBPc1ZsUFhBPSIsInNyYy90ZXN0L21hbnVhbF9HVU1CT1hfdW5pdF90ZXN0cy5ycyI6Im5YWGZncmVkdFVUYU1nbmNIcWcySU96b1J5dFh5WnBRNWhrb3hsWVZtVGc9Iiwic3JjL3Rlc3QvbWFudWFsX3VuaXRfdGVzdHMucnMiOiJWMlJGMllkV0FheTd0M1RmOTZud1lFdnFtb2dvdDR4UnhyVkRHTFhKOEtzPSIsInNyYy90ZXN0L21vZC5ycyI6ImpHYU5RUmJ3YlE5UFNvOHFBbDZzbmk2V1NReEFleFB6WmExWmM0OUxsZWs9Iiwic3JjL3Rlc3QvcHJvcHRlc3RfR1VNQk9YX3VuaXRfdGVzdHMucnMiOiJUU1g4QzR4ZlczYkQ2QlJkK3hQV01PcGJZNFVLN28rTUZoNFZ6aE1oN1lrPSIsInNyYy90ZXN0L3Rlc3RzLnJzIjoiVmFIcjBRYVA1WHJKNElBckE0WFlGbmRVQXluUkNTZWhRY3hBVk9qQzhBTT0iLCJzcmMvdGVzdC91dGlsL2NiX2FwaXMucnMiOiJlU3FkR0tVMmt1Y0lhU0dVdFFkcHFOa09GMFRZakhqQXd5dnpYTDkwM2xjPSIsInNyYy90ZXN0L3V0aWwvZ2VuZXJhdG9ycy5ycyI6ImlXclMxcUZjTVYwMC8xUGtOV1M2QVorRlVnK0dVU0Rzb1dzdUViU0FNVXc9Iiwic3JjL3Rlc3QvdXRpbC9tb2QucnMiOiJtODZIOFNmdFpLa0JHMXpTbE9iRXJvK2dBdUJldHg3TnVqR25uS2lTTWZJPSIsInNyYy90ZXN0L3V0aWwvdGVzdF9hcGlzLnJzIjoiaThrN1lWZTg4NWJWdEhvNmhaRWYzak5DM2hDemdZOFcyb1Z0TEpWdWd5TT0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mri_mri_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mri_mri_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mri_mri_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiMUlBTG9VenBWeXczYVRDU3lWdGdKVDdrSEgveEdBNnpRN1RWTE92NnJ5UT0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6InJuRHRoYVl3RU5GeVFuc2NhdTlkbUdKZmhyYk1IazU5WU5MOHF0clcweDA9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJzNzZ2amVMZ1Btc1kzd3NzMzBRMG9TTjNnS2QvenlYSGtvaTAzWU4xTTFNPSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9ydF9tcmlfbXJpX0dVTUJPWC5ycyI6Ik15M1FwaFpRcmc2d0poeWJPdTBjOUtwa1Q5Vzd4N2V2emJ4Nk5qQS92Yk09Iiwic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21yaV9tcmlfYXBpLnJzIjoiNXcrenFiVk16dFd3TTVmWlEzaFFCK1N1SGZUdkhHVDZPZWVKUHNkUnV2az0iLCJzcmMvY29tcG9uZW50L21vZC5ycyI6Im5ITzROSzdOWGxHNTEvYXEzaldsbWp6Z3NWVXYrYnk4NWtwNXQ5bjl0cjg9Iiwic3JjL2xpYi5ycyI6ImY1VTliYnlsUFd2MnkzaUZpK2RpR0swZzhGOTVLMjNMdndNSEdhVjByQzA9Iiwic3JjL2xvZ2dpbmcucnMiOiJTYk1MSUU4ZVRhdnB5ZGRSVFNTM2pTUkxrT2VOb3Fkd0U0UlBPc1ZsUFhBPSIsInNyYy90ZXN0L0pIX3Rlc3RzLnJzIjoiaUltVFR6bUh5UXBmMVBSUEtxeUs1bjBudUd3Mkt6VDRlZEpqMitSTGkxdz0iLCJzcmMvdGVzdC9tb2QucnMiOiJHTlREWGp1Y0dDaWdiazc1UU9oTWs3SUZpbStaN21sdlgyVmNhaEhMT3gwPSIsInNyYy90ZXN0L3Rlc3RzLnJzIjoiVE5leVorMEV3MVBDUVFRQW9BVkF3RjhtT3F4UEE3aDRKd1EzcktsSDNwOD0iLCJzcmMvdGVzdC91dGlsL2NiX2FwaXMucnMiOiJhY3R0bHBMR2FRblo0Ny8xUjQwUnNSeFVpLzBUNytidEhLZC9wVFdiN3RjPSIsInNyYy90ZXN0L3V0aWwvZ2VuZXJhdG9ycy5ycyI6ImlXclMxcUZjTVYwMC8xUGtOV1M2QVorRlVnK0dVU0Rzb1dzdUViU0FNVXc9Iiwic3JjL3Rlc3QvdXRpbC9tb2QucnMiOiJtODZIOFNmdFpLa0JHMXpTbE9iRXJvK2dBdUJldHg3TnVqR25uS2lTTWZJPSIsInNyYy90ZXN0L3V0aWwvdGVzdF9hcGlzLnJzIjoiUGJXNTNRRlB4MUdOT3kzOVVHT05yUFpGLy91NVlpWWFwb2Q2SFM1U2lmRT0ifQ==",
+      "golden_ts": "2026-08-21 09:48:07"
+    },
+    "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_gensrc_targ": {
+      "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm",
+      "files": [
+        "Cargo.toml",
+        "rust-toolchain.toml"
+      ],
+      "walk_dirs": [
+        "src"
+      ],
+      "exclude": [
+        "src/component/thermostat_rt_mrm_mrm_app.rs"
+      ],
+      "asp_targid": "isolette_sysmlv2_rust_thermostat_rt_mrm_mrm_gensrc_targ",
+      "golden_b64": "eyJDYXJnby50b21sIjoiL3Y2OGhhcjJVdm4ycWhDbktldGRxZ2hSSFZLUURKVW1EazhSRFdhcTJpdz0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvYnJpZGdlL2V4dGVybl9jX2FwaS5ycyI6Im5IZlhxeEZTYlZ4SDI3ZUNsaWVHVXloSDRnaVh5bkg3ZTRxMkQybzJZUVU9Iiwic3JjL2JyaWRnZS9tb2QucnMiOiJhYVAreDZObzkwOEhFWnNETDFEVHZoM1AvcmNrdjM5SWhNYzFZdTVlTE9FPSIsInNyYy9icmlkZ2UvdGhlcm1vc3RhdF9ydF9tcm1fbXJtX0dVTUJPWC5ycyI6InF4L0EzTk1PQUU4MjJHdW1QSnZmWXBEbFA5QkhPRTZPa2R2UE9kQi9KMUk9Iiwic3JjL2JyaWRnZS90aGVybW9zdGF0X3J0X21ybV9tcm1fYXBpLnJzIjoiRXUxVlFxY1REMGZmaEVTazcrUkIzNndtaVVxYVBkTUpXeUV0L28rTFg2MD0iLCJzcmMvY29tcG9uZW50L21vZC5ycyI6IlMzMzYwK1F6bDlVWUh6TzBJbDFvcncwaVRJRmlQVVR2dk5aYkpSVkp5b2s9Iiwic3JjL2xpYi5ycyI6InlORlhqL09VMXZuenlIK01Rcks3NXJiSmladUE4b2tscEU0ZWdRWVdTcmM9Iiwic3JjL2xvZ2dpbmcucnMiOiJTYk1MSUU4ZVRhdnB5ZGRSVFNTM2pTUkxrT2VOb3Fkd0U0UlBPc1ZsUFhBPSIsInNyYy90ZXN0L21vZC5ycyI6IkdOVERYanVjR0NpZ2JrNzVRT2hNazdJRmltK1o3bWx2WDJWY2FoSExPeDA9Iiwic3JjL3Rlc3QvdGVzdHMucnMiOiJXd2hBK0V5WDIwQ0Vjd1Z3dytnWHdnT0laWFdDRVptaTJ0Rk9ETFd4OXFvPSIsInNyYy90ZXN0L3V0aWwvY2JfYXBpcy5ycyI6InRpeEh6bHNycDVudUMxeXdsSHZSWGg4ZCtlRmxrU3Z1K2gyWW0rdWp6a0U9Iiwic3JjL3Rlc3QvdXRpbC9nZW5lcmF0b3JzLnJzIjoiaVdyUzFxRmNNVjAwLzFQa05XUzZBWitGVWcrR1VTRHNvV3N1RWJTQU1Vdz0iLCJzcmMvdGVzdC91dGlsL21vZC5ycyI6Im04Nkg4U2Z0WktrQkcxelNsT2JFcm8rZ0F1QmV0eDdOdWpHbm5LaVNNZkk9Iiwic3JjL3Rlc3QvdXRpbC90ZXN0X2FwaXMucnMiOiJlZU5hbFd1MU9JdUJOMFhqSGw4VjhQbnFQMXRFYjFqV20xRUJuN1hJUWVZPSJ9",
+      "golden_ts": "2026-08-21 09:48:07"
+    }
+  }
+}

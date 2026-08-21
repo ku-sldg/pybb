@@ -30,6 +30,14 @@ prefix isolette_aadl_rust_ for AADL, isolette_sysmlv2_rust_ for SysML):
                counts of assume/admit/external_body/axiom & friends vs an
                exact golden baseline — verification success is only
                trusted alongside HOW it was obtained
+    <p>_gensrc [--verify] whole-file hashes of the GENERATED do-not-edit
+               sources of the verification surface (bridge/GUMBOX/FFI
+               glue + the foundation dep crates), one batched map per
+               crate, l1a-owned files excluded; provisioning is gated by
+               a byte-coverage completeness invariant. On failure the
+               ladder diagnoses (drift kind, vs the same episode's cheat
+               verdict) and [--regen-gensrc] repairs by regeneration
+               through the measured codegen toolchain — never by rescue
     <p>_props  the administrator-blessed model files (whole-file, signed)
 
 One trust question — <p>:files — since every l2 slice lives inside an
@@ -85,6 +93,16 @@ Usage:
              clean and inert until `broadcast use`, so every outcome-based
              tier (files/contracts/verus/sysproof/report) stays green —
              only the cheat scan refuses, naming the crate
+--tamper-stale-dep  flip a spec predicate in the shared GUMBO_Library
+             with the file's mtime PRESERVED (nanosecond-exact): the
+             foundation crates are verified only as cargo dependencies,
+             and cargo's dep freshness is mtime-gated, so the warm cache
+             serves the STALE pre-tamper artifact and every tier stays
+             green — including the verus tier, whose primary crates
+             genuinely re-verify but consume the cached dep. The scan
+             counts no new construct (a semantic flip), no hash or slice
+             tier covers the file. Pair with --fresh-deps for the guard
+             that closes it
 --validate   run the Verus semantic tier after a passing l1a
              (requires the Verus toolchain; cold builds are slow)
 
@@ -116,6 +134,19 @@ docs/demo_isolette_script_summary.md for the scenes):
 --tamper-impl-full   the pre-generated dummy bad implementation
 --tamper-report      delete one slice from the attestation report
 --tamper-report-subst  substitute one slice's span for another's
+--tamper-ffi         invert the heat command in the unverified FFI glue:
+                     proofs pass, cheat counts clean — only the gensrc
+                     byte tier refuses
+--regen-gensrc       the gensrc entry's repair rung: re-emit the
+                     generated sources via measured codegen (tool gate
+                     first), then fresh measurement judges
+--fresh-deps         the scene-scoped dependency-freshness guard: hash
+                     the foundation crates' sources against a sidecar
+                     record (trust-on-first-use seed) and bump mtimes on
+                     content drift, so cargo-verus cannot serve a stale
+                     dep verdict. Composes with --verify (guard runs
+                     after tampers, before the episode); alone it just
+                     seeds/checks the record and exits
 """
 
 import argparse
@@ -234,6 +265,9 @@ class Frontend:
 
     @property
     def sysproof_id(self) -> str: return f"{self.prefix}_sysproof"
+
+    @property
+    def gensrc_id(self) -> str: return f"{self.prefix}_gensrc"
 
     @property
     def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
@@ -595,6 +629,175 @@ def build_sysproof_protocol(fe: Frontend) -> ProtocolDir:
     return ProtocolDir.load(str(d))
 
 
+# The gensrc tier's scope: the verification surface — every crate the
+# verus tier verifies as a primary target (report-derived component
+# crates) plus the foundation crates it consumes as cargo dependencies.
+# sys_nominal_proof has its own tier; domain_monitor and the dmf crate
+# are NOT verified by the verus tier, so they belong to the postponed
+# executable artifact class, not here.
+GENSRC_EXECUTABLE_CLASS = ("domain_monitor", "thermostat_mt_dmf_dmf",
+                           "thermostat_rt_drf_drf")
+
+
+def _gensrc_crates(fe: Frontend) -> list:
+    return sorted({*verus_crates(fe), *DEP_CRATES})
+
+
+def _l1a_files_by_crate(fe: Frontend) -> dict:
+    """l1a-hashed files under crates/, as {crate: [relpath-in-crate]} —
+    the files another tier OWNS (developer-owned app.rs under the l2
+    slice-rescue regime, plus the report-named api.rs files), which the
+    gensrc walk must exclude so their semantics stay theirs."""
+    l1a = json.loads((FIXTURES / fe.l1a / "asp_args.json").read_text())
+    out: dict = {}
+    for a in l1a["hashfile"].values():
+        fp = a["filepath"]
+        if "/crates/" not in fp:
+            continue
+        crate, rel = fp.split("/crates/")[1].split("/", 1)
+        out.setdefault(crate, []).append(rel)
+    return {c: sorted(rels) for c, rels in out.items()}
+
+
+def check_gensrc_coverage(fe: Frontend) -> None:
+    """The byte-coverage completeness invariant, checked at provisioning:
+    every .rs file in the verification surface is covered by exactly one
+    byte tier — l1a (report-named, developer-relevant), gensrc (the
+    generated complement), or sysproof — and the exclusion list matches
+    the l1a coverage exactly. A codegen version that emits a new file
+    outside the walked dirs, or the report un-naming a file the
+    exclusions still list, fails provisioning loudly instead of
+    silently reopening the scene 9/11 coverage hole."""
+    crates_root = ISL_ROOT / "hamr" / "microkit" / "crates"
+    excluded = _l1a_files_by_crate(fe)
+    problems = []
+    covered_crates = set(_gensrc_crates(fe)) | {SYS_PROOF_CRATE}
+    for crate_dir in sorted(p for p in crates_root.iterdir() if p.is_dir()):
+        crate = crate_dir.name
+        if crate not in covered_crates:
+            if crate not in GENSRC_EXECUTABLE_CLASS:
+                problems.append(
+                    f"crate {crate} is in no byte tier and not a known "
+                    "executable-class crate")
+            continue
+        for f in sorted(crate_dir.rglob("*.rs")):
+            if "target" in f.relative_to(crate_dir).parts:
+                continue
+            rel = str(f.relative_to(crate_dir)).replace("\\", "/")
+            in_walk = rel.startswith("src/")
+            if crate == SYS_PROOF_CRATE:
+                if not in_walk:
+                    problems.append(f"{crate}/{rel}: outside the sysproof walk")
+            elif rel in excluded.get(crate, []):
+                pass  # l1a owns it (and l2 refines it where sliced)
+            elif not in_walk:
+                problems.append(f"{crate}/{rel}: outside the gensrc walk")
+    for crate, rels in excluded.items():
+        for rel in rels:
+            if not (crates_root / crate / rel).is_file():
+                problems.append(
+                    f"stale exclusion: {crate}/{rel} is l1a-listed but absent")
+    if problems:
+        raise SystemExit(
+            "byte-coverage completeness check FAILED:\n  "
+            + "\n  ".join(problems))
+    print("  byte-coverage completeness: every verification-surface .rs "
+          "is covered (l1a / gensrc / sysproof)")
+
+
+def build_gensrc_protocol(fe: Frontend) -> ProtocolDir:
+    """<p>_gensrc: whole-file hashes of the GENERATED sources of the
+    verification surface — the do-not-edit complement of the l1a tier.
+    One hashfile_many batch per crate (component crates + the foundation
+    dep crates), walking src/ with the l1a-covered files EXCLUDED so
+    developer-owned app.rs keeps its l2 slice-rescue semantics and the
+    report-named api.rs files keep theirs.
+
+    Whole-file with NO benign-drift allowance, like the sysproof tier:
+    every covered file is codegen-emitted, so any byte change is either
+    a sanctioned HAMR re-run (promote) or tampering. This closes scene
+    9's coverage hole (the admit site, the smuggle site) and scene 11's
+    (the stale-dep flip) at the byte layer; the cheat scan stays
+    always-run because it alone guards the promote boundary, where gold
+    legitimately moves and byte-blessing would bless whatever codegen
+    emitted. On failure the ladder DIAGNOSES (drift characterization
+    against the same episode's cheat verdict) and — opt-in — REPAIRS by
+    regeneration (scene 8's species: these files are renderings of the
+    model through the measured toolchain), never by rescue: a
+    cheat-clean drift can still be a weakened contract."""
+    d = FIXTURES / fe.gensrc_id
+    d.mkdir(exist_ok=True)
+    excluded = _l1a_files_by_crate(fe)
+    targets = with_asp_targids({
+        f"{fe.prefix}_{crate}_gensrc_targ": {
+            "root": str(ISL_ROOT / "hamr" / "microkit" / "crates" / crate),
+            "files": ["Cargo.toml", "rust-toolchain.toml"],
+            "walk_dirs": ["src"],
+            **({"exclude": excluded[crate]} if crate in excluded else {}),
+        }
+        for crate in _gensrc_crates(fe)
+    })
+    asp_args = {"hashfile_many": targets}
+    nodes = [
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "ASPC",
+            "ASP_BODY": {"ASP_ID": "hashfile_many",
+                         "ASP_TARG_ID": targ, "ASP_ARGS": args}}}
+        for targ, args in targets.items()
+    ]
+    acc = nodes[0]
+    for node in nodes[1:]:
+        acc = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["both_paths", acc, node]}
+    term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+            acc,
+            {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}]},
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "APPR"}}]}
+    session = {
+        "Session_Plc": "P0", "Plc_Mapping": {}, "PubKey_Mapping": {},
+        "Session_Context": {
+            "ASP_Types": {
+                "hashfile_many": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
+                                          "EvInSig": "NONE"}, "ATTRS": []},
+                "sig": {"FWD": {"FWD": "EXTEND", "_BODY": 1,
+                                "EvInSig": "ALL"}, "ATTRS": []},
+                "sig_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                             "ATTRS": []},
+                "hashfile_many_appr": {"FWD": {"FWD": "REPLACE", "_BODY": 1},
+                                       "ATTRS": []},
+            },
+            "ASP_Comps": {"hashfile_many": "hashfile_many_appr",
+                          "sig": "sig_appr"},
+        },
+    }
+    manifest = {"ASPS": ["hashfile_many", "hashfile_many_appr", "sig",
+                         "sig_appr"],
+                "ASP_FS_MAP": {}, "POLICY": []}
+    (d / "session.json").write_text(json.dumps(session, indent=2) + "\n")
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
+    _write_asp_args(d, asp_args)
+    (d / "term.json").write_text(json.dumps(term, indent=2) + "\n")
+    n_excluded = sum(len(v) for v in excluded.values())
+    (d / "meta.json").write_text(json.dumps({
+        "name": "Isolette generated-source integrity (gensrc tier)",
+        "description": "Whole-file hashes of the generated do-not-edit "
+                       "Rust of the verification surface — bridge, GUMBOX, "
+                       "extern_c_api, mod/lib/logging, generated test "
+                       "scaffolding, and the foundation dep crates — one "
+                       "batched relpath->sha256 map per crate, with the "
+                       "l1a-owned files excluded so developer-owned code "
+                       "keeps its slice-rescue semantics. Closes the "
+                       "byte-coverage hole the cheat and stale-dep scenes "
+                       "exploited; no benign-drift allowance, repair is "
+                       "regeneration via measured codegen or escalation.",
+        "copland": f"lseq( lseq( bseq( hashfile_many×{len(targets)} ), "
+                   "SIG ), APPR )",
+    }, indent=2) + "\n")
+    print(f"  {fe.gensrc_id}: {len(targets)} crates walked "
+          f"({n_excluded} l1a-owned files excluded)")
+    return ProtocolDir.load(str(d))
+
+
 def build_report_protocol(fe: Frontend) -> ProtocolDir:
     """<p>_report: one hashfile measurement of the attestation report,
     goldenbytes-appraised against its provisioned golden hash — the
@@ -688,6 +891,7 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
     protocols[fe.verus_id] = build_verus_protocol(fe)
     protocols[fe.cheat_id] = build_cheat_protocol(fe)
     protocols[fe.sysproof_id] = build_sysproof_protocol(fe)
+    protocols[fe.gensrc_id] = build_gensrc_protocol(fe)
     build_tools_protocol_dir(
         FIXTURES / HAMR_TOOLS_ID, "hamr", ["hamr"],
         "The HAMR codegen + report-emitter toolchain (sireum.jar + the "
@@ -727,7 +931,8 @@ def load_protocols(fe: Frontend, validate: bool = False) -> dict:
     if validate:
         protocols[fe.verus_id] = ProtocolDir.load(str(FIXTURES / fe.verus_id))
         for pid, build in ((fe.cheat_id, build_cheat_protocol),
-                           (fe.sysproof_id, build_sysproof_protocol)):
+                           (fe.sysproof_id, build_sysproof_protocol),
+                           (fe.gensrc_id, build_gensrc_protocol)):
             if not (FIXTURES / pid / "asp_args.json").is_file():
                 build(fe)
             protocols[pid] = ProtocolDir.load(str(FIXTURES / pid))
@@ -757,6 +962,12 @@ def provision_flow(fe: Frontend, protocols: dict,
         pids.append(fe.cheat_id)
     if fe.sysproof_id in protocols:
         pids.append(fe.sysproof_id)
+    if fe.gensrc_id in protocols:
+        # the byte-coverage completeness invariant gates provisioning:
+        # a new uncovered file (codegen drift) or a stale exclusion
+        # refuses loudly before any golden is captured
+        check_gensrc_coverage(fe)
+        pids.append(fe.gensrc_id)
     measured = {pid: protocols[pid] for pid in pids}
     for pid in (fe.verus_id, HAMR_TOOLS_ID, SYSML_LIBS_ID):
         if pid in protocols and "hashfile" in protocols[pid].asp_args:
@@ -956,6 +1167,51 @@ def tamper_cheat(fe: Frontend, protocols: dict) -> None:
           f"put_heat_control ({MHS_API.name})")
 
 
+MHS_EXTERN = (ISL_ROOT / "hamr" / "microkit" / "crates"
+              / "thermostat_rt_mhs_mhs" / "src" / "bridge" / "extern_c_api.rs")
+
+# tamper_ffi's target: the unsafe FFI glue under the proof tower. The
+# body is plain unverified Rust (the verified bridge calls it through an
+# external_body trait fn), so inverting the command here changes NO
+# proof outcome, adds NO escape construct, and sits outside every l1a/l2
+# target — only the gensrc byte tier can see it.
+FFI_MARKER = ("    return put_heat_control(value as *const "
+              "Isolette_Data_Model::On_Off as *mut "
+              "Isolette_Data_Model::On_Off);")
+FFI_TAMPERED = """    // TAMPERED: command inverted at the unverified FFI boundary
+    let inverted = match value {
+      Isolette_Data_Model::On_Off::Onn => Isolette_Data_Model::On_Off::Off,
+      _ => Isolette_Data_Model::On_Off::Onn,
+    };
+    return put_heat_control(&inverted as *const Isolette_Data_Model::On_Off
+                            as *mut Isolette_Data_Model::On_Off);"""
+
+
+def tamper_ffi(fe: Frontend, protocols: dict) -> None:
+    """Invert the heat command inside unsafe_put_heat_control — the
+    unverified FFI glue every verified put flows through. The proofs are
+    about the ghost model and the bridge's external_body boundary, so
+    the crate still verifies (0 errors), the cheat scan counts no new
+    construct (the escape surface is unchanged — the body was ALREADY
+    trusted), and no hash or slice tier names this file. The verified
+    tower stands; the foundation under it now does the opposite of what
+    the proofs say. Only the gensrc byte tier refuses — and a
+    cheat-clean drift like this is exactly why the gensrc ladder never
+    rescues on a clean construct scan."""
+    src = MHS_EXTERN.read_text()
+    if "TAMPERED" in src:
+        print(f"tamper-ffi: {MHS_EXTERN.name} already tampered")
+        return
+    if FFI_MARKER not in src:
+        raise SystemExit(f"tamper-ffi: injection marker not found in "
+                         f"{MHS_EXTERN.name} (codegen drift?)")
+    MHS_EXTERN.write_text(src.replace(FFI_MARKER, FFI_TAMPERED, 1))
+    print("Inverted the heat command in the unverified FFI glue "
+          f"({MHS_EXTERN.name}): every proof still passes — the bodies "
+          "were always trusted — and the cheat scan counts no new escape; "
+          "only the gensrc byte tier can see it")
+
+
 GUMBO_LIB = (ISL_ROOT / "hamr" / "microkit" / "crates" / "GUMBO_Library"
              / "src" / "lib.rs")
 
@@ -1002,6 +1258,116 @@ def tamper_broadcast(fe: Frontend, protocols: dict) -> None:
     print(f"Planted a smuggled axiom in GUMBO_Library ({GUMBO_LIB.name}): "
           "external_body broadcast proof fn, ensures false — verifies clean, "
           "inert until `broadcast use` (only the cheat scan sees it)")
+
+
+# tamper_stale_dep's target: a spec predicate in the same shared
+# foundation crate, flipped SEMANTICALLY (== -> !=, no construct-count
+# change) with the file's mtime preserved nanosecond-exact. The verus
+# tier's PRIMARY crates always re-verify, but the foundation crates are
+# consumed as cargo DEPENDENCIES, and cargo's dep freshness is
+# mtime-gated — so the warm cache serves the stale pre-tamper artifact
+# and the flip changes no live verdict. sys_nominal_proof consumes the
+# predicate load-bearingly: freshly verified, 8 of its VCs refute.
+STALE_DEP_SPEC = (
+    "pub open spec fn isValidTempWstatus_spec"
+    "(value: Isolette_Data_Model::TempWstatus_i) -> bool\n"
+    "  {\n"
+    "    value.status == Isolette_Data_Model::ValueStatus::Valid\n"
+    "  }")
+
+
+def stale_dep_text(text: str) -> str:
+    """The stale-dep tamper as a pure text transform (for previews)."""
+    if text.count(STALE_DEP_SPEC) != 1:
+        raise SystemExit("tamper-stale-dep: isValidTempWstatus_spec not "
+                         f"found in {GUMBO_LIB.name} (codegen drift?)")
+    return text.replace(STALE_DEP_SPEC,
+                        STALE_DEP_SPEC.replace("==", "!="), 1)
+
+
+def tamper_stale_dep(fe: Frontend, protocols: dict) -> None:
+    """Flip isValidTempWstatus_spec's meaning in the shared
+    GUMBO_Library, preserving the file's mtime nanosecond-exact.
+
+    Every tier stays green: files/contracts (the foundation crate sits
+    in no hashed or sliced file), the cheat scan (a semantic flip adds
+    no escape construct), the sysproof hash (the proof crate's bytes are
+    untouched) — and the verus tier, because although its 8 primary
+    crates genuinely re-verify every run, they consume GUMBO_Library as
+    a cargo DEPENDENCY, and cargo's mtime-gated dep freshness serves the
+    stale pre-tamper artifact. 'Verification succeeded' is a verdict
+    about bytes the verifier last LOOKED at. Only --fresh-deps (the
+    content-hash guard) forces the dep re-verify that lets
+    sys_nominal_proof refute the flip."""
+    src = GUMBO_LIB.read_text()
+    if "!= Isolette_Data_Model::ValueStatus::Valid" in src:
+        print(f"tamper-stale-dep: {GUMBO_LIB.name} already tampered")
+        return
+    st = GUMBO_LIB.stat()
+    GUMBO_LIB.write_text(stale_dep_text(src))
+    os.utime(GUMBO_LIB, ns=(st.st_atime_ns, st.st_mtime_ns))
+    print("Tampered a foundation dependency (GUMBO_Library): flipped "
+          "isValidTempWstatus_spec (== -> !=) with the mtime preserved "
+          "nanosecond-exact — cargo-verus's warm dependency cache will "
+          "serve the STALE pre-tamper verdict")
+
+
+# the dependency-freshness guard's scope: the foundation crates the
+# verus tier consumes only as cargo dependencies (the system proof crate
+# is a primary target — always re-verified — so it needs no guard)
+DEP_CRATES = ("data", "GUMBO_Library")
+DEP_FRESHNESS_SIDECAR = REPO / ".dep_freshness.json"
+
+
+def _dep_crate_digest(crate: str) -> str:
+    """One content digest per foundation crate: sorted relative paths +
+    sha256 of every source file and the manifest."""
+    import hashlib
+    root = ISL_ROOT / "hamr" / "microkit" / "crates" / crate
+    h = hashlib.sha256()
+    for f in sorted((*(root / "src").rglob("*.rs"), root / "Cargo.toml")):
+        h.update(str(f.relative_to(root)).encode())
+        h.update(hashlib.sha256(f.read_bytes()).digest())
+    return h.hexdigest()
+
+
+def fresh_deps_guard() -> None:
+    """The scene-scoped dependency-freshness guard: cargo's dep cache is
+    mtime-gated, so a content change with a preserved mtime yields a
+    stale 'verified' verdict for every consumer. The guard re-keys
+    freshness on CONTENT: it digests each foundation crate's sources
+    against a sidecar record and, on drift, bumps the crate's source
+    mtimes so cargo-verus must re-verify the dep (and its dependents)
+    from the live bytes. Free when nothing changed.
+
+    The sidecar is cache state, not trust state: it lives outside
+    golden/, is seeded trust-on-first-use over the current warm cache
+    (the demo seeds it right after a gated-clean checklist run), and on
+    drift is updated to the live digest — sound in both directions,
+    since a later restore registers as drift again and forces one more
+    honest re-verify. Promoting the guard to an attested ASP with a
+    blessed record is postponed by design."""
+    live = {crate: _dep_crate_digest(crate) for crate in DEP_CRATES}
+    if not DEP_FRESHNESS_SIDECAR.is_file():
+        DEP_FRESHNESS_SIDECAR.write_text(json.dumps(live, indent=2) + "\n")
+        print("fresh-deps: seeded the freshness record for "
+              f"{', '.join(DEP_CRATES)} (trust-on-first-use over the "
+              "current warm cache)")
+        return
+    recorded = json.loads(DEP_FRESHNESS_SIDECAR.read_text())
+    drifted = [c for c in DEP_CRATES if recorded.get(c) != live[c]]
+    if not drifted:
+        print("fresh-deps: dependency sources match the freshness record "
+              "— the warm cache is honest")
+        return
+    for crate in drifted:
+        root = ISL_ROOT / "hamr" / "microkit" / "crates" / crate
+        for f in (*(root / "src").rglob("*.rs"), root / "Cargo.toml"):
+            os.utime(f)
+    DEP_FRESHNESS_SIDECAR.write_text(json.dumps(live, indent=2) + "\n")
+    print("fresh-deps: content drift in " + ", ".join(drifted)
+          + " — mtimes bumped so cargo-verus must RE-VERIFY the "
+          "dependency from the live bytes (no stale verdict)")
 
 
 SYS_PROOF_DIR = (ISL_ROOT / "hamr" / "microkit" / "crates" / SYS_PROOF_CRATE)
@@ -1154,6 +1520,96 @@ class ReportRegenerateKS(KnowledgeSource):
                     continue  # decline; handoff/escalation follows
             desc = CODEGEN[self.fe_name]()
             print(f"  {self.name}: regenerated the attestation report "
+                  f"from the model ({desc})")
+            blackboard.write_entry(
+                key=key, predicate=entry.predicate,
+                measurement=entry.measurement, result=None,
+            )
+
+
+class GenSrcDriftDiagnosisKS(KnowledgeSource):
+    """
+    The gensrc ladder's diagnosis rung — attribution, never rescue. The
+    cheat tier already ran in this same episode, so no new measurement
+    is needed: for each drifted crate the rung correlates the two
+    verdicts and names the drift KIND — "a proof escape appeared" (the
+    cheat scan refused the same crate) or "cheat counts clean — a
+    semantic edit no construct scan can see" (a weakened contract, a
+    changed FFI body). The latter is exactly why a clean cheat scan must
+    never pass a failed byte anchor: these files are do-not-edit
+    generated, every byte is measured semantics. Diagnosis only — the
+    chain hands the key onward (regeneration or escalation) either way.
+    """
+
+    name: str = "diagnose:gensrc-drift"
+    partition: List[str] = []
+    max_attempts: int = 1
+    prefix: str
+    cheats_key: str = ""
+
+    def _crate_of(self, targ: str, suffix: str) -> str:
+        return targ[len(self.prefix) + 1:-len(suffix)] \
+            if targ.startswith(self.prefix) and targ.endswith(suffix) else targ
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        cheat_failing = set()
+        if self.cheats_key:
+            # a refused cheat entry has no repair chain, so by the time
+            # this rung runs it has already been POPPED into the
+            # escalate map — look in both places
+            cheat = (blackboard.get_entry(self.cheats_key)
+                     or blackboard.get_escalate().get(self.cheats_key))
+            if cheat is not None and isinstance(cheat.result, Verdict):
+                cheat_failing = {
+                    self._crate_of(c.targ_id or "", "_cheat_targ")
+                    for c in cheat.result.failing()}
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if not isinstance(entry.result, Verdict):
+                continue
+            for c in entry.result.failing():
+                crate = self._crate_of(c.targ_id or "", "_gensrc_targ")
+                reason = " ".join((c.reason or "").split())[:120]
+                if crate in cheat_failing:
+                    print(f"  {self.name}: {crate} — bytes drifted AND the "
+                          "cheat scan refused the same crate: a proof "
+                          f"ESCAPE appeared ({reason})")
+                else:
+                    print(f"  {self.name}: {crate} — bytes drifted with "
+                          "cheat counts CLEAN: a semantic edit no "
+                          "construct scan can see (weakened contract, "
+                          f"changed unverified body) ({reason})")
+            # diagnosis only: never writes, never repairs
+
+
+class GenSrcRegenerateKS(KnowledgeSource):
+    """
+    The gensrc repair rung — scene 8's regeneration species applied to
+    the generated sources: like the report, these files are RENDERINGS
+    of the model through the codegen toolchain, so the honest repair is
+    neither restore-from-golden (that's for developer-owned artifacts)
+    nor rescue — it re-emits them via real codegen behind the measured
+    tool gate, and fresh measurement judges the result (pair with
+    RestartEpisodeKS).
+    """
+
+    name: str = "repair:regenerate-gensrc"
+    partition: List[str] = []
+    max_attempts: int = 1
+    fe_name: str
+    tool_gate: object = None
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        for key in keys:
+            entry = blackboard.get_entry(key)
+            if self.tool_gate is not None:
+                error = self.tool_gate()
+                if error:
+                    print(f"  {self.name}: toolchain gate refused "
+                          f"regeneration: {error}")
+                    continue  # decline; handoff/escalation follows
+            desc = CODEGEN[self.fe_name]()
+            print(f"  {self.name}: regenerated the generated sources "
                   f"from the model ({desc})")
             blackboard.write_entry(
                 key=key, predicate=entry.predicate,
@@ -1323,7 +1779,7 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
                    restart: bool = False, pause: bool = False,
                    verify: bool = False, immutable: bool = False,
                    restore_crates: bool = False, repair_impl: bool = False,
-                   regen_report: bool = False,
+                   regen_report: bool = False, regen_gensrc: bool = False,
                    tool_gate=None) -> BlackboardController:
     """
     One verification episode. The baseline shape is unchanged (files
@@ -1378,14 +1834,18 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     report_key = f"{fe.prefix}:report"
     cheats_key = f"{fe.prefix}:cheats"
     proofsrc_key = f"{fe.prefix}:proofsrc"
+    gensrc_key = f"{fe.prefix}:gensrc"
     with_report = verify and fe.report_id in protocols
     with_cheats = verify and fe.cheat_id in protocols
     with_proofsrc = verify and fe.sysproof_id in protocols
+    with_gensrc = verify and fe.gensrc_id in protocols
     siblings = [proofs_key] if verify else []
     if with_cheats:
         siblings.append(cheats_key)
     if with_proofsrc:
         siblings.append(proofsrc_key)
+    if with_gensrc:
+        siblings.append(gensrc_key)
 
     if immutable:
         # refined_by = the entry's own l1a protocol: the hash verdict
@@ -1430,6 +1890,22 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
             RestartEpisodeKS(name="restart:report", budget=1),
         ]
 
+    # the gensrc ladder: coarse byte anchor (the entry itself), then
+    # diagnosis (drift KIND, correlated against the same episode's cheat
+    # verdict), then — opt-in — regeneration via measured codegen. Never
+    # a rescue rung: a cheat-clean drift can still be a weakened
+    # contract or a changed unverified body
+    gensrc_chain = []
+    if with_gensrc:
+        gensrc_chain.append(GenSrcDriftDiagnosisKS(
+            prefix=fe.prefix,
+            cheats_key=cheats_key if with_cheats else ""))
+        if regen_gensrc:
+            gensrc_chain.append(GenSrcRegenerateKS(fe_name=fe.name,
+                                                   tool_gate=tool_gate))
+            gensrc_chain.append(RestartEpisodeKS(name="restart:gensrc",
+                                                 budget=1))
+
     confirm = [TierKS(protocol_id=fe.verus_id)] if validate else []
     episodes = {files_key: fe.l1a}
     if verify:
@@ -1443,11 +1919,14 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         # so any drift is a sanctioned HAMR re-run (promote path) or
         # tampering — escalate, never machine-repair
         episodes[proofsrc_key] = fe.sysproof_id
+    if with_gensrc:
+        episodes[gensrc_key] = fe.gensrc_id
     if with_report:
         episodes[report_key] = fe.report_id
     starter = StartAttestationKS(episodes=episodes)
     seen = set()
-    for ks in (*confirm, *fail_chain, *proofs_chain, *report_chain, starter):
+    for ks in (*confirm, *fail_chain, *proofs_chain, *report_chain,
+               *gensrc_chain, starter):
         if id(ks) not in seen:
             controller.add_ks(ks)
             seen.add(id(ks))
@@ -1458,6 +1937,8 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         controller.route(cheats_key, on_pass=[], on_fail=[])
     if with_proofsrc:
         controller.route(proofsrc_key, on_pass=[], on_fail=[])
+    if with_gensrc:
+        controller.route(gensrc_key, on_pass=[], on_fail=gensrc_chain)
     if with_report:
         controller.route(report_key, on_pass=[], on_fail=report_chain)
     controller.blackboard.write_entry(
@@ -1497,6 +1978,25 @@ def main() -> None:
                         help="drop a real VC and add a trivial one, still "
                              "verifying (Verus green; only the sysproof hash "
                              "refuses)")
+    parser.add_argument("--tamper-ffi", action="store_true",
+                        help="invert the heat command in the unverified FFI "
+                             "glue: every proof passes, cheat counts clean — "
+                             "only the gensrc byte tier refuses (the drift "
+                             "kind no rescue rung may forgive)")
+    parser.add_argument("--regen-gensrc", action="store_true",
+                        help="the gensrc entry's repair rung: re-emit the "
+                             "generated sources via measured codegen (tool "
+                             "gate first), then fresh measurement judges")
+    parser.add_argument("--tamper-stale-dep", action="store_true",
+                        help="flip a GUMBO_Library spec predicate with the "
+                             "mtime preserved — cargo's mtime-gated dep cache "
+                             "serves the stale verdict, every tier stays "
+                             "green; --fresh-deps is the guard that closes it")
+    parser.add_argument("--fresh-deps", action="store_true",
+                        help="content-hash the foundation dep crates against "
+                             "a sidecar record and bump mtimes on drift, so "
+                             "cargo-verus must re-verify the dep from the "
+                             "live bytes; alone: seed/check the record only")
     parser.add_argument("--tamper-note", action="store_true")
     parser.add_argument("--tamper-impl", action="store_true")
     parser.add_argument("--tamper-impl-full", action="store_true")
@@ -1519,6 +2019,8 @@ def main() -> None:
     tampers = ((tamper_verus, cli.tamper_verus),
                (tamper_cheat, cli.tamper_cheat),
                (tamper_broadcast, cli.tamper_broadcast),
+               (tamper_ffi, cli.tamper_ffi),
+               (tamper_stale_dep, cli.tamper_stale_dep),
                (tamper_proof_count, cli.tamper_proof_count),
                (tamper_proof_swap, cli.tamper_proof_swap),
                (tamper_note, cli.tamper_note),
@@ -1529,6 +2031,10 @@ def main() -> None:
 
     if cli.check:
         print_check(fe, load_protocols(fe))
+        return
+    if cli.fresh_deps and not cli.verify:
+        # standalone: seed or check the freshness record, no episode
+        fresh_deps_guard()
         return
     if cli.ready or cli.status:
         # the progress view: tamper flags apply first (a checklist over
@@ -1564,8 +2070,8 @@ def main() -> None:
     granularity = cli.repair_granularity or "file"
     protocols = load_protocols(fe, validate=cli.validate or cli.verify)
     tool_gate = None
-    if cli.regen_report:
-        # the regeneration rung re-runs codegen: measure the emitter
+    if cli.regen_report or cli.regen_gensrc:
+        # the regeneration rungs re-run codegen: measure the emitter
         # (and, for SysML, the pinned libraries) immediately before use
         for tid in TOOL_GATE_IDS[fe.name]:
             if (FIXTURES / tid / "asp_args.json").is_file():
@@ -1586,14 +2092,31 @@ def main() -> None:
     src_backups = {
         f: f.read_text()
         for f, flag in ((MHS_API, cli.tamper_cheat),
-                        (GUMBO_LIB, cli.tamper_broadcast),
+                        (MHS_EXTERN, cli.tamper_ffi),
+                        (GUMBO_LIB,
+                         cli.tamper_broadcast or cli.tamper_stale_dep),
                         (SYS_PROOF_LIB, cli.tamper_proof_count),
                         (SYS_PROOF_VC, cli.tamper_proof_swap))
         if flag
     }
+    # the stale-dep restore also restores the file's mtime — but ONLY
+    # when the guard did not run: without --fresh-deps the dep caches
+    # were never rebuilt (they still hold artifacts of the pre-tamper
+    # bytes), so bytes+mtime back leaves them coherent with no rebuild.
+    # Under --fresh-deps the guard's bump made every consumer rebuild
+    # from the TAMPERED bytes; the restore must carry a fresh mtime, or
+    # cargo (freshness is mtime-gated — the scene's whole point) would
+    # keep serving the poisoned artifacts over the restored tree
+    mtime_backups = ({GUMBO_LIB: GUMBO_LIB.stat().st_mtime_ns}
+                     if cli.tamper_stale_dep and not cli.fresh_deps
+                     else {})
     for tamper, flag in tampers:
         if flag:
             tamper(fe, protocols)
+    if cli.fresh_deps:
+        # the guard runs AFTER the tampers, before the episode — it must
+        # judge the live (possibly tampered) tree
+        fresh_deps_guard()
     try:
         attest_episode(fe, protocols, repair=cli.repair,
                        validate=cli.validate, granularity=granularity,
@@ -1601,7 +2124,8 @@ def main() -> None:
                        immutable=cli.immutable_model,
                        restore_crates=cli.restore_crates,
                        repair_impl=cli.repair_impl,
-                       regen_report=cli.regen_report, tool_gate=tool_gate)
+                       regen_report=cli.regen_report,
+                       regen_gensrc=cli.regen_gensrc, tool_gate=tool_gate)
         if cli.repair and not restart:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
             attest_episode(fe, protocols, repair=cli.repair,
@@ -1613,6 +2137,8 @@ def main() -> None:
         for f, original in src_backups.items():
             if f.read_text() != original:
                 f.write_text(original)
+                if f in mtime_backups:
+                    os.utime(f, ns=(f.stat().st_atime_ns, mtime_backups[f]))
                 print(f"Restored {f.name} from the pre-tamper snapshot")
 
 

@@ -25,3 +25,4 @@ history.txt
 .env.*
 secrets*
 .demo.lock/
+.dep_freshness.json

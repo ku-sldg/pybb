@@ -78,20 +78,21 @@
 #            the model through the measured codegen toolchain, so the
 #            rung re-emits it (tool gate first) and re-attests.
 #   scene 9  proof cheat -> two beats. Beat 1 (ADMIT): assume(false)
-#            admits a verified contract in a bridge file NO hash or slice
-#            tier covers; files/contracts green, cargo-verus reports the
-#            same success — the proof is hollow — and ONLY the cheat
-#            scan (assume/admit/external_body/axiom/broadcast/uninterp
-#            counts vs an exact golden) refuses, attributing the crate.
-#            Beat 2 (SMUGGLE): an external_body broadcast proof fn with
-#            'ensures false' planted in the shared GUMBO_Library — a
-#            foundation crate in no hashed/sliced file. It verifies
-#            clean on its own and is inert until a 'broadcast use' pulls
-#            it in, so it changes NO proof outcome: files, contracts,
-#            the verus tier (errors==0), the sysproof hash, and the
-#            report all stay green. Only the cheat scan — counting escape
-#            constructs, not proof outcomes — catches it, at the staging
-#            point, naming GUMBO_Library. No repair rung: escalates.
+#            admits a verified contract in a bridge file; files/contracts
+#            green, cargo-verus reports the same success — the proof is
+#            hollow. Beat 2 (SMUGGLE): an external_body broadcast proof
+#            fn with 'ensures false' planted in the shared GUMBO_Library.
+#            It verifies clean on its own and is inert until a
+#            'broadcast use' pulls it in, so it changes NO proof outcome.
+#            Both sites are byte-anchored by the gensrc tier now, so two
+#            detectors refuse together: the byte anchor says SOMETHING
+#            changed, the cheat scan (assume/admit/external_body/axiom/
+#            broadcast/uninterp counts vs an exact golden) says WHAT
+#            KIND — a proof ESCAPE — and the ladder's diagnosis rung
+#            correlates them. The cheat scan alone guards the promote
+#            boundary, where gold legitimately moves and byte-blessing
+#            would bless whatever codegen emitted. No repair rung:
+#            escalates.
 #   scene 10 the hollow SYSTEM proof -> two attacks on sys_nominal_proof
 #            (the compositional proof crate) that add no escape
 #            construct (cheat scan silent) AND change no verification
@@ -101,6 +102,41 @@
 #            a real VC + add a trivial one. Both leave every
 #            verification green; ONLY the whole-file sysproof hash
 #            refuses. Bytes anchor what a proof outcome cannot.
+#   scene 11 the stale dependency cache -> a verdict that never looked:
+#            the verus tier's 8 primary crates genuinely re-verify every
+#            run, but the foundation crates (data, GUMBO_Library) are
+#            consumed as cargo DEPENDENCIES, and cargo's dep freshness
+#            is mtime-gated. A spec predicate in GUMBO_Library is
+#            flipped SEMANTICALLY (no construct-count change) with the
+#            file's mtime preserved nanosecond-exact: the cheat scan
+#            counts no new escape and the warm cache serves the STALE
+#            pre-tamper artifact. Beat 1, the horror: the TIERS
+#            DISAGREE — the gensrc byte anchor refuses while the Verus
+#            tier sits green over a system proof that is FALSE of the
+#            live bytes ('verification succeeded' is a verdict about
+#            bytes the verifier last LOOKED at); the stale-green gate
+#            doubles as a regression canary for the pinned toolchain's
+#            cache behavior. Beat 2 adds the dependency-freshness guard
+#            (--fresh-deps: content-hash the dep sources against a
+#            seeded record, bump mtimes on drift): the dep re-verifies
+#            from the live bytes and sys_nominal_proof honestly refutes
+#            (8 VCs) — the verdicts agree again. No repair rung: the
+#            refusal escalates; the driver's restore is mtime-aware
+#            both ways (coherent caches after beat 1, an honest rebuild
+#            after beat 2).
+#   scene 12 the unverified foundation -> bytes under the proof tower:
+#            beat 1 inverts the heat command inside the unsafe FFI glue
+#            (unsafe_put_heat_control) — plain unverified Rust behind an
+#            external_body boundary Verus never reads. Every proof
+#            passes, the cheat scan counts no new escape, no
+#            report-named file moved: ONLY the gensrc byte anchor
+#            refuses, and its diagnosis rung classifies the drift
+#            (cheat counts CLEAN — a semantic edit no construct scan
+#            can see), which is exactly why the ladder never rescues on
+#            a clean cheat scan. Beat 2 repairs by REGENERATION (scene
+#            8's species): tool gate -> real codegen re-emits the
+#            generated sources from the blessed model -> the restarted
+#            episode re-attests, judged by fresh measurement.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -143,7 +179,7 @@ EVIDENCE="$REPO/evidence"
 NO_VSCODE=0
 RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6 7 8 9 10"
+SCENES="1 2 3 4 5 6 7 8 9 10 11 12"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -157,7 +193,7 @@ while [ $# -gt 0 ]; do
     --auto) AUTO="$2"; shift ;;
     --drift) DRIFT="$2"; shift ;;
     --restore-tools) RESTORE_TOOLS=1 ;;
-    -h|--help) sed -n '2,114p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) sed -n '2,156p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
     *) echo "unknown flag: $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -269,6 +305,8 @@ cleanup() {
     echo "note: provisioning refreshes bundle signatures/timestamps under"
     echo "      tests/fixtures/isolette_sysmlv2_rust_* — 'git checkout' them if unwanted."
   fi
+  # scene 11's freshness sidecar is session state, never persisted
+  rm -f "$REPO/.dep_freshness.json"
   release_demo_lock
   exit $status
 }
@@ -316,6 +354,8 @@ if in_scenes 1; then
     "the files entry must attest clean on the baseline"
   expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
     "the verification entry must attest clean on the baseline"
+  expect "isolette_sysmlv2_rust:gensrc: all attested components intact" \
+    "the generated-source byte anchor must attest clean on the baseline"
   expect "isolette_sysmlv2_rust:report: all attested components intact" \
     "the report rendering must attest clean on the baseline"
   echo
@@ -879,14 +919,18 @@ if in_scenes 9; then
   banner "SCENE 9 — proof cheat: verification success is not proof" \
     "cargo-verus says 'verified, 0 errors' — but HOW? Two beats, two" \
     "escapes that pass every OUTCOME-based tier because they change no" \
-    "proof outcome. Beat 1 — ADMIT: assume(false) in a bridge file no" \
-    "hash or slice tier covers; files/contracts green, the verus tier" \
-    "reports the same success over the hollow proof. Beat 2 — SMUGGLE:" \
-    "an external_body broadcast axiom in the shared GUMBO_Library —" \
-    "verifies clean, inert until 'broadcast use', so even the verus" \
-    "tier (errors==0) stays green. Both times ONLY the cheat scan, which" \
-    "counts escape CONSTRUCTS rather than outcomes, refuses — naming" \
-    "the crate. No repair rung: the refusal escalates."
+    "proof outcome. Beat 1 — ADMIT: assume(false) in a bridge file." \
+    "Beat 2 — SMUGGLE: an external_body broadcast axiom in the shared" \
+    "GUMBO_Library — verifies clean, inert until 'broadcast use', so" \
+    "even the verus tier (errors==0) stays green. Both sites are now" \
+    "byte-anchored by the GENSRC tier (generated do-not-edit sources)," \
+    "so the bytes refuse too — and the ladder's diagnosis rung" \
+    "correlates the two refusals: bytes say SOMETHING changed, the" \
+    "construct scan says WHAT KIND — a proof ESCAPE appeared. The" \
+    "cheat scan is not made redundant by byte coverage: at the promote" \
+    "boundary gold legitimately MOVES, byte-blessing would bless" \
+    "whatever codegen emitted, and only the blessed escape counts" \
+    "stand guard there. No repair rung: the refusal escalates."
   echo "${BOLD}beat 1 — admit: a hollow proof every outcome-tier passes${RESET}"
   MHS_API_PRISTINE="$LOG_DIR/mhs_api.pristine.rs"
   cp "$MHS_API" "$MHS_API_PRISTINE"
@@ -906,13 +950,19 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
   run_driver --tamper-cheat --verify
   expect "Admitted a verified contract" "the cheat tamper must apply"
   expect "isolette_sysmlv2_rust:files: all attested components intact" \
-    "the files tier must stay green (the cheat site is unhashed)"
+    "the files tier must stay green (the cheat site is not report-named)"
   expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
     "cargo-verus must still report success over the admitted proof"
   expect "isolette_sysmlv2_rust:cheats: integrity violation" \
     "the cheat tier must refuse"
   expect "thermostat_rt_mhs_mhs_cheat_targ" \
     "the refusal must attribute the cheating crate"
+  expect "isolette_sysmlv2_rust:gensrc: integrity violation" \
+    "the gensrc byte anchor must refuse too (the site is covered now)"
+  expect "hash drift: src/bridge/thermostat_rt_mhs_mhs_api.rs" \
+    "the batched appraiser must name the admitted file"
+  expect "a proof ESCAPE appeared" \
+    "the diagnosis rung must correlate bytes-drifted with the cheat refusal"
   expect "Restored thermostat_rt_mhs_mhs_api.rs" \
     "the driver must restore the tamper site"
   pause
@@ -925,12 +975,13 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
   echo "GUMBO_Library verifies clean on its own (the body is trusted),"
   echo "and would inject 'false' into every importer's proof context the"
   echo "moment a 'broadcast use' pulls it in. Until then it is inert, so"
-  echo "it changes NO proof outcome and sits in no hashed or sliced"
-  echo "file: files, contracts, the verus tier (errors==0), the sysproof"
-  echo "hash, and the report all stay green. Only the cheat scan — which"
-  echo "counts escape CONSTRUCTS, not proof outcomes — sees it, at the"
-  echo "staging point, before any proof consumes it. See how ordinary it"
-  echo "looks:"
+  echo "it changes NO proof outcome: files, contracts, the verus tier"
+  echo "(errors==0), the sysproof hash, and the report all stay green."
+  echo "Two detectors see it: the gensrc byte anchor (the foundation"
+  echo "crate is covered now) says the bytes moved, and the cheat scan —"
+  echo "counting escape CONSTRUCTS, not proof outcomes — says WHAT"
+  echo "arrived, at the staging point, before any proof consumes it."
+  echo "See how ordinary it looks:"
   GUMBO_PRISTINE="$LOG_DIR/gumbo.pristine.rs"
   GUMBO_LIB_SRC="$REPO/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library/src/lib.rs"
   cp "$GUMBO_LIB_SRC" "$GUMBO_PRISTINE"
@@ -942,8 +993,9 @@ ex.tamper_broadcast(ex.FRONTENDS['sysml'], {})" )
     "the smuggled axiom (pristine vs poisoned foundation crate)"
   cp "$GUMBO_PRISTINE" "$GUMBO_LIB_SRC"
   echo
-  echo "The full episode — every outcome-based tier is blind, only the"
-  echo "construct scan refuses:"
+  echo "The full episode — every outcome-based tier is blind; the byte"
+  echo "anchor and the construct scan refuse together, and the diagnosis"
+  echo "rung names the drift kind:"
   note_slow
   run_driver --tamper-broadcast --verify
   expect "Planted a smuggled axiom in GUMBO_Library" \
@@ -958,9 +1010,15 @@ proof-outcome change)"
   expect "isolette_sysmlv2_rust:report: all attested components intact" \
     "the report tier must stay green"
   expect "isolette_sysmlv2_rust:cheats: integrity violation" \
-    "only the cheat scan must refuse"
+    "the cheat scan must refuse"
   expect "GUMBO_Library_cheat_targ" \
     "the cheat scan must name the foundation crate"
+  expect "isolette_sysmlv2_rust:gensrc: integrity violation" \
+    "the gensrc byte anchor must refuse too"
+  expect "hash drift: src/lib.rs" \
+    "the batched appraiser must name the poisoned file"
+  expect "a proof ESCAPE appeared" \
+    "the diagnosis rung must correlate the byte drift with the cheat refusal"
   expect "Restored lib.rs" "the driver must restore the foundation crate"
   pause
 fi
@@ -1009,9 +1067,216 @@ if in_scenes 10; then
   pause
 fi
 
+if in_scenes 11; then
+  banner "SCENE 11 — the stale dependency cache: a verdict that never looked" \
+    "The verus tier's 8 primary crates genuinely RE-VERIFY every run —" \
+    "but the foundation crates (data, GUMBO_Library) are consumed as" \
+    "cargo DEPENDENCIES, and cargo's dep freshness is mtime-gated. A" \
+    "spec predicate in GUMBO_Library is flipped SEMANTICALLY (no" \
+    "construct-count change) with the mtime preserved nanosecond-exact:" \
+    "the cheat scan counts no new escape and the warm cache serves the" \
+    "STALE pre-tamper artifact. The gensrc byte anchor refuses — bytes" \
+    "always tell — and that is what exposes the Verus tier's verdict:" \
+    "the TIERS DISAGREE. Bytes say the foundation changed; the Verus" \
+    "tier sits green over a system proof that is FALSE of the live" \
+    "tree, because 'verification succeeded' is a verdict about bytes" \
+    "the verifier last LOOKED at. Beat 2 adds the dependency-freshness" \
+    "guard: content-hash the dep sources, bump mtimes on drift, and the" \
+    "forced re-verify lets sys_nominal_proof honestly refute (8 VCs) —" \
+    "the verdicts agree again. No repair rung: the refusal escalates." \
+    "The guard is DEMO-SCOPED — outside this scene the verus tier's" \
+    "EVIDENCE trusts cargo's dep cache; the attested always-on guard is" \
+    "postponed by design."
+  GUMBO_LIB_SRC="$REPO/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library/src/lib.rs"
+  SIDECAR="$REPO/.dep_freshness.json"
+  rm -f "$SIDECAR"
+
+  echo "${BOLD}beat 0 — the warm, coherent cache the attack needs${RESET}"
+  echo "One gated-clean checklist run: every crate re-verifies green and"
+  echo "every dependency cache is built from the CURRENT bytes. Then the"
+  echo "guard's freshness record is seeded over that known-coherent state"
+  echo "(trust-on-first-use):"
+  note_slow
+  run_driver --ready --status
+  expect "readiness: PASS" "the checklist run must verify the baselines"
+  expect "✓" "every crate must check off before the staleness arc"
+  expect_absent "✗" "a refuted crate here means the demo started dirty"
+  expect_absent "?" "an unjudged crate here means the demo started dirty"
+  run_driver --fresh-deps
+  expect "fresh-deps: seeded the freshness record" \
+    "the guard must seed its content record over the coherent cache"
+  pause
+
+  echo
+  echo "${BOLD}beat 1 — the horror: the tiers disagree${RESET}"
+  echo "The flip inverts what 'a valid temperature reading' MEANS for"
+  echo "every consumer — freshly verified, 8 system-proof VCs refute it."
+  echo "See how innocent it looks (and note: the mtime will not change):"
+  SCENE11_GUMBO="$LOG_DIR/gumbo.scene11.rs"
+  cp "$GUMBO_LIB_SRC" "$SCENE11_GUMBO"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+from pathlib import Path
+Path(sys.argv[1]).write_text(ex.stale_dep_text(ex.GUMBO_LIB.read_text()))
+" "$LOG_DIR/gumbo.scene11.tampered.rs" )
+  offer_diff "$SCENE11_GUMBO" "$LOG_DIR/gumbo.scene11.tampered.rs" \
+    "the semantic flip (pristine vs tampered foundation dependency)"
+  echo
+  echo "The full episode over the tampered tree — the primary crates all"
+  echo "re-verify, and every one of them consumes the STALE cached"
+  echo "dependency; watch the byte anchor and the Verus verdict part ways:"
+  note_slow
+  run_driver --tamper-stale-dep --verify
+  expect "Tampered a foundation dependency" "the stale-dep tamper must apply"
+  expect "isolette_sysmlv2_rust:files: all attested components intact" \
+    "the files tier must stay green (GUMBO_Library is report-invisible)"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the verus tier must stay green — the STALE dep verdict (this gate is \
+also the regression canary for the pinned toolchain's cache behavior)"
+  expect "isolette_sysmlv2_rust:cheats: all attested components intact" \
+    "the cheat scan must stay silent (a semantic flip adds no construct)"
+  expect "isolette_sysmlv2_rust:proofsrc: all attested components intact" \
+    "the sysproof hash must stay green (the proof crate is untouched)"
+  expect "isolette_sysmlv2_rust:report: all attested components intact" \
+    "the report tier must stay green"
+  expect "isolette_sysmlv2_rust:gensrc: integrity violation" \
+    "the gensrc byte anchor must refuse — bytes always tell"
+  expect "hash drift: src/lib.rs" \
+    "the batched appraiser must name the flipped file"
+  expect "cheat counts CLEAN" \
+    "the diagnosis rung must classify the drift as a semantic edit"
+  expect "Restored lib.rs" "the driver must restore the foundation crate"
+  echo
+  echo "${BOLD}The tiers DISAGREE — the gensrc anchor refuses while the Verus${RESET}"
+  echo "${BOLD}tier sits green over a system proof that is FALSE of the live${RESET}"
+  echo "${BOLD}bytes. The verus tier re-ran, honestly, over its 8 primary${RESET}"
+  echo "${BOLD}crates; the lie lives in the dependency artifact cargo declined${RESET}"
+  echo "${BOLD}to rebuild because the mtime said nothing changed. A refusing${RESET}"
+  echo "${BOLD}byte tier saves the SYSTEM's honesty — but the green Verus cell${RESET}"
+  echo "${BOLD}is still misleading EVIDENCE, and that is what beat 2 repairs:${RESET}"
+  pause
+
+  echo
+  echo "${BOLD}beat 2 — the guard: freshness re-keyed on content, not mtime${RESET}"
+  echo "Same tamper, same episode — plus --fresh-deps: the guard digests"
+  echo "the dependency sources against its seeded record, attributes the"
+  echo "drift, and bumps mtimes so cargo-verus must re-verify the"
+  echo "dependency from the live bytes. Now the system proof refutes:"
+  note_slow
+  run_driver --tamper-stale-dep --fresh-deps --verify
+  expect "Tampered a foundation dependency" "the stale-dep tamper must apply"
+  expect "fresh-deps: content drift in GUMBO_Library" \
+    "the guard must detect and attribute the dependency drift"
+  expect "isolette_sysmlv2_rust:proofs: integrity violation" \
+    "the verus tier must refuse once the dep is freshly verified"
+  expect "sys_nominal_proof_verus_targ" \
+    "the refusal must attribute the consumer that cannot prove"
+  expect "isolette_sysmlv2_rust:gensrc: integrity violation" \
+    "the byte anchor still refuses — now the verdicts AGREE"
+  expect "Restored lib.rs" "the driver must restore the foundation crate"
+  rm -f "$SIDECAR"
+  echo
+  echo "${BOLD}The refusal is the honest state — and it names the CONSUMER${RESET}"
+  echo "${BOLD}(sys_nominal_proof), not the tampered dependency: the guard${RESET}"
+  echo "${BOLD}restores freshness, it does not attribute. No repair rung on${RESET}"
+  echo "${BOLD}purpose: a poisoned foundation escalates to the administrator.${RESET}"
+  echo "${BOLD}The restore is mtime-aware both ways: beat 1's (no rebuild${RESET}"
+  echo "${BOLD}happened) put bytes AND mtime back, leaving the caches${RESET}"
+  echo "${BOLD}coherent for free; this one carries a FRESH mtime, because the${RESET}"
+  echo "${BOLD}guard's rebuilds consumed the tampered bytes and an mtime-gated${RESET}"
+  echo "${BOLD}cache must be TOLD the restore happened. The checklist proves${RESET}"
+  echo "${BOLD}the tree green from live re-verification:${RESET}"
+  note_slow
+  run_driver --ready --status
+  expect "readiness: PASS" "the restored tree must verify again"
+  expect_absent "✗" "no crate may stay refuted after the restore"
+  expect_absent "?" "no crate may stay unjudged after the restore"
+  pause
+fi
+
+if in_scenes 12; then
+  banner "SCENE 12 — the unverified foundation: bytes under the proof tower" \
+    "Every verified put flows through unsafe_put_heat_control — plain" \
+    "unverified Rust behind an external_body boundary Verus never" \
+    "reads. Beat 1 inverts the heat command RIGHT THERE: the proofs" \
+    "all pass (they are about the ghost model; the body was ALWAYS" \
+    "trusted), the cheat scan counts no new escape (the escape surface" \
+    "is unchanged), no report-named file moved. Only the gensrc byte" \
+    "anchor refuses — and its diagnosis rung classifies the drift:" \
+    "cheat counts CLEAN, a semantic edit no construct scan can see." \
+    "This drift KIND is exactly why the gensrc ladder never rescues on" \
+    "a clean cheat scan. Beat 2 is the repair — scene 8's regeneration" \
+    "species: these files are RENDERINGS of the model through the" \
+    "codegen toolchain, so the rung re-emits them (tool gate first," \
+    "real codegen) and fresh measurement judges the result in-session."
+  MHS_EXTERN_SRC="$REPO/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/bridge/extern_c_api.rs"
+
+  echo "${BOLD}beat 1 — invert the command under the proofs${RESET}"
+  echo "See how innocent it looks (and where it sits — the unsafe FFI"
+  echo "glue between the verified bridge and the platform):"
+  SCENE12_EXTERN="$LOG_DIR/extern_c_api.scene12.rs"
+  cp "$MHS_EXTERN_SRC" "$SCENE12_EXTERN"
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+from pathlib import Path
+Path(sys.argv[1]).write_text(
+    ex.MHS_EXTERN.read_text().replace(ex.FFI_MARKER, ex.FFI_TAMPERED, 1))
+" "$LOG_DIR/extern_c_api.scene12.tampered.rs" )
+  offer_diff "$SCENE12_EXTERN" "$LOG_DIR/extern_c_api.scene12.tampered.rs" \
+    "the inverted command in the unverified FFI glue"
+  echo
+  echo "The full episode — the verified tower stands; the foundation"
+  echo "under it now does the opposite of what the proofs say:"
+  note_slow
+  run_driver --tamper-ffi --verify
+  expect "Inverted the heat command" "the FFI tamper must apply"
+  expect "isolette_sysmlv2_rust:files: all attested components intact" \
+    "the files tier must stay green (the glue is not report-named)"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "every proof must still pass — the body was always trusted"
+  expect "isolette_sysmlv2_rust:cheats: all attested components intact" \
+    "the cheat scan must stay silent (no new escape construct)"
+  expect "isolette_sysmlv2_rust:gensrc: integrity violation" \
+    "only the gensrc byte anchor may refuse"
+  expect "hash drift: src/bridge/extern_c_api.rs" \
+    "the batched appraiser must name the glue file"
+  expect "cheat counts CLEAN" \
+    "the diagnosis rung must classify the drift as a semantic edit"
+  expect "Restored extern_c_api.rs" "the driver must restore the glue"
+  echo
+  echo "${BOLD}A cheat-clean drift in a do-not-edit file is why the ladder${RESET}"
+  echo "${BOLD}never rescues: every byte of these files IS measured semantics.${RESET}"
+  pause
+
+  echo
+  echo "${BOLD}beat 2 — repair by regeneration: the rendering re-emitted${RESET}"
+  echo "Same tamper — and the repair rung: tool gate (HAMR + pinned"
+  echo "libraries hashed just before use) -> real SysML codegen re-emits"
+  echo "the generated sources from the blessed model -> the restarted"
+  echo "episode re-attests. Judged by fresh measurement, never by the"
+  echo "repair's own claim (codegen beat: ~1-2 min):"
+  run_driver --tamper-ffi --regen-gensrc --verify
+  expect "Inverted the heat command" "the FFI tamper must apply"
+  expect "regenerated the generated sources from the model" \
+    "the regeneration rung must re-emit via measured codegen"
+  expect "isolette_sysmlv2_rust:gensrc: all attested components intact" \
+    "the regenerated sources must re-attest clean"
+  expect "repaired and re-attested clean in-session" \
+    "the repair must end in good standing, judged by fresh measurement"
+  pause
+fi
+
 banner "DEMO COMPLETE" \
   "postponed, by design: episode-triggering monitor (external" \
   "scheduler), wall-clock repair timeouts, the executable artifact" \
-  "class, blessing the report under the props class (laundered reports" \
-  "refuted by lineage, not just the live hash), and a real spec-guided" \
-  "Rust implementation engine behind the scene 2 stand-in."
+  "class (domain_monitor, dmf, drf — named by the gensrc coverage" \
+  "invariant, measured by no tier yet), blessing the report under the" \
+  "props class (laundered reports refuted by lineage, not just the" \
+  "live hash), a real spec-guided Rust implementation engine behind" \
+  "the scene 2 stand-in, and the ALWAYS-ON attested dependency-" \
+  "freshness guard (scene 11's guard is demo-scoped: outside that" \
+  "scene a stale dep cache can still render the verus tier's green" \
+  "cell misleading — the gensrc byte anchor keeps the SYSTEM honest," \
+  "but honest evidence needs the guard)."

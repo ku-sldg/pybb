@@ -1,0 +1,5 @@
+{
+  "name": "Isolette generated-source integrity (gensrc tier)",
+  "description": "Whole-file hashes of the generated do-not-edit Rust of the verification surface \u2014 bridge, GUMBOX, extern_c_api, mod/lib/logging, generated test scaffolding, and the foundation dep crates \u2014 one batched relpath->sha256 map per crate, with the l1a-owned files excluded so developer-owned code keeps its slice-rescue semantics. Closes the byte-coverage hole the cheat and stale-dep scenes exploited; no benign-drift allowance, repair is regeneration via measured codegen or escalation.",
+  "copland": "lseq( lseq( bseq( hashfile_many\u00d79 ), SIG ), APPR )"
+}

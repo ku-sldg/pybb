@@ -8,28 +8,44 @@ Rust isolette (the INSPECTA seL4/Microkit exemplar,
 example; where the ecosystems differ, the scene says so and shows the
 isolette's honest counterpart.
 
-**At a glance**: ten scenes; repair species exercised: whole-file
+**At a glance**: twelve scenes; repair species exercised: whole-file
 restore, content-aligned slice splice, crate restore, sanctioned
-codegen catch-up, regeneration-from-model, out-of-band pause, and the
-principled refusal; three refusal properties at one gate (signature,
-anchor, derivability). Keyless throughout — every repair is
-deterministic or out-of-band.
+codegen catch-up, regeneration-from-model (the report in scene 8, the
+generated sources in scene 12), out-of-band pause, freshness
+restoration (scene 11's content-keyed dep guard), and the principled
+refusal; three refusal properties at one gate (signature, anchor,
+derivability); one coverage invariant (every verification-surface
+`.rs` byte-anchored — l1a, gensrc, or sysproof — checked at
+provisioning). Keyless throughout — every repair is deterministic or
+out-of-band.
 
 **Running it**: `./examples/demo_isolette.sh` (interactive; `--help`
 for flags — `--scenes`, `--drift`, `--auto`, `--repair-strategy`,
 `--fast` for unattended, `--restore-tools` recovery). Fresh machine:
 `scripts/install.sh` builds the stack and provisions the baselines —
 see [INSTALL.md](INSTALL.md). Warm cargo-verus caches recommended:
-every Verus tier run re-verifies 8 crates (~10 s warm, multi-minute
-cold); scene 3's codegen beats add ~1-2 min each.
+every Verus tier run genuinely re-verifies its 8 primary crates
+(cargo-verus never serves a cached verdict for the crate under
+verification — ~0.7 s each warm); what the cache holds is the
+*dependencies* (vstd, build-std, the foundation crates), which is why
+a cold start is multi-minute and — because dep freshness is
+mtime-gated — why scene 11 exists. Scene 3's codegen beats add
+~1-2 min each.
 
 ## Setup
 
-- Bootstrap provisioning if no blessed baseline exists.
+- Bootstrap provisioning if no blessed baseline exists. Provisioning
+  is gated by the **byte-coverage completeness invariant**: every `.rs`
+  file of the verification surface must be covered by exactly one byte
+  tier (l1a, gensrc, or sysproof), with the developer-owned exclusions
+  explicit and the non-covered crates named as the postponed executable
+  class — a codegen version that emits a new uncovered file refuses
+  loudly instead of silently reopening the scene 9/11 coverage hole.
 - The readiness gate: protocol configuration checks plus verification
   of every **signed golden baseline** (l1a hashes, l2 slices, the
   blessed props model files, the verus tool hashes, the cheat tier's
-  proof-escape counts) before any attestation runs.
+  proof-escape counts, the gensrc and sysproof hash maps) before any
+  attestation runs.
 
 ## Scene 1 — clean baseline
 
@@ -42,9 +58,14 @@ cold); scene 3's codegen beats add ~1-2 min each.
   (per-crate proof-escape counts
   over 10 crates — see scene 9), the **sysproof tier** (whole-file
   hashes of the system proof crate, batched into one
-  relpath→sha256 evidence map — see scene 10), and the **report
-  rendering** every protocol is derived from, with the verus toolchain
-  hashed measure-then-use in the same term.
+  relpath→sha256 evidence map — see scene 10), the **gensrc tier**
+  (whole-file hashes of the generated do-not-edit sources of the
+  verification surface — bridge, GUMBOX, FFI glue, foundation dep
+  crates — one batched map per crate, l1a-owned files excluded so
+  developer-owned code keeps its slice-rescue semantics — see scenes
+  9, 11, 12), and the **report rendering** every protocol is derived
+  from, with the verus toolchain hashed measure-then-use in the same
+  term.
 - The per-crate proof checklist, all green.
 
 ## Scene 2 — implementation tamper: the ladder repairs the right artifact
@@ -174,33 +195,41 @@ cold); scene 3's codegen beats add ~1-2 min each.
 ## Scene 9 — proof cheat: verification success is not proof
 
 Two beats, two proof escapes that pass every OUTCOME-based tier because
-they change no proof outcome — caught only by the cheat scan, which
-counts escape **constructs**.
+they change no proof outcome. Both sites are byte-anchored by the
+**gensrc tier** now, so two detectors refuse together — the byte anchor
+says *something* changed, the cheat scan (counting escape
+**constructs**) says *what kind* — and the gensrc ladder's diagnosis
+rung correlates the two refusals into "a proof ESCAPE appeared". The
+cheat scan is not made redundant by byte coverage: it alone guards the
+**promote boundary**, where gold legitimately moves and byte-blessing
+would bless whatever codegen emitted.
 
 - **Beat 1 — ADMIT** ([diff&nbsp;D13](#d13)): `assume(false)` admits a
-  verified contract inside a bridge file **no hash or slice tier
-  covers** (`thermostat_rt_mhs_mhs_api.rs` — Verus-verified but outside
-  every l1a and l2 target). files/contracts green, and cargo-verus
-  reports the **same success** over the hollow proof — the Verus tier
-  (errors==0) is green (an admit changes no proof outcome). Only the cheat
-  tier refuses: `cheat_scan_verus` re-counts the proof-escape surface
-  (assume, admit, external_body by path class, bare external,
-  assume_specification, axiom, broadcast, uninterp — the constructs
-  Verus's own `--no-cheating` flag names, textually scanned), and the
-  drift (assume 0 → 1) fails the exact-bytes golden, attributing the
-  crate.
+  verified contract inside a bridge file the report never names
+  (`thermostat_rt_mhs_mhs_api.rs` — outside every l1a and l2 target).
+  files/contracts green, and cargo-verus reports the **same success**
+  over the hollow proof — the Verus tier (errors==0) is green (an admit
+  changes no proof outcome). The cheat tier refuses:
+  `cheat_scan_verus` re-counts the proof-escape surface (assume, admit,
+  external_body by path class, bare external, assume_specification,
+  axiom, broadcast, uninterp — the constructs Verus's own
+  `--no-cheating` flag names, textually scanned), and the drift
+  (assume 0 → 1) fails the exact-bytes golden, attributing the crate;
+  the gensrc anchor refuses in the same episode, naming the file
+  (`hash drift: src/bridge/thermostat_rt_mhs_mhs_api.rs`).
 - **Beat 2 — SMUGGLE** ([diff&nbsp;D14](#d14)): an `external_body`
   `broadcast proof fn` with `ensures false` planted in the shared
-  `GUMBO_Library` — a foundation crate no hash or slice tier covers.
-  It verifies clean on its own (the body is trusted) and is **inert
-  until a `broadcast use`** pulls it in, so it changes no proof
-  outcome: files, contracts, the **Verus tier** (errors==0), the
-  sysproof hash, and the report all stay green. Only the cheat scan
-  catches it,
-  at the staging point before any proof consumes it, naming
-  `GUMBO_Library` (broadcast 0 → 1, external_body.other 0 → 1). The
-  robust detector: a construct scan sees the escape even when every
-  outcome is still clean.
+  `GUMBO_Library` foundation crate. It verifies clean on its own (the
+  body is trusted) and is **inert until a `broadcast use`** pulls it
+  in, so it changes no proof outcome: files, contracts, the **Verus
+  tier** (errors==0), the sysproof hash, and the report all stay green.
+  The cheat scan catches it at the staging point before any proof
+  consumes it, naming `GUMBO_Library` (broadcast 0 → 1,
+  external_body.other 0 → 1), and the gensrc anchor names the file —
+  the construct scan remains the robust *semantic* detector: it sees
+  the escape even when every outcome is clean, and it would still see
+  one that arrived through sanctioned regeneration, where the hashes
+  move with gold.
 - No repair rung **on purpose** (either beat): a proof escape is never
   machine-repairable — the refusal escalates to the administrator, and
   the driver restores the tamper site from a pre-episode snapshot (the
@@ -238,6 +267,91 @@ counts escape **constructs**.
   whole-file hashing with no benign-drift allowance is correct; no
   repair rung — the refusal escalates.
 
+## Scene 11 — the stale dependency cache: a verdict that never looked
+
+- The premise, measured on the pinned toolchain: the Verus tier's 8
+  **primary** crates genuinely re-verify every run (cargo-verus never
+  serves a cached verdict for the crate under verification), but the
+  foundation crates (`data`, `GUMBO_Library`) are consumed as **cargo
+  dependencies**, and cargo's dep freshness is **mtime-gated** — a
+  content change with the mtime preserved nanosecond-exact is served
+  stale.
+- **Beat 0** — the coherent warm cache the attack needs: one
+  gated-clean checklist run, then the guard's freshness record is
+  seeded over that known-coherent state (trust-on-first-use).
+- **Beat 1 — the horror: the tiers disagree** ([diff&nbsp;D17](#d17)):
+  a spec predicate in `GUMBO_Library` flipped *semantically*
+  (`isValidTempWstatus_spec` `==` -> `!=`; no construct-count change),
+  mtime preserved. The cheat scan counts no new escape, the sysproof
+  bytes are untouched — and the verus tier stays green because every
+  re-verified primary consumes the stale cached artifact. The **gensrc
+  byte anchor refuses** (bytes always tell), which is what exposes the
+  Verus verdict: the byte tier says the foundation changed while the
+  Verus tier sits green over a system proof that is **false of the
+  live bytes** — "verification succeeded" is a verdict about bytes the
+  verifier last *looked* at. A refusing byte tier keeps the *system*
+  honest; the green Verus cell is still misleading *evidence*, which
+  is what beat 2 repairs. The stale-green gate doubles as a regression
+  canary for the toolchain's cache behavior.
+- **Beat 2 — the guard**: `--fresh-deps` re-keys dep freshness on
+  **content** — digest the foundation crates' sources against the
+  seeded sidecar, attribute the drift (`content drift in
+  GUMBO_Library`), bump mtimes so cargo-verus must re-verify the
+  dependency from the live bytes. The forced-fresh episode reports the
+  **Verus tier RED**: `sys_nominal_proof` consumes the predicate
+  load-bearingly and 8 of its VCs refute — the verdicts agree again.
+  Stated honestly: attribution names the *consumer*, not the tampered
+  dependency — the guard restores freshness, it does not attribute.
+- No repair rung on purpose: a poisoned foundation escalates. The
+  driver's restore is **mtime-aware both ways**: after beat 1 (no
+  rebuild happened — the caches still hold pre-tamper artifacts) it
+  restores bytes *and* mtime, leaving every warm cache coherent for
+  free; after beat 2 it restores bytes with a **fresh** mtime, because
+  the guard's forced rebuilds consumed the tampered bytes and an
+  mtime-gated cache must be *told* the restore happened — restoring
+  the old mtime would leave the poisoned artifacts being served over a
+  clean tree (the closing gated checklist exists to catch exactly
+  that, and did during development). It proves the tree green from
+  live re-verification.
+- The guard is **demo-scoped by choice**: outside this scene the verus
+  tier's *evidence* trusts cargo's dep cache — the gensrc byte anchor
+  keeps the system honest, but honest evidence needs the guard. The
+  sidecar is cache state, not trust state — it lives outside `golden/`
+  and is deleted at scene end and on script exit. The always-on
+  **attested** guard (a measured ASP with a blessed record) is
+  postponed by design.
+
+## Scene 12 — the unverified foundation: bytes under the proof tower
+
+- **Beat 1 — invert the command under the proofs**
+  ([diff&nbsp;D18](#d18)): every verified put flows through
+  `unsafe_put_heat_control` — plain unverified Rust behind an
+  `external_body` boundary Verus never reads. The tamper inverts the
+  heat command right there: **every proof passes** (they are about the
+  ghost model; the body was always trusted), the **cheat scan counts
+  no new escape** (the escape surface is unchanged — `external_body`
+  was already blessed), and no report-named file moved. Only the
+  **gensrc byte anchor** refuses, naming the file (`hash drift:
+  src/bridge/extern_c_api.rs`), and the ladder's diagnosis rung
+  classifies the drift: *bytes drifted with cheat counts CLEAN — a
+  semantic edit no construct scan can see*. This drift kind is the
+  reason the gensrc ladder **never rescues** on a clean cheat scan: in
+  a do-not-edit generated file, every byte is measured semantics.
+- **Beat 2 — repair by regeneration**: the gensrc files are, like the
+  report, *renderings of the model through the codegen toolchain*, so
+  the repair is scene 8's species, not restore-from-golden: tool gate
+  (HAMR + pinned libraries hashed immediately before use) -> real
+  SysML codegen re-emits the generated sources from the blessed model
+  -> `RestartEpisode` -> the fresh measurement judges the regenerated
+  bytes (`repaired and re-attested clean in-session`). Standing comes
+  from measurement, never from the repair's claim.
+- The ladder in full, contrasted with l1→l2: the files entry's ladder
+  can end **attested clean at finer granularity** because
+  developer-owned files have unmeasured regions; the gensrc ladder
+  ends only in *diagnosed*, *regenerated-and-remeasured*, or
+  *escalated* — pass-via-refinement is unsound where there is no
+  benign region for drift to hide in.
+
 ## Throughout
 
 - **Opt-in VSCode diffs** at every artifact-modification beat: the
@@ -245,7 +359,10 @@ counts escape **constructs**.
   deleted and substituted report slices (scene 8, pretty-printed
   JSON, shown BEFORE the arc — "see how innocent the tamper looks"),
   the admitted contract and the smuggled foundation axiom (scene 9's
-  two beats, same before-the-arc reveal),
+  two beats, same before-the-arc reveal), the mtime-preserving semantic
+  flip (scene 11, previewed as a pure text transform so the live file's
+  mtime is never disturbed), the inverted FFI command (scene 12, same
+  pure-transform preview),
   the dummy-bad-impl inversion (scene 2), the codegen re-splice after
   a benign bless (scene 3), and scene 6's trust-state attacks — the
   flipped evidence byte and the hand-edited golden (both
@@ -263,9 +380,17 @@ counts escape **constructs**.
   `targets/isolette-microkit` and restores through git).
 
 Postponed by design: episode-triggering monitor, wall-clock repair
-timeouts, the executable artifact class, blessing the report under the
-props class (so a laundered report is refuted by lineage, not just by
-the live hash), and a real spec-guided Rust implementation engine.
+timeouts, the executable artifact class (`domain_monitor`,
+`thermostat_mt_dmf_dmf`, `thermostat_rt_drf_drf` — named explicitly by
+the gensrc coverage invariant, measured by no tier yet), blessing the
+report under the props class (so a laundered report is refuted by
+lineage, not just by the live hash), a real spec-guided Rust
+implementation engine, the always-on attested dependency-freshness
+guard (scene 11's guard as a measured ASP with a blessed record,
+instead of a demo-scoped helper), and lineage anchoring for the
+re-captured cheat and gensrc goldens across promote (today they
+inherit trust from the measured toolchain that emitted the code they
+describe).
 
 ## Appendix: artifact diffs
 
@@ -631,3 +756,51 @@ so the verus tier is blind; only the whole-file hash sees the change.
  /** VC[2]: Next-Assert (task) ... */
  pub proof fn vc_next_assert_task_oi(pre: SystemState, post: SystemState)
 ```
+
+<a id="d17"></a>
+### D17 — scene 11: the mtime-preserving semantic flip
+
+One flipped comparison in a shared foundation spec fn, written back with
+the file's mtime restored nanosecond-exact. Freshly verified, 8
+system-proof VCs refute it; served from the warm mtime-gated dep cache,
+every tier stays green.
+
+```diff
+--- a/crates/GUMBO_Library/src/lib.rs
++++ b/crates/GUMBO_Library/src/lib.rs
+ -167,7 +167,7 
+ 
+   pub open spec fn isValidTempWstatus_spec(value: Isolette_Data_Model::TempWstatus_i) -> bool
+   {
+-    value.status == Isolette_Data_Model::ValueStatus::Valid
++    value.status != Isolette_Data_Model::ValueStatus::Valid
+   }
+   // END MARKER GUMBO VERUS MARKER
+```
+
+<a id="d18"></a>
+### D18 — scene 12: the inverted command in the unverified FFI glue
+
+Plain Rust behind an `external_body` boundary — Verus never reads this
+body, so every proof passes over it, and the escape-construct surface
+is unchanged. Only the gensrc byte anchor sees it.
+
+```diff
+--- a/crates/thermostat_rt_mhs_mhs/src/bridge/extern_c_api.rs
++++ b/crates/thermostat_rt_mhs_mhs/src/bridge/extern_c_api.rs
+ -57,7 +57,13 
+ pub fn unsafe_put_heat_control(value: &Isolette_Data_Model::On_Off) -> bool
+ {
+   unsafe {
+-    return put_heat_control(value as *const Isolette_Data_Model::On_Off as *mut Isolette_Data_Model::On_Off);
++    // TAMPERED: command inverted at the unverified FFI boundary
++    let inverted = match value {
++      Isolette_Data_Model::On_Off::Onn => Isolette_Data_Model::On_Off::Off,
++      _ => Isolette_Data_Model::On_Off::Onn,
++    };
++    return put_heat_control(&inverted as *const Isolette_Data_Model::On_Off
++                            as *mut Isolette_Data_Model::On_Off);
+   }
+ }
+```
+
