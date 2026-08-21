@@ -516,6 +516,19 @@ do_provision_isolette() {
  multi-minute and their evidence is discarded)${RESET}"
   ( cd "$REPO" && "$REPO/.venv/bin/python" examples/isolette_rust.py \
       --frontend sysml --provision ) || true
+  # diagnostic: one crate's raw ASP-style invocation, warm (remove once
+  # Linux verus-tier readiness is green)
+  local crate="$REPO/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs"
+  local dout derr
+  dout="$(mktemp)"; derr="$(mktemp)"
+  ( cd "$crate" && PATH="$WORKSPACE/bin:$PATH" cargo-verus verify \
+      -Z build-std=core,alloc,compiler_builtins \
+      -Z build-std-features=compiler-builtins-mem \
+      --target aarch64-unknown-none -- --output-json \
+      >"$dout" 2>"$derr" ) || echo "diag: cargo-verus exited $?"
+  echo "diag: warm cargo-verus stdout (first 1500 bytes):"
+  head -c 1500 "$dout"; echo
+  echo "diag: stderr (last 5 lines):"; tail -5 "$derr" || true
   echo "${DIM}(provisioning + blessing the isolette baselines)${RESET}"
   ( cd "$REPO" && "$REPO/.venv/bin/python" examples/isolette_rust.py \
       --frontend sysml --provision --bless-props )
