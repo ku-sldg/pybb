@@ -353,9 +353,10 @@ probe_sireum() {
   [ -f "$SIREUM_HOME_DIR/bin/sireum.jar" ] || return 1
   # bundled JVM (the CLI tar ships none; init.sh provisions it)
   [ -x "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/java/bin/java" ] || return 1
-  # on Linux the native-image binary must be disabled (it crashes in
-  # hamr codegen reflection) so the launcher takes the JVM path
-  if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
+  # the native-image binary must be disabled (it crashes in hamr codegen
+  # reflection, and prints a truncated version hash) so the launcher
+  # takes the JVM path — the configuration the baselines were proven on
+  if [ -f "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/sireum" ]; then
     return 1
   fi
   out_has "$SIREUM_TAG" "$SIREUM_HOME_DIR/bin/sireum" --version
@@ -404,13 +405,15 @@ do_sireum() {
     fi
     ( cd "$SIREUM_HOME_DIR" && SIREUM_NO_SETUP=true bash bin/init.sh )
   fi
-  if [ "$PLATFORM" = linux ] && [ -f "$SIREUM_HOME_DIR/bin/linux/sireum" ]; then
-    # the linux native-image binary crashes in hamr codegen (MSDParser's
-    # structural-typing reflection is not registered in the image) —
-    # disable it so the launcher uses the JVM path, the configuration
-    # macOS runs (it has no native binary at all)
-    mv "$SIREUM_HOME_DIR/bin/linux/sireum" \
-       "$SIREUM_HOME_DIR/bin/linux/sireum.native-disabled"
+  if [ -f "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/sireum" ]; then
+    # the CLI tar's native-image binary crashes in hamr codegen
+    # (MSDParser's structural-typing reflection is not registered in the
+    # image — observed on Linux; the mac binary is the same image tech
+    # and also prints a truncated version hash) — disable it so the
+    # launcher uses the JVM path, the configuration the maintainer
+    # install runs (it has no native binary at all)
+    mv "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/sireum" \
+       "$SIREUM_HOME_DIR/bin/$SIREUM_BIN_PLAT/sireum.native-disabled"
   fi
   mkdir -p "$WORKSPACE/.sireum_cache"
   # first run bootstraps further downloads (and trains the AOT cache on
