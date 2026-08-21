@@ -161,6 +161,20 @@ if [ -x "$PY" ] && "$PY" -c 'import pybb, pydantic' 2>/dev/null; then
 else
   bad ".venv missing or broken (python3 -m venv .venv && .venv/bin/pip install -e '.[dev]')"
 fi
+# the committed baselines carry the owner's absolute paths and their
+# signed bundles verify on any machine — path ownership is what shows
+# whether THIS checkout has been provisioned (see docs/INSTALL.md)
+for spec in \
+  "rocq:tests/fixtures/temp_control_rocq_model/asp_args.json:targets/temp-control-rocq/" \
+  "isolette:tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json:targets/isolette-microkit/"
+do
+  n="${spec%%:*}"; rest="${spec#*:}"; fixture="${rest%%:*}"; sub="${rest#*:}"
+  if grep -q "\"filepath\": \"$REPO/$sub" "$REPO/$fixture" 2>/dev/null; then
+    ok "$n baseline is keyed to this checkout"
+  else
+    bad "$n baseline keyed to another machine — re-provision (scripts/install.sh --from provision-$n)"
+  fi
+done
 if [ -d "$REPO/.demo.lock" ]; then
   pid="$(cat "$REPO/.demo.lock/pid" 2>/dev/null)"
   if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then

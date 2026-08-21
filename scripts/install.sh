@@ -453,8 +453,20 @@ sys.exit(0 if golden == digest else 1)
 PYEOF
 }
 
+# fixture_local <asp_args.json> <repo-subpath> — the fixture's file
+# targets point into THIS repo checkout. The committed baselines carry
+# the BASELINE OWNER's absolute paths, and the signed bundles verify
+# self-consistently on ANY machine (readiness never reads live targets),
+# so readiness alone cannot tell whose machine a baseline belongs to —
+# the first real attestation is what fails. Path ownership is the tell.
+fixture_local() {
+  grep -q "\"filepath\": \"$REPO/$2" "$1" 2>/dev/null
+}
+
 probe_provision_rocq() {
   probe_pybb_venv || return 1
+  fixture_local "$REPO/tests/fixtures/temp_control_rocq_model/asp_args.json" \
+    "targets/temp-control-rocq/" || return 1
   wrapper_blessed "$WORKSPACE/bin/rocq" \
     "$REPO/tests/fixtures/temp_control_rocq_verification/asp_args.json" \
     "Claude_workspace/bin/rocq" || return 1
@@ -476,6 +488,8 @@ do_provision_rocq() {
 probe_provision_isolette() {
   [ "$SKIP_SIREUM" = 1 ] && return 0
   probe_pybb_venv || return 1
+  fixture_local "$REPO/tests/fixtures/isolette_sysmlv2_rust_props/asp_args.json" \
+    "targets/isolette-microkit/" || return 1
   wrapper_blessed "$WORKSPACE/bin/cargo-verus" \
     "$REPO/tests/fixtures/isolette_sysmlv2_rust_verus/asp_args.json" \
     "Claude_workspace/bin/cargo-verus" || return 1

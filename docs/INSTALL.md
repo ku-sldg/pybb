@@ -128,10 +128,14 @@ dev's copy against dev's code.
 
 The repository ships signed golden baselines (`golden/`,
 `tests/fixtures/*/asp_args.json`, `golden/_bundles/*/provision_bundle.json`).
-Those baselines are **hashes of the baseline owner's machine**: absolute
-file paths and the exact bytes of their tool wrappers and binaries. On
-any other machine the readiness gate would (correctly!) refuse to run —
-that refusal is the attestation story working as designed.
+Those baselines are **keyed to the baseline owner's machine**: absolute
+file paths and hashes of their tool bytes. Subtlety: the signed bundles
+verify self-consistently on *any* machine (readiness checks signatures
+and binaries, not live target files), so readiness can PASS against a
+foreign baseline — it's the first real attestation that fails, trying
+to measure the owner's paths. The installer therefore treats a baseline
+as "yours" only when its fixture paths point into your checkout, and
+re-provisions otherwise.
 
 So provisioning + blessing is a first-class install step, not a
 workaround: the last two steps run
