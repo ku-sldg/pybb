@@ -6,6 +6,10 @@
 # Verus crate versions. Bump them together, then re-provision/re-bless.
 
 VERUS_VERSION="0.2026.01.23.1650a05"
+# the rust toolchain the verus release binaries are linked against (from
+# version.json inside the dist) — the verus launcher refuses to run
+# without it; rustup appends the platform suffix itself
+VERUS_TOOLCHAIN="1.92.0"
 SIREUM_TAG="4.20260720.6a05e505"
 RUST_NIGHTLY="nightly-2026-01-25"
 SYSML_LIBS_COMMIT="9016cbcceefa92f0068e1811923704dd261d15f1"

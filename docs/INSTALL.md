@@ -34,7 +34,7 @@ pybb, so the layout is **fixed** — the installer creates it:
 | copland-evidence-tools (optional) | commit `9ac916b` (main) | `~/Claude_workspace/copland-evidence-tools` |
 | Rocq Prover (opam switch **named `5.2`**, OCaml 5.2.0) | coq 9.0.1 | `~/.opam/5.2` |
 | Verus (binary release) | 0.2026.01.23.1650a05 | `~/Claude_workspace/verus-<plat>` + symlink `~/Claude_workspace/verus-dist` |
-| Rust (rustup) | nightly-2026-01-25 (+ stable) | `~/.rustup`, `~/.cargo` |
+| Rust (rustup) | nightly-2026-01-25 + 1.92.0 (Verus's launch toolchain) + stable | `~/.rustup`, `~/.cargo` |
 | Sireum kekinian (HAMR) | 4.20260720.6a05e505 | `~/Applications/Sireum` |
 | sysml-aadl-libraries | commit `9016cbc` | `~/Claude_workspace/sysml-aadl-libraries` |
 | tool wrappers (generated) | — | `~/Claude_workspace/bin` |

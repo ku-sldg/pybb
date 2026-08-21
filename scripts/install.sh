@@ -202,7 +202,8 @@ do_prereqs() {
 probe_rustup() {
   have rustup \
     && out_has "^stable" rustup toolchain list \
-    && out_has "$RUST_NIGHTLY" rustup toolchain list
+    && out_has "$RUST_NIGHTLY" rustup toolchain list \
+    && out_has "^$VERUS_TOOLCHAIN" rustup toolchain list
 }
 
 do_rustup() {
@@ -217,6 +218,9 @@ do_rustup() {
   # rust-src, no prebuilt target needed
   rustup toolchain install "$RUST_NIGHTLY" \
     -c rustfmt -c rust-src -c rustc-dev -c llvm-tools-preview -c rust-analyzer
+  # the verus launcher refuses to run without the exact toolchain the
+  # release binaries were built with
+  rustup toolchain install "$VERUS_TOOLCHAIN"
 }
 
 probe_opam_switch() {

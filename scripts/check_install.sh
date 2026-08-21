@@ -104,6 +104,11 @@ if [ -f "$TOOLCHAIN_TOML" ]; then
   [ "$pinned" = "$RUST_NIGHTLY" ] && ok "rust nightly pin matches crates ($RUST_NIGHTLY)" \
     || bad "versions.sh RUST_NIGHTLY=$RUST_NIGHTLY but crates pin $pinned"
 fi
+if have rustup && out_has "^$VERUS_TOOLCHAIN" rustup toolchain list; then
+  ok "rust $VERUS_TOOLCHAIN installed (verus launch toolchain)"
+else
+  bad "rust $VERUS_TOOLCHAIN not installed — the verus launcher requires it (rustup toolchain install $VERUS_TOOLCHAIN)"
+fi
 if have rustup && out_has "$RUST_NIGHTLY" rustup toolchain list; then
   ok "rust $RUST_NIGHTLY installed"
 else
