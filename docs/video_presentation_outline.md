@@ -93,9 +93,9 @@ source may repair a baseline; the only exit is out-of-band re-bless.
 The most visceral for a mixed audience: the heat command inverted in
 unverified FFI glue behind `external_body` — every proof passes, the
 cheat scan is silent, only the gensrc byte anchor refuses; repair by
-regeneration-from-model. Close the act with a 15-second nod to Scenes
-9–11 as the fuller taxonomy (proof escapes, the hollow system proof,
-the stale dep cache).
+regeneration-from-model. Close the act with one sentence naming Scenes
+9–11 (proof escapes, the hollow system proof, the stale dep cache) —
+the AI-in-the-loop capstone's slide C carries that taxonomy in full.
 
 ### Coverage beat (30 s)
 
@@ -104,7 +104,7 @@ over Act V's last frame (budget reclaimed for the AI-in-the-loop
 capstone), with the 5 shown scenes highlighted and the other 7
 one-lined — signals depth without spending runtime.
 
-## 3. Same workflow, other ecosystems — slides (~4 min)
+## 3. Same workflow, other ecosystems — slides (~5 min)
 
 - **Rocq** (temp-control as the example;
   [demo_rocq.sh](../examples/demo_rocq.sh), 8 scenes): adds the repair
@@ -130,14 +130,16 @@ one-lined — signals depth without spending runtime.
   that's what makes it *lifecycle* attestation rather than a per-tool
   integrity check.
 
-### Capstone: "AI in the loop" — two slides (~1.5 min)
+### Capstone: "AI in the loop" — three slides (~2.5 min)
 
 The section's payoff beat: the ecosystems bullets establish breadth,
-the repair-strategies bullet names the LLM engines, and these two
-slides zoom out to where AI touches the whole workflow — and where it
-never does. Same title on both, "part 1 / part 2". (Budget offset: the
-section-2 coverage slide becomes a spoken line over Act V's last
-frame.)
+the repair-strategies bullet names the LLM engines, and these slides
+zoom out to where AI touches the whole workflow — and where it never
+does. Same title across all three, "part 1 / 2 / 3": AI inside the
+workflow, AI built the loop, AI attacked the loop. (Budget offsets:
+the section-2 coverage slide becomes a spoken line over Act V's last
+frame, and Act V's closing nod to scenes 9–11 shrinks to one sentence
+since slide C now carries that taxonomy.)
 
 **Slide A — "AI in the loop: untrusted help, measured trust."**
 Layout: the lifecycle pipeline across the slide (model → contracts →
@@ -176,6 +178,9 @@ safe. Four rows, layer → what AI built → what judged it:
 | ASP primitives (asp-libs, Rust) | **12 new** measurement/appraisal binaries + **7 upgraded** — the cheat scan, batch hashing, the Lean/Rocq/HAMR runners and appraisers, golden-slice extraction | tool hashes measure-then-use; appraisal against signed goldens |
 | Copland protocols | **41 provisioned protocol directories** across 5 ecosystems | protocol-config checks at the readiness gate; blessed baselines |
 | CVM core | `bpar` parallel execution — in the *verified* VM | **the Rocq proofs had to re-prove** |
+| CVM & tooling frontends | usability fixes: explicit `--stdin` mode (+ eager-read fix) in the CVM frontend, `--req_file` request input in copland-evidence-tools, cvm-mcp's re-runnable single-line CVM commands | existing cram tests; the demos' readiness gate |
+| Demo tampers (scenes 1–8) | the scripted spec / implementation / proof / golden edits, each crafted — counterexample-style — to exercise one specific blackboard capability (attribution, the ladder, restore grains, refusal) | every scene gates on the expected detection, attribution, and repair |
+| Attacks (scenes 9–12) | 6 attack classes discovered in interactive red-team sessions — proof escapes, hollow proofs, stale caches, the unverified foundation | each was green across every existing tier when found; each forced a new measurement capability (→ next slide) |
 
 Kicker (the meta-point, and the bridge back to the thesis): the
 provenance is itself attested the ordinary way — `Co-Authored-By:
@@ -188,6 +193,31 @@ Speaker aside (15 s): cvm-mcp — an AI-built MCP interface so AI agents
 can drive attestation, closing the loop. See the
 [appendix](#appendix-ai-built-infrastructure-git-attested) for the
 full enumeration behind the counts.
+
+**Slide C — "AI in the loop, part 3: AI attacked the loop."** Setup
+line: the same interactive sessions red-teamed the stack they built —
+and every one of these attacks was **green across every existing
+measurement tier** when it was found. Six attack classes, scenes 9–12:
+
+| Attack (scene) | How it succeeded — before | The capability it forced |
+|---|---|---|
+| **ADMIT** (9.1) — `assume(false)` planted in a bridge file no report target names | outside every measured file and slice; cargo-verus reports the **same success** over the hollow proof | the **cheat tier**: `cheat_scan_verus`, counting the proof-escape constructs Verus's own `--no-cheating` names |
+| **SMUGGLE** (9.2) — `external_body` broadcast axiom `ensures false` in the shared foundation crate | body is trusted so it verifies clean; inert until a `broadcast use` — no proof outcome moves | the same construct scan at the staging point, before any proof consumes it |
+| **SHRINK** (10.1) — a system-proof module commented out | the smaller crate **still verifies, 0 errors** — the shrink carries no verification signal | the **sysproof tier**: whole-file byte hashes of the system proof crate (`hashfile_many`) |
+| **SWAP** (10.2) — a real VC dropped, a trivial `ensures true` added at constant count | outcome unchanged, count unchanged, no escape construct — every semantic detector silent | the same byte tier — **bytes anchor what a proof outcome cannot** |
+| **STALE** (11) — a semantic flip in a cached dependency, mtime preserved nanosecond-exact | cargo's mtime-gated cache serves the stale artifact; Verus sits green over a proof **false of the live bytes** | the **gensrc byte anchor** (exposes it) + the content-keyed `--fresh-deps` guard (repairs the evidence) |
+| **INVERT** (12) — the heat command flipped in unverified FFI glue behind `external_body` | Verus never reads the body: every proof passes, the escape surface is unchanged | the gensrc anchor over every generated source + repair by regeneration-from-model |
+
+Kicker: **adversarial co-development** — defense-in-depth here wasn't
+designed up front; it was *measured into existence*, one successful
+attack at a time. Each attack became a new measurement tier, a new ASP,
+and a regression-gated demo scene — the attack that succeeded yesterday
+is re-run and refuted on every demo run today.
+
+Speaker note: this is also the honest epistemics of the byte tiers —
+the escalating lesson of scenes 9→12 is that "verification succeeded"
+and "no cheats present" are both weaker claims than "these are the
+blessed bytes."
 
 ## 4. Close — slide (1 min)
 
@@ -228,7 +258,12 @@ blackboard/controller/knowledge-source core (design session preserved
 as
 [session_2026-07-24_pybb_blackboard_attestation.md](session_2026-07-24_pybb_blackboard_attestation.md)),
 both demo arcs (8-scene Rocq, 12-scene isolette), all workflow
-drivers, `scripts/install.sh` + CI.
+drivers, `scripts/install.sh` + CI. The arcs' scripted tampers
+(scenes 1–8: spec, implementation, proof, and golden edits — e.g.
+diffs D1–D12 in the isolette summary) were designed in the same
+sessions, counterexample-style: each crafted to exercise one specific
+blackboard capability and gated on its expected detection,
+attribution, and repair.
 
 ### asp-libs: 12 new Rust ASP binaries (Apr–Aug 2026)
 
