@@ -132,33 +132,62 @@ one-lined — signals depth without spending runtime.
 
 ### Capstone: "AI in the loop" — two slides (~1.5 min)
 
-**Slide A — AI inside the workflow.** The lifecycle pipeline annotated
-with AI touchpoints per stage, and the AI-free zone marked: model/spec
-(LLMs may draft; only the administrator blesses), implementation
-(spec-guided synthesis with LLM engines), proofs (the ladder's engines:
-tactic portfolio first, then LLM API engines, AutoVerus, desktop agent
-sessions, the KU Dogtreat repairer), verification & appraisal (**no AI
-by design** — the judges stay deterministic), evidence/trust state
-(**no AI by design** — refusal properties). Callout: *AI proposes;
-measurement disposes* — an LLM's output is just another untrusted
-artifact, same episode, same appraisal; keyless by default.
+The section's payoff beat: the ecosystems bullets establish breadth,
+the repair-strategies bullet names the LLM engines, and these two
+slides zoom out to where AI touches the whole workflow — and where it
+never does. Same title on both, "part 1 / part 2". (Budget offset: the
+section-2 coverage slide becomes a spoken line over Act V's last
+frame.)
 
-**Slide B — AI built the loop.** Every layer was built in Claude
-desktop and CLI sessions, git-attested (`Co-Authored-By: Claude`), and
-judged by the discipline itself:
+**Slide A — "AI in the loop: untrusted help, measured trust."**
+Layout: the lifecycle pipeline across the slide (model → contracts →
+implementation → proofs → verification → evidence), each stage
+annotated with its AI touchpoint — the last two stages visibly marked
+as the AI-free zone.
 
-| Layer | AI-built | Judged by |
+| Workflow stage | Where AI participates | The rule |
 |---|---|---|
-| pybb | blackboard/controller/KS framework, both demo arcs, install + CI | scene gates on expected output |
-| ASP primitives (asp-libs, Rust) | **12 new** binaries + **7 upgraded** (cheat scan, batch hashing, Lean/Rocq/HAMR runners & appraisers, golden-slice extraction) | tool hashes measure-then-use; appraisal vs signed goldens |
-| Copland protocols | **41 provisioned protocol dirs** across 5 ecosystems | readiness-gate config checks; blessed baselines |
-| CVM core | `bpar` parallel execution in the *verified* VM | **the Rocq proofs had to re-prove** |
+| Model / spec | LLMs may draft or restate specs | only the administrator **blesses** — authority is human, AI never signs |
+| Implementation | spec-guided synthesis / re-derivation with LLM engines (Rocq demo's `--llm`) | the seed proofs must prove again against the blessed statements |
+| Proofs | the repair ladder's engines: deterministic tactic portfolio first, LLM behind it — API-key engines, AutoVerus, desktop agent sessions, the KU Dogtreat repairer | a repair claim is worthless; only fresh measurement re-establishes standing |
+| Verification & appraisal | **none — by design** | the judges stay deterministic: the kernel, Verus, appraisal against signed goldens |
+| Evidence / trust state | **none — by design** | signature, anchor, derivability; no knowledge source (human or AI) repairs a baseline |
 
-Kicker: the workflow never asked whether the author was human or AI —
-trust never came from the author. *Standing comes from measurement.*
-Speaker aside: cvm-mcp — an AI-built MCP interface so AI agents can
-drive attestation, closing the loop. (Budget offset: the section-2
-coverage slide becomes a spoken line over Act V's last frame.)
+Callout (the slide's one idea): **AI proposes; measurement disposes.**
+An LLM's output is just another untrusted artifact — it enters the
+same episode and faces the same appraisal as a human edit or a tamper.
+The demos are keyless by default with LLM as an opt-in branch: the
+workflow's guarantees never depend on the engine being good, honest,
+or even present.
+
+Speaker note: the arrow points the other way too — as more lifecycle
+artifacts *are* AI-generated, lifecycle attestation is what makes them
+trustworthy: provenance and evidence, not provider assurances. Sets up
+the close.
+
+**Slide B — "AI in the loop, part 2: AI built the loop."** Setup line:
+every layer of this stack was built in Claude desktop and CLI
+sessions — and the discipline you've just watched is what made that
+safe. Four rows, layer → what AI built → what judged it:
+
+| Layer | AI-built (Claude sessions, git-attested) | Judged by |
+|---|---|---|
+| pybb | the blackboard/controller/KS framework, both demo arcs, install + CI | scene gates on expected output; every scene aborts loudly on regression |
+| ASP primitives (asp-libs, Rust) | **12 new** measurement/appraisal binaries + **7 upgraded** — the cheat scan, batch hashing, the Lean/Rocq/HAMR runners and appraisers, golden-slice extraction | tool hashes measure-then-use; appraisal against signed goldens |
+| Copland protocols | **41 provisioned protocol directories** across 5 ecosystems | protocol-config checks at the readiness gate; blessed baselines |
+| CVM core | `bpar` parallel execution — in the *verified* VM | **the Rocq proofs had to re-prove** |
+
+Kicker (the meta-point, and the bridge back to the thesis): the
+provenance is itself attested the ordinary way — `Co-Authored-By:
+Claude` trailers in the git history; every count on this slide is
+reproducible from `git log` alone. The workflow never asked whether
+the author was human or AI, because trust never came from the author.
+*Standing comes from measurement.*
+
+Speaker aside (15 s): cvm-mcp — an AI-built MCP interface so AI agents
+can drive attestation, closing the loop. See the
+[appendix](#appendix-ai-built-infrastructure-git-attested) for the
+full enumeration behind the counts.
 
 ## 4. Close — slide (1 min)
 
@@ -179,3 +208,74 @@ freshness guards, lineage anchoring across promote.
   accepts any engine"; the repair-strategies bullet can open with "the
   ones you saw" (crate-scoped restore, slice splice) before moving to
   the synthesis-based engines.
+
+## Appendix: AI-built infrastructure (git-attested)
+
+The enumeration behind slide B's counts. Evidence standard: an
+artifact is counted as AI-built only if the git commit introducing it
+carries a `Co-Authored-By: Claude …` trailer — every figure is
+reproducible from `git log` alone, with no reliance on memory. (Some
+older ASPs — the Nov 2025 Verus/Rocq runners, `readfile_range_many`,
+`run_command_autoverus`, `hamr_readfile_range_many` — may also have
+had AI assistance but predate the trailer convention; they are
+deliberately *not* counted as new, only as upgraded where a later
+Claude commit touched them.)
+
+### pybb (the framework)
+
+Essentially every commit is Claude co-authored: the
+blackboard/controller/knowledge-source core (design session preserved
+as
+[session_2026-07-24_pybb_blackboard_attestation.md](session_2026-07-24_pybb_blackboard_attestation.md)),
+both demo arcs (8-scene Rocq, 12-scene isolette), all workflow
+drivers, `scripts/install.sh` + CI.
+
+### asp-libs: 12 new Rust ASP binaries (Apr–Aug 2026)
+
+Introduced in Claude co-authored commits, spanning Sonnet 4.5/4.6 →
+Fable 5: `cheat_scan_verus` (the scene 9 proof-escape scan),
+`hashfile_many` + `hashfile_many_appr` (the sysproof/gensrc batch byte
+tiers), `model_slices_appr`, `run_command_lean` +
+`run_command_lean_appr`, `run_command_dune` (+ the Rocq
+assumptions-audit appraiser), `run_command_hamr` +
+`run_command_hamr_appr`, `readfile_marker_range`, `goldenbytes_appr`,
+`extract_golden_slice`.
+
+### asp-libs: 7 pre-existing ASPs upgraded
+
+In Claude co-authored commits: `hashfile` (hardware-accelerated
+sha256), `hashfile_appr`, `readfile_appr`, `run_command_cargo_verus`
+(last-verification-results fix), `run_command_rocq` +
+`run_command_rocq_appr` (runner upgrade), `run_command_verus_appr`
+(cold-build robustness).
+
+### Copland protocols: 41 provisioned protocol directories
+
+Under `tests/fixtures/`: 8 isolette SysMLv2→Rust tiers (`props`,
+`l1a`, `l2`, `verus`, `cheat`, `sysproof`, `gensrc`, `report`) + 4
+isolette AADL→Rust + 15 Lean (temp-control, goals, landing-gear ×
+`model`/`contracts`/`verification`/`build`/`executable`) + 3 Rocq
+temp-control + 4 AADL-Slang temp-control + 3 AADL→Rust temp-control +
+2 AutoVerus-related (`autoverus`, `find_max_verus_check`) + 2 tool
+gates (`hamr_tools`, `sysml_libs`).
+
+### CVM core (the verified VM)
+
+The `bpar` phased work (Apr–May 2026, Claude co-authored): true
+parallel execution via split spawn/collect FFI, PID-namespace
+par-handle files, **with the Rocq proofs updated** — AI-assisted
+changes to a verified codebase, re-judged by the kernel. Plus frontend
+work (`--stdin` mode).
+
+### cvm-mcp
+
+Born in a Claude desktop session on 2026-03-25 ("implement an MCP-like
+interface to an existing attestation tool… let AI agents configure and
+invoke it"): the MCP server, appraisal dashboard, and the HAMR
+report→protocol-dir generator. Doubly on-theme: AI built the interface
+by which AI agents drive attestation.
+
+### copland-evidence-tools
+
+Frontend additions in Claude co-authored commits (`--req_file` mode +
+test parity).
