@@ -47,16 +47,16 @@ purpose — it is the deck's first echo of the artifact-class table
 
 **Content**
 
-- Classical remote attestation asks: **is the running system what we
-  blessed?** (boot chain, runtime measurement)
-- Lifecycle attestation extends the same measure-and-appraise
-  discipline to the **artifacts of the development lifecycle**:
-  models, contracts, implementations, proofs, toolchains — and the
-  evidence itself
-- …and to lifecycle **events**: drift · tamper · sanctioned change
-  (bless / promote) · repair
-- Motivating pressure: the **proliferation of AI-generated software
-  artifacts** (one clause, no dedicated bullet — the seed the
+- Traditional remote attestation: **did system components boot into a
+  predictable state?** (boot-time, static runtime)
+- Layered, runtime attestation: extend boot-time trust via dynamic
+  measurement of system components **and their context/dependencies**
+- Lifecycle attestation extends this notion to **artifacts of the development lifecycle**:
+  models, contracts, implementations, proofs, toolchains 
+  - ...including the attestation infrastructure and evidence itself
+  - …and to lifecycle **events**: specification drift (sanctioned or not) · artifact tampering  · artifact synthesis · artifact repair
+- Motivation: the **proliferation of AI-generated software
+  artifacts**, amid the need for rapid re-certification of systems (one clause, no dedicated bullet — the seed the
   AI-in-the-loop capstone pays off)
 
 **Banner** (bottom, styled, the deck's recurring element):
@@ -66,9 +66,21 @@ purpose — it is the deck's first echo of the artifact-class table
 > *trust is NOT anchored in the following: developer claims, untrusted
 > tools, LLM outputs, cached verdicts*
 
-**Visual**: left, a single "runtime" box (classical attestation);
-right, a lifecycle loop (model → contracts → implementation → proofs →
-deploy) with measurement hooks on every edge.
+**Visual**: a three-stage progression, left to right, each stage
+widening the measurement scope (mirrors the first three bullets):
+
+1. **Boot-time** — a single system box with a boot-chain arrow into
+   it; one measurement hook (static, once).
+2. **Layered runtime** — the same system box now surrounded by its
+   context/dependencies (libraries, config, peer components), dynamic
+   measurement hooks on the running pieces.
+3. **Lifecycle** — the full loop (model → contracts → implementation →
+   proofs → deploy) enclosing the runtime picture, measurement hooks
+   on every edge — including one on the evidence/infrastructure
+   itself.
+
+Consistent hook glyph across all three stages so "widening scope"
+reads visually, not just verbally.
 
 **Speaker notes**
 
