@@ -12,22 +12,41 @@ at tamper beats.
   blessed?* **Lifecycle attestation** extends the same
   measure-and-appraise discipline to the artifacts of the development
   lifecycle — models, contracts, implementations, proofs, toolchains,
-  and the evidence itself — and to lifecycle **events**: drift, tamper,
+  and the evidence itself (a need sharpened by the **proliferation of
+  AI-generated software artifacts** — the seed the AI-in-the-loop
+  capstone pays off) — and to lifecycle **events**: drift, tamper,
   sanctioned change (bless/promote), repair.
-- The recurring thesis, stated once here and echoed by every scene:
-  **standing comes from fresh measurement, never from a claim.**
+- The recurring thesis, styled as a banner this slide installs and the
+  later slides echo verbatim: **"Every trust decision is grounded in
+  cryptographic attestation evidence."** Subline, smaller: *trust is
+  NOT anchored in the following: developer claims, untrusted tools,
+  LLM outputs, cached verdicts* (each item paid off by a later
+  section: developer claims → scenes 5/7, untrusted tools → scene 7,
+  LLM outputs → slides A/B, cached verdicts → scene 11).
+- **Roadmap strip**: a thin position-indicator strip (preliminaries →
+  five acts on the isolette → other ecosystems → AI in the loop →
+  close), introduced here and reused as the act-transition template
+  with the current section highlighted. Section header titles on the
+  strip are provisional — expect tweaks as the sections firm up.
+- Speaker note on first showing the banner: the administrator's
+  *bless* survives "every" — authority enters the system only *as*
+  signed evidence (the blessed baseline), never by assertion; scene
+  6's laundering beat proves exactly that.
 
-## 1. Preliminaries — slides (5 min)
+## 1. Preliminaries — slides (4.5 min)
 
-### 1a. Core attestation stack (2 min)
+### 1a. Core attestation stack (1.5 min)
 
 One architecture slide: Copland (attestation protocols as terms with an
 evidence semantics) → CVM (executes phrases; manifests, ASPs,
-appraisal) → asp-libs (the measurement/appraisal primitives: hash,
-readfile, signature, golden comparison). Output: **signed evidence
-bundles** appraised against **golden baselines**. For a mixed audience
-this stays at the "what each layer contributes" level, no Copland
-syntax.
+appraisal). asp-libs appears as a diagram label on the CVM layer (the
+measurement/appraisal primitives: hash, readfile, signature, golden
+comparison), not a talking point. Output: **signed evidence bundles**
+appraised against **golden baselines**. Include one small Copland
+snippet from a real isolette protocol as visual texture — a few lines
+at most, not verbose — with the spoken line "you don't need to read
+this; you need to know it's a formal object with an evidence
+semantics."
 
 ### 1b. pybb architecture (2 min)
 
@@ -38,17 +57,22 @@ are repair rungs on outcome-routed chains; failure handoff,
 restart-episode, escalation. The one idea to land hard: the **repair
 ladder** — a rung's exhaustion is the *diagnosis* that a different
 artifact is at fault, and every repair is judged only by
-re-measurement.
+re-measurement. Include a small checklist legend the whole demo reads
+through: ✓ attested, ✗ refuted, ? poisoned fail-closed.
 
 ### 1c. Artifact classes (1 min)
 
 A single table slide: **model** (blessed, signed), **contract** (named
 slices), **implementation**, **proof/verification** — plus the two
 cross-cutting classes: **toolchain** (hashed measure-then-use) and
-**trust state** (bundles, goldens). Each row paired with its repair
-species: restore, slice splice, re-derivation, regeneration-from-model,
-out-of-band pause, principled refusal. This table becomes the map the
-scenes get pinned to.
+**trust state** (bundles, goldens). Columns follow the class → measured
+how → **judged by** → repair species shape (the same shape slide B
+reuses, so the audience recognizes it): restore, slice splice,
+re-derivation, regeneration-from-model, out-of-band pause, principled
+refusal. This table becomes the map the scenes get pinned to. Speaker
+note: *this table is deliberately incomplete — the demo will show why*
+(the cheat/sysproof/gensrc tiers are slide C's punchline; do not
+pre-introduce them here).
 
 ## 2. The isolette — live terminal, slide transitions between acts (10 min)
 
@@ -186,8 +210,9 @@ Kicker (the meta-point, and the bridge back to the thesis): the
 provenance is itself attested the ordinary way — `Co-Authored-By:
 Claude` trailers in the git history; every count on this slide is
 reproducible from `git log` alone. The workflow never asked whether
-the author was human or AI, because trust never came from the author.
-*Standing comes from measurement.*
+the author was human or AI, because the author was never an input to
+the decision. Close on the banner, verbatim: *every trust decision is
+grounded in cryptographic attestation evidence.*
 
 Speaker aside (15 s): cvm-mcp — an AI-built MCP interface so AI agents
 can drive attestation, closing the loop. See the
