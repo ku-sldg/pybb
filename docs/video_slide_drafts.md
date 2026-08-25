@@ -51,10 +51,14 @@ purpose — it is the deck's first echo of the artifact-class table
   predictable state?** (boot-time, static runtime)
 - Layered, runtime attestation: extend boot-time trust via dynamic
   measurement of system components **and their context/dependencies**
-- Lifecycle attestation extends this notion to **artifacts of the development lifecycle**:
+- Lifecycle attestation: extends this notion to **artifacts of the development lifecycle**:
   models, contracts, implementations, proofs, toolchains 
   - ...including the attestation infrastructure and evidence itself
-  - …and to lifecycle **events**: specification drift (sanctioned or not) · artifact tampering  · artifact synthesis · artifact repair
+  - …and to lifecycle **events**:
+    - specification drift (sanctioned or not)
+    - artifact tampering
+    - artifact synthesis
+    - artifact repair
 - Motivation: the **proliferation of AI-generated software
   artifacts**, amid the need for rapid re-certification of systems (one clause, no dedicated bullet — the seed the
   AI-in-the-loop capstone pays off)
