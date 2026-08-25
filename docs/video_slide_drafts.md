@@ -110,8 +110,11 @@ transition slides).
 **Content**: a thin horizontal strip, five segments, current section
 highlighted:
 
-> Preliminaries → The Isolette (5 acts) → Other Ecosystems → AI in the
-> Loop → Close
+> Preliminaries → Demo: Isolette (SysMLv2 → Rust) → Other Ecosystems →
+> AI in the Loop → Close
+
+(The demo segment renders as two lines in its chip: "Demo:" /
+"Isolette (SysMLv2 → Rust)" — per deck edits 2026-08-25.)
 
 **Decisions**
 
@@ -134,11 +137,11 @@ layer contributes" each:
 - **Copland** — attestation protocols as formal terms with an evidence
   semantics: *what* was measured, in *what order*, signed by *whom*
 - **CVM** (Copland Virtual Machine) — executes Copland phrases;
-  **manifests** declare who may measure what; dispatches ASPs;
-  appraises results
+  dispatches ASPs according to **manifest** configurations; appraises
+  results
 - **asp-libs** — its own layer box under CVM: the
   measurement/appraisal primitives (hash, readfile, signature, golden
-  comparison); still one spoken clause at most, not a talking point
+  comparison, …); still one spoken clause at most, not a talking point
 - Output arrow: **signed evidence bundles**, appraised against
   **golden baselines**
 
@@ -158,8 +161,9 @@ rendered in concrete syntax:
 **Speaker notes**
 
 - On the snippet: "you don't need to read this — you need to know it's
-  a formal object with an evidence semantics." Measure the five
-  blessed model files, sign the evidence, appraise it.
+  a formal object with an evidence semantics." Caption below the
+  snippet (20pt, three lines): "measure the five blessed model files →
+  / sign the evidence (SIG) → / appraise it (APPR)".
 - asp-libs gets one spoken clause at most; its inventory returns as a
   star of capstone slide B.
 
@@ -183,34 +187,110 @@ rendered in concrete syntax:
 
 **Timing**: ~2 min.
 
-**Content**: workflow diagram:
+**Content**: process-flow diagram (layout candidate 1, chosen from
+three sketched candidates 2026-08-25), left to right:
 
-- Measurements arrive as **blackboard entries**; three segments:
-  **provision** (requests; no repair chains — failures escalate
-  immediately), **certify** (working entries), **escalate** (needs a
-  human)
-- The **controller cycle**: evaluate predicates — each predicate *is*
-  an attestation episode — then dispatch entries onto
-  **outcome-routed chains** (on_pass / on_fail)
-- **Knowledge sources** = repair rungs: attempt, re-verify, hand off
-  on failure; **restart-episode** forces genuine re-measurement; end
-  of ladder = escalation
-- Callout box (the one idea to land): **the repair ladder** — a rung's
-  *exhaustion is the diagnosis* that a different artifact is at fault,
-  and every repair is judged only by re-measurement
+- **Administrator blessing (signs golden spec)** — dashed white box
+  above the board (a human, out-of-band authority act, not a component
+  in the measured loop), "bless ⇒ provision" arrow into the provision
+  lane
+- **measurement → Blackboard** (three lanes: provision / certify /
+  escalate) → **Controller (evaluate = episode)** → dispatch → **KS 1
+  → KS 2 → KS n**
+- **Green paths (on-pass)**: every KS returns to the Controller —
+  "re-verify · restart-episode ⇒ fresh measurement"; provision lane →
+  measurement ("provisioned ⇒ re-measure")
+- **Red paths (on-fail)**: KS→KS handoff on exhaustion (changes
+  restored); route exhausted → escalate lane; provision → escalate
+  ("no repair chain: fail ⇒ escalate" — the readiness-gate refusal)
+- **Controller → measurement** loop along the bottom: "evaluate ⇒ run
+  measurement"
+- Callout box (bottom, navy — visual rhyme with slide 2's banner):
+  **The repair ladder:** a rung's exhaustion is a ***local
+  diagnosis*** of failure — every repair is judged only by ***fresh
+  re-measurement*** (wording per deck edit 2026-08-25)
 
-**Checklist legend** (corner box — the demo is read through these
-glyphs):
+**Checklist legend** (bottom-right corner box, monospace — the demo is
+read through these glyphs):
 
 > ✓ attested · ✗ refuted · ? poisoned, fail-closed
 
 **Speaker notes**: keep the vocabulary minimal — entry, episode,
-knowledge source, ladder, escalate. Everything else is detail the
-scenes show live. The legend earns its space: every scene's checklist
-frames render through it.
+knowledge source, ladder, escalate. Speaker-note-only details cut from
+the slide: on_pass/on_fail dispatch mechanics, success-driven handoff
+for component-wise entries, max_attempts per rung. The legend earns
+its space: every scene's checklist frames render through it.
 
-**Decisions**: legend added (2026-08-25) since the format is live
-terminal — the audience will literally read ✓/✗/? in scene output.
+**Decisions**
+
+- Layout: candidate 1 (process flow) chosen over classic-blackboard
+  and hybrid-ladder sketches; semantics verified against the pybb
+  README control flow, with three corrections applied: repairs return
+  to the *Controller* (standing is re-established only by its
+  re-evaluation, never by a KS writing to the board); the provision
+  lane shows both exits (green to measurement, red straight to
+  escalate — no repair chains); KS→KS arrows are failure handoff, not
+  a pipeline.
+- Blessing box label discussed and locked: "Administrator blessing
+  (signs golden spec)"; dashed border = out-of-band human act (the
+  only exit from a refused baseline, scene 6).
+- Legend added since the format is live terminal — the audience will
+  literally read ✓/✗/? in scene output.
+- "dispatch" label nudged left (x 8.28→8.20) for spacing, per deck
+  edit.
+
+---
+
+## Slide 5b — pybb key components — DRAFTED (content pending review)
+
+**Timing**: ~1 min. Follows the architecture diagram; gives the
+vocabulary the scenes will use, one line per term.
+
+**Content** (term bold, one-line description each):
+
+- **Blackboard** — the shared store: every measurement lands as an
+  entry with its condition and standing; three segments (provision ·
+  certify · escalate) plus a full history of every change
+- **Partition** — the division of blackboard entries among repairers:
+  each knowledge source watches its own collection of keys, and an
+  entry sits in the partition of whichever rung currently owns it
+- **Controller** — the cycle: evaluates every entry (provision first),
+  dispatches keys onto outcome-routed chains, advances or hands off,
+  escalates; halts only when everything is in good standing
+- **Knowledge source (KS)** — a repair rung: operates only on entries
+  in its partition (optionally a single component), bounded by
+  max_attempts; its work is always re-judged, never trusted
+- **Route** — the per-key chains: **on_fail** = the repair ladder,
+  **on_pass** = a confirmation chain before an entry may rest in good
+  standing
+
+**Parked — currently OFF the slide** (out of place in the component
+list; decided 2026-08-25 to leave off for now, placement TBD — e.g. a
+small "evaluation primitives" strip at the bottom, or annotations
+pointing at the slide-5 diagram):
+
+- **Predicate** — the judge: a registered callable per entry key; for
+  attestation predicates, one evaluation *is* one attestation episode
+- **Restart-episode** — the freshness primitive: forget memoized
+  verdicts, reset the entry, re-evaluate — genuinely fresh measurement
+
+**Visual**: text slide; each term could carry a small color chip
+matching its element on the slide-5 diagram (board = ice, controller =
+mid navy, KS = navy, green/red for the route arrows) so the two slides
+read as a pair.
+
+**Speaker notes**: this is the audience's glossary for the terminal
+scenes — point back at the diagram while reading it. Terms deliberately
+excluded (README-level detail): partition mechanics, component-wise
+entries and success handoff, dispatch latching, max_cycles.
+
+**Decisions**
+
+- Added 2026-08-25 as a companion to the architecture diagram;
+  numbered 5b to keep downstream slide numbers stable.
+- Budget note: +1 min to preliminaries (~5.5 total). Offset option if
+  the 20-min cap binds: the architecture slide's talk time drops
+  2 → 1.5 min since the glossary now carries the vocabulary load.
 
 ---
 
