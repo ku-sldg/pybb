@@ -394,22 +394,25 @@ s5b.addText("pybb: key components", {
 
 const comps = [
   { term: "Blackboard", desc: "the shared store: every measurement lands as an entry with its condition and standing; three segments (provision · certify · escalate) plus a full history of every change" },
-  { term: "Partition", desc: "the division of blackboard entries among repairers: each knowledge source watches its own collection of keys, and an entry sits in the partition of whichever rung currently owns it" },
+  { term: "Blackboard Entry (Key)", desc: "one measurement under judgment, identified by its key: the measurement, its condition, its standing, its repair history" },
+  { term: "Episode", desc: "one full judgment of an entry: the attestation runs once and its verdicts are memoized until the episode ends — or is restarted for genuinely fresh measurement" },
+  { term: "Partition", desc: "the division of blackboard entries among different workflow stages: each knowledge source watches its own collection of keys, and an entry sits in the partition of whichever rung currently owns it" },
   { term: "Controller", desc: "the cycle: evaluates every entry (provision first), dispatches keys onto outcome-routed chains, advances or hands off, escalates; halts only when everything is in good standing" },
   { term: "Knowledge source (KS)", desc: "a repair rung: operates only on entries in its partition (optionally a single component), bounded by max_attempts; its work is always re-judged, never trusted" },
   { term: "Route", desc: "the per-key chains: on_fail = the repair ladder, on_pass = a confirmation chain before an entry may rest in good standing" },
+  { term: "History / Ledger", desc: "the blackboard's running record of every change across all segments — measurements, repairs, verdicts — the audit trail of the repair lifecycle" },
 ];
 const compParas = [];
 comps.forEach((c, i) => {
   compParas.push({ text: c.term, options: { bold: true, color: NAVY, bullet: { code: "2022" }, breakLine: false } });
-  compParas.push({ text: " — " + c.desc, options: { color: DARK, breakLine: i !== comps.length - 1, paraSpaceAfter: 14 } });
+  compParas.push({ text: " — " + c.desc, options: { color: DARK, breakLine: i !== comps.length - 1, paraSpaceAfter: 9 } });
 });
 s5b.addText(compParas, {
-  x: 0.7, y: 1.6, w: 12.0, h: 5.3, fontFace: BODY, fontSize: 17, align: "left", valign: "top", margin: 0,
+  x: 0.7, y: 1.5, w: 12.0, h: 5.7, fontFace: BODY, fontSize: 16, align: "left", valign: "top", margin: 0,
 });
 
 s5b.addNotes(
-  "The audience's glossary for the terminal scenes - point back at the slide-5 diagram while reading it.\n" +
+  "The audience's glossary for the terminal scenes - point back at the slide-5 diagram while reading it.\nEntry keys in the real demos are the provisioned protocols: ready (the readiness gate), isolette_sysmlv2_rust_props (blessed model), _l1a (file hashes), _l2 (contract slices), _verus, _cheat, _sysproof, _gensrc, _report. Every row of the checklist the audience is about to watch is one of these keys.\n" +
   "Predicate and restart-episode are deliberately OFF this slide (parked; placement TBD - possibly an 'evaluation primitives' strip). If asked: a predicate is the judge (one evaluation = one attestation episode), restart-episode is the freshness primitive (forget memoized verdicts, reset, re-evaluate).\n" +
   "Also deliberately excluded (README-level detail): partition mechanics, component-wise entries and success handoff, dispatch latching, max_cycles."
 );

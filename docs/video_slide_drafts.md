@@ -251,9 +251,16 @@ vocabulary the scenes will use, one line per term.
 - **Blackboard** — the shared store: every measurement lands as an
   entry with its condition and standing; three segments (provision ·
   certify · escalate) plus a full history of every change
-- **Partition** — the division of blackboard entries among repairers:
-  each knowledge source watches its own collection of keys, and an
-  entry sits in the partition of whichever rung currently owns it
+- **Blackboard Entry (Key)** — one measurement under judgment,
+  identified by its key: the measurement, its condition, its standing,
+  its repair history
+- **Episode** — one full judgment of an entry: the attestation runs
+  once and its verdicts are memoized until the episode ends — or is
+  restarted for genuinely fresh measurement
+- **Partition** — the division of blackboard entries among different
+  workflow stages: each knowledge source watches its own collection of
+  keys, and an entry sits in the partition of whichever rung currently
+  owns it
 - **Controller** — the cycle: evaluates every entry (provision first),
   dispatches keys onto outcome-routed chains, advances or hands off,
   escalates; halts only when everything is in good standing
@@ -263,6 +270,9 @@ vocabulary the scenes will use, one line per term.
 - **Route** — the per-key chains: **on_fail** = the repair ladder,
   **on_pass** = a confirmation chain before an entry may rest in good
   standing
+- **History / Ledger** — the blackboard's running record of every
+  change across all segments — measurements, repairs, verdicts — the
+  audit trail of the repair lifecycle
 
 **Parked — currently OFF the slide** (out of place in the component
 list; decided 2026-08-25 to leave off for now, placement TBD — e.g. a
@@ -280,9 +290,14 @@ mid navy, KS = navy, green/red for the route arrows) so the two slides
 read as a pair.
 
 **Speaker notes**: this is the audience's glossary for the terminal
-scenes — point back at the diagram while reading it. Terms deliberately
-excluded (README-level detail): partition mechanics, component-wise
-entries and success handoff, dispatch latching, max_cycles.
+scenes — point back at the diagram while reading it. Entry keys in the
+real demos are the provisioned protocols — `ready` (the readiness
+gate), `isolette_sysmlv2_rust_props` (blessed model), `…_l1a` (file
+hashes), `…_l2` (contract slices), `…_verus`, `…_cheat`, `…_sysproof`,
+`…_gensrc`, `…_report` — and every row of the checklist the audience
+is about to watch is one of these keys. Terms deliberately excluded
+(README-level detail): partition mechanics, component-wise entries and
+success handoff, dispatch latching, max_cycles.
 
 **Decisions**
 
