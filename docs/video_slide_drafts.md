@@ -136,9 +136,9 @@ layer contributes" each:
 - **CVM** (Copland Virtual Machine) — executes Copland phrases;
   **manifests** declare who may measure what; dispatches ASPs;
   appraises results
-  - *diagram label on this layer, not a talking point:* **asp-libs** —
-    the measurement/appraisal primitives (hash, readfile, signature,
-    golden comparison)
+- **asp-libs** — its own layer box under CVM: the
+  measurement/appraisal primitives (hash, readfile, signature, golden
+  comparison); still one spoken clause at most, not a talking point
 - Output arrow: **signed evidence bundles**, appraised against
   **golden baselines**
 
@@ -165,8 +165,10 @@ rendered in concrete syntax:
 
 **Decisions**
 
-- asp-libs demoted from its own layer bullet to a diagram label
-  (reclaims ~0.5 min; keeps three ideas on the slide, not four).
+- asp-libs demoted from a talking point to a visual-only layer
+  (reclaims ~0.5 min): first drafted as a label inside the CVM box,
+  then given its own layer box under CVM (2026-08-25) — it appears in
+  the stack but gets at most one spoken clause.
 - Snippet candidate chosen: the **props protocol** — the simplest real
   phrase (three constructs: `+<+` branch-sequence, `SIG`, `APPR`).
   The verus-tier phrase (hash the toolchain `->` run cargo-verus over
