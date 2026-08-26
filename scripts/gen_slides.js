@@ -494,7 +494,7 @@ s7.background = { color: WHITE };
 }
 
 s7.addText("The isolette", {
-  x: 0.7, y: 0.95, w: 8.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true,
+  x: 0.7, y: 1.04, w: 8.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true,
   color: NAVY, margin: 0,
 });
 
@@ -503,13 +503,13 @@ const introParas = [
   { text: "The system: ", options: { bold: true, breakLine: false } },
   { text: "an infant-incubator thermostat — regulate and monitor functions keep a newborn's environment in a safe temperature range; heat control on/off", options: { breakLine: true, paraSpaceAfter: 2 } },
   { text: "requirements traceable to FAA AR-08-32 (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10 } },
-  { text: "The provenance: ", options: { bold: true, breakLine: false } },
+  { text: "The relevance: ", options: { bold: true, breakLine: false } },
   { text: "the INSPECTA program's seL4/Microkit exemplar — a real, current, safety-critical development artifact, not a toy built for this talk", options: { breakLine: false } },
 ];
 introParas[0].options.bullet = { code: "2022" };
 introParas[3].options.bullet = { code: "2022" };
 s7.addText(introParas, {
-  x: 0.7, y: 1.8, w: 6.6, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
+  x: 0.7, y: 1.89, w: 6.6, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
   align: "left", valign: "top", margin: 0,
 });
 
@@ -534,7 +534,23 @@ s7.addText([
   { text: "Why this example: ", options: { bold: true, bullet: { code: "2022" }, breakLine: false } },
   { text: "every artifact class from the previous slide is present and measured — blessed model, generated contracts, developer-owned implementation, machine-checked proofs, pinned toolchain", options: {} },
 ], {
-  x: 0.7, y: 5.5, w: 6.6, h: 1.5, fontFace: BODY, fontSize: 13.5, color: DARK,
+  x: 0.7, y: 5.5, w: 6.6, h: 1.2, fontFace: BODY, fontSize: 13.5, color: DARK,
+  align: "left", valign: "top", margin: 0,
+});
+
+// References footer (K-State HAMR/isolette credits + the pipeline tool papers)
+s7.addText([
+  { text: "Hatcliff & Belt, ", options: { breakLine: false } },
+  { text: "The Isolette System: Illustrating End-to-End Artifacts for Rigorous Model-Based Engineering", options: { italic: true, breakLine: false } },
+  { text: ", Springer LNCS 15240, 2025", options: { breakLine: true } },
+  { text: "Hatcliff, Belt, Robby, McKenzie, Liang, ", options: { breakLine: false } },
+  { text: "End-to-End Formal Methods Integrated Development with SysMLv2 Using HAMR", options: { italic: true, breakLine: false } },
+  { text: ", Springer, 2025", options: { breakLine: true } },
+  { text: "Hatcliff, Belt, Robby, Carpenter, ", options: { breakLine: false } },
+  { text: "HAMR: An AADL Multi-platform Code Generation Toolset", options: { italic: true, breakLine: false } },
+  { text: ", ISoLA 2021, LNCS 13036", options: {} },
+], {
+  x: 0.7, y: 6.82, w: 11.9, h: 0.62, fontFace: BODY, fontSize: 8.5, color: MUTED,
   align: "left", valign: "top", margin: 0,
 });
 
@@ -570,6 +586,49 @@ s7.addNotes(
   "Spoken line on the why-beat: 'the table you just saw, instantiated.'\n" +
   "Held back on purpose (scene 9's reveal): cheat-tier depth stats - 86 blessed external_body sites, 10 scanned crates.\n" +
   "Numbers verified exact 2026-08-25 (l1a targets, l2 slices, verus term, pub-proof-fn count); provision-dependent - re-verify before recording day."
+);
+
+// ---------- References (deck final slide) ----------
+// Collects ALL deck references; add new entries here as the deck grows.
+let sref = pres.addSlide();
+sref.background = { color: WHITE };
+sref.addText("References", {
+  x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
+  color: NAVY, margin: 0,
+});
+
+const refGroups = [
+  ["The isolette & HAMR (Kansas State)", [
+    [["Hatcliff & Belt, ", 0], ["The Isolette System: Illustrating End-to-End Artifacts for Rigorous Model-Based Engineering", 1], [", Springer LNCS 15240, 2025", 0]],
+    [["Hatcliff, Belt, Robby, McKenzie, Liang, ", 0], ["End-to-End Formal Methods Integrated Development with SysMLv2 Using HAMR", 1], [", Springer, 2025", 0]],
+    [["Hatcliff, Belt, Robby, Carpenter, ", 0], ["HAMR: An AADL Multi-platform Code Generation Toolset", 1], [", ISoLA 2021, LNCS 13036, pp. 274\u2013295", 0]],
+    [["Lempia & Miller, ", 0], ["Requirements Engineering Management Handbook", 1], [", DOT/FAA/AR-08/32, 2009", 0]],
+    [["INSPECTA models: github.com/loonwerks/INSPECTA-models", 0]],
+  ]],
+  ["Attestation foundations", [
+    [["Ramsdell, Rowe, Alexander, Helble, Loscocco, Pendergrass, Petz, ", 0], ["Orchestrating Layered Attestations", 1], [", POST 2019, LNCS 11426", 0]],
+  ]],
+  ["Verification & platform", [
+    [["Lattuada, Hance, Cho, Brun, Subasinghe, Zhou, Howell, Parno, Hawblitzel, ", 0], ["Verus: Verifying Rust Programs using Linear Ghost Types", 1], [", PACMPL 7 (OOPSLA1), 2023", 0]],
+    [["Klein et al., ", 0], ["seL4: Formal Verification of an OS Kernel", 1], [", SOSP 2009", 0]],
+  ]],
+];
+let refParas = [];
+refGroups.forEach(([group, refs], gi) => {
+  refParas.push({ text: group, options: { bold: true, color: NAVY, fontSize: 14, breakLine: true, paraSpaceBefore: gi === 0 ? 0 : 12, paraSpaceAfter: 4 } });
+  refs.forEach((runs) => {
+    runs.forEach(([text, ital], j) => {
+      refParas.push({ text, options: { italic: ital === 1, color: DARK, fontSize: 11.5, bullet: j === 0 ? { code: "2022" } : undefined, indentLevel: j === 0 ? 0 : undefined, breakLine: j === runs.length - 1, paraSpaceAfter: 3 } });
+    });
+  });
+});
+refParas[refParas.length - 1].options.breakLine = false;
+sref.addText(refParas, {
+  x: 0.7, y: 1.5, w: 12.0, h: 5.6, fontFace: BODY, align: "left", valign: "top", margin: 0,
+});
+sref.addNotes(
+  "Collection point for every reference in the deck - keep this slide current as sections are added (isolette slide carries the K-State + AR-08-32 citations inline; Copland/Verus/seL4 seeded here ahead of their sections).\n" +
+  "DOIs on record in docs/video_slide_drafts.md."
 );
 
 const OUT = process.argv[2] || require("path").join(__dirname, "..", "docs", "video_slides_draft.pptx");

@@ -363,9 +363,10 @@ highlighted.
   temperature range; heat control on/off. Citation line (on-slide,
   small): requirements traceable to FAA AR-08-32 (the REQ-MHS-*
   family the scenes will tamper with).
-- **The provenance**: the INSPECTA program's seL4/Microkit exemplar —
-  a real, current, safety-critical development artifact, not a toy
-  built for this talk.
+- **The relevance**: the INSPECTA program's seL4/Microkit target — a
+  real, current, safety-critical development artifact, not a toy built
+  for this talk. (Lead-in renamed from "The provenance" per deck edit
+  2026-08-25.)
 - **The pipeline** (small horizontal graphic, not a bullet): SysMLv2
   model + GUMBO contracts → HAMR codegen → Verus-verified Rust →
   seL4/Microkit target.
@@ -384,6 +385,22 @@ highlighted.
 - **8** attestation tiers — the entry keys from the glossary slide:
   `props` · `l1a` · `l2` · `verus` · `cheat` · `sysproof` · `gensrc` ·
   `report`
+
+**References footer** (bottom, 8.5pt muted; K-State HAMR/isolette
+credits, in addition to the AR-08-32 citation in the system beat):
+
+1. Hatcliff & Belt, *The Isolette System: Illustrating End-to-End
+   Artifacts for Rigorous Model-Based Engineering*, Springer LNCS
+   15240, 2025. doi:10.1007/978-3-031-73887-6_9
+2. Hatcliff, Belt, Robby, McKenzie, Liang, *End-to-End Formal Methods
+   Integrated Development with SysMLv2 Using HAMR*, Springer, 2025.
+   doi:10.1007/978-3-032-00942-5_13
+3. Hatcliff, Belt, Robby, Carpenter, *HAMR: An AADL Multi-platform
+   Code Generation Toolset*, ISoLA 2021, LNCS 13036, pp. 274–295.
+   doi:10.1007/978-3-030-89159-6_18
+
+(DOIs kept here for the record; on-slide the footer shows authors,
+italic title, venue, year only.)
 
 **Speaker notes**
 
@@ -425,6 +442,29 @@ slides; density decision pending.
 Content finalized at slide level in the outline's section-3 capstone
 (three tables + kickers). Will migrate here verbatim when the .pptx
 pass starts, to keep one source of truth.
+
+## Slide R — References (deck final slide) — DRAFTED
+
+The collection point for every reference in the deck — always the last
+slide; keep it current as sections are added. Grouped:
+
+- **The isolette & HAMR (Kansas State)**: the three Hatcliff et al.
+  papers (see slide 7's reference list for full details + DOIs),
+  Lempia & Miller DOT/FAA/AR-08/32, and the INSPECTA models repo
+  (github.com/loonwerks/INSPECTA-models).
+- **Attestation foundations**: Ramsdell, Rowe, Alexander, Helble,
+  Loscocco, Pendergrass, Petz, *Orchestrating Layered Attestations*,
+  POST 2019, LNCS 11426. doi:10.1007/978-3-030-17138-4_9
+- **Verification & platform**: Lattuada, Hance, Cho, Brun, Subasinghe,
+  Zhou, Howell, Parno, Hawblitzel, *Verus: Verifying Rust Programs
+  using Linear Ghost Types*, PACMPL 7 (OOPSLA1), 2023.
+  doi:10.1145/3586037 · Klein et al., *seL4: Formal Verification of an
+  OS Kernel*, SOSP 2009.
+
+**Decisions**: Copland/Verus/seL4 seeded ahead of their sections
+(2026-08-25); candidates to add later: the GUMBO contract-language
+paper (HILT '22), CVM/attestation-manager papers, cheat_scan
+provenance.
 
 ## Slide 17 — Close — STUB
 
