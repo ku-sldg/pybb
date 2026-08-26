@@ -313,18 +313,22 @@ success handoff, dispatch latching, max_cycles.
 
 **Timing**: ~1 min.
 
+**On-slide title**: "Artifact classes" (shortened per deck edit
+2026-08-25; "the map the scenes get pinned to" is spoken, not
+on-slide).
+
 **Content**: single table, columns in the **class → measured how →
 judged by → repair species** shape (the same shape capstone slide B
 reuses):
 
-| Class | Measured how | Judged by | Repair species |
+| Artifact Class | Measured how | Judged by | Repair type |
 |---|---|---|---|
-| **Model** | blessed, signed spec files (whole-file) | appraisal vs the signed golden | restore from golden — or *bless* (sanctioned change) |
-| **Contract** | declaration-named slices | slice-level appraisal, attributed by name | slice splice |
-| **Implementation** | developer-owned code | the contracts that must hold of it | re-derivation from spec / restore |
-| **Proof / Verification** | live verification run | the kernel / Verus — fresh, never cached | proof synthesis; regeneration |
-| **Toolchain** *(cross-cutting)* | hashed **measure-then-use** | the tool hash, taken in the same term | out-of-band restore only |
-| **Trust state** *(cross-cutting)* | bundles, goldens, signatures | signature · anchor · derivability | **principled refusal** — out-of-band re-bless |
+| **Model** | whole-file hash of spec files | appraisal vs the signed golden | restore from golden — or *bless* (sanctioned change) |
+| **Contract** | syntax-guided file slices | slice-level appraisal, attributed by name | restore golden slice |
+| **Implementation** | developer-owned code | tests + verification of contracts | code synthesis/repair |
+| **Proof / Verification** | live verification run | verification kernel — fresh, never cached | proof synthesis/repair |
+| **Toolchain** *(cross-cutting)* | hashed **measure-then-use** | the tool hash(es), taken in the same term | out-of-band or pre-sanctioned restore |
+| **Trust state** *(cross-cutting)* | bundles, goldens, signatures | appraisal vs the signed golden or derived | **principled refusal** — out-of-band re-bless |
 
 **Speaker notes**
 
@@ -337,6 +341,10 @@ reuses):
 
 **Decisions**: third column ("judged by") added to align with slide
 B's table shape; incompleteness is a spoken hook, never on-slide text.
+Table wording per manual markdown edits 2026-08-25 (syntax-guided
+slices, code/proof synthesis-repair, sanctioned toolchain restore,
+golden-or-derived trust-state appraisal); generated into the deck as
+position 7 the same day.
 
 ---
 

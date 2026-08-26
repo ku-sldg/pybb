@@ -417,6 +417,60 @@ s5b.addNotes(
   "Also deliberately excluded (README-level detail): partition mechanics, component-wise entries and success handoff, dispatch latching, max_cycles."
 );
 
+// ---------- Slide 6 (deck position 7): Artifact classes ----------
+let s6 = pres.addSlide();
+s6.background = { color: WHITE };
+s6.addText("Artifact classes", {
+  x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 34, bold: true,
+  color: NAVY, margin: 0,
+});
+
+const th = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 14, align: "left", valign: "middle" } });
+const td = (t, opts = {}) => ({ text: t, options: Object.assign({ color: DARK, fontSize: 12.5, align: "left", valign: "middle" }, opts) });
+
+const CROSS = { color: NAVY };
+const tableRows = [
+  [th("Artifact Class"), th("Measured how"), th("Judged by"), th("Repair type")],
+  [td([{ text: "Model", options: { bold: true } }]),
+   td("whole-file hash of spec files"),
+   td("appraisal vs the signed golden"),
+   td([{ text: "restore from golden — or ", options: {} }, { text: "bless", options: { italic: true } }, { text: " (sanctioned change)", options: {} }])],
+  [td([{ text: "Contract", options: { bold: true } }]),
+   td("syntax-guided file slices"),
+   td("slice-level appraisal, attributed by name"),
+   td("restore golden slice")],
+  [td([{ text: "Implementation", options: { bold: true } }]),
+   td("developer-owned code"),
+   td("tests + verification of contracts"),
+   td("code synthesis/repair")],
+  [td([{ text: "Proof / Verification", options: { bold: true } }]),
+   td("live verification run"),
+   td("verification kernel — fresh, never cached"),
+   td("proof synthesis/repair")],
+  [td([{ text: "Toolchain ", options: { bold: true, color: NAVY } }, { text: "(cross-cutting)", options: { italic: true, fontSize: 11, color: NAVY } }]),
+   td([{ text: "hashed ", options: {} }, { text: "measure-then-use", options: { bold: true } }]),
+   td("the tool hash(es), taken in the same term"),
+   td("out-of-band or pre-sanctioned restore")],
+  [td([{ text: "Trust state ", options: { bold: true, color: NAVY } }, { text: "(cross-cutting)", options: { italic: true, fontSize: 11, color: NAVY } }]),
+   td("bundles, goldens, signatures"),
+   td("appraisal vs the signed golden or derived"),
+   td([{ text: "principled refusal", options: { bold: true } }, { text: " — out-of-band re-bless", options: {} }])],
+];
+s6.addTable(tableRows, {
+  x: 0.7, y: 1.55, w: 11.9, colW: [2.4, 2.9, 3.3, 3.3],
+  border: { type: "solid", color: "D8DEEA", pt: 1 },
+  fill: { color: WHITE },
+  rowH: 0.72,
+  margin: 0.08,
+  fontFace: BODY,
+});
+
+s6.addNotes(
+  "The last two rows are the surprising ones - scenes 6-7 exist for them.\n" +
+  "Spoken hook (never on-slide text): 'This table is deliberately incomplete - the demo will show why.' The cheat / sysproof / gensrc tiers are capstone slide C's punchline: attacks forced them into existence. Do not pre-introduce them here.\n" +
+  "Same column shape (class -> measured how -> judged by -> repair) as capstone slide B, so the audience recognizes it when it returns."
+);
+
 const OUT = process.argv[2] || require("path").join(__dirname, "..", "docs", "video_slides_draft.pptx");
 pres.writeFile({ fileName: OUT })
   .then(() => console.log("written: " + OUT));
