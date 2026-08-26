@@ -471,6 +471,107 @@ s6.addNotes(
   "Same column shape (class -> measured how -> judged by -> repair) as capstone slide B, so the audience recognizes it when it returns."
 );
 
+// ---------- Slide 7 (deck position 8): The isolette ----------
+let s7 = pres.addSlide();
+s7.background = { color: WHITE };
+
+// compact roadmap strip, "Demo" segment active
+{
+  const stripY = 0.22, stripH = 0.55, gap = 0.14, x0 = 0.7, totalW = 11.9, fs = 9;
+  const segW = (totalW - gap * (sections.length - 1)) / sections.length;
+  sections.forEach((name, i) => {
+    const x = x0 + i * (segW + gap);
+    const active = i === 1;
+    s7.addShape(pres.ShapeType.roundRect, {
+      x, y: stripY, w: segW, h: stripH, rectRadius: 0.05,
+      fill: { color: active ? NAVY : "E4EAF4" }, line: { type: "none" },
+    });
+    s7.addText(name, {
+      x, y: stripY, w: segW, h: stripH, fontFace: BODY, fontSize: fs,
+      bold: active, color: active ? WHITE : MUTED, align: "center", valign: "middle", margin: 0.02,
+    });
+  });
+}
+
+s7.addText("The isolette", {
+  x: 0.7, y: 0.95, w: 8.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true,
+  color: NAVY, margin: 0,
+});
+
+// Left half: what it is
+const introParas = [
+  { text: "The system: ", options: { bold: true, breakLine: false } },
+  { text: "an infant-incubator thermostat — regulate and monitor functions keep a newborn's environment in a safe temperature range; heat control on/off", options: { breakLine: true, paraSpaceAfter: 2 } },
+  { text: "requirements traceable to FAA AR-08-32 (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10 } },
+  { text: "The provenance: ", options: { bold: true, breakLine: false } },
+  { text: "the INSPECTA program's seL4/Microkit exemplar — a real, current, safety-critical development artifact, not a toy built for this talk", options: { breakLine: false } },
+];
+introParas[0].options.bullet = { code: "2022" };
+introParas[3].options.bullet = { code: "2022" };
+s7.addText(introParas, {
+  x: 0.7, y: 1.8, w: 6.6, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
+  align: "left", valign: "top", margin: 0,
+});
+
+// pipeline graphic
+{
+  const stages = ["SysMLv2 model\n+ GUMBO contracts", "HAMR\ncodegen", "Verus-verified\nRust", "seL4 / Microkit\ntarget"];
+  const py = 4.35, ph = 0.85, pgap = 0.34, px0 = 0.7, ptotal = 6.6;
+  const pw = (ptotal - pgap * (stages.length - 1)) / stages.length;
+  stages.forEach((t, i) => {
+    const x = px0 + i * (pw + pgap);
+    s7.addShape(pres.ShapeType.roundRect, {
+      x, y: py, w: pw, h: ph, rectRadius: 0.06, fill: { color: MID5 }, line: { type: "none" },
+    });
+    s7.addText(t, { x, y: py, w: pw, h: ph, fontFace: BODY, fontSize: 10.5, bold: true, color: WHITE, align: "center", valign: "middle", margin: 0.02 });
+    if (i < stages.length - 1) {
+      s7.addText("→", { x: x + pw - 0.04, y: py, w: pgap + 0.08, h: ph, fontFace: BODY, fontSize: 13, color: MUTED, align: "center", valign: "middle", margin: 0 });
+    }
+  });
+}
+
+s7.addText([
+  { text: "Why this example: ", options: { bold: true, bullet: { code: "2022" }, breakLine: false } },
+  { text: "every artifact class from the previous slide is present and measured — blessed model, generated contracts, developer-owned implementation, machine-checked proofs, pinned toolchain", options: {} },
+], {
+  x: 0.7, y: 5.5, w: 6.6, h: 1.5, fontFace: BODY, fontSize: 13.5, color: DARK,
+  align: "left", valign: "top", margin: 0,
+});
+
+// Right half: the measured surface (big-number callouts)
+s7.addText("the measured surface", {
+  x: 7.7, y: 1.45, w: 4.9, h: 0.35, fontFace: BODY, fontSize: 13, italic: true, color: MUTED, align: "left", margin: 0,
+});
+const stats = [
+  ["13", "measured files (SysML packages + contract-bearing Rust)"],
+  ["67", "contract slices"],
+  ["8", "crates re-verified every episode (7 components + the system proof)"],
+  ["1,862", "system-proof obligations"],
+  ["8", "attestation tiers — the glossary's entry keys:\nprops · l1a · l2 · verus · cheat · sysproof · gensrc · report"],
+];
+stats.forEach(([num, label], i) => {
+  const y = 1.9 + i * 1.0;
+  s7.addShape(pres.ShapeType.roundRect, {
+    x: 7.7, y, w: 4.9, h: 0.9, rectRadius: 0.06, fill: { color: "F2F4F8" }, line: { color: ICE, width: 1 },
+  });
+  s7.addText(num, {
+    x: 7.85, y, w: 1.35, h: 0.9, fontFace: HDR, fontSize: 30, bold: true, color: NAVY,
+    align: "left", valign: "middle", margin: 0,
+  });
+  s7.addText(label, {
+    x: 9.25, y, w: 3.25, h: 0.9, fontFace: BODY, fontSize: 11, color: DARK,
+    align: "left", valign: "middle", margin: 0,
+  });
+});
+
+s7.addNotes(
+  "This slide IS the section transition into the demo (strip: Demo segment highlighted).\n" +
+  "The tiers callout is the bridge: these keys are the glossary's entry keys, and every checklist row in the scenes is one of them.\n" +
+  "Spoken line on the why-beat: 'the table you just saw, instantiated.'\n" +
+  "Held back on purpose (scene 9's reveal): cheat-tier depth stats - 86 blessed external_body sites, 10 scanned crates.\n" +
+  "Numbers verified exact 2026-08-25 (l1a targets, l2 slices, verus term, pub-proof-fn count); provision-dependent - re-verify before recording day."
+);
+
 const OUT = process.argv[2] || require("path").join(__dirname, "..", "docs", "video_slides_draft.pptx");
 pres.writeFile({ fileName: OUT })
   .then(() => console.log("written: " + OUT));

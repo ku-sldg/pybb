@@ -348,12 +348,61 @@ position 7 the same day.
 
 ---
 
-## Slide 7 — Isolette intro (stats) — STUB
+## Slide 7 (deck position 8) — The isolette — DRAFTED
 
-The section-2 transition slide. Numbers ready in the outline: INSPECTA
-seL4/Microkit exemplar, SysMLv2 → HAMR → Verus-verified Rust; 13
-measured files, 67 contract slices, 8 verified crates, ~1862
-system-proof obligations. Roadmap strip highlights "The Isolette".
+**Timing**: ~1 min. This slide IS the section transition into the
+demo: the roadmap strip rides at the top with the "Demo:" segment
+highlighted.
+
+**On-slide title**: "The isolette".
+
+**Left half — what it is** (four beats):
+
+- **The system**: an infant-incubator thermostat — regulate and
+  monitor functions keeping a newborn's environment in a safe
+  temperature range; heat control on/off. Citation line (on-slide,
+  small): requirements traceable to FAA AR-08-32 (the REQ-MHS-*
+  family the scenes will tamper with).
+- **The provenance**: the INSPECTA program's seL4/Microkit exemplar —
+  a real, current, safety-critical development artifact, not a toy
+  built for this talk.
+- **The pipeline** (small horizontal graphic, not a bullet): SysMLv2
+  model + GUMBO contracts → HAMR codegen → Verus-verified Rust →
+  seL4/Microkit target.
+- **Why this example**: every artifact class from the previous slide
+  is present and measured — blessed model, generated contracts,
+  developer-owned implementation, machine-checked proofs, pinned
+  toolchain.
+
+**Right half — the measured surface** (big-number callouts):
+
+- **13** measured files (SysML packages + contract-bearing Rust)
+- **67** contract slices
+- **8** crates re-verified every episode (7 components + the system
+  proof)
+- **1,862** system-proof obligations
+- **8** attestation tiers — the entry keys from the glossary slide:
+  `props` · `l1a` · `l2` · `verus` · `cheat` · `sysproof` · `gensrc` ·
+  `report`
+
+**Speaker notes**
+
+- The tiers callout is the bridge: these keys are the glossary's
+  "entry keys," and every checklist row in the scenes is one of them.
+- Spoken line on the why-beat: "the table you just saw, instantiated."
+- Held back on purpose (scene 9's reveal): the cheat-tier depth stats
+  — 86 blessed `external_body` sites, 10 scanned crates.
+
+**Decisions**
+
+- Big-number callouts chosen over a per-tier table (avoids reading as
+  a second artifact-classes table one slide later); cheat-tier stats
+  held back; AR-08-32 on-slide as a citation line (2026-08-25).
+- Numbers verified against live sources 2026-08-25 and exact (not
+  approximate): 13 = l1a `hashfile` targets, 67 = l2 `readfile_range`
+  slices, 8 = `run_command_cargo_verus` targets in the verus term,
+  1,862 = `pub proof fn` count in `sys_nominal_proof/src`. They are
+  provision-dependent — re-verify before recording day.
 
 ## Slides 8–12 — Act transitions I–V — STUB
 
