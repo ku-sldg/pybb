@@ -82,13 +82,13 @@ measured files, 67 contract slices, 8 verified crates, ~1862
 system-proof obligations. Scene numbers below refer to
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
 
-### Act I — the honest baseline: Scene 1 (1.5 min)
+### Act I — the honest baseline: Scene 1 (1.25 min)
 
 One episode over every artifact class, the per-crate checklist all
 green, toolchain hashed in the same term. Establishes what "good
 standing" looks like so every later refusal reads instantly.
 
-### Act II — sanctioned change: Scene 3, breaking variant (2.5 min)
+### Act II — sanctioned change: Scene 3, breaking variant (2.25 min)
 
 The lifecycle heart of the talk. GUMBO contract edit → attribution by
 slice → interactive ruling → **bless** (spec-first, props only) →
@@ -104,15 +104,21 @@ Implementation tamper; contracts-intact rung exhausts (diagnosis), impl
 rung restores crate-scoped, restarted episode re-attests. The ladder
 repairs the *right* artifact.
 
-### Act IV — attacks on trust itself: Scene 6 (1.5 min)
+### Act IV — attacks on trust itself: Scenes 6 + 7 (2.5 min)
 
-Three beats, one gate, three attributed refusals: flipped
+Scene 6 — three beats, one gate, three attributed refusals: flipped
 signed-evidence byte (signature), hand-edited golden (anchor),
 laundered re-provision (derivability/lineage). The punchline: the
 readiness gate's failure chain is *empty by design* — no knowledge
 source may repair a baseline; the only exit is out-of-band re-bless.
+Scene 7 — a functionality-preserving edit to the cargo-verus wrapper:
+every verification still runs and looks fine, but the tool hash —
+taken measure-then-use in the same term — refutes, and every proof
+cell poisons to `?` fail-closed. The on-camera payoff of the banner
+subline's "untrusted tools"; thematically one act with scene 6 (both
+unrepairable from goldens — out-of-band only).
 
-### Act V — "verification succeeded" is not enough: Scene 12 (2 min)
+### Act V — "verification succeeded" is not enough: Scene 12 (1.75 min)
 
 The most visceral for a mixed audience: the heat command inverted in
 unverified FFI glue behind `external_body` — every proof passes, the
@@ -121,12 +127,15 @@ regeneration-from-model. Close the act with one sentence naming Scenes
 9–11 (proof escapes, the hollow system proof, the stale dep cache) —
 the AI-in-the-loop capstone's slide C carries that taxonomy in full.
 
-### Coverage beat (30 s)
+### Coverage beat (15 s)
 
 The scene × artifact-class × repair-species matrix as a spoken line
 over Act V's last frame (budget reclaimed for the AI-in-the-loop
-capstone), with the 5 shown scenes highlighted and the other 7
-one-lined — signals depth without spending runtime.
+capstone), with the 6 captured scenes (1, 2, 3, 6, 7, 12) highlighted
+and the other 6 one-lined — 9–11 carried by capstone slide C's attack
+table, 4/5/8 by this beat — signals depth without spending runtime.
+Honest caveat kept in mind: "cached verdicts" (scene 11) and scene 5's
+pause/work-order mechanic are told, not shown.
 
 ## 3. Same workflow, other ecosystems — slides (~5 min)
 

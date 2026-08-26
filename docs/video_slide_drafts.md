@@ -426,15 +426,35 @@ italic title, venue, year only.)
   plugin jars; 17 in `sysml_libs`: pinned sysml-aadl-libraries). They
   are provision-dependent — re-verify before recording day.
 
-## Slides 8–12 — Act transitions I–V — STUB
+## Slides 8–12 — Act transitions I–V — DRAFTED (content pending review)
 
-Template: roadmap strip + act title + one "what to watch for" line.
-Act titles from the outline: I the honest baseline · II sanctioned
-change · III unsanctioned change, repaired · IV attacks on trust
-itself · V "verification succeeded" is not enough. The
-"what to watch for" lines double as the narration skeleton for the
-terminal captures. Optional: Act IV/scene 7 reprises the verus-tier
-measure-then-use phrase (see slide 4 decisions).
+Template (per the isolette intro slide): compact roadmap strip at top
+("Demo" segment active) + act title + one **"what to watch for"**
+line, which doubles as the opening narration line over the terminal
+capture. Presenter footer (small, muted) carries the exact capture
+invocation. Six captures across five acts (adopted 2026-08-26; see
+[video_recording_plan.md](video_recording_plan.md) for the runbook):
+
+| Act | Title | What to watch for | Invocation |
+|---|---|---|---|
+| I | The honest baseline *(scene 1)* | "One episode measures every artifact class — watch the checklist go green, and remember what green looks like." | `./examples/demo_isolette.sh --scenes 1` |
+| II | Sanctioned change *(scene 3)* | "A spec edit gets caught, examined, and *blessed* — and the system honestly reports a spec the implementation doesn't yet meet." | `./examples/demo_isolette.sh --scenes 3 --drift breaking` |
+| III | Unsanctioned change, repaired *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
+| IV | Attacks on trust itself *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
+| V | "Verification succeeded" is not enough *(scene 12)* | "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell." | `./examples/demo_isolette.sh --scenes 12` |
+
+**Decisions**
+
+- Scene 7 added to Act IV (2026-08-26): cheapest strong scene, one act
+  thematically with scene 6 (both unrepairable from goldens), and the
+  on-camera payoff of the banner subline's "untrusted tools."
+- Uncaptured scenes accounted for: 9–11 → capstone slide C's attack
+  table; 4/5/8 → the coverage beat.
+- The earlier idea of reprising the verus-tier Copland phrase on an
+  act slide is dropped (was pinned to scene 7 pre-capture; the live
+  scene now shows the real thing).
+- Act timings: I 1.25 · II 2.25 · III 1.5 · IV 2.5 · V 1.75 +
+  15 s coverage beat ≈ 9.75–10 min.
 
 ## Slide 13 — Other ecosystems — STUB
 
