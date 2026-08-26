@@ -563,19 +563,20 @@ const stats = [
   ["67", "contract slices"],
   ["8", "crates re-verified every episode (7 components + the system proof)"],
   ["1,862", "system-proof obligations"],
+  ["30", "toolchain + dependency files hashed measure-then-use (4 Verus · 9 HAMR · 17 SysML libs)"],
   ["8", "attestation tiers — the glossary's entry keys:\nprops · l1a · l2 · verus · cheat · sysproof · gensrc · report"],
 ];
 stats.forEach(([num, label], i) => {
-  const y = 1.9 + i * 1.0;
+  const y = 1.78 + i * 0.82;
   s7.addShape(pres.ShapeType.roundRect, {
-    x: 7.7, y, w: 4.9, h: 0.9, rectRadius: 0.06, fill: { color: "F2F4F8" }, line: { color: ICE, width: 1 },
+    x: 7.7, y, w: 4.9, h: 0.74, rectRadius: 0.06, fill: { color: "F2F4F8" }, line: { color: ICE, width: 1 },
   });
   s7.addText(num, {
-    x: 7.85, y, w: 1.35, h: 0.9, fontFace: HDR, fontSize: 30, bold: true, color: NAVY,
+    x: 7.85, y, w: 1.35, h: 0.74, fontFace: HDR, fontSize: 26, bold: true, color: NAVY,
     align: "left", valign: "middle", margin: 0,
   });
   s7.addText(label, {
-    x: 9.25, y, w: 3.25, h: 0.9, fontFace: BODY, fontSize: 11, color: DARK,
+    x: 9.25, y, w: 3.3, h: 0.74, fontFace: BODY, fontSize: 10, color: DARK,
     align: "left", valign: "middle", margin: 0,
   });
 });

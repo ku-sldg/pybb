@@ -382,6 +382,8 @@ highlighted.
 - **8** crates re-verified every episode (7 components + the system
   proof)
 - **1,862** system-proof obligations
+- **30** toolchain + dependency files hashed measure-then-use (4 Verus
+  · 9 HAMR · 17 SysML libs)
 - **8** attestation tiers — the entry keys from the glossary slide:
   `props` · `l1a` · `l2` · `verus` · `cheat` · `sysproof` · `gensrc` ·
   `report`
@@ -418,8 +420,11 @@ italic title, venue, year only.)
 - Numbers verified against live sources 2026-08-25 and exact (not
   approximate): 13 = l1a `hashfile` targets, 67 = l2 `readfile_range`
   slices, 8 = `run_command_cargo_verus` targets in the verus term,
-  1,862 = `pub proof fn` count in `sys_nominal_proof/src`. They are
-  provision-dependent — re-verify before recording day.
+  1,862 = `pub proof fn` count in `sys_nominal_proof/src`, 30 = tool
+  hashfile targets (4 in the verus term: cargo-verus wrappers ×2,
+  rust_verify, verus; 9 in `hamr_tools`: sireum.jar + OSATE/GUMBO
+  plugin jars; 17 in `sysml_libs`: pinned sysml-aadl-libraries). They
+  are provision-dependent — re-verify before recording day.
 
 ## Slides 8–12 — Act transitions I–V — STUB
 
