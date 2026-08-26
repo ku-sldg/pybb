@@ -509,7 +509,7 @@ const introParas = [
 introParas[0].options.bullet = { code: "2022" };
 introParas[3].options.bullet = { code: "2022" };
 s7.addText(introParas, {
-  x: 0.7, y: 1.89, w: 6.6, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
+  x: 0.62, y: 1.98, w: 6.73, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
   align: "left", valign: "top", margin: 0,
 });
 
@@ -576,7 +576,7 @@ stats.forEach(([num, label], i) => {
     align: "left", valign: "middle", margin: 0,
   });
   s7.addText(label, {
-    x: 9.25, y, w: 3.3, h: 0.74, fontFace: BODY, fontSize: 10, color: DARK,
+    x: i === 0 ? 8.97 : 9.25, y, w: i === 0 ? 3.58 : 3.3, h: 0.74, fontFace: BODY, fontSize: 10, color: DARK,
     align: "left", valign: "middle", margin: 0,
   });
 });
@@ -588,6 +588,70 @@ s7.addNotes(
   "Held back on purpose (scene 9's reveal): cheat-tier depth stats - 86 blessed external_body sites, 10 scanned crates.\n" +
   "Numbers verified exact 2026-08-25 (l1a targets, l2 slices, verus term, pub-proof-fn count); provision-dependent - re-verify before recording day."
 );
+
+// ---------- Act transition slides I-V (deck positions 9-13) ----------
+const ACTS = [
+  { num: "ACT I", title: "The honest baseline", scenes: "scene 1",
+    watch: "One episode measures every artifact class — watch the checklist go green, and remember what green looks like.",
+    cmd: "./examples/demo_isolette.sh --scenes 1",
+    notes: "Beats: readiness gate green -> one full episode -> per-crate checklist all green. Dwell on the final checklist - it is the frame every later refusal is compared against." },
+  { num: "ACT II", title: "Sanctioned change", scenes: "scene 3 (breaking)",
+    watch: "A spec edit gets caught, examined, and blessed — and the system honestly reports a spec the implementation doesn't yet meet.",
+    cmd: "./examples/demo_isolette.sh --scenes 3 --drift breaking",
+    notes: "Beats: drifted episode escalates with slice attribution -> ruling diff (always shown; linger) -> bless -> promote (real codegen; speed-ramp stretch, keep rolling) -> gold moves -> Verus tier RED against the new baseline. End on the honest-RED checklist." },
+  { num: "ACT III", title: "Unsanctioned change, repaired", scenes: "scene 2",
+    watch: "The ladder diagnoses by exhaustion — watch it repair the right artifact, and watch standing return only by re-measurement.",
+    cmd: "./examples/demo_isolette.sh --scenes 2",
+    notes: "Beats: dummy-bad-impl diff (take the [v]iew - VSCode diff D1 on camera) -> contracts-intact rung exhausts -> impl rung restores crate-scoped -> restart -> re-attested clean." },
+  { num: "ACT IV", title: "Attacks on trust itself", scenes: "scenes 6 + 7",
+    watch: "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline.",
+    cmd: "./examples/demo_isolette.sh --scenes \"6 7\"",
+    notes: "Scene 6 beats: three tampers, three attributed refusals (signature -> anchor -> derivability); optionally the flipped-evidence-byte diff on camera. Scene 7 beats: wrapper edit (take the [v]iew, diff D10) -> readiness still passes -> tool hash refutes, every proof cell poisons to ? - dwell, this is the act's money shot. --restore-tools recovery in VO only." },
+  { num: "ACT V", title: "\u201CVerification succeeded\u201D is not enough", scenes: "scene 12",
+    watch: "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell.",
+    cmd: "./examples/demo_isolette.sh --scenes 12",
+    notes: "Beats: inverted-FFI diff (take the [v]iew, diff D18 - 'see how innocent it looks') -> proofs pass, cheat scan silent -> gensrc byte anchor refuses, naming the file -> diagnosis rung classifies -> repair by regeneration (second speed-ramp stretch) -> re-attested clean. Final checklist doubles as the coverage beat's background; close with one sentence naming scenes 9-11 (capstone slide C carries that taxonomy)." },
+];
+ACTS.forEach((act) => {
+  const sa = pres.addSlide();
+  sa.background = { color: WHITE };
+  // compact roadmap strip, Demo active
+  const stripY = 0.22, stripH = 0.55, sgap = 0.14, sx0 = 0.7, stotalW = 11.9, sfs = 9;
+  const ssegW = (stotalW - sgap * (sections.length - 1)) / sections.length;
+  sections.forEach((name, i) => {
+    const x = sx0 + i * (ssegW + sgap);
+    const active = i === 1;
+    sa.addShape(pres.ShapeType.roundRect, {
+      x, y: stripY, w: ssegW, h: stripH, rectRadius: 0.05,
+      fill: { color: active ? NAVY : "E4EAF4" }, line: { type: "none" },
+    });
+    sa.addText(name, {
+      x, y: stripY, w: ssegW, h: stripH, fontFace: BODY, fontSize: sfs,
+      bold: active, color: active ? WHITE : MUTED, align: "center", valign: "middle", margin: 0.02,
+    });
+  });
+  sa.addText(act.num, {
+    x: 0.9, y: 2.0, w: 11.5, h: 0.5, fontFace: BODY, fontSize: 18, bold: true,
+    color: MUTED, charSpacing: 3, margin: 0,
+  });
+  sa.addText(act.title, {
+    x: 0.9, y: 2.5, w: 11.5, h: 0.9, fontFace: HDR, fontSize: 40, bold: true,
+    color: NAVY, margin: 0,
+  });
+  sa.addText(act.scenes, {
+    x: 0.9, y: 3.45, w: 11.5, h: 0.45, fontFace: BODY, fontSize: 15, italic: true,
+    color: MUTED, margin: 0,
+  });
+  sa.addText(act.watch, {
+    x: 0.9, y: 4.35, w: 11.2, h: 1.4, fontFace: BODY, fontSize: 20, italic: true,
+    color: DARK, margin: 0,
+  });
+  sa.addText(act.cmd, {
+    x: 0.9, y: 6.75, w: 11.5, h: 0.4, fontFace: "Courier New", fontSize: 11,
+    color: MUTED, margin: 0,
+  });
+  sa.addNotes(act.notes + "\nWatch-for line doubles as the VO opener over the terminal cut. Full runbook: docs/video_recording_plan.md.");
+});
 
 // ---------- References (deck final slide) ----------
 // Collects ALL deck references; add new entries here as the deck grows.

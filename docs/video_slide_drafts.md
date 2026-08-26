@@ -426,7 +426,13 @@ italic title, venue, year only.)
   plugin jars; 17 in `sysml_libs`: pinned sysml-aadl-libraries). They
   are provision-dependent — re-verify before recording day.
 
-## Slides 8–12 — Act transitions I–V — DRAFTED (content pending review)
+## Slides 8–12 — Act transitions I–V — DRAFTED (generated into deck positions 9–13, 2026-08-26)
+
+Layout per slide: compact roadmap strip (Demo active) · "ACT N" label
+(letter-spaced, muted) · descriptive title (40pt) · scene tag ·
+watch-for line (20pt italic — the VO opener) · capture invocation as a
+monospace presenter footer. Speaker notes carry the per-act beats from
+the recording plan.
 
 Template (per the isolette intro slide): compact roadmap strip at top
 ("Demo" segment active) + act title + one **"what to watch for"**
