@@ -420,6 +420,19 @@ Path(sys.argv[1]).write_text(ex.dummy_bad_impl_text(ex.MHS_APP.read_text()))
 " "$LOG_DIR/mhs_app.rs.tampered" )
   offer_diff "$SCENE8_MHS" "$LOG_DIR/mhs_app.rs.tampered" \
     "the behavior inversion the arc is about to apply (dummy bad impl)"
+  echo
+  echo "${BOLD}the per-crate proof checklist over the tampered tree${RESET}"
+  echo "(the stored baselines are all intact — readiness PASSES — but the"
+  echo "LIVE mhs crate refutes: the blessed contracts are false of the"
+  echo "dummy implementation):"
+  run_driver --tamper-impl-full --ready --status
+  expect "readiness: PASS" "the baselines must stay intact (only the live tree drifted)"
+  expect "thermostat_rt_mhs_mhs" "the checklist must render the failing crate"
+  expect "✗" "the tampered crate must show a REFUTED (✗) cell"
+  expect_absent "?" "a genuine contract failure is ✗, not a poisoned ?"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit )
+  echo
+  echo "${BOLD}now the repair arc over a freshly re-applied tamper:${RESET}"
   run_driver --tamper-impl-full --verify --repair-impl
   expect "DUMMY BAD IMPL" "the dummy bad implementation must apply"
   expect "the IMPLEMENTATION is the artifact at fault" \
@@ -433,6 +446,12 @@ Path(sys.argv[1]).write_text(ex.dummy_bad_impl_text(ex.MHS_APP.read_text()))
   if cmp -s "$SCENE8_MHS" "$MHS_APP"; then
     echo "${BOLD}implementation byte-identical to the pre-tamper tree, and the${RESET}"
     echo "${BOLD}model was never flagged — the ladder repaired the right artifact.${RESET}"
+    echo
+    echo "${BOLD}the per-crate proof checklist over the repaired tree:${RESET}"
+    run_driver --ready --status
+    expect "readiness: PASS" "the repaired baseline must verify"
+    expect_absent "✗" "no crate may stay refuted after the repair"
+    expect_absent "?" "no crate may stay unjudged after the repair"
   else
     echo "DEMO ABORT: the implementation file did not return to its pre-tamper bytes" >&2
     exit 1
