@@ -82,21 +82,31 @@ measured files, 67 contract slices, 8 verified crates, ~1862
 system-proof obligations. Scene numbers below refer to
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
 
-### Act I — the honest baseline: Scene 1 (1.25 min)
+### Act I — the consistent baseline: Scene 1 (1.25 min)
 
 One episode over every artifact class, the per-crate checklist all
 green, toolchain hashed in the same term. Establishes what "good
 standing" looks like so every later refusal reads instantly.
 
-### Act II — sanctioned change: Scene 3, breaking variant (2.25 min)
+### Act II — spec drift: benign, then breaking (Scene 3, range + breaking, 3.75 min)
 
-The lifecycle heart of the talk. GUMBO contract edit → attribution by
-slice → interactive ruling → **bless** (spec-first, props only) →
-**promote** (tool-gated real codegen catch-up) → and the honest ending:
-gold moves *without* a verification gate, so the next episode reports
-Verus RED — a blessed spec the implementation doesn't yet meet,
-reported truthfully. This scene alone carries the "attestation across
-sanctioned lifecycle events" claim.
+The lifecycle heart of the talk, in two beats — the same lifecycle,
+opposite honest endings. **Beat 1 — benign range expansion**
+(`--drift range`, empirically verified green 2026-08-26): the Table
+A-12 upper-alarm ceiling widened 102 → 103 in the *shared*
+`GUMBO_Library.sysml` constant, so the operator interface's guarantee
+and the monitor's assumes move together. Model appraisal **fails
+anyway** — attributed to the `gumbo_library` slice, everything else
+green — because the appraiser judges *sanction, not semantics*. The
+operator **blesses**; spec-first green; **promote** regenerates the
+realization (codegen, speed-ramped in post); the fresh episode
+re-proves **all green**. Blessing turned a refusal into a baseline,
+and measurement confirmed it. **Beat 2 — breaking**: REQ_MHS_1
+flipped → attribution → bless → promote → gold moves *without* a
+verification gate, and the episode reports Verus RED — a blessed spec
+the implementation doesn't yet meet, reported truthfully. VO bridge:
+"same lifecycle, opposite verdicts — authority chooses the baseline;
+measurement alone decides whether it holds."
 
 ### Act III — unsanctioned change, repaired: Scene 2 (1.5 min)
 
@@ -104,7 +114,12 @@ Implementation tamper; contracts-intact rung exhausts (diagnosis), impl
 rung restores crate-scoped, restarted episode re-attests. The ladder
 repairs the *right* artifact.
 
-### Act IV — attacks on trust itself: Scenes 6 + 7 (2.5 min)
+### Act IV — attacks on trust itself: Scenes 6 + 7 (2.25 min)
+
+(Budget note: Act II's benign-range beat carries its own promote, so
+the act runs ~3.75 min; Act IV trimmed 2.5 → 2.25 and Act I holds at
+1.25. Section ≈ 10.75–11 min; total video ≈ 21 — the accepted cost of
+showing appraisal pass after blessing the benign change.)
 
 Scene 6 — three beats, one gate, three attributed refusals: flipped
 signed-evidence byte (signature), hand-edited golden (anchor),

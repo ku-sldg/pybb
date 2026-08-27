@@ -591,14 +591,14 @@ s7.addNotes(
 
 // ---------- Act transition slides I-V (deck positions 9-13) ----------
 const ACTS = [
-  { num: "ACT I", title: "The honest baseline", scenes: "scene 1",
-    watch: "One episode measures every artifact class — watch the checklist go green, and remember what green looks like.",
+  { num: "ACT I", title: "The consistent baseline", scenes: "scene 1",
+    watch: "All artifacts start in a \u201Cpass\u201D state:  all artifacts have integrity against golden values and implementations meet their contracts.",
     cmd: "./examples/demo_isolette.sh --scenes 1",
     notes: "Beats: readiness gate green -> one full episode -> per-crate checklist all green. Dwell on the final checklist - it is the frame every later refusal is compared against." },
-  { num: "ACT II", title: "Sanctioned change", scenes: "scene 3 (breaking)",
-    watch: "A spec edit gets caught, examined, and blessed — and the system honestly reports a spec the implementation doesn't yet meet.",
-    cmd: "./examples/demo_isolette.sh --scenes 3 --drift breaking",
-    notes: "Beats: drifted episode escalates with slice attribution -> ruling diff (always shown; linger) -> bless -> promote (real codegen; speed-ramp stretch, keep rolling) -> gold moves -> Verus tier RED against the new baseline. End on the honest-RED checklist." },
+  { num: "ACT II", title: "Spec drift: benign, then breaking", scenes: "scene 3: range + breaking",
+    watch: "A benign change — the alarm range widened consistently — and appraisal fails anyway: sanction, not semantics. Blessed and promoted, it re-proves green. Then a breaking change is blessed — and the system honestly reports a spec the implementation doesn't yet meet.",
+    cmd: "./examples/demo_isolette.sh --scenes 3 --drift range\n./examples/demo_isolette.sh --scenes 3 --drift breaking      (ruling at the prompt: bless)",
+    notes: "Take A (benign range, --drift range): Table A-12 ceiling 102 -> 103 in the shared library -> appraisal fails, gumbo_library attributed, all else green (dwell: 'sanction, not semantics') -> ruling diff -> bless -> spec-first green -> promote (codegen; speed-ramp) -> re-proves ALL GREEN; offered diff = regenerated shared-library constant. Take B (breaking): escalation with attribution -> ruling diff (linger) -> bless -> promote (speed-ramp) -> gold moves -> Verus tier RED; end on the honest-RED checklist. VO bridge: 'same lifecycle, opposite verdicts - authority chooses the baseline; measurement alone decides whether it holds.'" },
   { num: "ACT III", title: "Unsanctioned change, repaired", scenes: "scene 2",
     watch: "The ladder diagnoses by exhaustion — watch it repair the right artifact, and watch standing return only by re-measurement.",
     cmd: "./examples/demo_isolette.sh --scenes 2",
@@ -647,7 +647,7 @@ ACTS.forEach((act) => {
     color: DARK, margin: 0,
   });
   sa.addText(act.cmd, {
-    x: 0.9, y: 6.75, w: 11.5, h: 0.4, fontFace: "Courier New", fontSize: 11,
+    x: 0.9, y: 6.62, w: 11.5, h: 0.66, fontFace: "Courier New", fontSize: 11,
     color: MUTED, margin: 0,
   });
   sa.addNotes(act.notes + "\nWatch-for line doubles as the VO opener over the terminal cut. Full runbook: docs/video_recording_plan.md.");

@@ -443,8 +443,8 @@ invocation. Six captures across five acts (adopted 2026-08-26; see
 
 | Act | Title | What to watch for | Invocation |
 |---|---|---|---|
-| I | The honest baseline *(scene 1)* | "One episode measures every artifact class — watch the checklist go green, and remember what green looks like." | `./examples/demo_isolette.sh --scenes 1` |
-| II | Sanctioned change *(scene 3)* | "A spec edit gets caught, examined, and *blessed* — and the system honestly reports a spec the implementation doesn't yet meet." | `./examples/demo_isolette.sh --scenes 3 --drift breaking` |
+| I | The consistent baseline *(scene 1)* | "All artifacts start in a “pass” state: all artifacts have integrity against golden values and implementations meet their contracts." | `./examples/demo_isolette.sh --scenes 1` |
+| II | Spec drift: benign, then breaking *(scene 3: range + breaking)* | "A benign change — the alarm range widened consistently — and appraisal fails anyway: sanction, not semantics. Blessed and promoted, it re-proves green. Then a breaking change is blessed — and the system honestly reports a spec the implementation doesn't yet meet." | beat 1: `./examples/demo_isolette.sh --scenes 3 --drift range` (ruling: bless) · beat 2: `./examples/demo_isolette.sh --scenes 3 --drift breaking` (ruling: bless) |
 | III | Unsanctioned change, repaired *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
 | IV | Attacks on trust itself *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
 | V | "Verification succeeded" is not enough *(scene 12)* | "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell." | `./examples/demo_isolette.sh --scenes 12` |
@@ -459,8 +459,16 @@ invocation. Six captures across five acts (adopted 2026-08-26; see
 - The earlier idea of reprising the verus-tier Copland phrase on an
   act slide is dropped (was pinned to scene 7 pre-capture; the live
   scene now shows the real thing).
-- Act timings: I 1.25 · II 2.25 · III 1.5 · IV 2.5 · V 1.75 +
-  15 s coverage beat ≈ 9.75–10 min.
+- Act II opens with the benign **range** drift (2026-08-26): the
+  Table A-12 ceiling widened 102 → 103 in the shared GUMBO_Library
+  constant (a new `--drift range` flavor added to demo_isolette.sh,
+  empirically verified: fails appraisal with gumbo_library
+  attribution, then bless → promote → re-proves all green). Both
+  beats now show the full bless arc — same lifecycle, opposite honest
+  endings. Two captures for one act slide.
+- Act timings: I 1.25 · II 3.75 (range 1.5 + breaking 2.25) ·
+  III 1.5 · IV 2.25 · V 1.75 + 15 s coverage beat ≈ 10.75–11 min
+  (total video ≈ 21, accepted).
 
 ## Slide 13 — Other ecosystems — STUB
 

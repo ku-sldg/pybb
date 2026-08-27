@@ -6,10 +6,14 @@ the lifecycle-attestation video. Companion docs:
 plan, act timings), [video_slide_drafts.md](video_slide_drafts.md)
 (act-transition slides, watch-for lines).
 
-**Model**: no live app-switching. Three material tracks recorded
-separately — (1) the slide track, (2) one terminal capture per
-scene-set, (3) voiceover recorded last against the edit. Act slides
-appear full-screen 5–10 s with VO, then hard-cut to terminal.
+**Model**: no live app-switching. Capture with **QuickTime**, assemble
+manually in **iMovie** (decided 2026-08-26): one terminal capture per
+scene-set, act slides dropped in as exported PNG stills, voiceover
+recorded last with iMovie's built-in VO tool against the assembled
+timeline. Act slides appear full-screen 5–10 s with VO, then hard-cut
+to terminal. (Scripted-ffmpeg assembly was considered and set aside —
+reproducible edits, but new tooling; revisit only if many revision
+rounds or re-records pile up.)
 
 ## Phase 0 — machine prep (once, day before)
 
@@ -36,10 +40,12 @@ appear full-screen 5–10 s with VO, then hard-cut to terminal.
 7. VSCode (for the diff beats): font bumped to match, same theme
    family, window pre-positioned so `[v]iew diff` opens on top of the
    terminal frame without resizing.
-8. Recorder: QuickTime screen recording at 1080p minimum (4K
-   preferred — terminal text survives compression better). Record the
+8. Recorder: QuickTime screen recording (⌘⇧5) — records at native
+   Retina resolution, so terminal text stays tack-sharp. Record the
    full display, crop in edit. No microphone on the capture track
-   (VO comes later).
+   (VO comes later in iMovie). QuickTime records variable frame rate;
+   iMovie (same Apple ecosystem) conforms it cleanly, so no ramp-test
+   needed.
 9. Do-not-disturb on; notifications off; spotlight/dock hidden.
 
 ## Phase 2 — captures (one take per act; retakes are cheap)
@@ -62,15 +68,29 @@ Per-act script:
     Beats: readiness gate green → one full episode → the per-crate
     checklist all green. Dwell on the final checklist (this is the
     frame Act IV/V refusals get compared against).
-11. **Act II — scene 3 (breaking)**:
-    `./examples/demo_isolette.sh --scenes 3 --drift breaking`.
-    Beats: the drifted episode escalates with slice attribution → the
-    ruling diff (golden vs. proposed — always shown; linger) → bless
-    (`--bless-props` path) → **promote** (real codegen; this is the
-    1–2 min stretch to speed-ramp in edit — keep the take rolling) →
-    gold moves → the episode against the new baseline reports the
-    Verus tier RED (mhs + sys_nominal_proof). End on the honest-RED
-    checklist.
+11. **Act II — scene 3, two takes (benign range, then breaking)**:
+    - Take A — benign range expansion:
+      `./examples/demo_isolette.sh --scenes 3 --drift range`.
+      Beats: the Table A-12 ceiling widened 102 → 103 in the shared
+      library constant → model appraisal fails anyway, attributed to
+      the `gumbo_library` slice with everything else green (dwell —
+      this is the "sanction, not semantics" frame) → ruling diff →
+      rule **bless** → spec-first green episode → **promote** (real
+      codegen; speed-ramp stretch — keep rolling) → the fresh episode
+      re-proves **all green**; the offered diff shows the regenerated
+      shared-library constant. End on the all-green checklist.
+    - Take B — breaking:
+      `./examples/demo_isolette.sh --scenes 3 --drift breaking`.
+      Beats: the drifted episode escalates with slice attribution →
+      the ruling diff (golden vs. proposed — always shown; linger) →
+      rule **bless** (`--bless-props` path) → **promote** (real
+      codegen; this is the 1–2 min stretch to speed-ramp in edit —
+      keep the take rolling) → gold moves → the episode against the
+      new baseline reports the Verus tier RED (mhs +
+      sys_nominal_proof). End on the honest-RED checklist.
+    Both takes sit under the single Act II slide; the VO bridges:
+    "same lifecycle, opposite verdicts — authority chooses the
+    baseline; measurement alone decides whether it holds."
 12. **Act III — scene 2**: `./examples/demo_isolette.sh --scenes 2`.
     Beats: the dummy-bad-impl diff (take the `[v]`iew — VSCode diff
     D1 on camera) → contracts-intact rung exhausts → impl rung
@@ -93,24 +113,51 @@ Per-act script:
     second speed-ramp stretch) → re-attested clean. The final clean
     checklist doubles as the coverage beat's background frame.
 
-## Phase 3 — slide track
+## Phase 3 — keeper prep (QuickTime) + slide stills
 
-15. Export the deck (act-transition slides + all others) as images,
-    or screen-record the deck full-screen paging at a steady pace.
-    The act slides need only ~10 s each of static hold.
+15. Per keeper take, in QuickTime: trim the ~3 s handles (⌘T); a
+    single fumble may be cut by splitting at the playhead (⌘Y) and
+    deleting the segment — only if the join lands in a static stretch,
+    otherwise retake. Save trimmed keepers to `recordings/keepers/`
+    with the act naming (`actII_keeper.mov`, …).
+16. Optional pacing check before opening iMovie: Edit ▸ Add Clip to
+    End to rough-concatenate the five acts and eyeball total runtime
+    against the ~10 min section budget.
+17. Export the act-transition slides (and any other cutaways) from
+    PowerPoint via File ▸ Export ▸ PNG into `recordings/slides/`.
 
-## Phase 4 — edit assembly
+## Phase 4 — assembly (iMovie)
 
-16. Assemble per act: act slide (5–10 s) → terminal capture →
-    (repeat). Speed-ramp the two codegen stretches (Act II promote,
-    Act V regeneration) with an on-screen honesty label
-    ("HAMR codegen — Ns, shown at M×"). Never cut between different
-    runs' output; a visible take is one run.
-17. Trim dwell to final pacing against the act budgets: I 1.25 ·
+18. New project; drop a full-resolution capture in FIRST so the
+    project adopts native resolution (not 720p).
+19. Build act by act: act-slide PNG (duration ~8 s) → keeper clip →
+    next act slide → … Never cut between different runs' output; a
+    visible take is one run.
+20. Speed stretches (Act II promote, Act V regeneration): blade the
+    codegen range into its own clip (⌘B), then Speed ▸ Fast (8×
+    preset or custom). Overlay a Lower-Third title as the honesty
+    label ("HAMR codegen — Ns, shown at M×" — N computed from the
+    keeper's real duration, not estimated).
+21. Trim dwell to final pacing against the act budgets: I 1.25 ·
     II 2.25 · III 1.5 · IV 2.5 · V 1.75 (+15 s coverage beat over
     Act V's last frame).
-18. Write the VO script from the act slides' watch-for lines plus the
-    scene beats above; record VO against the locked edit; mix.
+22. VO: record with iMovie's built-in voiceover tool against the
+    assembled timeline, from the VO script (watch-for lines + the
+    per-act beats above).
+23. Export File ▸ Share ▸ File at project resolution; watch the
+    export end-to-end once before calling it done; verify runtime
+    against the act budgets.
+
+## Division of labor
+
+- **Operator (manual)**: captures, keeper selection and trims, iMovie
+  assembly, VO recording, final watch-through.
+- **Claude (support)**: pre-flight checklists and stat re-verification
+  (Phases 0–1); honesty-label arithmetic from keeper-file durations
+  (readable via Spotlight metadata — no extra tooling); the timed VO
+  script drafted against keeper durations; the edit's paper trail
+  (takes, trims, labels) kept in the repo; export verification
+  (resolution / duration / size vs. budgets).
 
 ## Honesty conventions
 
