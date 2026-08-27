@@ -67,84 +67,95 @@ Per-act script:
 10. **Act I — scene 1**: `./examples/demo_isolette.sh --scenes 1`.
     Beats: readiness gate green → one full episode → the per-crate
     checklist all green. Dwell on the final checklist (this is the
-    frame Act IV/V refusals get compared against).
-11. **Act II — scene 3, two takes (benign range, then breaking)**:
-    - Take A — benign range expansion:
-      `./examples/demo_isolette.sh --scenes 3 --drift range`.
-      Beats: the Table A-12 ceiling widened 102 → 103 in the shared
-      library constant → model appraisal fails anyway, attributed to
-      the `gumbo_library` slice with everything else green (dwell —
-      this is the "sanction, not semantics" frame) → ruling diff →
-      rule **bless** → spec-first green episode → **promote** (real
-      codegen; speed-ramp stretch — keep rolling) → the fresh episode
-      re-proves **all green**; the offered diff shows the regenerated
-      shared-library constant. End on the all-green checklist.
-    - Take B — breaking:
-      `./examples/demo_isolette.sh --scenes 3 --drift breaking`.
-      Beats: the drifted episode escalates with slice attribution →
-      the ruling diff (golden vs. proposed — always shown; linger) →
-      rule **bless** (`--bless-props` path) → **promote** (real
-      codegen; this is the 1–2 min stretch to speed-ramp in edit —
-      keep the take rolling) → gold moves → the episode against the
-      new baseline reports the Verus tier RED (mhs +
-      sys_nominal_proof). End on the honest-RED checklist.
-    Both takes sit under the single Act II slide; the VO bridges:
-    "same lifecycle, opposite verdicts — authority chooses the
-    baseline; measurement alone decides whether it holds."
-12. **Act III — scene 2**: `./examples/demo_isolette.sh --scenes 2`.
+    frame every later refusal gets compared against).
+11. **Act II — scene 3, benign range** (single take):
+    `./examples/demo_isolette.sh --scenes 3 --drift range`.
+    Beats: the Table A-12 ceiling widened 102 → 103 in the shared
+    library constant → model appraisal fails anyway, attributed to the
+    `gumbo_library` slice with everything else green (dwell — this is
+    the "sanction, not semantics" frame) → ruling diff → rule
+    **bless** → spec-first green episode → **promote** (real codegen;
+    speed-ramp stretch — keep rolling) → the fresh episode re-proves
+    **all green**; the offered diff shows the regenerated
+    shared-library constant. End on the all-green checklist. (The
+    breaking-spec take is retired from Act II — breaking now lives in
+    Acts IV and V.)
+12. **Act III — scene 13, benign impl drift**:
+    `./examples/demo_isolette.sh --scenes 13`.
+    Beats: the equivalent guard rewrite (take the `[v]`iew — the
+    x>y → y<x diff) → l1a hash moves → the files entry passes via the
+    l2 refinement (slices intact) → the `contracts` (l1b marker) entry
+    stays clean → the confirmation chain **re-verifies** the rewrite
+    green. No restore — the benign change survives. Short take, no
+    codegen. The implementation-class mirror of Act II.
+13. **Act IV — scene 14, contract-launder**:
+    `./examples/demo_isolette.sh --scenes 14`.
+    Beats: the laundering diff (take the `[v]`iew — weakened REQ_MHS_2
+    ensures + inverted impl; "self-consistent, verus passes") →
+    cargo-verus SUCCEEDS → the **l1b marker tier refuses** (the report
+    slices miss `compute_cases`; only the marker byte anchor sees it)
+    → the marker rung splices the golden contract block back → the
+    restored true contract **refutes the inverted impl**: end on the
+    exposed Verus refusal (`verus_targ` Appraisal was not successful).
+    **Do not drive to green** — the exposure IS the beat (impl repair
+    is Act V). Codegen-free.
+14. **Act V — scene 2, breaking impl (the ladder)**:
+    `./examples/demo_isolette.sh --scenes 2`.
     Beats: the dummy-bad-impl diff (take the `[v]`iew — VSCode diff
-    D1 on camera) → contracts-intact rung exhausts → impl rung
-    restores crate-scoped → restart → re-attested clean.
-13. **Act IV — scenes 6+7**:
+    D1) → contracts-intact rung exhausts → impl rung restores
+    crate-scoped → restart → re-attested clean. The breaking
+    counterpart to Act III.
+15. **Act VI — scenes 6+7, trust-state + toolchain**:
     `./examples/demo_isolette.sh --scenes "6 7"`.
     Scene 6 beats: three tampers, three attributed refusals
     (signature → anchor → derivability); optionally one trust-state
     diff on camera (the flipped evidence byte, pretty-printed). Scene
     7 beats: the wrapper edit (take the `[v]`iew, diff D10) →
     readiness still passes → the tool hash refutes and **every proof
-    cell poisons to `?`** — dwell on that frame; it is the act's
-    money shot → `--restore-tools` recovery mentioned in VO, not
-    shown.
-14. **Act V — scene 12**: `./examples/demo_isolette.sh --scenes 12`.
+    cell poisons to `?`** — dwell; the act's money shot →
+    `--restore-tools` recovery mentioned in VO, not shown.
+16. **Act VII — scene 12, unverified foundation**:
+    `./examples/demo_isolette.sh --scenes 12`.
     Beats: the inverted-FFI diff (take the `[v]`iew, diff D18 — "see
     how innocent it looks") → every proof passes, cheat scan silent →
     the gensrc byte anchor refuses, naming the file → diagnosis rung
     classifies the drift → repair by regeneration (real codegen —
-    second speed-ramp stretch) → re-attested clean. The final clean
-    checklist doubles as the coverage beat's background frame.
+    speed-ramp stretch) → re-attested clean. The final clean checklist
+    doubles as the coverage beat's background frame.
 
 ## Phase 3 — keeper prep (QuickTime) + slide stills
 
-15. Per keeper take, in QuickTime: trim the ~3 s handles (⌘T); a
+17. Per keeper take, in QuickTime: trim the ~3 s handles (⌘T); a
     single fumble may be cut by splitting at the playhead (⌘Y) and
     deleting the segment — only if the join lands in a static stretch,
     otherwise retake. Save trimmed keepers to `recordings/keepers/`
-    with the act naming (`actII_keeper.mov`, …).
-16. Optional pacing check before opening iMovie: Edit ▸ Add Clip to
-    End to rough-concatenate the five acts and eyeball total runtime
-    against the ~10 min section budget.
-17. Export the act-transition slides (and any other cutaways) from
+    with the act naming (`actIV_keeper.mov`, …).
+18. Optional pacing check before opening iMovie: Edit ▸ Add Clip to
+    End to rough-concatenate the seven acts and eyeball total runtime
+    against the ~13 min section budget.
+19. Export the act-transition slides (and any other cutaways) from
     PowerPoint via File ▸ Export ▸ PNG into `recordings/slides/`.
 
 ## Phase 4 — assembly (iMovie)
 
-18. New project; drop a full-resolution capture in FIRST so the
+20. New project; drop a full-resolution capture in FIRST so the
     project adopts native resolution (not 720p).
-19. Build act by act: act-slide PNG (duration ~8 s) → keeper clip →
+21. Build act by act: act-slide PNG (duration ~8 s) → keeper clip →
     next act slide → … Never cut between different runs' output; a
     visible take is one run.
-20. Speed stretches (Act II promote, Act V regeneration): blade the
-    codegen range into its own clip (⌘B), then Speed ▸ Fast (8×
-    preset or custom). Overlay a Lower-Third title as the honesty
-    label ("HAMR codegen — Ns, shown at M×" — N computed from the
-    keeper's real duration, not estimated).
-21. Trim dwell to final pacing against the act budgets: I 1.25 ·
-    II 2.25 · III 1.5 · IV 2.5 · V 1.75 (+15 s coverage beat over
-    Act V's last frame).
-22. VO: record with iMovie's built-in voiceover tool against the
+22. Speed stretches (Act II promote, Act VII regeneration — the two
+    real-codegen acts): blade the codegen range into its own clip
+    (⌘B), then Speed ▸ Fast (8× preset or custom). Overlay a
+    Lower-Third title as the honesty label ("HAMR codegen — Ns, shown
+    at M×" — N computed from the keeper's real duration, not
+    estimated).
+23. Trim dwell to final pacing against the act budgets: I 1.25 ·
+    II 1.75 · III 1.25 · IV 1.75 · V 1.5 · VI 2.25 · VII 1.75 (+15 s
+    coverage beat over Act VII's last frame).
+24. VO: record with iMovie's built-in voiceover tool against the
     assembled timeline, from the VO script (watch-for lines + the
     per-act beats above).
-23. Export File ▸ Share ▸ File at project resolution; watch the
+25. Export File ▸ Share ▸ File at project resolution; watch the
     export end-to-end once before calling it done; verify runtime
     against the act budgets.
 

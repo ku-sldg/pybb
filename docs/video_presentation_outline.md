@@ -74,13 +74,17 @@ note: *this table is deliberately incomplete — the demo will show why*
 (the cheat/sysproof/gensrc tiers are slide C's punchline; do not
 pre-introduce them here).
 
-## 2. The isolette — live terminal, slide transitions between acts (10 min)
+## 2. The isolette — live terminal, slide transitions between acts (~13 min)
 
 One transition slide introduces the target: the INSPECTA seL4/Microkit
 isolette exemplar, SysMLv2 → HAMR codegen → Verus-verified Rust; 13
-measured files, 67 contract slices, 8 verified crates, ~1862
-system-proof obligations. Scene numbers below refer to
+measured files, 67 contract slices, 8 verified crates, 1,862
+system-proof obligations, 30 measured tool/dep files. Scene numbers
+below refer to
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
+**Seven acts, eight captures** (scenes 1, 3, 13, 14, 2, 6+7, 12);
+Acts II–VI carry consistent active-verb titles, with III/V paired as
+the benign/breaking implementation-drift acts.
 
 ### Act I — the consistent baseline: Scene 1 (1.25 min)
 
@@ -88,52 +92,69 @@ One episode over every artifact class, the per-crate checklist all
 green, toolchain hashed in the same term. Establishes what "good
 standing" looks like so every later refusal reads instantly.
 
-### Act II — spec drift: benign, then breaking (Scene 3, range + breaking, 3.75 min)
+### Act II — Spec drift: benign, promote then re-verify: Scene 3 range (1.75 min)
 
-The lifecycle heart of the talk, in two beats — the same lifecycle,
-opposite honest endings. **Beat 1 — benign range expansion**
-(`--drift range`, empirically verified green 2026-08-26): the Table
-A-12 upper-alarm ceiling widened 102 → 103 in the *shared*
+The single benign-model beat. `--drift range`: the Table A-12
+upper-alarm ceiling widened 102 → 103 in the *shared*
 `GUMBO_Library.sysml` constant, so the operator interface's guarantee
 and the monitor's assumes move together. Model appraisal **fails
 anyway** — attributed to the `gumbo_library` slice, everything else
 green — because the appraiser judges *sanction, not semantics*. The
-operator **blesses**; spec-first green; **promote** regenerates the
-realization (codegen, speed-ramped in post); the fresh episode
-re-proves **all green**. Blessing turned a refusal into a baseline,
-and measurement confirmed it. **Beat 2 — breaking**: REQ_MHS_1
-flipped → attribution → bless → promote → gold moves *without* a
-verification gate, and the episode reports Verus RED — a blessed spec
-the implementation doesn't yet meet, reported truthfully. VO bridge:
-"same lifecycle, opposite verdicts — authority chooses the baseline;
-measurement alone decides whether it holds."
+administrator **blesses**; spec-first green; **promote** regenerates
+the shared-library realization (codegen, speed-ramped in post); the
+fresh episode re-proves **all green**. Blessing turned a refusal into
+a baseline, and measurement confirmed it. (The breaking-spec ending
+lives elsewhere now: breaking-impl is Act V, breaking-contract Act
+IV — so Act II stays the clean benign story.)
 
-### Act III — unsanctioned change, repaired: Scene 2 (1.5 min)
+### Act III — Implementation drift: benign, re-verify: Scene 13 (1.25 min)
 
-Implementation tamper; contracts-intact rung exhausts (diagnosis), impl
-rung restores crate-scoped, restarted episode re-attests. The ladder
-repairs the *right* artifact.
+The implementation-class mirror of Act II's benign beat. An equivalent
+rewrite of the developer-owned NORMAL-mode guard, *outside* every
+contract marker block: only the whole-file l1a hash moves, every l2
+slice and l1b marker block holds, the files entry passes via the l2
+refinement, and the confirmation chain **re-verifies the rewrite** —
+the benign change survives, no restore. A developer-owned region has
+no blessed bytes to match; its attested properties are the contracts
+(intact) and provability (re-verified live).
 
-### Act IV — attacks on trust itself: Scenes 6 + 7 (2.25 min)
+### Act IV — Contract drift: breaking, restore then attempt re-verification: Scene 14 (1.75 min)
 
-(Budget note: Act II's benign-range beat carries its own promote, so
-the act runs ~3.75 min; Act IV trimmed 2.5 → 2.25 and Act I holds at
-1.25. Section ≈ 10.75–11 min; total video ≈ 21 — the accepted cost of
-showing appraisal pass after blessing the benign change.)
+The contract-class laundering. The model is untouched, but a generated
+REQ_MHS_2 ensures is weakened (after codegen, before verification) and
+the implementation inverted to match — cargo-verus **passes** (the
+pair is self-consistent). The report emits no slice for `compute_cases`
+realizations, so the drift lands between l2 slices; only the **l1b
+marker tier** (a Copland protocol over every contract-block byte) sees
+it, refuses, and its repair rung splices the golden contract back. The
+restored true contract then **refutes the still-inverted
+implementation** — the scene ends on that exposed Verus refusal
+(implementation repair is Act V's ladder). *Discovered while building
+this demo; the marker tier + coverage lint closed the hole — a
+capstone slide-C row.*
+
+### Act V — Implementation drift: breaking, diagnose then repair: Scene 2 (1.5 min)
+
+The breaking-implementation counterpart to Act III. A dummy-bad
+implementation replaces the compute logic wholesale; contracts
+genuinely false of it. The contracts-intact rung exhausts (that
+exhaustion *is* the diagnosis), the impl rung restores the crate,
+restarted episode re-attests. The ladder repairs the *right* artifact.
+
+### Act VI — Trust-state tamper: refuse: Scenes 6 + 7 (2.25 min)
 
 Scene 6 — three beats, one gate, three attributed refusals: flipped
 signed-evidence byte (signature), hand-edited golden (anchor),
-laundered re-provision (derivability/lineage). The punchline: the
-readiness gate's failure chain is *empty by design* — no knowledge
-source may repair a baseline; the only exit is out-of-band re-bless.
-Scene 7 — a functionality-preserving edit to the cargo-verus wrapper:
-every verification still runs and looks fine, but the tool hash —
-taken measure-then-use in the same term — refutes, and every proof
-cell poisons to `?` fail-closed. The on-camera payoff of the banner
-subline's "untrusted tools"; thematically one act with scene 6 (both
-unrepairable from goldens — out-of-band only).
+laundered re-provision (derivability/lineage). The readiness gate's
+failure chain is *empty by design* — no knowledge source may repair a
+baseline; the only exit is out-of-band re-bless. Scene 7 — a
+functionality-preserving edit to the cargo-verus wrapper: every
+verification still runs and looks fine, but the tool hash — taken
+measure-then-use in the same term — refutes, and every proof cell
+poisons to `?` fail-closed. The on-camera payoff of the banner
+subline's "untrusted tools."
 
-### Act V — "verification succeeded" is not enough: Scene 12 (1.75 min)
+### Act VII — "verification succeeded" is not enough: Scene 12 (1.75 min)
 
 The most visceral for a mixed audience: the heat command inverted in
 unverified FFI glue behind `external_body` — every proof passes, the
@@ -145,12 +166,16 @@ the AI-in-the-loop capstone's slide C carries that taxonomy in full.
 ### Coverage beat (15 s)
 
 The scene × artifact-class × repair-species matrix as a spoken line
-over Act V's last frame (budget reclaimed for the AI-in-the-loop
-capstone), with the 6 captured scenes (1, 2, 3, 6, 7, 12) highlighted
-and the other 6 one-lined — 9–11 carried by capstone slide C's attack
-table, 4/5/8 by this beat — signals depth without spending runtime.
-Honest caveat kept in mind: "cached verdicts" (scene 11) and scene 5's
+over Act VII's last frame, with the 8 captured scenes (1, 3, 13, 14,
+2, 6, 7, 12) highlighted and the other 6 one-lined — 9–11 carried by
+capstone slide C's attack table, 4/5/8 by this beat. Honest caveat
+kept in mind: "cached verdicts" (scene 11) and scene 5's
 pause/work-order mechanic are told, not shown.
+
+(Budget: section ≈ 12.75–13 min — up from the earlier ~10.5 because
+scenes 13 and 14 became their own acts; total video ≈ 23. Offsets if
+the cap tightens: fold Act III into Act II as a two-beat "drift
+survives" act, or drop Act VI's scene 7.)
 
 ## 3. Same workflow, other ecosystems — slides (~5 min)
 

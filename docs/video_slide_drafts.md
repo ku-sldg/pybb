@@ -438,37 +438,46 @@ Template (per the isolette intro slide): compact roadmap strip at top
 ("Demo" segment active) + act title + one **"what to watch for"**
 line, which doubles as the opening narration line over the terminal
 capture. Presenter footer (small, muted) carries the exact capture
-invocation. Six captures across five acts (adopted 2026-08-26; see
-[video_recording_plan.md](video_recording_plan.md) for the runbook):
+invocation. Eight captures across seven acts (Acts II–VI in consistent
+active-verb tense; III/V paired as benign/breaking implementation
+drift; see [video_recording_plan.md](video_recording_plan.md) for the
+runbook):
 
 | Act | Title | What to watch for | Invocation |
 |---|---|---|---|
 | I | The consistent baseline *(scene 1)* | "All artifacts start in a “pass” state: all artifacts have integrity against golden values and implementations meet their contracts." | `./examples/demo_isolette.sh --scenes 1` |
-| II | Spec drift: benign, then breaking *(scene 3: range + breaking)* | "A benign change — the alarm range widened consistently — and appraisal fails anyway: sanction, not semantics. Blessed and promoted, it re-proves green. Then a breaking change is blessed — and the system honestly reports a spec the implementation doesn't yet meet." | beat 1: `./examples/demo_isolette.sh --scenes 3 --drift range` (ruling: bless) · beat 2: `./examples/demo_isolette.sh --scenes 3 --drift breaking` (ruling: bless) |
-| III | Unsanctioned change, repaired *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
-| IV | Attacks on trust itself *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
-| V | "Verification succeeded" is not enough *(scene 12)* | "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell." | `./examples/demo_isolette.sh --scenes 12` |
+| II | Spec drift: benign, promote then re-verify *(scene 3, range)* | "A benign change in requirements — the temperature alarm range widened — model appraisal fails quickly. Administrator re-blesses and promotes new spec, all contract appraisals again pass." | `./examples/demo_isolette.sh --scenes 3 --drift range` (ruling: bless) |
+| III | Implementation drift: benign, re-verify *(scene 13)* | "A developer rewrites implementation logic — semantically equivalent. The hash moves, but every contract slice maintains integrity, and the proofs re-verify: the benign change survives." | `./examples/demo_isolette.sh --scenes 13` |
+| IV | Contract drift: breaking, restore then attempt re-verification *(scene 14)* | "The model is untouched, but a Verus contract is weakened (**after** codegen, but **before** verification) and the code is inverted to match — verus checks pass. Only the contract tier sees the drift; restoring the true contract exposes the Verus refusal the laundering hid." | `./examples/demo_isolette.sh --scenes 14` |
+| V | Implementation drift: breaking, diagnose then repair *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
+| VI | Trust-state tamper: refuse *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
+| VII | "Verification succeeded" is not enough *(scene 12)* | "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell." | `./examples/demo_isolette.sh --scenes 12` |
 
 **Decisions**
 
-- Scene 7 added to Act IV (2026-08-26): cheapest strong scene, one act
-  thematically with scene 6 (both unrepairable from goldens), and the
-  on-camera payoff of the banner subline's "untrusted tools."
+- **Act II reverted to the single benign beat** (2026-08-27): the
+  user's hand-edited slide 10 ("Spec drift: benign, promote then
+  re-verify", scene 3 `--drift range` only) — recovered from git HEAD
+  after a regeneration clobbered it, and ported into the generator.
+  The breaking-spec ending was dropped: breaking now lives in Act IV
+  (contract) and Act V (implementation), so Act II stays the clean
+  benign-model story.
+- **Scenes 13 and 14 added as Acts III and IV** (2026-08-26/27); old
+  III–V renumbered V–VII. Act IV is the contract-launder scene whose
+  drift the report's `compute_cases` slice gap missed — the l1b marker
+  tier (a Copland protocol) and its coverage lint, built in-session,
+  closed the hole; it ends on the exposed Verus refusal (no
+  auto-repair — the exposure IS the beat). A capstone slide-C row.
+- Active-tense titles (2026-08-27): II "promote then re-verify", III
+  "re-verify", IV "restore then attempt re-verification", V "diagnose
+  then repair", VI "refuse"; I (noun opener) and VII (thesis closer)
+  left as-is.
 - Uncaptured scenes accounted for: 9–11 → capstone slide C's attack
   table; 4/5/8 → the coverage beat.
-- The earlier idea of reprising the verus-tier Copland phrase on an
-  act slide is dropped (was pinned to scene 7 pre-capture; the live
-  scene now shows the real thing).
-- Act II opens with the benign **range** drift (2026-08-26): the
-  Table A-12 ceiling widened 102 → 103 in the shared GUMBO_Library
-  constant (a new `--drift range` flavor added to demo_isolette.sh,
-  empirically verified: fails appraisal with gumbo_library
-  attribution, then bless → promote → re-proves all green). Both
-  beats now show the full bless arc — same lifecycle, opposite honest
-  endings. Two captures for one act slide.
-- Act timings: I 1.25 · II 3.75 (range 1.5 + breaking 2.25) ·
-  III 1.5 · IV 2.25 · V 1.75 + 15 s coverage beat ≈ 10.75–11 min
-  (total video ≈ 21, accepted).
+- Act timings: I 1.25 · II 1.75 · III 1.25 · IV 1.75 · V 1.5 ·
+  VI 2.25 · VII 1.75 + 15 s coverage ≈ 12.75–13 min (total video
+  ≈ 23). Offsets if the cap tightens: fold III into II as a two-beat
+  "drift survives" act, or drop VI's scene 7.
 
 ## Slide 13 — Other ecosystems — STUB
 
