@@ -451,7 +451,7 @@ runbook):
 | IV | Contract drift: breaking, restore then attempt re-verification *(scene 14)* | "The model is untouched, but a Verus contract is weakened (**after** codegen, but **before** verification) and the code is inverted to match — verus checks pass. Only the contract tier sees the drift; restoring the true contract exposes the Verus refusal the laundering hid." | `./examples/demo_isolette.sh --scenes 14` |
 | V | Implementation drift: breaking, diagnose then repair *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
 | VI | Trust-state tamper: refuse *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
-| VII | "Verification succeeded" is not enough *(scene 12)* | "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell." | `./examples/demo_isolette.sh --scenes 12` |
+| VII | "Verification succeeded" is not enough *(scenes 9 + 12)* | "Two proofs that pass. First an axiom the cheat scan catches by its construct; then an FFI inversion that adds no construct at all — only the byte anchor sees it. Verification succeeded both times." | `./examples/demo_isolette.sh --scenes "9 12"` |
 
 **Decisions**
 
@@ -474,10 +474,16 @@ runbook):
   left as-is.
 - Uncaptured scenes accounted for: 9–11 → capstone slide C's attack
   table; 4/5/8 → the coverage beat.
+- Act VII absorbs scene 9 (the axiom attacks) as beat 1
+  (2026-08-27): the cheat-scan two-grid view (verus all green beside
+  the proof-escape grid naming the construct) precedes the scene-12
+  FFI beat, making Act VII a three-detector escalation (outcome →
+  construct scan → byte anchor). Uses the new `--cheat-status` grid.
 - Act timings: I 1.25 · II 1.75 · III 1.25 · IV 1.75 · V 1.5 ·
-  VI 2.25 · VII 1.75 + 15 s coverage ≈ 12.75–13 min (total video
-  ≈ 23). Offsets if the cap tightens: fold III into II as a two-beat
-  "drift survives" act, or drop VI's scene 7.
+  VI 2.25 · VII 2.75 (scene 9 beat 1 + scene 12 beat 2) + 15 s
+  coverage ≈ 13.75–14 min (total video ≈ 24). Offsets if the cap
+  tightens: fold III into II, drop VI's scene 7, or show one of scene
+  9's two axiom beats.
 
 ## Slide 13 — Other ecosystems — STUB
 

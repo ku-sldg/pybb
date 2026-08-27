@@ -623,10 +623,10 @@ const ACTS = [
     watch: "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline.",
     cmd: "./examples/demo_isolette.sh --scenes \"6 7\"",
     notes: "Scene 6 beats: three tampers, three attributed refusals (signature -> anchor -> derivability); optionally the flipped-evidence-byte diff on camera. Scene 7 beats: wrapper edit (take the [v]iew, diff D10) -> readiness still passes -> tool hash refutes, every proof cell poisons to ? - dwell, this is the act's money shot. --restore-tools recovery in VO only." },
-  { num: "ACT VII", title: "\u201CVerification succeeded\u201D is not enough", scenes: "scene 12",
-    watch: "Every proof passes, every scan is silent — the heat command is inverted anyway. Only the bytes tell.",
-    cmd: "./examples/demo_isolette.sh --scenes 12",
-    notes: "Beats: inverted-FFI diff (take the [v]iew, diff D18 - 'see how innocent it looks') -> proofs pass, cheat scan silent -> gensrc byte anchor refuses, naming the file -> diagnosis rung classifies -> repair by regeneration (second speed-ramp stretch) -> re-attested clean. Final checklist doubles as the coverage beat's background; close with one sentence naming scenes 9-11 (capstone slide C carries that taxonomy)." },
+  { num: "ACT VII", title: "\u201CVerification succeeded\u201D is not enough", scenes: "scenes 9 + 12",
+    watch: "Two proofs that pass. First an axiom the cheat scan catches by its construct; then an FFI inversion that adds no construct at all \u2014 only the byte anchor sees it. Verification succeeded both times.",
+    cmd: "./examples/demo_isolette.sh --scenes \"9 12\"",
+    notes: "The detector escalation that closes the demo. BEAT 1 (scene 9, axioms): two-grid view - the verus grid all green (cargo-verus succeeds) beside the proof-escape grid refusing the exact crate and naming the construct (ADMIT: assume 0->1; SMUGGLE: broadcast 0->1, external_body 0->1). The CHEAT SCAN catches what the outcome cannot - a construct appeared. BEAT 2 (scene 12, FFI): the heat command inverted behind external_body (diff D18) -> every proof passes AND the cheat scan is SILENT (no construct) -> only the GENSRC byte anchor refuses, naming the file -> diagnosis rung classifies -> repair by regeneration (speed-ramp). Three detectors, three blind spots: outcome (blind to both), construct scan (catches beat 1), byte anchor (catches beat 2). Close naming scenes 10-11 (slide C carries the rest)." },
 ];
 ACTS.forEach((act) => {
   const sa = pres.addSlide();

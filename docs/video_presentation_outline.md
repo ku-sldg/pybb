@@ -154,28 +154,37 @@ measure-then-use in the same term — refutes, and every proof cell
 poisons to `?` fail-closed. The on-camera payoff of the banner
 subline's "untrusted tools."
 
-### Act VII — "verification succeeded" is not enough: Scene 12 (1.75 min)
+### Act VII — "verification succeeded" is not enough: Scenes 9 + 12 (2.75 min)
 
-The most visceral for a mixed audience: the heat command inverted in
-unverified FFI glue behind `external_body` — every proof passes, the
-cheat scan is silent, only the gensrc byte anchor refuses; repair by
-regeneration-from-model. Close the act with one sentence naming Scenes
-9–11 (proof escapes, the hollow system proof, the stale dep cache) —
-the AI-in-the-loop capstone's slide C carries that taxonomy in full.
+The detector-escalation that closes the demo — two proofs that pass,
+caught by two different tiers. **Beat 1 (scene 9, axioms)**: the
+two-grid view — the verus grid all green (cargo-verus succeeds) beside
+the proof-escape grid refusing the exact crate and naming the
+construct (ADMIT `assume 0→1`; SMUGGLE `broadcast 0→1, external_body
+0→1`). The **cheat scan** catches what the outcome cannot — a
+*construct* appeared. **Beat 2 (scene 12, FFI)**: the heat command
+inverted behind `external_body` — every proof passes *and the cheat
+scan is silent* (no construct), so only the **gensrc byte anchor**
+refuses; repair by regeneration-from-model. The through-line: three
+detectors, three blind spots — outcome (blind to both), construct scan
+(catches beat 1), byte anchor (catches beat 2). Close with one
+sentence naming Scenes 10–11 (the hollow system proof, the stale dep
+cache) — capstone slide C carries the rest.
 
 ### Coverage beat (15 s)
 
 The scene × artifact-class × repair-species matrix as a spoken line
-over Act VII's last frame, with the 8 captured scenes (1, 3, 13, 14,
-2, 6, 7, 12) highlighted and the other 6 one-lined — 9–11 carried by
-capstone slide C's attack table, 4/5/8 by this beat. Honest caveat
+over Act VII's last frame, with the 9 captured scenes (1, 3, 13, 14,
+2, 6, 7, 9, 12) highlighted and the other 5 one-lined — 10–11 carried
+by capstone slide C's attack table, 4/5/8 by this beat. Honest caveat
 kept in mind: "cached verdicts" (scene 11) and scene 5's
 pause/work-order mechanic are told, not shown.
 
-(Budget: section ≈ 12.75–13 min — up from the earlier ~10.5 because
-scenes 13 and 14 became their own acts; total video ≈ 23. Offsets if
-the cap tightens: fold Act III into Act II as a two-beat "drift
-survives" act, or drop Act VI's scene 7.)
+(Budget: section ≈ 13.75–14 min — scenes 13/14 became their own acts
+and scene 9 (axioms) was absorbed into Act VII as beat 1; total video
+≈ 24. Offsets if the cap tightens: fold Act III into Act II as a
+two-beat "drift survives" act, drop Act VI's scene 7, or show only one
+of scene 9's two axiom beats.)
 
 ## 3. Same workflow, other ecosystems — slides (~5 min)
 

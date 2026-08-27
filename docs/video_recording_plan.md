@@ -1,6 +1,6 @@
 # Recording plan — isolette demo section (video presentation)
 
-Step-by-step runbook for capturing the eight demo scenes (seven acts) of
+Step-by-step runbook for capturing the nine demo scenes (seven acts) of
 the lifecycle-attestation video. Companion docs:
 [video_presentation_outline.md](video_presentation_outline.md) (talk
 plan, act timings), [video_slide_drafts.md](video_slide_drafts.md)
@@ -114,14 +114,25 @@ Per-act script:
     readiness still passes → the tool hash refutes and **every proof
     cell poisons to `?`** — dwell; the act's money shot →
     `--restore-tools` recovery mentioned in VO, not shown.
-16. **Act VII — scene 12, unverified foundation**:
-    `./examples/demo_isolette.sh --scenes 12`.
-    Beats: the inverted-FFI diff (take the `[v]`iew, diff D18 — "see
-    how innocent it looks") → every proof passes, cheat scan silent →
-    the gensrc byte anchor refuses, naming the file → diagnosis rung
-    classifies the drift → repair by regeneration (real codegen —
-    speed-ramp stretch) → re-attested clean. The final clean checklist
-    doubles as the coverage beat's background frame.
+16. **Act VII — scenes 9 + 12, the detector escalation**:
+    `./examples/demo_isolette.sh --scenes "9 12"`.
+    - Beat 1 (scene 9, axioms): for each of ADMIT and SMUGGLE — take
+      the `[v]`iew of the innocent-looking diff, then the two-grid
+      view (verus grid all ✓ beside the proof-escape grid refusing the
+      exact crate: `assume 0 → 1`; `broadcast 0 → 1, external_body
+      0 → 1`) — dwell here, the construct annotation is the point —
+      then the full episode where the byte anchor also refuses and the
+      diagnosis rung correlates them. The **cheat scan** catches what
+      the outcome cannot.
+    - Beat 2 (scene 12, FFI): the inverted-FFI diff (diff D18 — "see
+      how innocent it looks") → every proof passes *and the cheat scan
+      is silent* → only the **gensrc byte anchor** refuses, naming the
+      file → diagnosis → repair by regeneration (real codegen —
+      speed-ramp stretch) → re-attested clean.
+    VO through-line: three detectors, three blind spots — outcome
+    (blind to both), construct scan (beat 1), byte anchor (beat 2).
+    The final clean checklist doubles as the coverage beat's
+    background frame.
 
 ## Phase 3 — keeper prep (QuickTime) + slide stills
 
