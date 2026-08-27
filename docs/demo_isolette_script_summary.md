@@ -8,14 +8,17 @@ Rust isolette (the INSPECTA seL4/Microkit exemplar,
 example; where the ecosystems differ, the scene says so and shows the
 isolette's honest counterpart.
 
-**At a glance**: twelve scenes; repair species exercised: whole-file
-restore, content-aligned slice splice, crate restore, sanctioned
-codegen catch-up, regeneration-from-model (the report in scene 8, the
-generated sources in scene 12), out-of-band pause, freshness
-restoration (scene 11's content-keyed dep guard), and the principled
-refusal; three refusal properties at one gate (signature, anchor,
-derivability); one coverage invariant (every verification-surface
-`.rs` byte-anchored — l1a, gensrc, or sysproof — checked at
+**At a glance**: fourteen scenes; repair species exercised: whole-file
+restore, content-aligned slice splice, crate restore, marker-block
+contract restore (scene 14), sanctioned codegen catch-up,
+regeneration-from-model (the report in scene 8, the generated sources
+in scene 12), out-of-band pause, freshness restoration (scene 11's
+content-keyed dep guard), and the principled refusal; three refusal
+properties at one gate (signature, anchor, derivability); two coverage
+invariants — every verification-surface `.rs` byte-anchored (l1a,
+gensrc, or sysproof) AND every contract-block byte of a
+contract-bearing file covered by the l1b marker tier with every report
+slice inside a marker block (the marker-coverage lint, both checked at
 provisioning). Keyless throughout — every repair is deterministic or
 out-of-band.
 
@@ -358,6 +361,58 @@ would bless whatever codegen emitted.
   ends only in *diagnosed*, *regenerated-and-remeasured*, or
   *escalated* — pass-via-refinement is unsound where there is no
   benign region for drift to hide in.
+
+## Scene 13 — implementation drift: benign, re-verified
+
+- A **semantically equivalent** rewrite of the developer-owned
+  NORMAL-mode guard (`currentTemp.degrees > upper.degrees` →
+  `upper.degrees < currentTemp.degrees`), landing **outside every
+  contract marker block**. Every l2 contract slice and every l1b
+  marker block stays byte-identical; only the whole-file l1a hash
+  moves.
+- The files entry passes **via the l2 refinement at finer
+  granularity**, the marker-block `contracts` entry stays clean, and
+  the confirmation chain **re-verifies the rewritten implementation**:
+  the benign change *survives*, no restore. The mirror of scene 3's
+  benign spec restatement, one artifact class down — integrity is
+  about blessed bytes, but a developer-owned region has no blessed
+  bytes to match; its attested properties are the contracts (intact)
+  and provability (re-verified live).
+
+## Scene 14 — contract drift: breaking, restored
+
+- The **model is untouched**. In the developer-owned `app.rs`, the
+  generated **REQ_MHS_2 ensures is weakened** (admit both heat-control
+  states) *and* the implementation is inverted to the very behavior
+  the weakening covers for. Run alone, cargo-verus **succeeds** — the
+  pair is self-consistent — yet the contract has drifted from what the
+  blessed model renders. "Verification succeeded" cannot see this.
+- The detector is the **l1b marker tier** (a new Copland protocol:
+  `readfile_marker_range` over every codegen-managed `BEGIN/END
+  MARKER` contract block, appraised against a signed golden). It
+  exists because the attestation report emits Verus-realization slices
+  for the *initialize* and *general* GUMBO clauses but **none for the
+  `compute_cases` realizations** — so the weakened REQ_MHS_2, an
+  implication clause at ensures lines ~70–76, lands *between* the
+  report's l2 slices. The marker tier measures every contract-block
+  byte regardless, refuses, and its repair rung **splices the golden
+  contract block back** (located by marker anchor; developer regions
+  untouched).
+- The scene ends on the **honest exposure**: the restored true
+  contract now **refutes the still-inverted implementation** — the
+  Verus refusal the laundering was hiding
+  (`thermostat_rt_mhs_mhs_verus_targ` [Appraisal was not successful]).
+  Restoring the contract is what makes the hidden implementation bug
+  *measurable*; the implementation repair itself is scene 2's ladder.
+- **Discovered while building this demo** (2026-08-26): the
+  contract-launder tamper slipped the report's slice coverage until
+  the marker tier and its provision-time **marker-coverage lint**
+  (every report contract slice must lie inside a marker block; every
+  contract-bearing `.rs` must have marker coverage — ~400 marker lines
+  per baseline carry no report slice) closed the hole. The report's
+  missing `compute_cases` slices are an upstream HAMR
+  report-emission gap; the l1b tier is pybb's defense-in-depth
+  backstop.
 
 ## Throughout
 

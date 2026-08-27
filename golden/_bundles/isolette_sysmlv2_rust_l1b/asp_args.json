@@ -1,0 +1,202 @@
+{
+  "readfile_marker_range": {
+    "operator_interface_oip_oit_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "operator_interface_oip_oit_app_marker_time_triggered_ensures_targ"
+    },
+    "operator_interface_oip_oit_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/operator_interface_oip_oit/src/component/operator_interface_oip_oit_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "operator_interface_oip_oit_app_marker_gumbo_methods_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_state_vars_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VARS",
+      "end_marker": "END MARKER STATE VARS",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_state_vars_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_state_var_init_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VAR INIT",
+      "end_marker": "END MARKER STATE VAR INIT",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_state_var_init_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_time_triggered_requires_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED REQUIRES",
+      "end_marker": "END MARKER TIME TRIGGERED REQUIRES",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_time_triggered_requires_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_mt_ma_ma_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_ma_ma/src/component/thermostat_mt_ma_ma_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "thermostat_mt_ma_ma_app_marker_gumbo_methods_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_state_vars_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VARS",
+      "end_marker": "END MARKER STATE VARS",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_state_vars_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_state_var_init_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VAR INIT",
+      "end_marker": "END MARKER STATE VAR INIT",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_state_var_init_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_time_triggered_requires_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED REQUIRES",
+      "end_marker": "END MARKER TIME TRIGGERED REQUIRES",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_time_triggered_requires_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_mt_mmi_mmi_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmi_mmi/src/component/thermostat_mt_mmi_mmi_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "thermostat_mt_mmi_mmi_app_marker_gumbo_methods_targ"
+    },
+    "thermostat_mt_mmm_mmm_app_marker_state_vars_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VARS",
+      "end_marker": "END MARKER STATE VARS",
+      "asp_targid": "thermostat_mt_mmm_mmm_app_marker_state_vars_targ"
+    },
+    "thermostat_mt_mmm_mmm_app_marker_state_var_init_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VAR INIT",
+      "end_marker": "END MARKER STATE VAR INIT",
+      "asp_targid": "thermostat_mt_mmm_mmm_app_marker_state_var_init_targ"
+    },
+    "thermostat_mt_mmm_mmm_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_mt_mmm_mmm_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_mt_mmm_mmm_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_mt_mmm_mmm_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_mt_mmm_mmm_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_mt_mmm_mmm/src/component/thermostat_mt_mmm_mmm_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "thermostat_mt_mmm_mmm_app_marker_gumbo_methods_targ"
+    },
+    "thermostat_rt_mhs_mhs_app_marker_state_vars_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VARS",
+      "end_marker": "END MARKER STATE VARS",
+      "asp_targid": "thermostat_rt_mhs_mhs_app_marker_state_vars_targ"
+    },
+    "thermostat_rt_mhs_mhs_app_marker_state_var_init_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VAR INIT",
+      "end_marker": "END MARKER STATE VAR INIT",
+      "asp_targid": "thermostat_rt_mhs_mhs_app_marker_state_var_init_targ"
+    },
+    "thermostat_rt_mhs_mhs_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_rt_mhs_mhs_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_rt_mhs_mhs_app_marker_time_triggered_requires_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED REQUIRES",
+      "end_marker": "END MARKER TIME TRIGGERED REQUIRES",
+      "asp_targid": "thermostat_rt_mhs_mhs_app_marker_time_triggered_requires_targ"
+    },
+    "thermostat_rt_mhs_mhs_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_rt_mhs_mhs_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_rt_mri_mri_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_rt_mri_mri_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_rt_mri_mri_app_marker_time_triggered_requires_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED REQUIRES",
+      "end_marker": "END MARKER TIME TRIGGERED REQUIRES",
+      "asp_targid": "thermostat_rt_mri_mri_app_marker_time_triggered_requires_targ"
+    },
+    "thermostat_rt_mri_mri_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_rt_mri_mri_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_rt_mri_mri_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mri_mri/src/component/thermostat_rt_mri_mri_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "thermostat_rt_mri_mri_app_marker_gumbo_methods_targ"
+    },
+    "thermostat_rt_mrm_mrm_app_marker_state_vars_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VARS",
+      "end_marker": "END MARKER STATE VARS",
+      "asp_targid": "thermostat_rt_mrm_mrm_app_marker_state_vars_targ"
+    },
+    "thermostat_rt_mrm_mrm_app_marker_state_var_init_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "begin_marker": "BEGIN MARKER STATE VAR INIT",
+      "end_marker": "END MARKER STATE VAR INIT",
+      "asp_targid": "thermostat_rt_mrm_mrm_app_marker_state_var_init_targ"
+    },
+    "thermostat_rt_mrm_mrm_app_marker_initialization_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "begin_marker": "BEGIN MARKER INITIALIZATION ENSURES",
+      "end_marker": "END MARKER INITIALIZATION ENSURES",
+      "asp_targid": "thermostat_rt_mrm_mrm_app_marker_initialization_ensures_targ"
+    },
+    "thermostat_rt_mrm_mrm_app_marker_time_triggered_ensures_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "begin_marker": "BEGIN MARKER TIME TRIGGERED ENSURES",
+      "end_marker": "END MARKER TIME TRIGGERED ENSURES",
+      "asp_targid": "thermostat_rt_mrm_mrm_app_marker_time_triggered_ensures_targ"
+    },
+    "thermostat_rt_mrm_mrm_app_marker_gumbo_methods_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/pybb/golden/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mrm_mrm/src/component/thermostat_rt_mrm_mrm_app.rs",
+      "begin_marker": "BEGIN MARKER GUMBO METHODS",
+      "end_marker": "END MARKER GUMBO METHODS",
+      "asp_targid": "thermostat_rt_mrm_mrm_app_marker_gumbo_methods_targ"
+    }
+  }
+}

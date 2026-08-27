@@ -142,6 +142,24 @@
 #            8's species): tool gate -> real codegen re-emits the
 #            generated sources from the blessed model -> the restarted
 #            episode re-attests, judged by fresh measurement.
+#   scene 13 implementation drift: benign, re-verified -> a
+#            semantically equivalent rewrite of the developer-owned
+#            NORMAL-mode guard, OUTSIDE every marker block. Slices and
+#            marker blocks stay byte-identical; only the whole-file
+#            hash moves; the files entry passes via the l2 refinement
+#            and the confirmation chain RE-VERIFIES the rewrite — the
+#            benign change survives, no restore.
+#   scene 14 contract drift: breaking, restored -> the model is
+#            untouched, but the generated REQ_MHS_2 ensures is WEAKENED
+#            and the impl inverted to match: cargo-verus SUCCEEDS (self-
+#            consistent), yet the contract has drifted from the blessed
+#            model. The report emits no slice for compute_cases
+#            realizations, so the drift lands between l2 slices — but
+#            the l1b MARKER tier measures every contract-block byte,
+#            refuses, and its repair rung splices the golden contract
+#            back. The restored TRUE contract then refutes the inverted
+#            impl: the scene ends on that exposed Verus refusal (the
+#            implementation repair is scene 2's ladder).
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -187,7 +205,7 @@ EVIDENCE="$REPO/evidence"
 NO_VSCODE=0
 RESTORE_TOOLS=0
 STRATEGY=""
-SCENES="1 2 3 4 5 6 7 8 9 10 11 12"
+SCENES="1 2 3 4 5 6 7 8 9 10 11 12 13 14"
 FAST=0
 AUTO=""
 DRIFT=""
@@ -1297,6 +1315,83 @@ Path(sys.argv[1]).write_text(
     "the regenerated sources must re-attest clean"
   expect "repaired and re-attested clean in-session" \
     "the repair must end in good standing, judged by fresh measurement"
+  pause
+fi
+
+if in_scenes 13; then
+  banner "SCENE 13 — implementation drift: benign, re-verified" \
+    "A SEMANTICALLY EQUIVALENT rewrite of the developer-owned NORMAL-" \
+    "mode guard (x > y  ->  y < x). It lives OUTSIDE every contract" \
+    "marker block, so every contract slice AND every marker block stay" \
+    "byte-identical — only the whole-file hash moves. The files entry" \
+    "passes via the l2 refinement at finer granularity, and the" \
+    "confirmation chain RE-VERIFIES the rewritten implementation: the" \
+    "benign change SURVIVES, no restore. The mirror of Act II's benign" \
+    "spec restatement, one artifact class down." \
+    "" \
+    "This is the honest 'benign drift survives' story for the" \
+    "implementation class: integrity is about the blessed bytes, but a" \
+    "developer-owned region has no blessed bytes to match — its" \
+    "attested properties are the contracts (intact) and provability" \
+    "(re-verified live)."
+  SCENE13_MHS="$LOG_DIR/mhs_app.rs.scene13"
+  cp "$MHS_APP" "$SCENE13_MHS"
+  note_slow
+  run_driver --tamper-impl-benign --verify
+  expect "NORMAL-mode guard rewritten equivalently" \
+    "the benign equivalent rewrite must apply"
+  expect "isolette_sysmlv2_rust_l2 passed after isolette_sysmlv2_rust_l1a failed" \
+    "the files entry must pass via the l2 refinement (slices intact)"
+  expect "isolette_sysmlv2_rust:contracts: all attested components intact" \
+    "the marker-block contract tier must stay clean (drift is outside markers)"
+  expect "isolette_sysmlv2_rust:proofs: all attested components intact" \
+    "the rewritten implementation must RE-VERIFY green"
+  pause
+fi
+if in_scenes 14; then
+  banner "SCENE 14 — contract drift: breaking, restored" \
+    "The model is UNTOUCHED. In the developer-owned app.rs, the" \
+    "generated REQ_MHS_2 ensures is WEAKENED (admit both heat states)" \
+    "AND the implementation is inverted to the behavior the weakening" \
+    "covers for. Run alone, cargo-verus SUCCEEDS — the pair is self-" \
+    "consistent. 'Verification succeeded' cannot see this: the contract" \
+    "has drifted from what the blessed model renders." \
+    "" \
+    "The report emits NO slice for compute_cases realizations, so the" \
+    "weakened REQ_MHS_2 lands between the report's l2 slices — but the" \
+    "l1b MARKER tier measures every byte of the codegen-managed" \
+    "contract block. It refuses, and its repair rung splices the golden" \
+    "contract back. Then the honest re-measurement: the restored TRUE" \
+    "contract REFUTES the still-inverted implementation — the Verus" \
+    "refusal the laundering was hiding. The scene ends there, on the" \
+    "exposed contract-verification failure: restoring the contract is" \
+    "what makes the hidden implementation bug measurable."
+  SCENE14_MHS="$LOG_DIR/mhs_app.rs.scene14"
+  cp "$MHS_APP" "$SCENE14_MHS"
+  ( cd "$REPO" && "$PY" "$DRIVER" --frontend sysml --tamper-contract-launder --verify \
+      >"$LOG_DIR/scene14_pre.log" 2>&1 || true )
+  offer_diff "$SCENE14_MHS" "$MHS_APP" \
+    "the laundering the arc is about to apply (weakened REQ_MHS_2 + inverted impl)"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit 2>/dev/null || true )
+  note_slow
+  run_driver --tamper-contract-launder --verify --repair-markers
+  expect "self-consistent (verification succeeds)" \
+    "the laundering must apply (self-consistent pair)"
+  expect "isolette_sysmlv2_rust:contracts" \
+    "the marker tier must judge the contract block"
+  expect "repair:marker-blocks: restored" \
+    "the marker rung must splice the golden contract block back"
+  expect "confirmation failed (isolette_sysmlv2_rust_verus)" \
+    "the restored true contract must refute the inverted implementation"
+  expect "thermostat_rt_mhs_mhs_verus_targ" \
+    "the exposed refusal must name the crate the laundering hid"
+  echo
+  echo "${BOLD}The laundering slipped the report's slice coverage — the report${RESET}"
+  echo "${BOLD}emits no slice for compute_cases realizations — but the l1b marker${RESET}"
+  echo "${BOLD}tier measures every byte of the contract block. Restoring the true${RESET}"
+  echo "${BOLD}contract makes the hidden implementation bug measurable: Verus${RESET}"
+  echo "${BOLD}refuses. (Repairing the implementation is scene 2's ladder; this${RESET}"
+  echo "${BOLD}scene ends on the honest exposure.)${RESET}"
   pause
 fi
 

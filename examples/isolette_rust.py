@@ -192,8 +192,10 @@ from pybb.knowledge_source import KnowledgeSource
 from pybb.attestation.copland import with_asp_targids
 from pybb.attestation.props import model_files_from_report, write_props_protocol_dir
 from pybb.attestation.targetmap import (
+    _marker_slug,
     build_term,
     derive_targets_from_report,
+    marker_blocks,
     report_slices,
 )
 from pybb.attestation.tools import (
@@ -252,6 +254,9 @@ class Frontend:
     def l1a(self) -> str: return f"{self.prefix}_l1a"
 
     @property
+    def l1b(self) -> str: return f"{self.prefix}_l1b"
+
+    @property
     def l2(self) -> str: return f"{self.prefix}_l2"
 
     @property
@@ -270,7 +275,7 @@ class Frontend:
     def gensrc_id(self) -> str: return f"{self.prefix}_gensrc"
 
     @property
-    def protocol_ids(self) -> tuple: return (self.l1a, self.l2)
+    def protocol_ids(self) -> tuple: return (self.l1a, self.l1b, self.l2)
 
 
 FRONTENDS = {
@@ -850,6 +855,93 @@ def build_report_protocol(fe: Frontend) -> ProtocolDir:
     return ProtocolDir.load(str(d))
 
 
+def derive_l1b_targets(l1a_args: dict) -> dict:
+    """<p>_l1b: the codegen-managed BEGIN/END MARKER contract blocks of
+    every l1a-hashed contract-bearing .rs file, measured whole-block via
+    marker anchors (insertion-robust; readfile_marker_range). The
+    coverage backstop for the report's contract slices: the report emits
+    Verus-realization slices for initialize/general clauses but NONE for
+    compute_cases realizations, so contract drift can land between the
+    report's slices — every marker-region byte is measured here
+    regardless of what the report names."""
+    targs = {}
+    for a in l1a_args["hashfile"].values():
+        fp = a["filepath"]
+        if not fp.endswith(".rs"):
+            continue
+        stem = Path(fp).stem.lower()
+        for begin, end in marker_blocks(Path(fp).read_text()):
+            targ = f"{stem}_{_marker_slug(begin)}_targ"
+            n = 2
+            while targ in targs:
+                targ = f"{stem}_{_marker_slug(begin)}_{n}_targ"
+                n += 1
+            targs[targ] = {"filepath": fp,
+                           "begin_marker": begin, "end_marker": end}
+    return {"readfile_marker_range": with_asp_targids(targs)}
+
+
+def _marker_line_spans(text: str) -> list:
+    """1-based inclusive line spans of every BEGIN/END MARKER block."""
+    lines = text.splitlines()
+    spans = []
+    open_at = None
+    for i, ln in enumerate(lines, start=1):
+        stripped = ln.strip().removeprefix("//").strip()
+        if stripped.startswith("BEGIN MARKER"):
+            open_at = i
+        elif stripped.startswith("END MARKER") and open_at is not None:
+            spans.append((open_at, i))
+            open_at = None
+    return spans
+
+
+def lint_marker_coverage(l1a_args: dict, l2_args: dict,
+                         l1b_args: dict) -> None:
+    """Provision-time coverage lint (the analogue of the gensrc
+    byte-coverage invariant, for contract-bearing developer-owned .rs
+    files): every such file must carry marker blocks — measured whole by
+    the l1b tier — and every report contract slice on it must live
+    INSIDE a marker block. Refuses loudly on a contract-bearing file
+    with no marker coverage; reports the residual (marker lines the
+    report does not slice — covered only by l1b)."""
+    rs_slices = {}
+    for t in l2_args["readfile_range"].values():
+        if t["filepath"].endswith(".rs"):
+            rs_slices.setdefault(t["filepath"], []).append(
+                (t["start_index"], t["end_index"]))
+    marker_files = {}
+    for t in l1b_args["readfile_marker_range"].values():
+        marker_files.setdefault(t["filepath"], 0)
+        marker_files[t["filepath"]] += 1
+    residual = 0
+    wholefile = []
+    for fp, spans in rs_slices.items():
+        blocks = _marker_line_spans(Path(fp).read_text())
+        if not blocks:
+            # a fully-generated file (e.g. a bridge api.rs): no
+            # developer-owned region exists, so there are no markers —
+            # its coverage is whole-file l1a semantics, not l1b
+            wholefile.append(Path(fp).name)
+            continue
+        for (a, b) in spans:
+            if not any(ba <= a and b <= bb for ba, bb in blocks):
+                raise SystemExit(
+                    f"marker-coverage lint: report slice {a}-{b} of "
+                    f"{Path(fp).name} lies OUTSIDE every marker block — "
+                    "the slice would be unrepairable by the marker rung; "
+                    "refusing to provision")
+        sliced = sum(b - a + 1 for a, b in spans)
+        marked = sum(b - a + 1 for a, b in blocks)
+        residual += max(0, marked - sliced)
+    print(f"  marker-coverage lint: {sum(marker_files.values())} marker "
+          f"blocks over {len(marker_files)} contract-bearing .rs files; "
+          f"~{residual} marker lines carry NO report slice (the "
+          "compute_cases realization hole) — covered by the l1b tier"
+          + (f"; fully-generated (whole-file semantics, no markers): "
+             f"{', '.join(sorted(wholefile))}" if wholefile else ""))
+
+
 def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
     """(Re)generate the frontend's protocol dirs from its report. The
     props definition is AM-owned: rewritten only under --promote
@@ -867,6 +959,19 @@ def build_protocol_dirs(fe: Frontend, bless_props: bool = False) -> dict:
         (d / "term.json").write_text(json.dumps(build_term(asp_args)) + "\n")
         protocols[pid] = ProtocolDir.load(str(d))
         print(f"  {pid}: {sum(len(t) for t in asp_args.values())} targets from report")
+    # l1b: marker-block contract coverage (backstop for the report's
+    # slice emission — see derive_l1b_targets)
+    l1b_args = derive_l1b_targets(derived[fe.l1a])
+    d = FIXTURES / fe.l1b
+    d.mkdir(exist_ok=True)
+    for f in ("session.json", "manifest.json"):
+        shutil.copy2(FIXTURES / "temp_control_aadl_slang_l1b" / f, d / f)
+    _write_asp_args(d, l1b_args)
+    (d / "term.json").write_text(json.dumps(build_term(l1b_args)) + "\n")
+    protocols[fe.l1b] = ProtocolDir.load(str(d))
+    print(f"  {fe.l1b}: "
+          f"{len(l1b_args['readfile_marker_range'])} marker blocks")
+    lint_marker_coverage(derived[fe.l1a], derived[fe.l2], l1b_args)
     props_dir = FIXTURES / fe.props_id
     if bless_props or not (props_dir / "asp_args.json").is_file():
         # props scope = every file the report classifies as Model-kind —
@@ -1827,12 +1932,71 @@ def status_flow(fe: Frontend, protocols: dict, ready: bool,
     print(render_checklist(checklist, subject="contract-bearing crates"))
 
 
+def _find_marker_block(lines: list, begin: str, end: str):
+    """Inclusive (i, j) 0-based indices of the marker block, matching the
+    readfile_marker_range ASP's location rule (marker = sole content of
+    the line after stripping an optional // prefix)."""
+    def is_marker(ln, m):
+        return ln.strip().removeprefix("//").strip() == m
+    i = next((k for k, ln in enumerate(lines) if is_marker(ln, begin)), None)
+    if i is None:
+        return None
+    j = next((k for k in range(i + 1, len(lines))
+              if is_marker(lines[k], end)), None)
+    if j is None:
+        return None
+    return i, j
+
+
+class MarkerBlockRestoreKS(KnowledgeSource):
+    """The l1b repair rung: splice the GOLDEN bytes of every drifted
+    marker block back into the live file — located by marker anchor
+    (insertion-robust), so developer-owned regions outside the blocks
+    are left untouched. Contract drift is repaired from the blessed
+    golden; whether the surviving implementation still PROVES against
+    the restored contracts is the restarted episode's honest
+    measurement, not this rung's claim."""
+
+    name: str = "repair:marker-blocks"
+    partition: List[str] = []
+    max_attempts: int = 1
+    l1b_targets: dict
+    golden_root: str
+
+    def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
+        restored = []
+        for t in self.l1b_targets.values():
+            live = Path(t["filepath"])
+            gold = Path(f"{self.golden_root}{live}")
+            if not gold.is_file():
+                continue
+            live_lines = live.read_text().splitlines(keepends=True)
+            gold_lines = gold.read_text().splitlines(keepends=True)
+            lb = _find_marker_block(live_lines, t["begin_marker"],
+                                    t["end_marker"])
+            gb = _find_marker_block(gold_lines, t["begin_marker"],
+                                    t["end_marker"])
+            if lb is None or gb is None:
+                continue
+            li, lj = lb
+            gi, gj = gb
+            if live_lines[li:lj + 1] != gold_lines[gi:gj + 1]:
+                live_lines[li:lj + 1] = gold_lines[gi:gj + 1]
+                live.write_text("".join(live_lines))
+                restored.append(
+                    f"{live.name}[{t['begin_marker'].removeprefix('BEGIN ')}]")
+        if restored:
+            print(f"repair:marker-blocks: restored {len(restored)} golden "
+                  f"marker block(s): {', '.join(restored)}")
+
+
 def attest_episode(fe: Frontend, protocols: dict, repair: bool,
                    validate: bool = False, granularity: str = "file",
                    restart: bool = False, pause: bool = False,
                    verify: bool = False, immutable: bool = False,
                    restore_crates: bool = False, repair_impl: bool = False,
                    regen_report: bool = False, regen_gensrc: bool = False,
+                   repair_markers: bool = False,
                    tool_gate=None) -> BlackboardController:
     """
     One verification episode. The baseline shape is unchanged (files
@@ -1888,11 +2052,15 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     cheats_key = f"{fe.prefix}:cheats"
     proofsrc_key = f"{fe.prefix}:proofsrc"
     gensrc_key = f"{fe.prefix}:gensrc"
+    contracts_key = f"{fe.prefix}:contracts"
+    with_markers = verify and fe.l1b in protocols
     with_report = verify and fe.report_id in protocols
     with_cheats = verify and fe.cheat_id in protocols
     with_proofsrc = verify and fe.sysproof_id in protocols
     with_gensrc = verify and fe.gensrc_id in protocols
     siblings = [proofs_key] if verify else []
+    if with_markers:
+        siblings.append(contracts_key)
     if with_cheats:
         siblings.append(cheats_key)
     if with_proofsrc:
@@ -1931,10 +2099,23 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
                 hashed_files=[a["filepath"] for a in
                               protocols[fe.l1a].asp_args["hashfile"].values()]))
             proofs_chain.append(RestartEpisodeKS(
-                name="restart:proofs", budget=1, also=[files_key]))
+                # budget 2: a marker-rung repair may already have spent
+                # one restart on this key before the impl rung runs
+                name="restart:proofs", budget=2, also=[files_key]))
         if pause_ks is not None:
             pause_ks.also = [files_key]
             proofs_chain.append(pause_ks)
+
+    markers_chain = []
+    if with_markers and repair_markers:
+        markers_chain = [
+            MarkerBlockRestoreKS(
+                l1b_targets=protocols[fe.l1b].asp_args[
+                    "readfile_marker_range"],
+                golden_root=str(GOLDEN_ROOT)),
+            RestartEpisodeKS(name="restart:markers", budget=1,
+                             also=[files_key, proofs_key]),
+        ]
 
     report_chain = []
     if with_report and regen_report:
@@ -1963,6 +2144,11 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
     episodes = {files_key: fe.l1a}
     if verify:
         episodes[proofs_key] = fe.verus_id
+    if with_markers:
+        # the marker tier: every byte of the codegen-managed contract
+        # blocks, measured regardless of what the report slices — the
+        # backstop for contract drift between the report's slices
+        episodes[contracts_key] = fe.l1b
     if with_cheats:
         # the cheat tier: no repair chain on purpose — an admitted proof
         # is never machine-repairable, the refusal must escalate
@@ -1978,14 +2164,16 @@ def attest_episode(fe: Frontend, protocols: dict, repair: bool,
         episodes[report_key] = fe.report_id
     starter = StartAttestationKS(episodes=episodes)
     seen = set()
-    for ks in (*confirm, *fail_chain, *proofs_chain, *report_chain,
-               *gensrc_chain, starter):
+    for ks in (*confirm, *fail_chain, *proofs_chain, *markers_chain,
+               *report_chain, *gensrc_chain, starter):
         if id(ks) not in seen:
             controller.add_ks(ks)
             seen.add(id(ks))
     controller.route(files_key, on_pass=confirm, on_fail=fail_chain)
     if verify:
         controller.route(proofs_key, on_pass=[], on_fail=proofs_chain)
+    if with_markers:
+        controller.route(contracts_key, on_pass=[], on_fail=markers_chain)
     if with_cheats:
         controller.route(cheats_key, on_pass=[], on_fail=[])
     if with_proofsrc:
@@ -2072,6 +2260,9 @@ def main() -> None:
                         default=None)
     parser.add_argument("--restore-crates", action="store_true")
     parser.add_argument("--repair-impl", action="store_true")
+    parser.add_argument("--repair-markers", action="store_true",
+                        help="l1b repair rung: splice golden marker blocks "
+                             "back on contract drift, then restart")
     parser.add_argument("--regen-report", action="store_true")
     parser.add_argument("--pause", action="store_true")
     cli = parser.parse_args()
@@ -2128,7 +2319,8 @@ def main() -> None:
         return
 
     restart = (cli.immutable_model or cli.repair_granularity is not None
-               or cli.restore_crates or cli.repair_impl)
+               or cli.restore_crates or cli.repair_impl
+               or cli.repair_markers)
     granularity = cli.repair_granularity or "file"
     protocols = load_protocols(fe, validate=cli.validate or cli.verify)
     tool_gate = None
@@ -2187,7 +2379,9 @@ def main() -> None:
                        restore_crates=cli.restore_crates,
                        repair_impl=cli.repair_impl,
                        regen_report=cli.regen_report,
-                       regen_gensrc=cli.regen_gensrc, tool_gate=tool_gate)
+                       regen_gensrc=cli.regen_gensrc,
+                       repair_markers=cli.repair_markers,
+                       tool_gate=tool_gate)
         if cli.repair and not restart:
             print("\n=== episode 2: verification (fresh run, fresh caches) ===")
             attest_episode(fe, protocols, repair=cli.repair,
