@@ -450,8 +450,8 @@ runbook):
 | III | Implementation drift: benign, re-verify *(scene 13)* | "A developer rewrites implementation logic — semantically equivalent. The hash moves, but every contract slice maintains integrity, and the proofs re-verify: the benign change survives." | `./examples/demo_isolette.sh --scenes 13` |
 | IV | Contract drift: breaking, restore then attempt re-verification *(scene 14)* | "The model is untouched, but a Verus contract is weakened (**after** codegen, but **before** verification) and the code is inverted to match — verus checks pass. Only the contract tier sees the drift; restoring the true contract exposes the Verus refusal the laundering hid." | `./examples/demo_isolette.sh --scenes 14` |
 | V | Implementation drift: breaking, diagnose then repair *(scene 2)* | "The ladder diagnoses by exhaustion — watch it repair the *right* artifact, and watch standing return only by re-measurement." | `./examples/demo_isolette.sh --scenes 2` |
-| VI | Trust-state tamper: refuse *(scenes 6 + 7)* | "Three tampers with the trust state, three attributed refusals — then a tampered tool, and every proof cell poisons fail-closed. Nothing repairs a baseline." | `./examples/demo_isolette.sh --scenes "6 7"` |
-| VII | "Verification succeeded" is not enough *(scenes 9 + 12)* | "Two proofs that pass. First an axiom the cheat scan catches by its construct; then an FFI inversion that adds no construct at all — only the byte anchor sees it. Verification succeeded both times." | `./examples/demo_isolette.sh --scenes "9 12"` |
+| VI | Trust-anchor tamper: attribute then refuse *(scenes 6 + 7)* | "The signed evidence, an installed golden, then the verifier itself — each tamper attributed, each refused. No knowledge source repairs a trust anchor." | `./examples/demo_isolette.sh --scenes "6 7"` |
+| VII | Verification soundness *(scenes 9 + 12)* | "Proofs verify, but measurement detects unsound axioms." | `./examples/demo_isolette.sh --scenes "9 12"` |
 
 **Decisions**
 

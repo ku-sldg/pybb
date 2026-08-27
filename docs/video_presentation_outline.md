@@ -82,7 +82,7 @@ measured files, 67 contract slices, 8 verified crates, 1,862
 system-proof obligations, 30 measured tool/dep files. Scene numbers
 below refer to
 [demo_isolette_script_summary.md](demo_isolette_script_summary.md).
-**Seven acts, eight captures** (scenes 1, 3, 13, 14, 2, 6+7, 12);
+**Seven acts, nine captures** (scenes 1, 3, 13, 14, 2, 6+7, 9, 12);
 Acts II–VI carry consistent active-verb titles, with III/V paired as
 the benign/breaking implementation-drift acts.
 
@@ -141,7 +141,7 @@ genuinely false of it. The contracts-intact rung exhausts (that
 exhaustion *is* the diagnosis), the impl rung restores the crate,
 restarted episode re-attests. The ladder repairs the *right* artifact.
 
-### Act VI — Trust-state tamper: refuse: Scenes 6 + 7 (2.25 min)
+### Act VI — Trust-anchor tamper: attribute then refuse: Scenes 6 + 7 (2.25 min)
 
 Scene 6 — three beats, one gate, three attributed refusals: flipped
 signed-evidence byte (signature), hand-edited golden (anchor),
@@ -154,7 +154,7 @@ measure-then-use in the same term — refutes, and every proof cell
 poisons to `?` fail-closed. The on-camera payoff of the banner
 subline's "untrusted tools."
 
-### Act VII — "verification succeeded" is not enough: Scenes 9 + 12 (2.75 min)
+### Act VII — Verification soundness: Scenes 9 + 12 (2.75 min)
 
 The detector-escalation that closes the demo — two proofs that pass,
 caught by two different tiers. **Beat 1 (scene 9, axioms)**: the
