@@ -1449,6 +1449,59 @@ def tamper_impl(fe: Frontend, protocols: dict) -> None:
           "inverted (developer region; contract slices untouched)")
 
 
+def tamper_impl_benign(fe: Frontend, protocols: dict) -> None:
+    """Benign implementation drift: a semantically equivalent rewrite of
+    the developer-owned NORMAL-mode guard (x > y  ->  y < x). Every
+    contract slice stays byte-identical and the rewritten implementation
+    still PROVES against the unchanged contracts — only the whole-file
+    hash refuses, and the files entry ends attested clean via the l2
+    refinement while the verus tier re-verifies the rewrite."""
+    text = MHS_APP.read_text()
+    a = "if (currentTemp.degrees > upper.degrees) {"
+    b = "if (upper.degrees < currentTemp.degrees) {"
+    if a not in text:
+        raise SystemExit("--tamper-impl-benign: the NORMAL-mode guard was "
+                         f"not found in {MHS_APP}")
+    MHS_APP.write_text(text.replace(a, b, 1))
+    print(f"Tampered implementation (benign): {MHS_APP.name} NORMAL-mode "
+          "guard rewritten equivalently (x > y -> y < x; contract slices "
+          "untouched, still provable)")
+
+
+def tamper_contract_launder(fe: Frontend, protocols: dict) -> None:
+    """Contract drift laundering: WEAKEN the generated REQ_MHS_2 ensures
+    (admit both heat-control states) AND invert the implementation to
+    the very behavior the weakening covers for. cargo-verus succeeds —
+    the pair is self-consistent — but the contract has drifted from what
+    the blessed model renders: the byte anchors (l1a + the l2 lineage
+    against goldens derived from the blessed model) are the only
+    detectors. The model itself is untouched."""
+    import re
+    text = MHS_APP.read_text()
+    a = ("(api.heat_control == Isolette_Data_Model::On_Off::Onn),\n"
+         "        // case REQ_MHS_3")
+    b = ("(api.heat_control == Isolette_Data_Model::On_Off::Onn ||\n"
+         "          api.heat_control == Isolette_Data_Model::On_Off::Off),"
+         "  // TAMPERED: weakened\n"
+         "        // case REQ_MHS_3")
+    if a not in text:
+        raise SystemExit("--tamper-contract-launder: the REQ_MHS_2 ensures "
+                         f"consequent was not found in {MHS_APP}")
+    text = text.replace(a, b, 1)
+    tampered, n = re.subn(
+        r"^(\s*)//(currentCmd = On_Off::Off; // seeded bug/error)\n"
+        r"(\s*)(currentCmd = On_Off::Onn;)",
+        r"\1\2\n\3//\4", text, count=1, flags=re.M)
+    if n == 0:
+        raise SystemExit("--tamper-contract-launder: the seeded-bug lines "
+                         f"were not found in {MHS_APP}")
+    MHS_APP.write_text(tampered)
+    print(f"Tampered contract + implementation: {MHS_APP.name} REQ_MHS_2 "
+          "ensures WEAKENED and the response inverted to match — "
+          "self-consistent (verification succeeds), but the contract has "
+          "drifted from the blessed model")
+
+
 def tamper_report(fe: Frontend, protocols: dict) -> None:
     """Deletion: one Slice quietly removed from a contract report — the
     authority now names one fewer measurement target, and every protocol
@@ -2000,6 +2053,13 @@ def main() -> None:
     parser.add_argument("--tamper-note", action="store_true")
     parser.add_argument("--tamper-impl", action="store_true")
     parser.add_argument("--tamper-impl-full", action="store_true")
+    parser.add_argument("--tamper-impl-benign", action="store_true",
+                        help="benign equivalent rewrite of the developer-owned "
+                             "guard: slices intact, still proves")
+    parser.add_argument("--tamper-contract-launder", action="store_true",
+                        help="weaken the generated REQ_MHS_2 ensures AND invert "
+                             "the impl to match: verification succeeds, the "
+                             "contract has drifted from the blessed model")
     parser.add_argument("--tamper-report", action="store_true")
     parser.add_argument("--tamper-report-subst", action="store_true")
     parser.add_argument("--repair", action="store_true")
@@ -2026,6 +2086,8 @@ def main() -> None:
                (tamper_note, cli.tamper_note),
                (tamper_impl, cli.tamper_impl),
                (tamper_impl_full, cli.tamper_impl_full),
+               (tamper_impl_benign, cli.tamper_impl_benign),
+               (tamper_contract_launder, cli.tamper_contract_launder),
                (tamper_report, cli.tamper_report),
                (tamper_report_subst, cli.tamper_report_subst))
 

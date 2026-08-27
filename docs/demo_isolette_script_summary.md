@@ -85,11 +85,18 @@ mtime-gated — why scene 11 exists. Scene 3's codegen beats add
 
 ## Scene 3 — spec drift: escalate, examine, rule
 
-- A GUMBO contract edit in `Regulate.sysml` (operator's choice:
-  **benign** semantically equivalent restatement
-  ([diff&nbsp;D2](#d2)), or **breaking** — REQ_MHS_1's initialize
+- A GUMBO contract edit (operator's choice of three flavors):
+  **benign** — semantically equivalent restatement in `Regulate.sysml`
+  ([diff&nbsp;D2](#d2)); **breaking** — REQ_MHS_1's initialize
   guarantee flipped Off -> Onn ([diff&nbsp;D3](#d3)), which codegen
-  accepts but the implementation cannot honor).
+  accepts but the implementation cannot honor; or **range**
+  (`--drift range`) — the Table A-12 upper-alarm ceiling widened
+  102 -> 103 in the shared `GUMBO_Library.sysml` constant, so the
+  operator interface's guarantee and the monitor's assumes move
+  *together* and a bless survives the catch-up: promote regenerates
+  the shared-library realization and the episode re-proves clean.
+  Even this benign-by-construction change fails model appraisal until
+  ruled on — the appraiser judges *sanction, not semantics*.
 - Detection and escalation with attribution: the l2 refinement names
   the changed slices; interactive ruling over the diff — **revert**, or
   **bless**: spec-first sanctioning (`--provision --bless-props`

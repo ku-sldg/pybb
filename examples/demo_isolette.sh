@@ -24,7 +24,12 @@
 #   scene 3  a spec edit drifts the model -> the episode escalates ->
 #            YOU examine the diff (VSCode if available) and rule at the
 #            prompt: [b]less the change as the new baseline, or
-#            [r]evert to golden. Blessing is SPEC-FIRST
+#            [r]evert to golden. Three drift flavors: benign (an
+#            equivalent restatement in Regulate.sysml), breaking
+#            (REQ_MHS_1 flipped), and range (the Table A-12 upper-alarm
+#            ceiling widened 102 -> 103 in the shared GUMBO library —
+#            guarantee and assume move together, so a bless survives
+#            the catch-up and re-proves). Blessing is SPEC-FIRST
 #            (--provision --bless-props re-signs the props class; no
 #            codegen), so the blessed model attests clean while the
 #            generated realization has not caught up — the catch-up is
@@ -145,7 +150,7 @@
 #                          repair, measurement judges); prompted
 #                          interactively when not given
 #   --scenes "1 2 3 ..."   run a subset of scenes
-#   --drift benign|breaking  pick scene 3's spec change without prompting
+#   --drift benign|breaking|range  pick scene 3's spec change without prompting
 #   --auto bless|revert    answer scene 3's ruling automatically (testing;
 #                          unattended runs with no tty default to revert)
 #   --fast                 skip the press-Enter pauses (for testing)
@@ -166,6 +171,9 @@ DRIVER="$REPO/examples/isolette_rust.py"
 
 REGULATE="$REPO/targets/isolette-microkit/sysml/Regulate.sysml"
 GOLDEN_REGULATE="$REPO/golden$REGULATE"
+GUMBO_SYSML="$REPO/targets/isolette-microkit/sysml/GUMBO_Library.sysml"
+GOLDEN_GUMBO_SYSML="$REPO/golden$GUMBO_SYSML"
+GUMBO_LIB_RS="$REPO/targets/isolette-microkit/hamr/microkit/crates/GUMBO_Library/src/lib.rs"
 REPORT="$REPO/targets/isolette-microkit/hamr/microkit/attestation/sysml_attestation_report.json"
 MHS_APP="$REPO/targets/isolette-microkit/hamr/microkit/crates/thermostat_rt_mhs_mhs/src/component/thermostat_rt_mhs_mhs_app.rs"
 GOLDEN_MHS_APP="$REPO/golden$MHS_APP"
@@ -204,7 +212,7 @@ case "$STRATEGY" in
   *) echo "--repair-strategy takes restore|pause" >&2; exit 2 ;;
 esac
 case "$AUTO" in ""|bless|revert) ;; *) echo "--auto takes bless|revert" >&2; exit 2 ;; esac
-case "$DRIFT" in ""|benign|breaking) ;; *) echo "--drift takes benign|breaking" >&2; exit 2 ;; esac
+case "$DRIFT" in ""|benign|breaking|range) ;; *) echo "--drift takes benign|breaking|range" >&2; exit 2 ;; esac
 
 LOG_DIR="$(mktemp -d "${TMPDIR:-/tmp}/demo_isolette.XXXXXX")"
 # shellcheck source=demo_lib.sh
@@ -257,11 +265,13 @@ fi
 
 # ── self-cleaning: restore tampered artifacts on exit ───────────────────────
 REGULATE_PRISTINE="$LOG_DIR/Regulate.sysml.pristine"
+GUMBO_SYSML_PRISTINE="$LOG_DIR/GUMBO_Library.sysml.pristine"
 MHS_PRISTINE="$LOG_DIR/mhs_app.rs.pristine"
 BUNDLE_PRISTINE="$LOG_DIR/props_bundle.pristine"
 ARGS_PRISTINE="$LOG_DIR/props_asp_args.pristine"
 WRAPPER_PRISTINE="$LOG_DIR/cargo_verus_wrapper.pristine"
 cp "$REGULATE" "$REGULATE_PRISTINE"
+cp "$GUMBO_SYSML" "$GUMBO_SYSML_PRISTINE"
 cp "$MHS_APP" "$MHS_PRISTINE"
 cp "$PROPS_BUNDLE" "$BUNDLE_PRISTINE"
 cp "$PROPS_ARGS" "$ARGS_PRISTINE"
@@ -273,7 +283,8 @@ cleanup() {
   local status=$?
   # file-level restores FIRST: a scene-3 re-bless below re-derives the
   # props fixtures/bundles fresh, and must not be stomped afterwards
-  for pair in "$REGULATE_PRISTINE:$REGULATE" "$MHS_PRISTINE:$MHS_APP" \
+  for pair in "$REGULATE_PRISTINE:$REGULATE" "$GUMBO_SYSML_PRISTINE:$GUMBO_SYSML" \
+              "$MHS_PRISTINE:$MHS_APP" \
               "$BUNDLE_PRISTINE:$PROPS_BUNDLE" "$ARGS_PRISTINE:$PROPS_ARGS" \
               "$WRAPPER_PRISTINE:$VERUS_WRAPPER"; do
     save="${pair%%:*}"; live="${pair##*:}"
@@ -314,16 +325,17 @@ trap cleanup EXIT
 
 in_scenes() { case " $SCENES " in *" $1 "*) return 0 ;; *) return 1 ;; esac }
 
-edit_spec() {  # edit_spec <sed-expr> <description>
-  local before="$LOG_DIR/Regulate.sysml.before_edit"
-  cp "$REGULATE" "$before"
-  sed_i -E "$1" "$REGULATE"
-  if cmp -s "$before" "$REGULATE"; then
+edit_spec() {  # edit_spec <sed-expr> <description> [file (default Regulate.sysml)]
+  local file="${3:-$REGULATE}"
+  local before="$LOG_DIR/$(basename "$file").before_edit"
+  cp "$file" "$before"
+  sed_i -E "$1" "$file"
+  if cmp -s "$before" "$file"; then
     echo "DEMO ABORT: the scripted spec edit matched nothing ($2)" >&2
     exit 1
   fi
   echo "applied spec edit: $2"
-  ( cd "$REPO" && diff -u "$before" "$REGULATE" ) | sed -n '4,20p'
+  ( cd "$REPO" && diff -u "$before" "$file" ) | sed -n '4,20p'
 }
 
 # ── setup: provision-if-missing, then the readiness gate ───────────────────
@@ -437,25 +449,39 @@ if in_scenes 3; then
     echo "                  initialization, which the implementation"
     echo "                  refuses to prove -> the catch-up's proof"
     echo "                  gate must REFUSE"
+    echo "  [3] range     — widen the Table A-12 upper-alarm ceiling"
+    echo "                  102 -> 103 in the SHARED library constant:"
+    echo "                  guarantee and assume move together, so the"
+    echo "                  regenerated contracts still PROVE"
     pick=""
     if has_tty; then
-      prompt "${BOLD}drift [1/2]: ${RESET}"
+      prompt "${BOLD}drift [1/2/3]: ${RESET}"
       read -r pick </dev/tty
     fi
-    case "$pick" in 2|breaking) drift="breaking" ;; *) drift="benign" ;; esac
+    case "$pick" in 2|breaking) drift="breaking" ;; 3|range) drift="range" ;; *) drift="benign" ;; esac
   fi
   echo
+  DRIFT_FILE="$REGULATE"
   if [ "$drift" = "benign" ]; then
     edit_spec 's/lower_desired_temp\.degrees <= upper_desired_temp\.degrees;/upper_desired_temp.degrees >= lower_desired_temp.degrees;/' \
       "lower_is_lower_temp restated (x <= y -> y >= x)"
+  elif [ "$drift" = "range" ]; then
+    # the Table A-12 alarm ranges live as named constants in the SHARED
+    # GUMBO library; widening the ceiling there moves the operator
+    # interface's guarantee and the monitor's assumes TOGETHER
+    DRIFT_FILE="$GUMBO_SYSML"
+    edit_spec 's/def UpperAlarmTemp_upper\(\): Base_Types::Integer_32 := 102\[s32\];/def UpperAlarmTemp_upper(): Base_Types::Integer_32 := 103[s32];/' \
+      "Table A-12 upper-alarm ceiling widened (102 -> 103) in the shared library" \
+      "$GUMBO_SYSML"
   else
     # anchored to the initialize guarantee: the compute-case copies of
     # this clause carry a leading 'guarantee' keyword, this one does not
     edit_spec 's/^( +)heat_control == Isolette_Data_Model::On_Off\.Off;/\1heat_control == Isolette_Data_Model::On_Off.Onn;/' \
       "REQ_MHS_1 initialize guarantee flipped (Off -> Onn)"
   fi
-  PROPOSED="$LOG_DIR/Regulate.sysml.proposed"
-  cp "$REGULATE" "$PROPOSED"
+  GOLDEN_DRIFT_FILE="$REPO/golden$DRIFT_FILE"
+  PROPOSED="$LOG_DIR/$(basename "$DRIFT_FILE").proposed"
+  cp "$DRIFT_FILE" "$PROPOSED"
   run_driver
   expect "user intervention required" "the drifted episode must escalate"
   expect "failing components (isolette_sysmlv2_rust_l2)" \
@@ -463,7 +489,7 @@ if in_scenes 3; then
   echo
   echo "${BOLD}The episode escalated (and quarantined the live tree back to golden).${RESET}"
   echo "Your ruling on the proposed spec change:"
-  show_diff "$GOLDEN_REGULATE" "$PROPOSED"
+  show_diff "$GOLDEN_DRIFT_FILE" "$PROPOSED"
   if [ -n "$AUTO" ]; then
     answer="$AUTO"; echo "(--auto) ruling: $answer"
   else
@@ -479,7 +505,7 @@ if in_scenes 3; then
       echo "re-applying the change and RE-BLESSING (the sanctioning act) ..."
       echo "Blessing sanctions the SPEC — whether the generated realization"
       echo "still proves is the pipeline's question, not the blessing's."
-      cp "$PROPOSED" "$REGULATE"
+      cp "$PROPOSED" "$DRIFT_FILE"
       run_driver --provision --bless-props
       expect "5 blessed model files" "the props class must be re-signed"
       BLESSED_DURING_DEMO=1
@@ -498,14 +524,20 @@ if in_scenes 3; then
       echo "${BOLD}proves against the blessed spec is the episode's honest measurement,${RESET}"
       echo "${BOLD}not a precondition of gold moving:${RESET}"
       cp "$MHS_APP" "$LOG_DIR/mhs_app.rs.precodegen"
+      cp "$GUMBO_LIB_RS" "$LOG_DIR/gumbo_lib.rs.precodegen"
       run_driver --promote
       expect "targets regenerated" "promote must move gold — no verification gate"
-      if [ "$drift" = "benign" ]; then
+      if [ "$drift" != "breaking" ]; then
         expect "all attested components intact" \
-          "the promoted baseline attests clean — the impl already meets the \
-equivalent restatement"
-        offer_diff "$LOG_DIR/mhs_app.rs.precodegen" "$MHS_APP" \
-          "the machine-regenerated contract (what codegen re-spliced into the developer-owned file)"
+          "the promoted baseline attests clean — the realization meets the \
+blessed change"
+        if [ "$drift" = "range" ]; then
+          offer_diff "$LOG_DIR/gumbo_lib.rs.precodegen" "$GUMBO_LIB_RS" \
+            "the regenerated shared-library constant (guarantee and assume moved together)"
+        else
+          offer_diff "$LOG_DIR/mhs_app.rs.precodegen" "$MHS_APP" \
+            "the machine-regenerated contract (what codegen re-spliced into the developer-owned file)"
+        fi
         echo
         echo "${BOLD}the checklist against the promoted baseline:${RESET}"
         run_driver --ready --status
