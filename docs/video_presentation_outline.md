@@ -253,7 +253,7 @@ safe. Four rows, layer → what AI built → what judged it:
 | CVM core | `bpar` parallel execution — in the *verified* VM | **the Rocq proofs had to re-prove** |
 | CVM & tooling frontends | usability fixes: explicit `--stdin` mode (+ eager-read fix) in the CVM frontend, `--req_file` request input in copland-evidence-tools, cvm-mcp's re-runnable single-line CVM commands | existing cram tests; the demos' readiness gate |
 | Demo tampers (scenes 1–8) | the scripted spec / implementation / proof / golden edits, each crafted — counterexample-style — to exercise one specific blackboard capability (attribution, the ladder, restore grains, refusal) | every scene gates on the expected detection, attribution, and repair |
-| Attacks (scenes 9–12) | 6 attack classes discovered in interactive red-team sessions — proof escapes, hollow proofs, stale caches, the unverified foundation | each was green across every existing tier when found; each forced a new measurement capability (→ next slide) |
+| Attacks (scenes 9–12, 14) | 7 attack classes discovered in interactive red-team sessions — proof escapes, hollow proofs, stale caches, the unverified foundation, contract laundering | each was green across every existing tier when found; each forced a new measurement capability (→ next slide) |
 
 Kicker (the meta-point, and the bridge back to the thesis): the
 provenance is itself attested the ordinary way — `Co-Authored-By:
@@ -271,7 +271,8 @@ full enumeration behind the counts.
 **Slide C — "AI in the loop, part 3: AI attacked the loop."** Setup
 line: the same interactive sessions red-teamed the stack they built —
 and every one of these attacks was **green across every existing
-measurement tier** when it was found. Six attack classes, scenes 9–12:
+measurement tier** when it was found. Seven attack classes, scenes
+9–12 and 14:
 
 | Attack (scene) | How it succeeded — before | The capability it forced |
 |---|---|---|
@@ -281,12 +282,15 @@ measurement tier** when it was found. Six attack classes, scenes 9–12:
 | **SWAP** (10.2) — a real VC dropped, a trivial `ensures true` added at constant count | outcome unchanged, count unchanged, no escape construct — every semantic detector silent | the same byte tier — **bytes anchor what a proof outcome cannot** |
 | **STALE** (11) — a semantic flip in a cached dependency, mtime preserved nanosecond-exact | cargo's mtime-gated cache serves the stale artifact; Verus sits green over a proof **false of the live bytes** | the **gensrc byte anchor** (exposes it) + the content-keyed `--fresh-deps` guard (repairs the evidence) |
 | **INVERT** (12) — the heat command flipped in unverified FFI glue behind `external_body` | Verus never reads the body: every proof passes, the escape surface is unchanged | the gensrc anchor over every generated source + repair by regeneration-from-model |
+| **LAUNDER** (14) — a generated contract weakened *and* the impl inverted to match, self-consistent | cargo-verus **passes**; the weakened REQ_MHS_2 lands in the report's `compute_cases` slice gap, so every existing tier is green | the **l1b marker tier** — a new Copland protocol hashing every contract-block byte — + the provision-time marker-coverage lint. *Found while building this very demo (2026-08-27).* |
 
 Kicker: **adversarial co-development** — defense-in-depth here wasn't
 designed up front; it was *measured into existence*, one successful
-attack at a time. Each attack became a new measurement tier, a new ASP,
-and a regression-gated demo scene — the attack that succeeded yesterday
-is re-run and refuted on every demo run today.
+attack at a time. Each attack became a new measurement tier, a new ASP
+or protocol, and a regression-gated demo scene — the attack that
+succeeded yesterday is re-run and refuted on every demo run today. The
+newest row, LAUNDER, was discovered *in this session*: the live proof
+that the loop is still turning.
 
 Speaker note: this is also the honest epistemics of the byte tiers —
 the escalating lesson of scenes 9→12 is that "verification succeeded"
