@@ -1012,6 +1012,17 @@ ex.tamper_cheat(ex.FRONTENDS['sysml'], {})" )
     "the admitted contract (pristine vs cheating prover)"
   cp "$MHS_API_PRISTINE" "$MHS_API"
   echo
+  echo "${BOLD}two grids over the cheating tree: verus judges OUTCOMES, the${RESET}"
+  echo "${BOLD}cheat scan judges the escape SURFACE. cargo-verus passes every${RESET}"
+  echo "${BOLD}crate (the admit changes no outcome) — but the proof-escape grid${RESET}"
+  echo "${BOLD}refuses the exact crate and names the construct:${RESET}"
+  run_driver --tamper-cheat --ready --status --cheat-status
+  expect "contract-bearing crates" "the verus grid must render (all crates verify)"
+  expect "proof-escape scan" "the cheat grid must render alongside it"
+  expect "proof escape: assume 0" \
+    "the cheat grid must name the drifted construct (assume 0 -> 1)"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit )
+  echo
   echo "Now the full episode over the cheating tree — watch which tier"
   echo "refuses (the tampered crate recompiles, so the verus beat is"
   echo "slower than usual):"
@@ -1061,6 +1072,16 @@ ex.tamper_broadcast(ex.FRONTENDS['sysml'], {})" )
   offer_diff "$GUMBO_PRISTINE" "$GUMBO_LIB_SRC" \
     "the smuggled axiom (pristine vs poisoned foundation crate)"
   cp "$GUMBO_PRISTINE" "$GUMBO_LIB_SRC"
+  echo
+  echo "${BOLD}the two grids again: cargo-verus passes every crate (the axiom${RESET}"
+  echo "${BOLD}is inert until a broadcast use) — but the proof-escape grid${RESET}"
+  echo "${BOLD}refuses GUMBO_Library and names the smuggled construct:${RESET}"
+  run_driver --tamper-broadcast --ready --status --cheat-status
+  expect "contract-bearing crates" "the verus grid must render (all crates verify)"
+  expect "proof-escape scan" "the cheat grid must render alongside it"
+  expect "proof escape: broadcast 0" \
+    "the cheat grid must name the smuggled axiom (broadcast 0 -> 1)"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit )
   echo
   echo "The full episode — every outcome-based tier is blind; the byte"
   echo "anchor and the construct scan refuse together, and the diagnosis"

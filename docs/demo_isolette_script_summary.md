@@ -205,7 +205,13 @@ mtime-gated — why scene 11 exists. Scene 3's codegen beats add
 ## Scene 9 — proof cheat: verification success is not proof
 
 Two beats, two proof escapes that pass every OUTCOME-based tier because
-they change no proof outcome. Both sites are byte-anchored by the
+they change no proof outcome. Each beat opens with a **two-grid view**
+(`--status --cheat-status`): the verus grid shows cargo-verus passing
+every crate (the escape changes no outcome), while the proof-escape
+grid refuses the exact crate and **names the drifted construct**
+(`assume 0 → 1` for the admit, `broadcast 0 → 1, external_body 0 → 1`
+for the smuggle) — the ✗/✓ from the appraiser, the construct
+annotation from re-scanning the crate against its golden count map. Both sites are byte-anchored by the
 **gensrc tier** now, so two detectors refuse together — the byte anchor
 says *something* changed, the cheat scan (counting escape
 **constructs**) says *what kind* — and the gensrc ladder's diagnosis

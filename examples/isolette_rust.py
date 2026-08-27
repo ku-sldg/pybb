@@ -187,6 +187,7 @@ from pybb.attestation import (
 from pybb.attestation.proof_status import render_checklist
 from pybb.attestation.snapshot import mirror_path
 from pybb.attestation.verus_status import verus_crate_checklist
+from pybb.attestation.cheat_status import cheat_crate_checklist
 from pybb.blackboard import Blackboard
 from pybb.knowledge_source import KnowledgeSource
 from pybb.attestation.copland import with_asp_targids
@@ -1909,7 +1910,7 @@ def ready_flow(fe: Frontend, protocols: dict):
 
 
 def status_flow(fe: Frontend, protocols: dict, ready: bool,
-                status: bool) -> None:
+                status: bool, cheat_status: bool = False) -> None:
     """The per-crate proof checklist, same semantics as the Rocq
     driver's goals view: QUICK by default (one verification-tier run —
     rows from the AM-owned crate list, cells from each crate's own
@@ -1918,18 +1919,31 @@ def status_flow(fe: Frontend, protocols: dict, ready: bool,
     gate first — alone it just prints the report; combined with
     --status a failure poisons every cell."""
     report = ready_flow(fe, protocols) if ready else None
-    if not status:
+    if not (status or cheat_status):
         return
-    verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
-        attestation_request(fe.verus_id))
-    checklist = verus_crate_checklist(
-        verdict, protocols[fe.verus_id].asp_args["run_command_cargo_verus"])
-    if ready and not report:
-        problems = "; ".join((*report.problems, *report.baseline_problems))
-        checklist = checklist.poison(f"readiness failed: {problems[:200]}")
-    elif ready:
-        checklist = checklist.model_copy(update={"trusted": True})
-    print(render_checklist(checklist, subject="contract-bearing crates"))
+    if status:
+        verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
+            attestation_request(fe.verus_id))
+        checklist = verus_crate_checklist(
+            verdict, protocols[fe.verus_id].asp_args["run_command_cargo_verus"])
+        if ready and not report:
+            problems = "; ".join((*report.problems, *report.baseline_problems))
+            checklist = checklist.poison(f"readiness failed: {problems[:200]}")
+        elif ready:
+            checklist = checklist.model_copy(update={"trusted": True})
+        print(render_checklist(checklist, subject="contract-bearing crates"))
+    if cheat_status:
+        # the proof-escape scan grid: verus judges OUTCOMES (does it
+        # verify?), the cheat tier judges the escape SURFACE (how) — so
+        # an admitted/smuggled proof shows the verus grid all green and
+        # the cheat grid refusing the exact crate + construct
+        cheat_verdict = make_attestation_predicate(
+            CvmSubprocessClient(), protocols)(attestation_request(fe.cheat_id))
+        cheat_list = cheat_crate_checklist(
+            cheat_verdict, protocols[fe.cheat_id].asp_args["cheat_scan_verus"])
+        if ready and report:
+            cheat_list = cheat_list.model_copy(update={"trusted": True})
+        print(render_checklist(cheat_list, subject="proof-escape scan"))
 
 
 def _find_marker_block(lines: list, begin: str, end: str):
@@ -2254,6 +2268,8 @@ def main() -> None:
     parser.add_argument("--validate", action="store_true")
     parser.add_argument("--ready", action="store_true")
     parser.add_argument("--status", action="store_true")
+    parser.add_argument("--cheat-status", action="store_true",
+                        help="render the per-crate proof-escape (cheat) grid")
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--immutable-model", action="store_true")
     parser.add_argument("--repair-granularity", choices=("file", "slice"),
@@ -2289,7 +2305,7 @@ def main() -> None:
         # standalone: seed or check the freshness record, no episode
         fresh_deps_guard()
         return
-    if cli.ready or cli.status:
+    if cli.ready or cli.status or cli.cheat_status:
         # the progress view: tamper flags apply first (a checklist over
         # a deliberately broken tree is a demo beat), and NOTHING is
         # restored on exit — the view must not mutate the tree
@@ -2297,7 +2313,8 @@ def main() -> None:
         for tamper, flag in tampers:
             if flag:
                 tamper(fe, protocols)
-        status_flow(fe, protocols, ready=cli.ready, status=cli.status)
+        status_flow(fe, protocols, ready=cli.ready, status=cli.status,
+                    cheat_status=cli.cheat_status)
         return
     if cli.promote:
         protocols = load_protocols(fe, validate=True)
