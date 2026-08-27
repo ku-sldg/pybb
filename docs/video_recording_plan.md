@@ -1,6 +1,6 @@
 # Recording plan — isolette demo section (video presentation)
 
-Step-by-step runbook for capturing the six demo scenes (five acts) of
+Step-by-step runbook for capturing the eight demo scenes (seven acts) of
 the lifecycle-attestation video. Companion docs:
 [video_presentation_outline.md](video_presentation_outline.md) (talk
 plan, act timings), [video_slide_drafts.md](video_slide_drafts.md)
