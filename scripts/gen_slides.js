@@ -677,6 +677,62 @@ ACTS.forEach((act) => {
   sa.addNotes(act.notes + "\nWatch-for line doubles as the VO opener over the terminal cut. Full runbook: docs/video_recording_plan.md.");
 });
 
+// ---------- Ecosystems: one blackboard, many artifact pipelines ----------
+let seco = pres.addSlide();
+seco.background = { color: WHITE };
+seco.addText("One blackboard, many artifact pipelines", {
+  x: 0.7, y: 0.4, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true,
+  color: NAVY, margin: 0,
+});
+seco.addText([
+  { text: "The blackboard, controller, repair ladder, and artifact classes don\u2019t change \u2014 only the ", options: {} },
+  { text: "pipeline around them does", options: { bold: true } },
+  { text: ": the modeling language, the prover, and the target runtime.", options: {} },
+], { x: 0.7, y: 1.15, w: 12.0, h: 0.5, fontFace: BODY, fontSize: 15, italic: true, color: DARK, margin: 0 });
+
+const MID_E = "3A4A8C";
+// one pipeline row: chips left-to-right with arrows, an italic example label below
+function pipelineRow(y, chips, chipColor, textColor, example, badge) {
+  let x = 0.7;
+  chips.forEach((label, i) => {
+    const w = Math.max(1.35, 0.115 * label.length + 0.5);
+    seco.addShape(pres.ShapeType.roundRect, {
+      x, y, w, h: 0.62, rectRadius: 0.06, fill: { color: chipColor }, line: { type: "none" },
+    });
+    seco.addText(label, {
+      x, y, w, h: 0.62, fontFace: BODY, fontSize: 13, bold: true, color: textColor,
+      align: "center", valign: "middle", margin: 0.02,
+    });
+    if (i < chips.length - 1) {
+      seco.addText("\u2192", { x: x + w - 0.02, y, w: 0.4, h: 0.62, fontFace: BODY,
+        fontSize: 15, color: MUTED, align: "center", valign: "middle", margin: 0 });
+    }
+    x += w + 0.38;
+  });
+  if (badge) {
+    seco.addText(badge, { x: x + 0.05, y, w: 2.4, h: 0.62, fontFace: BODY, fontSize: 12,
+      bold: true, italic: true, color: NAVY, align: "left", valign: "middle", margin: 0 });
+  }
+  seco.addText(example, { x: 0.72, y: y + 0.6, w: 11.5, h: 0.3, fontFace: BODY,
+    fontSize: 11, italic: true, color: MUTED, align: "left", margin: 0 });
+}
+
+// reference (highlighted) + three other ecosystems
+pipelineRow(2.1, ["SysML v2", "HAMR", "Verus \u00b7 Rust", "seL4 \u00b7 Microkit"], NAVY, WHITE,
+  "the isolette \u2014 the demo you just saw", "\u25c0 demo");
+pipelineRow(3.35, ["AADL", "HAMR", "Slang \u00b7 JVM"], MID_E, WHITE,
+  "a different modeling language and target runtime, same artifact classes and Copland protocols  (temp-control)");
+pipelineRow(4.6, ["Lean", "blessed statements + workflow-owned proofs"], MID_E, WHITE,
+  "the goal-directed encoding: attestation enforces one invariant while synthesis iterates  (landing-gear, temp-control)");
+pipelineRow(5.85, ["Rocq", "proofs + synthesis (tactic portfolio, LLM)"], MID_E, WHITE,
+  "proof synthesis as a repair strategy  (temp-control)");
+
+seco.addNotes(
+  "High-level breadth slide (section 3 opener). The point: the blackboard workflow is invariant; the pipeline swaps - two frontends (SysML, AADL), four prover/target stacks (Verus/Rust, Slang/JVM, Lean, Rocq), example systems beyond the isolette (landing-gear, temp-control), all real in the repo.\n" +
+  "Repair-strategy diversity deliberately CUT from this slide - it lands in the capstone section instead.\n" +
+  "Each row is a pipeline; varying chip counts are intentional (Lean/Rocq are prover-centric, no separate HAMR codegen chain)."
+);
+
 // ---------- References (deck final slide) ----------
 // Collects ALL deck references; add new entries here as the deck grows.
 let sref = pres.addSlide();

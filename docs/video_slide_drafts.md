@@ -485,11 +485,28 @@ runbook):
   tightens: fold III into II, drop VI's scene 7, or show one of scene
   9's two axiom beats.
 
-## Slide 13 — Other ecosystems — STUB
+## Ecosystems — "One blackboard, many artifact pipelines" — DRAFTED (deck slide 16)
 
-Compress the outline's five bullets (Rocq · Lean · AADL-Slang ·
-diverse repair strategies · the section's point) into one or two
-slides; density decision pending.
+**On-slide**: title + a one-line thesis (the blackboard/controller/
+repair-ladder/artifact-classes are invariant; only the pipeline —
+modeling language, prover, target runtime — swaps), then four pipeline
+rows rendered as chip sequences with an italic example-system label
+under each:
+
+- **SysML v2 → HAMR → Verus · Rust → seL4 · Microkit** — the isolette
+  (highlighted navy, "◀ demo")
+- **AADL → HAMR → Slang · JVM** — temp-control
+- **Lean → blessed statements + workflow-owned proofs** — landing-gear,
+  temp-control
+- **Rocq → proofs + synthesis (tactic portfolio, LLM)** — temp-control
+
+**Decisions** (2026-08-27): one slide, deliberately high-level (breadth
+not depth — no counts/tiers). Three other ecosystems beside the
+reference; AADL→Rust dropped as redundant with the demo's target.
+Example systems named parenthetically. **Repair-strategy footer cut
+from this slide** — it lands in the capstone section instead. Varying
+chip counts are intentional (Lean/Rocq are prover-centric, no separate
+HAMR codegen chain).
 
 ## Slides 14–16 — Capstone A / B / C — DRAFTED (in the outline)
 
