@@ -487,26 +487,35 @@ runbook):
 
 ## Ecosystems — "One blackboard, many artifact pipelines" — DRAFTED (deck slide 16)
 
-**On-slide**: title + a one-line thesis (the blackboard/controller/
-repair-ladder/artifact-classes are invariant; only the pipeline —
-modeling language, prover, target runtime — swaps), then four pipeline
-rows rendered as chip sequences with an italic example-system label
-under each:
+**Layout**: title + one-line thesis (blackboard / controller / repair
+ladder / artifact classes invariant; only the pipeline swaps — modeling
+language, prover, target runtime, **and the attestation primitives**),
+then a **2×2 card grid**. Each card: title = the artifact pipeline,
+caption = example system(s), 3–4 bullets. The isolette card is
+highlighted navy.
 
-- **SysML v2 → HAMR → Verus · Rust → seL4 · Microkit** — the isolette
-  (highlighted navy, "◀ demo")
-- **AADL → HAMR → Slang · JVM** — temp-control
-- **Lean → blessed statements + workflow-owned proofs** — landing-gear,
-  temp-control
-- **Rocq → proofs + synthesis (tactic portfolio, LLM)** — temp-control
+- **SysML v2 → HAMR → Rust / Verus** — *isolette (◀ the demo)*:
+  SysMLv2 GUMBO component contracts · seL4/Microkit runtime target ·
+  every artifact class measured
+- **AADL → HAMR → Slang / Logika** — *temp-control*: AADL GUMBO
+  contracts · JVM runtime target · same blackboard, similar Copland
+  protocols
+- **Standalone Rust / Verus** — *find-max-verus*: contracts + proofs
+  written directly in Verus · no model/codegen (impl + proof classes
+  only) · proof-repair experiments: AutoVerus, KU Dogtreat linear
+  planner
+- **Interactive Theorem Provers: Lean / Rocq** — *landing-gear,
+  temp-control*: blessed theorem statements, workflow-owned
+  implementations + proofs · tactic- and LLM-driven proof repair ·
+  goal-directed invariant · ITP-specific axiom checks
 
-**Decisions** (2026-08-27): one slide, deliberately high-level (breadth
-not depth — no counts/tiers). Three other ecosystems beside the
-reference; AADL→Rust dropped as redundant with the demo's target.
-Example systems named parenthetically. **Repair-strategy footer cut
-from this slide** — it lands in the capstone section instead. Varying
-chip counts are intentional (Lean/Rocq are prover-centric, no separate
-HAMR codegen chain).
+**Decisions**: iterated from a pipeline-chips version to the card grid
+(2026-08-27..30); title carries the pipeline, examples become captions
+(user edits). Four cards: added a standalone Rust/Verus card and
+combined Lean+Rocq to stay at four. Repair-strategy breadth surfaced
+per-card (AutoVerus/Dogtreat on the Verus card; tactic/LLM on the ITP
+card) rather than a global footer. Content is the user's hand-edited
+eco_edited.pptx, ported verbatim into the generator.
 
 ## Slides 14–16 — Capstone A / B / C — DRAFTED (in the outline)
 
