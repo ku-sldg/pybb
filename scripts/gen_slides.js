@@ -729,6 +729,60 @@ ACTS.forEach((act) => {
   );
 }
 
+// ---------- Capstone A: AI in the loop (untrusted synthesis, deterministic audit) ----------
+{
+  const TINT = "E4E7EF";
+  const sa = pres.addSlide();
+  sa.background = { color: WHITE };
+  sa.addText("AI in the loop", {
+    x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0,
+  });
+  sa.addText("untrusted artifact synthesis and repair;  verified audit and deterministic appraisal", {
+    x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0,
+  });
+
+  const th = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 13.5, align: "left", valign: "middle" } });
+  const td = (runs, fill) => ({ text: runs, options: { fill: { color: fill || WHITE }, color: DARK, fontSize: 12, align: "left", valign: "middle" } });
+  const B = (t) => ({ text: t, options: { bold: true } });
+  const P = (t) => ({ text: t, options: {} });
+
+  const rows = [
+    [th("Workflow stage"), th("Where AI participates"), th("The rule")],
+    [td([B("Model / spec")]),
+     td([P("LLMs may draft or restate specs")]),
+     td([P("only the administrator "), B("blesses"), P(" \u2014 authority is human")])],
+    [td([B("Implementation")]),
+     td([P("spec-guided synthesis / re-derivation with LLM engines")]),
+     td([P("the seed proofs must prove again against the blessed statements")])],
+    [td([B("Proofs")]),
+     td([P("LLM-suggested tactic portfolio (deterministic at runtime) \u00b7 LLM API calls + LLM-assisted desktop sessions (loop is paused) \u00b7 Custom proof repair agents (AutoVerus \u00b7 KU Dogtreat linear planner)")]),
+     td([P("a repair claim is worthless without evidence; only fresh measurement re-establishes good standing")])],
+    [td([B("Verification & appraisal")], TINT),
+     td([B("none \u2014 by design")], TINT),
+     td([P("deterministic judges: proof kernels (Rocq, Lean, Verus), hash appraisal vs signed goldens, semantic analysis of source code")], TINT)],
+    [td([B("Evidence / trust state")], TINT),
+     td([B("none \u2014 by design")], TINT),
+     td([P("cryptographic anchor \u00b7 non-derivability; no one (human or AI) may repair a baseline without fresh administrator blessing")], TINT)],
+  ];
+  sa.addTable(rows, {
+    x: 0.7, y: 1.75, w: 11.9, colW: [2.5, 4.9, 4.5],
+    border: { type: "solid", color: "D8DEEA", pt: 1 },
+    rowH: [0.4, 0.62, 0.62, 1.0, 0.72, 0.72], margin: 0.09, fontFace: BODY,
+  });
+
+  sa.addText([
+    { text: "\uD83D\uDD12  the bottom two \u2014 the judges \u2014 are AI-free by design", options: { bold: true, color: NAVY } },
+    { text: ":  an LLM\u2019s output is just another untrusted artifact, facing the same episode and appraisal as a human edit or a tamper. Guarantees never depend on LLM engines being good, honest, or even present.", options: { color: DARK } },
+  ], { x: 0.7, y: 6.55, w: 11.9, h: 0.75, fontFace: BODY, fontSize: 12.5, italic: true, align: "left", valign: "top", margin: 0 });
+
+  sa.addNotes(
+    "Capstone slide 1 of 3 (theme: 'AI in the loop' as the big title, a descriptive caption beneath - B and C reuse the header).\n" +
+    "One idea: AI helps everywhere EXCEPT the judges. The top three stages (model, implementation, proofs) are AI-assisted; the bottom two (verification/appraisal, evidence/trust state) are AI-free by design - the shaded band.\n" +
+    "The Proofs row is where the repair-strategy breadth lands (deferred from the ecosystems slide): tactic portfolio, LLM (API + desktop sessions), AutoVerus, KU Dogtreat linear planner.\n" +
+    "Motivation flip (speaker, sets up the close): as more lifecycle artifacts ARE AI-generated, lifecycle attestation is what makes them trustworthy - provenance and evidence, not provider assurances."
+  );
+}
+
 // ---------- References (deck final slide) ----------
 // Collects ALL deck references; add new entries here as the deck grows.
 let sref = pres.addSlide();
