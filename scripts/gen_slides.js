@@ -737,7 +737,7 @@ ACTS.forEach((act) => {
   sa.addText("AI in the loop", {
     x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0,
   });
-  sa.addText("untrusted artifact synthesis and repair;  verified audit and deterministic appraisal", {
+  sa.addText("untrusted artifact synthesis/repair;  verified, deterministic appraisal", {
     x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0,
   });
 
@@ -780,6 +780,58 @@ ACTS.forEach((act) => {
     "One idea: AI helps everywhere EXCEPT the judges. The top three stages (model, implementation, proofs) are AI-assisted; the bottom two (verification/appraisal, evidence/trust state) are AI-free by design - the shaded band.\n" +
     "The Proofs row is where the repair-strategy breadth lands (deferred from the ecosystems slide): tactic portfolio, LLM (API + desktop sessions), AutoVerus, KU Dogtreat linear planner.\n" +
     "Motivation flip (speaker, sets up the close): as more lifecycle artifacts ARE AI-generated, lifecycle attestation is what makes them trustworthy - provenance and evidence, not provider assurances."
+  );
+}
+
+// ---------- Capstone B: AI built the loop ----------
+{
+  const sb = pres.addSlide();
+  sb.background = { color: WHITE };
+  sb.addText("AI built the loop", {
+    x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0,
+  });
+  sb.addText("blackboard and attestation infrastructure, artifact measurements, attestation protocols, attacks", { x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0 });
+
+  const th = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 13.5, align: "left", valign: "middle" } });
+  const td = (runs) => ({ text: runs, options: { fill: { color: WHITE }, color: DARK, fontSize: 12, align: "left", valign: "middle" } });
+  const B = (t) => ({ text: t, options: { bold: true } });
+  const I = (t) => ({ text: t, options: { italic: true } });
+  const P = (t) => ({ text: t, options: {} });
+
+  const rows = [
+    [th("What AI built"), th(""), th("Judged by")],
+    [td([B("Blackboard infrastructure")]),
+     td([P("pybb framework (blackboard / controller / knowledge sources), demo arcs, install script, CI suite, detailed documentation")]),
+     td([P("Untrusted orchestration (evidence bundles are independently-verifiable)")])],
+    [td([B("CVM core & frontends")]),
+     td([P("bpar (parallel Copland term) "), I("in the verified CVM"), P("; --stdin / --req_file frontend fixes")]),
+     td([B("Rocq proofs w.r.t. CVM reference semantics --"), P("Claude couldn\u2019t update existing proofs automatically, but assisted an expert Rocq developer")])],
+    [td([B("Measurement primitives")]),
+     td([B("12 new + 7 upgraded"), P(" asp-libs binaries \u2014 hashing, the Lean/Rocq/HAMR runners & appraisers, the cheat scan, golden-slice extraction")]),
+     td([P("tool hashes measure-then-use; syntax-guided analysis of source files, appraisal vs signed goldens")])],
+    [td([B("Attestation protocols")]),
+     td([B("42 provisioned"), P(" Copland protocol directories across the ecosystems")]),
+     td([P("readiness-gate config checks; blessed baselines")])],
+    [td([B("Attacks")]),
+     td([P("scripted demo tampers (scenes 1\u20138) + "), B("7 red-team attack classes"), P(" (scenes 9\u201312, 14)")]),
+     td([P("every scene gates on detection / attribution; each forced a new tier ("), I("\u2192 next slide"), P(")")])],
+  ];
+  sb.addTable(rows, {
+    x: 0.7, y: 1.75, w: 11.9, colW: [2.6, 5.6, 3.7],
+    border: { type: "solid", color: "D8DEEA", pt: 1 },
+    rowH: [0.4, 0.7, 0.72, 0.92, 0.62, 0.82], margin: 0.09, fontFace: BODY,
+  });
+
+  sb.addText([
+    { text: "A virtuous cycle \u2013 ", options: { bold: true } },
+    { text: "AI-assisted workflow to add (deterministic) tools and domain-specific measurement capabilities.  ", options: {} },
+  ], { x: 0.7, y: 6.7, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13.5, italic: true, color: NAVY, align: "left", margin: 0 });
+
+  sb.addNotes(
+    "Capstone slide 2 of 3 (theme: 'AI in the loop' big title + caption). The one idea: AI built the entire attestation stack, and that stack is held to the same measured discipline it enforces.\n" +
+    "Counts current 2026-08-30: 12 new + 7 upgraded asp-libs binaries (git-attested, separate repo); 42 provisioned Copland protocol dirs (the newest, the l1b marker tier, was built in this very session - a callback available if wanted); 7 red-team attack classes.\n" +
+    "cvm-mcp aside (15 s): an AI-built MCP interface so AI agents can drive attestation - AI both built the loop and can drive it.\n" +
+    "Git provenance deliberately de-emphasized per user; the point is the self-application (the reflexive footer), not the Co-Authored-By trailers."
   );
 }
 
