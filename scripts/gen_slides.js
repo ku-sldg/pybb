@@ -734,9 +734,11 @@ ACTS.forEach((act) => {
   const TINT = "E4E7EF";
   const sa = pres.addSlide();
   sa.background = { color: WHITE };
-  sa.addText("AI in the loop", {
-    x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0,
-  });
+  sa.addText([
+    { text: "AI ", options: {} },
+    { text: "in", options: { italic: true } },
+    { text: " the loop", options: {} },
+  ], { x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0 });
   sa.addText("untrusted artifact synthesis/repair;  verified, deterministic appraisal", {
     x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0,
   });
@@ -787,9 +789,11 @@ ACTS.forEach((act) => {
 {
   const sb = pres.addSlide();
   sb.background = { color: WHITE };
-  sb.addText("AI built the loop", {
-    x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0,
-  });
+  sb.addText([
+    { text: "AI ", options: {} },
+    { text: "built", options: { italic: true } },
+    { text: " the loop", options: {} },
+  ], { x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0 });
   sb.addText("blackboard and attestation infrastructure, artifact measurements, attestation protocols, attacks", { x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0 });
 
   const th = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 13.5, align: "left", valign: "middle" } });
@@ -832,6 +836,69 @@ ACTS.forEach((act) => {
     "Counts current 2026-08-30: 12 new + 7 upgraded asp-libs binaries (git-attested, separate repo); 42 provisioned Copland protocol dirs (the newest, the l1b marker tier, was built in this very session - a callback available if wanted); 7 red-team attack classes.\n" +
     "cvm-mcp aside (15 s): an AI-built MCP interface so AI agents can drive attestation - AI both built the loop and can drive it.\n" +
     "Git provenance deliberately de-emphasized per user; the point is the self-application (the reflexive footer), not the Co-Authored-By trailers."
+  );
+}
+
+// ---------- Capstone C: AI attacked the loop ----------
+{
+  const HILITE = "EDEFF4";
+  const sc = pres.addSlide();
+  sc.background = { color: WHITE };
+  sc.addText([
+    { text: "AI ", options: {} },
+    { text: "attacked", options: { italic: true } },
+    { text: " the loop", options: {} },
+  ], { x: 0.7, y: 0.38, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 40, bold: true, color: NAVY, margin: 0 });
+  sc.addText("seven attack types, each undetected at discovery time \u2014 each forced a new measurement capability", {
+    x: 0.72, y: 1.12, w: 12.0, h: 0.45, fontFace: BODY, fontSize: 16, italic: true, color: MUTED, margin: 0,
+  });
+
+  const th = (t) => ({ text: t, options: { bold: true, color: WHITE, fill: { color: NAVY }, fontSize: 12.5, align: "left", valign: "middle" } });
+  const td = (runs, fill) => ({ text: runs, options: { fill: { color: fill || WHITE }, color: DARK, fontSize: 11, align: "left", valign: "middle" } });
+  const B = (t) => ({ text: t, options: { bold: true } });
+  const P = (t) => ({ text: t, options: {} });
+
+  const rows = [
+    [th("Attack"), th("Avoided detection by\u2026"), th("New measurement forced")],
+    [td([B("ADMIT"), P(" \u2014 assume(false) in an unmeasured bridge file")]),
+     td([P("cargo-verus reports the same success over the hollow proof")]),
+     td([P("cheat scan (cheat_scan_verus)")])],
+    [td([B("SMUGGLE"), P(" \u2014 external_body broadcast axiom, ensures false")]),
+     td([P("cargo-verus reports the same success over the hollow proof")]),
+     td([P("cheat scan (cheat_scan_verus)")])],
+    [td([B("SHRINK"), P(" \u2014 a system-proof module commented out")]),
+     td([P("smaller crate still verifies, 0 errors")]),
+     td([P("sysproof file hashes")])],
+    [td([B("SWAP"), P(" \u2014 real VC dropped, trivial one added, constant count")]),
+     td([P("outcome, count, escape surface all unchanged")]),
+     td([P("sysproof file hashes")])],
+    [td([B("STALE"), P(" \u2014 semantic flip in a cached dep, mtime preserved")]),
+     td([P("mtime-gated cache serves the stale verdict; green over false bytes")]),
+     td([P("gensrc measurement")])],
+    [td([B("INVERT"), P(" \u2014 heat command flipped in unverified FFI glue")]),
+     td([P("Verus never reads the body \u2014 unverified code, out of scope")]),
+     td([P("gensrc measurement")])],
+    [td([B("LAUNDER"), P(" \u2014 contract weakened + impl inverted to match")], HILITE),
+     td([P("self-consistent; gap in contract coverage for attestation report\u2019s compute_cases construct")], HILITE),
+     td([P("stopgap contract measurement, contract coverage check at provisioning")], HILITE)],
+  ];
+  sc.addTable(rows, {
+    x: 0.7, y: 1.7, w: 11.9, colW: [3.95, 4.45, 3.5],
+    border: { type: "solid", color: "D8DEEA", pt: 1 },
+    rowH: [0.36, 0.55, 0.55, 0.5, 0.6, 0.62, 0.62, 0.86], margin: 0.08, fontFace: BODY,
+  });
+
+  sc.addText([
+    { text: "Adversarial co-development", options: { bold: true } },
+    { text: " \u2014 defense-in-depth, anomaly detection, mitigation.", options: {} },
+  ], { x: 0.7, y: 6.72, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13.5, italic: true, color: NAVY, align: "left", margin: 0 });
+
+  sc.addNotes(
+    "Capstone slide 3 of 3 (title 'AI attacked the loop'). The same sessions red-teamed the stack they built; every attack was green across every EXISTING tier when found, and each forced a new measurement capability - defense-in-depth measured into existence.\n" +
+    "7 attacks -> 4 measurement capabilities: cheat scan (ADMIT, SMUGGLE), sysproof file hashes (SHRINK, SWAP), gensrc measurement (STALE, INVERT), and the l1b marker tier + coverage lint (LAUNDER, highlighted - found this session).\n" +
+    "STALE vs INVERT are two different blind spots of 'verification succeeded': STALE = a stale cached verdict (verified over old bytes); INVERT = unverified code out of the proof's scope. Same detector (gensrc bytes), different evasion.\n" +
+    "LAUNDER is the reflexive one: it exposed a COVERAGE gap in the measurement itself (the report emits no compute_cases slice), so it forced a detector PLUS a provisioning invariant. Root cause is upstream (HAMR report emission) - see draft_hamr_report_contract_coverage.md.\n" +
+    "Speaker: the escalating lesson of 9->12 is that 'verification succeeded' and 'no cheats present' are both weaker claims than 'these are the blessed bytes.'"
   );
 }
 
