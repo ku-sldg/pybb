@@ -26,3 +26,7 @@ history.txt
 secrets*
 .demo.lock/
 .dep_freshness.json
+
+# Video recordings (multi-GB .mov/.mp4; only docs/ and recordings/takes.md are tracked)
+recordings/**
+!recordings/takes.md
