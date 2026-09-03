@@ -437,19 +437,31 @@ s5b.addText("pybb: key components", {
 });
 
 const comps = [
-  { term: "Blackboard", desc: "the shared store: every measurement lands as an entry with its condition and standing; three segments (provision · certify · escalate) plus a full history of every change" },
-  { term: "Blackboard Entry (Key)", desc: "one measurement under judgment, identified by its key: the measurement, its condition, its standing, its repair history" },
-  { term: "Episode", desc: "one full judgment of an entry: the attestation runs once and its verdicts are memoized until the episode ends — or is restarted for genuinely fresh measurement" },
-  { term: "Partition", desc: "the division of blackboard entries among different workflow stages: each knowledge source watches its own collection of keys, and an entry sits in the partition of whichever rung currently owns it" },
-  { term: "Controller", desc: "the cycle: evaluates every entry (provision first), dispatches keys onto outcome-routed chains, advances or hands off, escalates; halts only when everything is in good standing" },
-  { term: "Knowledge source (KS)", desc: "a repair rung: operates only on entries in its partition (optionally a single component), bounded by max_attempts; its work is always re-judged, never trusted" },
-  { term: "Route", desc: "the per-key chains: on_fail = the repair ladder, on_pass = a confirmation chain before an entry may rest in good standing" },
-  { term: "History / Ledger", desc: "the blackboard's running record of every change across all segments — measurements, repairs, verdicts — the audit trail of the repair lifecycle" },
+  // First four definitions tightened per user edits 2026-09-03.
+  { term: "Blackboard", desc: "a collection of entries:  the shared measurement store updated cooperatively by blackboard components" },
+  { term: "Blackboard Entry (Key)", desc: "a measurement under judgment:  its measurement content, current standing, repair history" },
+  { term: "Episode", desc: "one full judgment of an entry: attestation records verdicts, must be restarted for fresh measurement" },
+  { term: "Partition", desc: "the division of blackboard entries among different workflow stages (i.e. provision, certify, escalate) " },
+  { term: "Controller", desc: "evaluates every entry (once provisioned), dispatches keys onto outcome-routed chains, advances or hands off, escalates, halts only when entries are in good standing" },
+  { term: "Knowledge source (KS)", desc: "operates only on entries in its partition (optionally a single component), bounded by max attempts; its work is always re-judged, never trusted" },
+  // desc as runs: the route-chain names are set in Courier New (user edit 2026-09-03).
+  { term: "Route", desc: [
+      { text: "the per-key control flow chains: " },
+      { text: "on_fail ", options: { fontFace: "Courier New" } },
+      { text: "= the repair ladder, " },
+      { text: "on_pass ", options: { fontFace: "Courier New" } },
+      { text: "= a confirmation chain before good standing" },
+    ] },
+  { term: "History / Ledger", desc: "the blackboard's running record of every change across all partitions (measurements, repairs, verdicts), documenting the audit trail of the repair lifecycle" },
 ];
 const compParas = [];
 comps.forEach((c, i) => {
   compParas.push({ text: c.term, options: { bold: true, color: NAVY, bullet: { code: "2022" }, breakLine: false } });
-  compParas.push({ text: " — " + c.desc, options: { color: DARK, breakLine: i !== comps.length - 1, paraSpaceAfter: 9 } });
+  const runs = Array.isArray(c.desc) ? c.desc : [{ text: c.desc }];
+  runs.forEach((r, j) => {
+    const last = j === runs.length - 1;
+    compParas.push({ text: (j === 0 ? " — " : "") + r.text, options: Object.assign({ color: DARK, breakLine: last && i !== comps.length - 1, paraSpaceAfter: last ? 9 : undefined }, r.options || {}) });
+  });
 });
 s5b.addText(compParas, {
   x: 0.7, y: 1.5, w: 12.0, h: 5.7, fontFace: BODY, fontSize: 16, align: "left", valign: "top", margin: 0,
@@ -537,21 +549,22 @@ s7.background = { color: WHITE };
   });
 }
 
-s7.addText("The isolette", {
+s7.addText("The Isolette Example", {
   x: 0.7, y: 1.04, w: 8.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true,
   color: NAVY, margin: 0,
 });
 
 // Left half: what it is
+// Wording + structure per user edits 2026-09-03: each beat carries one "o" sub-bullet.
+const SUB = { code: "006F" }; // PowerPoint's default level-2 "o" bullet
 const introParas = [
-  { text: "The system: ", options: { bold: true, breakLine: false } },
-  { text: "an infant-incubator thermostat — regulate and monitor functions keep a newborn's environment in a safe temperature range; heat control on/off", options: { breakLine: true, paraSpaceAfter: 2 } },
-  { text: "requirements traceable to FAA AR-08-32 (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10 } },
-  { text: "The relevance: ", options: { bold: true, breakLine: false } },
-  { text: "the INSPECTA program's seL4/Microkit exemplar — a real, current, safety-critical development artifact, not a toy built for this talk", options: { breakLine: false } },
+  { text: "The system: ", options: { bold: true, breakLine: false, bullet: { code: "2022" } } },
+  { text: "infant-incubator thermostat that regulates and monitors a newborn's environment to maintain a safe temperature range (heat control on/off)", options: { breakLine: true, paraSpaceAfter: 2 } },
+  { text: "requirements traceable to FAA AR-08-32 (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10, bullet: SUB, indentLevel: 1 } },
+  { text: "The relevance: ", options: { bold: true, breakLine: false, bullet: { code: "2022" } } },
+  { text: "the INSPECTA program's seL4/Microkit HAMR-based pipeline", options: { breakLine: true, paraSpaceAfter: 2 } },
+  { text: "current, safety-critical development artifact, not a toy example", options: { breakLine: false, bullet: SUB, indentLevel: 1 } },
 ];
-introParas[0].options.bullet = { code: "2022" };
-introParas[3].options.bullet = { code: "2022" };
 s7.addText(introParas, {
   x: 0.62, y: 1.98, w: 6.73, h: 2.5, fontFace: BODY, fontSize: 13.5, color: DARK,
   align: "left", valign: "top", margin: 0,
@@ -559,8 +572,8 @@ s7.addText(introParas, {
 
 // pipeline graphic
 {
-  const stages = ["SysMLv2 model\n+ GUMBO contracts", "HAMR\ncodegen", "Verus-verified\nRust", "seL4 / Microkit\ntarget"];
-  const py = 4.35, ph = 0.85, pgap = 0.34, px0 = 0.7, ptotal = 6.6;
+  const stages = ["SysMLv2 model\n+ GUMBO contracts", "HAMR\ncodegen", "Verus-verified\nRust", "seL4 + Microkit\ntarget"];
+  const py = 3.97, ph = 0.85, pgap = 0.34, px0 = 0.7, ptotal = 6.6; // py 4.35 -> 3.97 per user edits 2026-09-03
   const pw = (ptotal - pgap * (stages.length - 1)) / stages.length;
   stages.forEach((t, i) => {
     const x = px0 + i * (pw + pgap);
@@ -598,17 +611,14 @@ s7.addText([
   align: "left", valign: "top", margin: 0,
 });
 
-// Right half: the measured surface (big-number callouts)
-s7.addText("the measured surface", {
-  x: 7.7, y: 1.45, w: 4.9, h: 0.35, fontFace: BODY, fontSize: 13, italic: true, color: MUTED, align: "left", margin: 0,
-});
+// Right half: big-number callouts ("the measured surface" heading removed per user edits 2026-09-03)
 const stats = [
-  ["13", "measured files (SysML packages + contract-bearing Rust)"],
+  ["13", "measured files (SysMLv2 packages, Verus-contract-bearing Rust)"],
   ["67", "contract slices"],
-  ["8", "crates re-verified every episode (7 components + the system proof)"],
+  ["8", "crates re-verified every episode (7 components and the system-level proof)"],
   ["1,862", "system-proof obligations"],
   ["30", "toolchain + dependency files hashed measure-then-use (4 Verus · 9 HAMR · 17 SysML libs)"],
-  ["8", "attestation tiers — the glossary's entry keys:\nprops · l1a · l2 · verus · cheat · sysproof · gensrc · report"],
+  ["8", "attestation tiers — the blackboard's entry keys:\nprops · l1a · l2 · verus · cheat · sysproof · gensrc · report"],
 ];
 stats.forEach(([num, label], i) => {
   const y = 1.78 + i * 0.82;
@@ -620,7 +630,7 @@ stats.forEach(([num, label], i) => {
     align: "left", valign: "middle", margin: 0,
   });
   s7.addText(label, {
-    x: i === 0 ? 8.97 : 9.25, y, w: i === 0 ? 3.58 : 3.3, h: 0.74, fontFace: BODY, fontSize: 10, color: DARK,
+    x: i === 0 ? 8.88 : 9.25, y, w: i === 0 ? 3.67 : 3.3, h: 0.74, fontFace: BODY, fontSize: 10, color: DARK,
     align: "left", valign: "middle", margin: 0,
   });
 });
@@ -1001,5 +1011,33 @@ sref.addNotes(
 );
 
 const OUT = process.argv[2] || require("path").join(__dirname, "..", "docs", "video_slides_draft.pptx");
+
+// ---------- Post-build fidelity patches ----------
+// pptxgenjs cannot express a few paragraph properties PowerPoint wrote when the user
+// edited the deck directly. To keep regeneration byte-faithful to those edits, patch
+// the affected <a:pPr> elements in the written file. Each entry: slide XML part, the
+// 0-based index among that slide's lvl="1" paragraphs, and the exact pPr to install.
+const PPR_OVERRIDES = [
+  // Isolette slide (deck position 8): the two "o" sub-bullets use PowerPoint's default
+  // Courier New bullet font and its own hanging indents (user edit 2026-09-03).
+  { part: "ppt/slides/slide8.xml", lvl1Index: 0,
+    ppr: '<a:pPr marL="628650" lvl="1" indent="-171450"><a:spcAft><a:spcPts val="1000"/></a:spcAft><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
+  { part: "ppt/slides/slide8.xml", lvl1Index: 1,
+    ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
+];
+async function applyPprOverrides(file) {
+  const fs = require("fs"), JSZip = require("jszip");
+  const zip = await JSZip.loadAsync(fs.readFileSync(file));
+  for (const o of PPR_OVERRIDES) {
+    let xml = await zip.file(o.part).async("string");
+    let k = -1;
+    xml = xml.replace(/<a:pPr[^>]*\blvl="1"[^>]*>.*?<\/a:pPr>/gs, (m) => (++k === o.lvl1Index ? o.ppr : m));
+    if (k < o.lvl1Index) throw new Error(`pPr override: lvl1 paragraph ${o.lvl1Index} not found in ${o.part}`);
+    zip.file(o.part, xml);
+  }
+  fs.writeFileSync(file, await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" }));
+}
+
 pres.writeFile({ fileName: OUT })
+  .then(() => applyPprOverrides(OUT))
   .then(() => console.log("written: " + OUT));

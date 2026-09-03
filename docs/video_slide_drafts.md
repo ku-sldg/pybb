@@ -283,31 +283,26 @@ vocabulary the scenes will use, one line per term.
 
 **Content** (term bold, one-line description each):
 
-- **Blackboard** — the shared store: every measurement lands as an
-  entry with its condition and standing; three segments (provision ·
-  certify · escalate) plus a full history of every change
-- **Blackboard Entry (Key)** — one measurement under judgment,
-  identified by its key: the measurement, its condition, its standing,
-  its repair history
-- **Episode** — one full judgment of an entry: the attestation runs
-  once and its verdicts are memoized until the episode ends — or is
-  restarted for genuinely fresh measurement
+- **Blackboard** — a collection of entries: the shared measurement
+  store updated cooperatively by blackboard components
+- **Blackboard Entry (Key)** — a measurement under judgment: its
+  measurement content, current standing, repair history
+- **Episode** — one full judgment of an entry: attestation records
+  verdicts, must be restarted for fresh measurement
 - **Partition** — the division of blackboard entries among different
-  workflow stages: each knowledge source watches its own collection of
-  keys, and an entry sits in the partition of whichever rung currently
-  owns it
-- **Controller** — the cycle: evaluates every entry (provision first),
+  workflow stages (i.e. provision, certify, escalate)
+- **Controller** — evaluates every entry (once provisioned),
   dispatches keys onto outcome-routed chains, advances or hands off,
-  escalates; halts only when everything is in good standing
-- **Knowledge source (KS)** — a repair rung: operates only on entries
-  in its partition (optionally a single component), bounded by
-  max_attempts; its work is always re-judged, never trusted
-- **Route** — the per-key chains: **on_fail** = the repair ladder,
-  **on_pass** = a confirmation chain before an entry may rest in good
-  standing
+  escalates, halts only when entries are in good standing
+- **Knowledge source (KS)** — operates only on entries in its
+  partition (optionally a single component), bounded by max attempts;
+  its work is always re-judged, never trusted
+- **Route** — the per-key control flow chains: `on_fail` = the repair
+  ladder, `on_pass` = a confirmation chain before good standing
+  (chain names in monospace on-slide)
 - **History / Ledger** — the blackboard's running record of every
-  change across all segments — measurements, repairs, verdicts — the
-  audit trail of the repair lifecycle
+  change across all partitions (measurements, repairs, verdicts),
+  documenting the audit trail of the repair lifecycle
 
 **Parked — currently OFF the slide** (out of place in the component
 list; decided 2026-08-25 to leave off for now, placement TBD — e.g. a
@@ -341,6 +336,8 @@ success handoff, dispatch latching, max_cycles.
 - Budget note: +1 min to preliminaries (~5.5 total). Offset option if
   the 20-min cap binds: the architecture slide's talk time drops
   2 → 1.5 min since the glossary now carries the vocabulary load.
+- User edits 2026-09-03 (ported): all eight definitions tightened;
+  the Route entry sets `on_fail` / `on_pass` in Courier New.
 
 ---
 
@@ -389,37 +386,44 @@ position 7 the same day.
 demo: the roadmap strip rides at the top with the "Demo:" segment
 highlighted.
 
-**On-slide title**: "The isolette".
+**On-slide title**: "The Isolette Example" (was "The isolette";
+user edit 2026-09-03).
 
 **Left half — what it is** (four beats):
 
-- **The system**: an infant-incubator thermostat — regulate and
-  monitor functions keeping a newborn's environment in a safe
-  temperature range; heat control on/off. Citation line (on-slide,
-  small): requirements traceable to FAA AR-08-32 (the REQ-MHS-*
-  family the scenes will tamper with).
-- **The relevance**: the INSPECTA program's seL4/Microkit target — a
-  real, current, safety-critical development artifact, not a toy built
-  for this talk. (Lead-in renamed from "The provenance" per deck edit
-  2026-08-25.)
-- **The pipeline** (small horizontal graphic, not a bullet): SysMLv2
-  model + GUMBO contracts → HAMR codegen → Verus-verified Rust →
-  seL4/Microkit target.
+- **The system**: infant-incubator thermostat that regulates and
+  monitors a newborn's environment to maintain a safe temperature
+  range (heat control on/off).
+  - sub-bullet, small italic: requirements traceable to FAA AR-08-32
+    (the REQ-MHS-* family the scenes will tamper with). (Sub-bullets
+    use PowerPoint's default Courier New "o" glyph and indents; the
+    generator patches these in post-build to stay faithful.)
+- **The relevance**: the INSPECTA program's seL4/Microkit HAMR-based
+  pipeline. (Lead-in renamed from "The provenance" per deck edit
+  2026-08-25; wording and sub-bullet structure per user edit
+  2026-09-03.)
+  - sub-bullet: current, safety-critical development artifact, not a
+    toy example.
+- **The pipeline** (small horizontal graphic, not a bullet; moved up
+  to sit under the bullets, 2026-09-03): SysMLv2 model + GUMBO
+  contracts → HAMR codegen → Verus-verified Rust → seL4 + Microkit
+  target.
 - **Why this example**: every artifact class from the previous slide
   is present and measured — blessed model, generated contracts,
   developer-owned implementation, machine-checked proofs, pinned
   toolchain.
 
-**Right half — the measured surface** (big-number callouts):
+**Right half — big-number callouts** (the "the measured surface"
+heading above them removed 2026-09-03):
 
-- **13** measured files (SysML packages + contract-bearing Rust)
+- **13** measured files (SysMLv2 packages, Verus-contract-bearing Rust)
 - **67** contract slices
-- **8** crates re-verified every episode (7 components + the system
-  proof)
+- **8** crates re-verified every episode (7 components and the
+  system-level proof)
 - **1,862** system-proof obligations
 - **30** toolchain + dependency files hashed measure-then-use (4 Verus
   · 9 HAMR · 17 SysML libs)
-- **8** attestation tiers — the entry keys from the glossary slide:
+- **8** attestation tiers — the blackboard's entry keys:
   `props` · `l1a` · `l2` · `verus` · `cheat` · `sysproof` · `gensrc` ·
   `report`
 
