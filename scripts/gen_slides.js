@@ -15,19 +15,73 @@ const HDR = "Cambria", BODY = "Calibri";
 // ---------- Slide 1: Title ----------
 let s1 = pres.addSlide();
 s1.background = { color: NAVY };
-s1.addText("Lifecycle Attestation with pybb", {
-  x: 0.9, y: 2.4, w: 11.5, h: 1.2, fontFace: HDR, fontSize: 44, bold: true,
-  color: WHITE, align: "left", margin: 0,
+// Title with an inline lowercase gloss on the tool name, set small/italic/ice so it
+// reads as an aside (same face + color as the subtitle). Box widened to 12.0 so the
+// whole line stays on one line. Per user edits 2026-09-03: the letters that spell
+// "pybb" (py-b-b) are enlarged to 36pt bold inside the gloss.
+const gloss = (t) => ({ text: t, options: { fontFace: BODY, fontSize: 22, italic: true, color: ICE } });
+const glossBig = (t) => ({ text: t, options: { fontFace: BODY, fontSize: 36, bold: true, italic: true, color: ICE } });
+s1.addText([
+  { text: "Lifecycle Attestation with pybb", options: { fontFace: HDR, fontSize: 44, bold: true, color: WHITE } },
+  gloss(" ("), glossBig("py"), gloss("thon "), glossBig("b"), gloss("lack"), glossBig("b"), gloss("oard)"),
+], {
+  x: 0.9, y: 2.4, w: 12.0, h: 1.2, align: "left", margin: 0,
 });
-s1.addText("Measured trust across models, contracts, implementations, and proofs", {
+// Subtitle: two centered lines, wording per user edits 2026-09-03.
+s1.addText([
+  { text: "Measured trust across models, contracts, code, and proofs in ", options: { breakLine: true } },
+  { text: "high assurance, LLM-assisted development pipelines" },
+], {
   x: 0.9, y: 3.6, w: 11.5, h: 0.6, fontFace: BODY, fontSize: 20, italic: true,
-  color: ICE, align: "left", margin: 0,
+  color: ICE, align: "center", margin: 0,
 });
-s1.addText("Presenter name  ·  affiliation  ·  date", {
-  x: 0.9, y: 6.3, w: 11.5, h: 0.4, fontFace: BODY, fontSize: 14, color: ICE,
+// Author list (from the paper's IEEE author block; affiliations as numbered superscripts).
+// To add an author: append { name, aff } (aff = index into AFFILS, 1-based).
+// newLine: true starts a fresh line before that author (keeps the wrap tidy).
+const AFFILS = ["University of Kansas", "Collins Aerospace", "Kansas State University"];
+const AUTHORS = [
+  { name: "Adam Petz", aff: 1 },
+  { name: "Isaac Amundson", aff: 2 },
+  { name: "Timothy Barclay", aff: 2 },
+  { name: "David Hardin", aff: 2 },
+  { name: "Jason Belt", aff: 3 },
+  { name: "John Hatcliff", aff: 3 },
+  { name: "Anakha Krishna", aff: 1, newLine: true },
+  { name: "Ina Harris", aff: 1 },
+  { name: "Perry Alexander", aff: 1 },
+];
+const DATE = "September 2026";
+// Sponsor acknowledgment, wording from the HCSS 2026 paper's \thanks{} (hcss26.tex).
+const SPONSOR = "Supported by the DARPA PROVERS effort (contract FA8750-24-9-1000)";
+const authorRuns = [];
+AUTHORS.forEach((a, i) => {
+  if (a.newLine) authorRuns.push({ text: ",", options: { color: ICE, breakLine: true } });
+  authorRuns.push({ text: (i && !a.newLine ? ", " : "") + a.name, options: { color: ICE } });
+  authorRuns.push({ text: String(a.aff), options: { color: ICE, superscript: true } });
+});
+const affilRuns = [];
+AFFILS.forEach((name, i) => {
+  affilRuns.push({ text: (i ? "    " : "") + String(i + 1), options: { color: ICE, superscript: true } });
+  affilRuns.push({ text: name, options: { color: ICE } });
+});
+s1.addText(authorRuns, {
+  // Bottom-anchored tall box: extra authors wrap onto a second line that grows upward.
+  x: 0.9, y: 5.2, w: 11.5, h: 0.95, fontFace: BODY, fontSize: 16, color: ICE,
+  align: "left", valign: "bottom", margin: 0,
+});
+s1.addText(affilRuns, {
+  x: 0.9, y: 6.2, w: 11.5, h: 0.35, fontFace: BODY, fontSize: 13, color: ICE,
   align: "left", margin: 0,
 });
-s1.addNotes("Title card. Subtitle deliberately names the four core artifact classes - the deck's first echo of the artifact-class table (slide 6). Optional footer: INSPECTA program context.");
+s1.addText(DATE, {
+  x: 0.9, y: 6.6, w: 5.0, h: 0.35, fontFace: BODY, fontSize: 13, color: ICE,
+  align: "left", margin: 0,
+});
+s1.addText(SPONSOR, {
+  x: 5.9, y: 6.6, w: 6.5, h: 0.35, fontFace: BODY, fontSize: 12, color: ICE,
+  align: "right", margin: 0,
+});
+s1.addNotes("Title card. Subtitle deliberately names the four core artifact classes - the deck's first echo of the artifact-class table (slide 6). Footer: DARPA PROVERS sponsor acknowledgment with contract number (INSPECTA is the team's project under PROVERS).");
 
 // ---------- Slide 2: What is lifecycle attestation? ----------
 let s2 = pres.addSlide();

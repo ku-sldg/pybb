@@ -27,17 +27,34 @@ Global decisions:
 
 **Content**
 
-> **Lifecycle Attestation with pybb**
-> *Measured trust across models, contracts, implementations, and proofs*
+> **Lifecycle Attestation with pybb** *(**py**thon **b**lack**b**oard)*
+> *Measured trust across models, contracts, code, and proofs in*
+> *high assurance, LLM-assisted development pipelines* (centered, two lines)
 >
-> Presenter name · affiliation · date
+> Adam Petz¹, Isaac Amundson², Timothy Barclay², David Hardin², Jason Belt³, John Hatcliff³, Anakha Krishna¹, Ina Harris¹, Perry Alexander¹
+> ¹University of Kansas    ²Collins Aerospace    ³Kansas State University
+> September 2026    *Supported by the DARPA PROVERS effort (contract FA8750-24-9-1000)*
 
 **Visual**: clean title card; optional footer for program context
 (INSPECTA).
 
 **Decisions**: subtitle names the four core artifact classes on
 purpose — it is the deck's first echo of the artifact-class table
-(slide 6).
+(slide 6). Author block (2026-09-03) taken from the paper's IEEE
+author list with numbered-superscript affiliations; Will Thomas and
+Amer Tahat deliberately excluded per user. More authors to be added;
+the author box is bottom-anchored so a second line grows upward.
+Date is a placeholder until the presentation date is fixed. Sponsor
+footer (2026-09-03) right-aligned on the date line; wording copied from
+the HCSS 2026 paper's `\thanks{}` (hcss26.tex). Tool-name gloss
+(2026-09-03): "(python blackboard)" inline after pybb on the title line,
+lowercase, 22pt Calibri italic in the subtitle's ice color, so it reads
+as an aside rather than a separate caption (a stacked caption line was
+tried first and rejected). User edits in PowerPoint (2026-09-03), ported
+to the generator: the py/b/b letters of the gloss enlarged to 36pt bold
+so the acronym pops; subtitle reworded ("code" for "implementations",
+plus the "in high assurance, LLM-assisted development pipelines" tail)
+and set as two centered lines.
 
 ---
 
