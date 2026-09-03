@@ -221,17 +221,18 @@ three sketched candidates 2026-08-25), left to right:
 
 - **Administrator blessing (signs golden spec)** — dashed white box
   above the board (a human, out-of-band authority act, not a component
-  in the measured loop), "bless ⇒ provision" arrow into the provision
-  lane
+  in the measured loop), arrow into the provision lane (its "bless ⇒
+  provision" label removed 2026-09-03)
 - **measurement → Blackboard** (three lanes: provision / certify /
   escalate) → **Controller (evaluate = episode)** → dispatch → **KS 1
   → KS 2 → KS n**
 - **Green paths (on-pass)**: every KS returns to the Controller —
-  "re-verify · restart-episode ⇒ fresh measurement"; provision lane →
+  "on-pass: restart-episode ⇒ fresh measurement"; provision lane →
   measurement ("provisioned ⇒ re-measure")
-- **Red paths (on-fail)**: KS→KS handoff on exhaustion (changes
-  restored); route exhausted → escalate lane; provision → escalate
-  ("no repair chain: fail ⇒ escalate" — the readiness-gate refusal)
+- **Red paths (on-fail)**: KS→KS handoff — "on-fail: handoff to next
+  repair KS (attempts spent, changes restored)"; route exhausted →
+  escalate lane; provision → escalate ("on fail: no repair chain =>
+  escalate" — the readiness-gate refusal)
 - **Controller → measurement** loop along the bottom: "evaluate ⇒ run
   measurement"
 - Callout box (bottom, navy — visual rhyme with slide 2's banner):
@@ -239,10 +240,8 @@ three sketched candidates 2026-08-25), left to right:
   diagnosis*** of failure — every repair is judged only by ***fresh
   re-measurement*** (wording per deck edit 2026-08-25)
 
-**Checklist legend** (bottom-right corner box, monospace — the demo is
-read through these glyphs):
-
-> ✓ attested · ✗ refuted · ? poisoned, fail-closed
+**Checklist legend**: moved off this slide 2026-09-03 to the Act I
+transition slide (see Slides 8–12), reworded there.
 
 **Speaker notes**: keep the vocabulary minimal — entry, episode,
 knowledge source, ladder, escalate. Speaker-note-only details cut from
@@ -267,6 +266,13 @@ its space: every scene's checklist frames render through it.
   literally read ✓/✗/? in scene output.
 - "dispatch" label nudged left (x 8.28→8.20) for spacing, per deck
   edit.
+- User edits 2026-09-03 (ported): arrow labels set in plain (not
+  italic) type and reworded — "on-pass: restart-episode ⇒ fresh
+  measurement" (the "re-verify ·" dropped), "on-fail: handoff to next
+  repair KS / (attempts spent, changes restored)" replaces the
+  "red → =" key, "on fail: no repair chain => escalate" moved right
+  beside the escalate lane; "bless ⇒ provision" label deleted; legend
+  box removed (now on the Act I transition slide).
 
 ---
 
@@ -513,6 +519,14 @@ runbook):
   coverage ≈ 13.75–14 min (total video ≈ 24). Offsets if the cap
   tightens: fold III into II, drop VI's scene 7, or show one of scene
   9's two axiom beats.
+
+**Checklist legend on Act I** (user edit 2026-09-03, ported): the
+✓/✗/? glyph legend formerly on slide 5 now sits bottom-right of the
+Act I transition slide only, as three monospace lines — "✓ attested /
+✗ refuted / ? poisoned (untrustworthy)" — where the first checklist
+frames appear.
+
+---
 
 ## Ecosystems — "One blackboard, many artifact pipelines" — DRAFTED (deck slide 16)
 

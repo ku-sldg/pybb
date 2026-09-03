@@ -333,9 +333,7 @@ s5.addText([
   { text: "(signs golden spec)", options: { fontSize: 10.5, color: NAVY, italic: true } },
 ], { x: 3.7, y: 1.12, w: 2.7, h: 0.62, fontFace: BODY, align: "center", valign: "middle", margin: 0.02 });
 arrow5(s5, 4.3, 1.74, 4.3, 2.08, NAVY, { width: 1.5 });
-s5.addText("bless ⇒ provision", {
-  x: 4.42, y: 1.76, w: 1.9, h: 0.28, fontFace: BODY, fontSize: 10, italic: true, color: NAVY, align: "left", margin: 0,
-});
+// ("bless ⇒ provision" arrow label removed per user edits 2026-09-03; the arrow stays.)
 
 // measurement
 box5(s5, 0.7, 3.0, 1.7, 1.0, MID5, "measurement");
@@ -352,8 +350,8 @@ arrow5(s5, 5.6, 3.5, 6.2, 3.5, DARK);
 seg5(s5, 3.0, 2.5, 2.72, 2.5, RED);
 seg5(s5, 2.72, 2.5, 2.72, 4.5, RED);
 arrow5(s5, 2.72, 4.5, 3.0, 4.5, RED);
-s5.addText("no repair chain:\nfail ⇒ escalate", {
-  x: 0.25, y: 4.35, w: 1.2, h: 0.9, fontFace: BODY, fontSize: 10, italic: true,
+s5.addText("on fail:  no repair chain => escalate", {
+  x: 1.52, y: 4.3, w: 1.19, h: 0.9, fontFace: BODY, fontSize: 10,
   color: RED, align: "right", margin: 0,
 });
 
@@ -361,7 +359,7 @@ s5.addText("no repair chain:\nfail ⇒ escalate", {
 seg5(s5, 3.0, 2.35, 1.55, 2.35, GREEN, 2);
 arrow5(s5, 1.55, 2.35, 1.55, 2.97, GREEN);
 s5.addText("provisioned ⇒ re-measure", {
-  x: 0.6, y: 2.0, w: 2.6, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true,
+  x: 0.6, y: 2.0, w: 2.6, h: 0.3, fontFace: BODY, fontSize: 10.5,
   color: GREEN, align: "center", margin: 0,
 });
 
@@ -376,8 +374,8 @@ arrow5(s5, 10.1, 3.5, 10.5, 3.5, RED);
 box5(s5, 10.5, 3.0, 1.1, 1.0, NAVY, "KS 2", { fontSize: 12 });
 arrow5(s5, 11.6, 3.5, 12.0, 3.5, RED);
 box5(s5, 12.0, 3.0, 1.1, 1.0, NAVY, "KS n", { fontSize: 12 });
-s5.addText("red → = on-fail handoff (attempts spent, changes restored)", {
-  x: 8.8, y: 4.12, w: 4.4, h: 0.3, fontFace: BODY, fontSize: 10.5, italic: true, color: RED, align: "center", margin: 0,
+s5.addText("on-fail: handoff to next repair KS \n(attempts spent, changes restored)", {
+  x: 8.49, y: 4.12, w: 4.4, h: 0.3, fontFace: BODY, fontSize: 10.5, color: RED, align: "center", margin: 0,
 });
 
 // GREEN: on-pass — every KS result returns to the Controller, which re-verifies
@@ -386,8 +384,8 @@ seg5(s5, 11.05, 3.0, 11.05, 2.3, GREEN, 2);
 seg5(s5, 12.55, 3.0, 12.55, 2.3, GREEN, 2);
 seg5(s5, 7.3, 2.3, 12.55, 2.3, GREEN);
 arrow5(s5, 7.3, 2.3, 7.3, 2.95, GREEN);
-s5.addText("on-pass: re-verify · restart-episode ⇒ fresh measurement", {
-  x: 6.4, y: 1.92, w: 5.4, h: 0.3, fontFace: BODY, fontSize: 11, color: GREEN, align: "center", margin: 0,
+s5.addText("on-pass: restart-episode ⇒ fresh measurement", {
+  x: 6.59, y: 1.92, w: 5.4, h: 0.3, fontFace: BODY, fontSize: 11, color: GREEN, align: "center", margin: 0,
 });
 
 // RED: route exhausted -> escalate lane
@@ -395,7 +393,7 @@ seg5(s5, 12.55, 4.0, 12.55, 5.15, RED);
 seg5(s5, 4.3, 5.15, 12.55, 5.15, RED);
 arrow5(s5, 4.3, 5.15, 4.3, 4.92, RED);
 s5.addText("all rungs exhausted → escalate", {
-  x: 7.2, y: 5.22, w: 3.6, h: 0.3, fontFace: BODY, fontSize: 11, color: RED, align: "center", margin: 0,
+  x: 7.4, y: 5.22, w: 3.6, h: 0.3, fontFace: BODY, fontSize: 11, color: RED, align: "center", margin: 0,
 });
 
 // Controller -> measurement: evaluating a predicate runs the attestation measurement
@@ -420,14 +418,7 @@ s5.addText([
   { text: ".", options: { color: ICE } },
 ], { x: 0.95, y: 6.55, w: 8.4, h: 0.8, fontFace: BODY, fontSize: 13, align: "left", valign: "middle", margin: 0 });
 
-// Legend: the checklist glyphs the demo is read through
-s5.addShape(pres.ShapeType.roundRect, {
-  x: 9.8, y: 6.55, w: 2.8, h: 0.8, rectRadius: 0.07, fill: { color: "F2F4F8" }, line: { color: ICE, width: 1 },
-});
-s5.addText("✓ attested   ✗ refuted\n?  poisoned (fail-closed)", {
-  x: 9.95, y: 6.55, w: 2.55, h: 0.8, fontFace: "Courier New", fontSize: 11,
-  color: DARK, align: "left", valign: "middle", margin: 0,
-});
+// (Checklist-glyph legend moved from here to the Act I transition slide per user edits 2026-09-03.)
 
 s5.addNotes(
   "Keep the vocabulary minimal: entry, episode, knowledge source, ladder, escalate. Everything else is detail the scenes show live.\n" +
@@ -647,6 +638,7 @@ const ACTS = [
   { num: "ACT I", title: "The consistent baseline", scenes: "scene 1",
     watch: "All artifacts start in a \u201Cpass\u201D state:  all artifacts have integrity against golden values and implementations meet their contracts.",
     cmd: "./examples/demo_isolette.sh --scenes 1",
+    legend: true,
     notes: "Beats: readiness gate green -> one full episode -> per-crate checklist all green. Dwell on the final checklist - it is the frame every later refusal is compared against." },
   { num: "ACT II", title: "Spec drift: benign, promote then re-verify", scenes: "scene 3 (expand allowed temperature range)",
     watch: "A benign change in requirements — the temperature alarm range widened — model appraisal fails quickly.  Administrator re-blesses new spec, all contract appraisals again pass.",
@@ -727,6 +719,16 @@ ACTS.forEach((act) => {
     x: 0.9, y: 6.62, w: 11.5, h: 0.66, fontFace: "Courier New", fontSize: 11,
     color: MUTED, margin: 0,
   });
+  if (act.legend) {
+    // Checklist-glyph legend (Act I only; moved here from slide 5 per user edits 2026-09-03)
+    sa.addShape(pres.ShapeType.roundRect, {
+      x: 6.75, y: 6.19, w: 2.99, h: 0.8, rectRadius: 0.07, fill: { color: "F2F4F8" }, line: { color: ICE, width: 1 },
+    });
+    sa.addText("✓ attested   \n✗ refuted\n? poisoned (untrustworthy)", {
+      x: 6.9, y: 6.19, w: 2.83, h: 0.8, fontFace: "Courier New", fontSize: 11,
+      color: DARK, align: "left", valign: "middle", margin: 0,
+    });
+  }
   sa.addNotes(act.notes + "\nWatch-for line doubles as the VO opener over the terminal cut. Full runbook: docs/video_recording_plan.md.");
 });
 
