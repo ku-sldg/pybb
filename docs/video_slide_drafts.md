@@ -92,10 +92,10 @@ highlighted:
 
 **Content**
 
-- Traditional remote attestation: **did system components boot into a
-  predictable state?** (boot-time, static runtime)
+- Traditional remote attestation: did system components boot into a
+  predictable state? (boot-time, static runtime)
 - Layered, runtime attestation: extend boot-time trust via dynamic
-  measurement of system components **and their context/dependencies**
+  measurement of system components and their context/dependencies
 - Lifecycle attestation: extends this notion to **artifacts of the development lifecycle**:
   models, contracts, implementations, proofs, toolchains 
   - ...including the attestation infrastructure and evidence itself
@@ -104,7 +104,7 @@ highlighted:
     - toolchain updates
     - artifact updates, synthesis, repair
 - Motivation: the **proliferation of AI-generated software
-  artifacts**, amid the need for rapid re-certification of systems (one clause, no dedicated bullet — the seed the
+  artifacts**, amid the need for **rapid re-certification of systems** (one clause, no dedicated bullet — the seed the
   AI-in-the-loop capstone pays off)
 
 **Banner** (bottom, styled, the deck's recurring element):
@@ -147,7 +147,10 @@ PowerPoint (2026-09-03), ported to the generator: title capitalized
 ("Lifecycle Attestation"), event list reworded to natural lifecycle
 events (drift / toolchain updates / artifact updates, synthesis,
 repair), banner nudged up (y 5.55 → 5.36), subline capitalized; slide
-moved after the Roadmap so the strip is seen first.
+moved after the Roadmap so the strip is seen first. Bolding reduced:
+lead-in labels and "did system components…", "and their
+context/dependencies" un-bolded; "rapid re-certification of systems"
+bolded (generator briefly re-added the old bolding; fixed same day).
 
 ---
 

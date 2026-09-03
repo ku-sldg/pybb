@@ -127,18 +127,20 @@ s3.addText("What is Lifecycle Attestation?", {
 });
 // build bullets as rich text runs
 const bullets = [
+  // Emphasis per user edits 2026-09-03: lead-in labels are NOT bold (only the
+  // ": " separator kept bold, as in the PowerPoint-saved deck); bold is reserved
+  // for the key phrases inside each bullet.
   { runs: [
-      { text: "Traditional remote attestation: ", options: { bold: true } },
-      { text: "did system components boot into a predictable state?", options: { bold: true } },
-      { text: " (boot-time, static runtime)", options: {} },
+      { text: "Traditional remote attestation: did system components boot into a predictable state? (boot-time, static runtime)", options: {} },
     ], indent: 0 },
   { runs: [
-      { text: "Layered, runtime attestation: ", options: { bold: true } },
-      { text: "extend boot-time trust via dynamic measurement of system components ", options: {} },
-      { text: "and their context/dependencies", options: { bold: true } },
+      { text: "Layered, runtime attestation", options: {} },
+      { text: ": ", options: { bold: true } },
+      { text: "extend boot-time trust via dynamic measurement of system components and their context/dependencies", options: {} },
     ], indent: 0 },
   { runs: [
-      { text: "Lifecycle attestation: ", options: { bold: true } },
+      { text: "Lifecycle attestation", options: {} },
+      { text: ": ", options: { bold: true } },
       { text: "extends this notion to ", options: {} },
       { text: "artifacts of the development lifecycle", options: { bold: true } },
       { text: ": models, contracts, implementations, proofs, toolchains", options: {} },
@@ -153,10 +155,12 @@ const bullets = [
   { runs: [{ text: "toolchain updates", options: {} }], indent: 2 },
   { runs: [{ text: "artifact updates, synthesis, repair", options: {} }], indent: 2 },
   { runs: [
-      { text: "Motivation: ", options: { bold: true } },
+      { text: "Motivation", options: {} },
+      { text: ": ", options: { bold: true } },
       { text: "the ", options: {} },
       { text: "proliferation of AI-generated software artifacts", options: { bold: true } },
-      { text: ", amid the need for rapid re-certification of systems", options: {} },
+      { text: ", amid the need for ", options: {} },
+      { text: "rapid re-certification of systems", options: { bold: true } },
     ], indent: 0 },
 ];
 
