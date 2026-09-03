@@ -58,7 +58,35 @@ and set as two centered lines.
 
 ---
 
-## Slide 2 — What is lifecycle attestation? — DRAFTED
+## Slide 2 — Roadmap strip (design element + first appearance) — DRAFTED (deck position 2 since 2026-09-03)
+
+**Timing**: ~15 s on first appearance; ~free thereafter (it rides on
+transition slides).
+
+**Content**: a thin horizontal strip, five segments, current section
+highlighted:
+
+> Preliminaries → Demo: Isolette (SysMLv2 → Rust) → Other Ecosystems →
+> AI in the Loop → Close
+
+(The demo segment renders as two lines in its chip: "Demo:" /
+"Isolette (SysMLv2 → Rust)" — per deck edits 2026-08-25.)
+
+**Decisions**
+
+- Reused as the act-transition template in section 2 (the strip
+  highlights position; the act title and "what to watch for" line sit
+  below it) — one design, not one extra slide per transition.
+- **Header titles are provisional** — expect tweaks as sections firm
+  up; keep the strip's text in one master/layout so a rename is a
+  single edit.
+- User edits (2026-09-03): the on-slide "Section headers provisional"
+  caption was removed, and the strip now precedes the lifecycle
+  attestation slide (deck positions 2 and 3 swapped).
+
+---
+
+## Slide 3 — What is Lifecycle Attestation? — DRAFTED (deck position 3 since 2026-09-03)
 
 **Timing**: ~1.5 min.
 
@@ -71,11 +99,10 @@ and set as two centered lines.
 - Lifecycle attestation: extends this notion to **artifacts of the development lifecycle**:
   models, contracts, implementations, proofs, toolchains 
   - ...including the attestation infrastructure and evidence itself
-  - …and to lifecycle **events**:
-    - specification drift (sanctioned or not)
-    - artifact tampering
-    - artifact synthesis
-    - artifact repair
+  - …and to natural lifecycle events:
+    - specification drift
+    - toolchain updates
+    - artifact updates, synthesis, repair
 - Motivation: the **proliferation of AI-generated software
   artifacts**, amid the need for rapid re-certification of systems (one clause, no dedicated bullet — the seed the
   AI-in-the-loop capstone pays off)
@@ -84,7 +111,7 @@ and set as two centered lines.
 
 > **Every trust decision is grounded in cryptographic attestation
 > evidence.**
-> *trust is NOT anchored in the following: developer claims, untrusted
+> *Trust is NOT anchored in the following: developer claims, untrusted
 > tools, LLM outputs, cached verdicts*
 
 **Visual**: a three-stage progression, left to right, each stage
@@ -115,32 +142,12 @@ reads visually, not just verbally.
 
 **Decisions**: banner wording locked (2026-08-25 session); "sole" and
 "remain" deliberately avoided; the exclusivity claim is carried by
-"every … decision" plus the NOT-anchored subline.
-
----
-
-## Slide 3 — Roadmap strip (design element + first appearance) — DRAFTED (headers provisional)
-
-**Timing**: ~15 s on first appearance; ~free thereafter (it rides on
-transition slides).
-
-**Content**: a thin horizontal strip, five segments, current section
-highlighted:
-
-> Preliminaries → Demo: Isolette (SysMLv2 → Rust) → Other Ecosystems →
-> AI in the Loop → Close
-
-(The demo segment renders as two lines in its chip: "Demo:" /
-"Isolette (SysMLv2 → Rust)" — per deck edits 2026-08-25.)
-
-**Decisions**
-
-- Reused as the act-transition template in section 2 (the strip
-  highlights position; the act title and "what to watch for" line sit
-  below it) — one design, not one extra slide per transition.
-- **Header titles are provisional** — expect tweaks as sections firm
-  up; keep the strip's text in one master/layout so a rename is a
-  single edit.
+"every … decision" plus the NOT-anchored subline. User edits in
+PowerPoint (2026-09-03), ported to the generator: title capitalized
+("Lifecycle Attestation"), event list reworded to natural lifecycle
+events (drift / toolchain updates / artifact updates, synthesis,
+repair), banner nudged up (y 5.55 → 5.36), subline capitalized; slide
+moved after the Roadmap so the strip is seen first.
 
 ---
 
@@ -152,8 +159,9 @@ highlighted:
 layer contributes" each:
 
 - **Copland** — attestation protocols as formal terms with an evidence
-  semantics: *what* was measured, in *what order*, signed by *whom*
-- **CVM** (Copland Virtual Machine) — executes Copland phrases;
+  semantics (the "*what* was measured, in *what order*, signed by *whom*"
+  tail dropped 2026-09-03)
+- **Copland Virtual Machine (CVM)** — executes Copland phrases;
   dispatches ASPs according to **manifest** configurations; appraises
   results
 - **asp-libs** — its own layer box under CVM: the
@@ -162,7 +170,8 @@ layer contributes" each:
 - Output arrow: **signed evidence bundles**, appraised against
   **golden baselines**
 
-**Copland snippet** (visual texture, sidebar): the isolette's actual
+**Copland snippet** (visual texture, sidebar; captioned "Copland
+protocol from the demo — the Isolette model class:"): the isolette's actual
 model-class protocol (`tests/fixtures/isolette_sysmlv2_rust_props/term.json`),
 rendered in concrete syntax:
 
@@ -179,7 +188,7 @@ rendered in concrete syntax:
 
 - On the snippet: "you don't need to read this — you need to know it's
   a formal object with an evidence semantics." Caption below the
-  snippet (20pt, three lines): "measure the five blessed model files →
+  snippet (20pt, three lines): "measure five blessed model files →
   / sign the evidence (SIG) → / appraise it (APPR)".
 - asp-libs gets one spoken clause at most; its inventory returns as a
   star of capstone slide B.

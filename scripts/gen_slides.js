@@ -83,10 +83,45 @@ s1.addText(SPONSOR, {
 });
 s1.addNotes("Title card. Subtitle deliberately names the four core artifact classes - the deck's first echo of the artifact-class table (slide 6). Footer: DARPA PROVERS sponsor acknowledgment with contract number (INSPECTA is the team's project under PROVERS).");
 
-// ---------- Slide 2: What is lifecycle attestation? ----------
+// ---------- Slide 2 (deck position 2; swapped before the lifecycle slide per user edits 2026-09-03): Roadmap strip ----------
 let s2 = pres.addSlide();
 s2.background = { color: WHITE };
-s2.addText("What is lifecycle attestation?", {
+s2.addText("Roadmap", {
+  x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
+  color: NAVY, margin: 0,
+});
+
+const sections = ["Preliminaries", "Demo:\nIsolette (SysMLv2 \u2192 Rust)", "Other Ecosystems", "AI in the Loop", "Close"];
+const stripY = 3.1, stripH = 0.85, gap = 0.18, x0 = 0.7, totalW = 11.9;
+const segW = (totalW - gap * (sections.length - 1)) / sections.length;
+sections.forEach((name, i) => {
+  const x = x0 + i * (segW + gap);
+  const active = i === 0;
+  s2.addShape(pres.ShapeType.roundRect, {
+    x, y: stripY, w: segW, h: stripH, rectRadius: 0.07,
+    fill: { color: active ? NAVY : ICE }, line: { type: "none" },
+  });
+  s2.addText(name, {
+    x, y: stripY, w: segW, h: stripH, fontFace: BODY, fontSize: 13.5,
+    bold: active, color: active ? WHITE : NAVY, align: "center", valign: "middle", margin: 0.02,
+  });
+  if (i < sections.length - 1) {
+    s2.addText("→", {
+      x: x + segW - 0.06, y: stripY, w: gap + 0.12, h: stripH, fontFace: BODY,
+      fontSize: 14, color: MUTED, align: "center", valign: "middle", margin: 0,
+    });
+  }
+});
+// ("Section headers provisional" caption removed per user edits 2026-09-03.)
+s2.addNotes(
+  "~15 seconds on first appearance; afterwards it rides on transition slides for free.\n" +
+  "Design decision: one master/layout holds the strip text so a section rename is a single edit. Header titles are provisional."
+);
+
+// ---------- Slide 3 (deck position 3; swapped after Roadmap per user edits 2026-09-03): What is lifecycle attestation? ----------
+let s3 = pres.addSlide();
+s3.background = { color: WHITE };
+s3.addText("What is Lifecycle Attestation?", {
   x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
   color: NAVY, margin: 0,
 });
@@ -112,14 +147,11 @@ const bullets = [
       { text: "…including the attestation infrastructure and evidence itself", options: {} },
     ], indent: 1 },
   { runs: [
-      { text: "…and to lifecycle ", options: {} },
-      { text: "events", options: { bold: true } },
-      { text: ":", options: {} },
+      { text: "…and to natural lifecycle events:", options: {} },
     ], indent: 1 },
-  { runs: [{ text: "specification drift (sanctioned or not)", options: {} }], indent: 2 },
-  { runs: [{ text: "artifact tampering", options: {} }], indent: 2 },
-  { runs: [{ text: "artifact synthesis", options: {} }], indent: 2 },
-  { runs: [{ text: "artifact repair", options: {} }], indent: 2 },
+  { runs: [{ text: "specification drift ", options: {} }], indent: 2 },
+  { runs: [{ text: "toolchain updates", options: {} }], indent: 2 },
+  { runs: [{ text: "artifact updates, synthesis, repair", options: {} }], indent: 2 },
   { runs: [
       { text: "Motivation: ", options: { bold: true } },
       { text: "the ", options: {} },
@@ -143,63 +175,26 @@ bullets.forEach((b, i) => {
   });
 });
 
-s2.addText(paras, {
+s3.addText(paras, {
   x: 0.7, y: 1.45, w: 12.0, h: 3.9, fontFace: BODY, fontSize: 17, color: DARK,
   align: "left", valign: "top", margin: 0,
 });
 
 // Banner
-s2.addShape(pres.ShapeType.roundRect, {
-  x: 0.7, y: 5.55, w: 11.9, h: 1.35, fill: { color: NAVY }, rectRadius: 0.08, line: { type: "none" },
+s3.addShape(pres.ShapeType.roundRect, {
+  x: 0.7, y: 5.36, w: 11.9, h: 1.35, fill: { color: NAVY }, rectRadius: 0.08, line: { type: "none" },
 });
-s2.addText([
+s3.addText([
   { text: "Every trust decision is grounded in cryptographic attestation evidence.", options: { bold: true, fontSize: 20, color: WHITE, breakLine: true, paraSpaceAfter: 4 } },
-  { text: "trust is NOT anchored in the following:  developer claims, untrusted tools, LLM outputs, cached verdicts", options: { italic: true, fontSize: 14, color: ICE } },
+  { text: "Trust is NOT anchored in the following:  developer claims, untrusted tools, LLM outputs, cached verdicts", options: { italic: true, fontSize: 14, color: ICE } },
 ], {
-  x: 1.0, y: 5.55, w: 11.3, h: 1.35, fontFace: BODY, align: "center", valign: "middle", margin: 0,
+  x: 1.0, y: 5.36, w: 11.3, h: 1.35, fontFace: BODY, align: "center", valign: "middle", margin: 0,
 });
-s2.addNotes(
+s3.addNotes(
   "Promise the audience every demo scene echoes the banner.\n" +
   "The administrator's bless survives 'every': authority enters the system only AS signed evidence (the blessed baseline), never by assertion - scene 6's laundering beat proves exactly that.\n" +
   "Subline payoffs: developer claims -> scenes 5/7; untrusted tools -> scene 7; LLM outputs -> capstone slides A/B; cached verdicts -> scene 11.\n" +
   "Visual TODO: three-stage widening-scope progression (boot-time -> layered runtime -> lifecycle loop) to replace/join the bullets."
-);
-
-// ---------- Slide 3: Roadmap strip ----------
-let s3 = pres.addSlide();
-s3.background = { color: WHITE };
-s3.addText("Roadmap", {
-  x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
-  color: NAVY, margin: 0,
-});
-
-const sections = ["Preliminaries", "Demo:\nIsolette (SysMLv2 \u2192 Rust)", "Other Ecosystems", "AI in the Loop", "Close"];
-const stripY = 3.1, stripH = 0.85, gap = 0.18, x0 = 0.7, totalW = 11.9;
-const segW = (totalW - gap * (sections.length - 1)) / sections.length;
-sections.forEach((name, i) => {
-  const x = x0 + i * (segW + gap);
-  const active = i === 0;
-  s3.addShape(pres.ShapeType.roundRect, {
-    x, y: stripY, w: segW, h: stripH, rectRadius: 0.07,
-    fill: { color: active ? NAVY : ICE }, line: { type: "none" },
-  });
-  s3.addText(name, {
-    x, y: stripY, w: segW, h: stripH, fontFace: BODY, fontSize: 13.5,
-    bold: active, color: active ? WHITE : NAVY, align: "center", valign: "middle", margin: 0.02,
-  });
-  if (i < sections.length - 1) {
-    s3.addText("→", {
-      x: x + segW - 0.06, y: stripY, w: gap + 0.12, h: stripH, fontFace: BODY,
-      fontSize: 14, color: MUTED, align: "center", valign: "middle", margin: 0,
-    });
-  }
-});
-s3.addText("Section headers provisional — the strip returns at every act transition with the current section highlighted.", {
-  x: 0.7, y: 4.35, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13, italic: true, color: MUTED, margin: 0,
-});
-s3.addNotes(
-  "~15 seconds on first appearance; afterwards it rides on transition slides for free.\n" +
-  "Design decision: one master/layout holds the strip text so a section rename is a single edit. Header titles are provisional."
 );
 
 // ---------- Slide 4: The core attestation stack ----------
@@ -219,7 +214,7 @@ s4.addShape(pres.ShapeType.roundRect, {
 });
 s4.addText([
   { text: "Copland", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
-  { text: "attestation protocols as formal terms with an evidence semantics: what was measured, in what order, signed by whom", options: { fontSize: 12, color: ICE } },
+  { text: "attestation protocols as formal terms with an evidence semantics", options: { fontSize: 12, color: ICE } },
 ], { x: LX + 0.25, y: 1.45, w: LW - 0.5, h: 1.1, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
 s4.addText("▼", { x: LX + LW / 2 - 0.2, y: 2.56, w: 0.4, h: 0.28, fontSize: 12, color: MUTED, align: "center", margin: 0 });
@@ -229,7 +224,7 @@ s4.addShape(pres.ShapeType.roundRect, {
   x: LX, y: 2.85, w: LW, h: 1.1, rectRadius: 0.07, fill: { color: "3A4A8C" }, line: { type: "none" },
 });
 s4.addText([
-  { text: "CVM — Copland Virtual Machine", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
+  { text: "Copland Virtual Machine (CVM)", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
   { text: "executes Copland phrases · dispatches ASPs according to manifest configurations · appraises results", options: { fontSize: 12, color: ICE } },
 ], { x: LX + 0.25, y: 2.85, w: LW - 0.5, h: 1.1, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
@@ -258,7 +253,7 @@ s4.addText([
 
 // Right column: Copland snippet sidebar
 const RX = 7.4, RW = 5.2;
-s4.addText("A real protocol from the demo — the isolette model class:", {
+s4.addText("Copland protocol from the demo — the Isolette model class:", {
   x: RX, y: 1.55, w: RW, h: 0.4, fontFace: BODY, fontSize: 13, italic: true, color: MUTED, margin: 0,
 });
 s4.addShape(pres.ShapeType.roundRect, {
@@ -274,7 +269,7 @@ s4.addText(
   { x: RX + 0.25, y: 2.0, w: RW - 0.5, h: 2.5, fontFace: "Courier New", fontSize: 13,
     color: DARK, align: "left", valign: "middle", margin: 0 });
 s4.addText([
-  { text: "measure the five blessed model files \u2192 ", options: { breakLine: true } },
+  { text: "measure five blessed model files \u2192 ", options: { breakLine: true } },
   { text: "\tsign the evidence (SIG) \u2192 ", options: { breakLine: true } },
   { text: "\tappraise it (APPR)", options: {} },
 ], {
