@@ -87,39 +87,45 @@ s1.addText(SPONSOR, {
 });
 s1.addNotes("Title card. Subtitle deliberately names the four core artifact classes - the deck's first echo of the artifact-class table (slide 6). Footer: DARPA PROVERS sponsor acknowledgment with contract number (INSPECTA is the team's project under PROVERS).");
 
-// ---------- Slide 2 (deck position 2; swapped before the lifecycle slide per user edits 2026-09-03): Roadmap strip ----------
-let s2 = pres.addSlide();
-s2.background = { color: WHITE };
-s2.addText("Roadmap", {
-  x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
-  color: NAVY, margin: 0,
-});
-
+// ---------- Roadmap slides (deck positions 2, 8, 17, 19): the strip with the current section highlighted ----------
+// One design, reused before every section (user request 2026-09-04): position 2 opens Preliminaries, and a
+// reprise precedes the Demo (isolette), Other Ecosystems and AI-in-the-Loop sections. No Close reprise yet
+// (the Close slide is still a stub). Same layout every time; only the highlighted segment changes.
 const sections = ["Preliminaries", "Demo:\nIsolette (SysMLv2 \u2192 Rust)", "Other Ecosystems", "AI in the Loop", "Close"];
-const stripY = 3.1, stripH = 0.85, gap = 0.18, x0 = 0.7, totalW = 11.9;
-const segW = (totalW - gap * (sections.length - 1)) / sections.length;
-sections.forEach((name, i) => {
-  const x = x0 + i * (segW + gap);
-  const active = i === 0;
-  s2.addShape(pres.ShapeType.roundRect, {
-    x, y: stripY, w: segW, h: stripH, rectRadius: 0.07,
-    fill: { color: active ? NAVY : ICE }, line: { type: "none" },
+function roadmapSlide(activeIndex, notes) {
+  const sr = pres.addSlide();
+  sr.background = { color: WHITE };
+  sr.addText("Roadmap", {
+    x: 0.7, y: 0.45, w: 12.0, h: 0.8, fontFace: HDR, fontSize: 36, bold: true,
+    color: NAVY, margin: 0,
   });
-  s2.addText(name, {
-    x, y: stripY, w: segW, h: stripH, fontFace: BODY, fontSize: 13.5,
-    bold: active, color: active ? WHITE : NAVY, align: "center", valign: "middle", margin: 0.02,
-  });
-  if (i < sections.length - 1) {
-    s2.addText("→", {
-      x: x + segW - 0.06, y: stripY, w: gap + 0.12, h: stripH, fontFace: BODY,
-      fontSize: 14, color: MUTED, align: "center", valign: "middle", margin: 0,
+  const stripY = 3.1, stripH = 0.85, gap = 0.18, x0 = 0.7, totalW = 11.9;
+  const segW = (totalW - gap * (sections.length - 1)) / sections.length;
+  sections.forEach((name, i) => {
+    const x = x0 + i * (segW + gap);
+    const active = i === activeIndex;
+    sr.addShape(pres.ShapeType.roundRect, {
+      x, y: stripY, w: segW, h: stripH, rectRadius: 0.07,
+      fill: { color: active ? NAVY : ICE }, line: { type: "none" },
     });
-  }
-});
+    sr.addText(name, {
+      x, y: stripY, w: segW, h: stripH, fontFace: BODY, fontSize: 13.5,
+      bold: active, color: active ? WHITE : NAVY, align: "center", valign: "middle", margin: 0.02,
+    });
+    if (i < sections.length - 1) {
+      sr.addText("\u2192", {
+        x: x + segW - 0.06, y: stripY, w: gap + 0.12, h: stripH, fontFace: BODY,
+        fontSize: 14, color: MUTED, align: "center", valign: "middle", margin: 0,
+      });
+    }
+  });
+  sr.addNotes(notes);
+  return sr;
+}
 // ("Section headers provisional" caption removed per user edits 2026-09-03.)
-s2.addNotes(
-  "~15 seconds on first appearance; afterwards it rides on transition slides for free.\n" +
-  "Design decision: one master/layout holds the strip text so a section rename is a single edit. Header titles are provisional."
+roadmapSlide(0,
+  "~15 seconds on first appearance; the same slide reprises before each later section with that section highlighted (deck positions 8, 17, 19).\n" +
+  "Design decision: one generator function holds the strip so a section rename is a single edit. Header titles are provisional."
 );
 
 // ---------- Slide 3 (deck position 3; swapped after Roadmap per user edits 2026-09-03): What is lifecycle attestation? ----------
@@ -539,7 +545,10 @@ s6.addNotes(
   "Same column shape (class -> measured how -> judged by -> repair) as capstone slide B, so the audience recognizes it when it returns."
 );
 
-// ---------- Slide 7 (deck position 8): The isolette ----------
+// ---------- Roadmap reprise (deck position 8): Demo section ----------
+roadmapSlide(1, "Section transition into the demo: ~5 seconds, then straight into the isolette slide.");
+
+// ---------- Slide 7 (deck position 9): The isolette ----------
 let s7 = pres.addSlide();
 s7.background = { color: WHITE };
 
@@ -647,7 +656,7 @@ s7.addNotes(
   "Numbers verified exact 2026-08-25 (l1a targets, l2 slices, verus term, pub-proof-fn count); provision-dependent - re-verify before recording day."
 );
 
-// ---------- Act transition slides I-V (deck positions 9-13) ----------
+// ---------- Act transition slides I-VII (deck positions 10-16) ----------
 const ACTS = [
   // Scene tags, watch-for wording and the scenesY nudge on Acts IV-VII per user edits 2026-09-04.
   { num: "ACT I", title: "The consistent baseline", scenes: "Demo scene 1",
@@ -754,7 +763,10 @@ ACTS.forEach((act) => {
   sa.addNotes(act.notes + "\nWatch-for line doubles as the VO opener over the terminal cut. Full runbook: docs/video_recording_plan.md.");
 });
 
-// ---------- Ecosystems: one blackboard, many artifact pipelines (card grid) ----------
+// ---------- Roadmap reprise (deck position 17): Other Ecosystems section ----------
+roadmapSlide(2, "Section transition: ~5 seconds, then the ecosystems card grid.");
+
+// ---------- Ecosystems (deck position 18): one blackboard, many artifact pipelines (card grid) ----------
 {
   const TINT = "F2F4F8", MID_E = "3A4A8C";
   const seco = pres.addSlide();
@@ -810,7 +822,10 @@ ACTS.forEach((act) => {
   );
 }
 
-// ---------- Capstone A: AI in the loop (untrusted synthesis, deterministic audit) ----------
+// ---------- Roadmap reprise (deck position 19): AI in the Loop section ----------
+roadmapSlide(3, "Section transition: ~5 seconds, then the three capstone slides.");
+
+// ---------- Capstone A (deck position 20): AI in the loop (untrusted synthesis, deterministic audit) ----------
 {
   const TINT = "E4E7EF";
   const sa = pres.addSlide();
@@ -865,7 +880,7 @@ ACTS.forEach((act) => {
   );
 }
 
-// ---------- Capstone B: AI built the loop ----------
+// ---------- Capstone B (deck position 21): AI built the loop ----------
 {
   const sb = pres.addSlide();
   sb.background = { color: WHITE };
@@ -923,7 +938,7 @@ ACTS.forEach((act) => {
   );
 }
 
-// ---------- Capstone C: AI attacked the loop ----------
+// ---------- Capstone C (deck position 22): AI attacked the loop ----------
 {
   const HILITE = "EDEFF4";
   const sc = pres.addSlide();
@@ -988,7 +1003,7 @@ ACTS.forEach((act) => {
   );
 }
 
-// ---------- References (deck final slide) ----------
+// ---------- References (deck final slide, position 23) ----------
 // Collects ALL deck references; add new entries here as the deck grows.
 let sref = pres.addSlide();
 sref.background = { color: WHITE };
@@ -1051,16 +1066,16 @@ const OUT = process.argv[2] || require("path").join(__dirname, "..", "docs", "vi
 // the affected <a:pPr> elements in the written file. Each entry: slide XML part, the
 // 0-based index among that slide's lvl="1" paragraphs, and the exact pPr to install.
 const PPR_OVERRIDES = [
-  // Isolette slide (deck position 8): the two "o" sub-bullets use PowerPoint's default
+  // Isolette slide (deck position 9): the two "o" sub-bullets use PowerPoint's default
   // Courier New bullet font and its own hanging indents (user edit 2026-09-03).
-  { part: "ppt/slides/slide8.xml", lvl1Index: 0,
+  { part: "ppt/slides/slide9.xml", lvl1Index: 0,
     ppr: '<a:pPr marL="628650" lvl="1" indent="-171450"><a:spcAft><a:spcPts val="1000"/></a:spcAft><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
-  { part: "ppt/slides/slide8.xml", lvl1Index: 1,
+  { part: "ppt/slides/slide9.xml", lvl1Index: 1,
     ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
-  // Ecosystems slide (deck position 16): the two "o" sub-bullets under "Proof-repair experiments" (user edit 2026-09-04).
-  { part: "ppt/slides/slide16.xml", lvl1Index: 0,
+  // Ecosystems slide (deck position 18): the two "o" sub-bullets under "Proof-repair experiments" (user edit 2026-09-04).
+  { part: "ppt/slides/slide18.xml", lvl1Index: 0,
     ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
-  { part: "ppt/slides/slide16.xml", lvl1Index: 1,
+  { part: "ppt/slides/slide18.xml", lvl1Index: 1,
     ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
 ];
 async function applyPprOverrides(file) {
