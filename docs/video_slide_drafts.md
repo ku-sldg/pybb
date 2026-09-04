@@ -484,13 +484,13 @@ runbook):
 
 | Act | Title | What to watch for | Invocation |
 |---|---|---|---|
-| I | The consistent baseline *(scene 1)* | "All artifacts start in a “pass” state: all artifacts have integrity against golden values and implementations meet their contracts." | `./examples/demo_isolette.sh --scenes 1` |
-| II | Spec drift: benign, promote then re-verify *(scene 3, range)* | "A benign change in requirements — the temperature alarm range widened — model appraisal fails quickly. Administrator re-blesses new spec, all contract appraisals again pass." | `./examples/demo_isolette.sh --scenes 3 --drift range` (ruling: bless) |
-| III | Implementation drift: benign, re-verify *(scene 13)* | "A developer rewrites implementation logic — semantically equivalent. The hash moves, but **every contract slice maintains integrity**, and the proofs re-verify: the benign change survives." | `./examples/demo_isolette.sh --scenes 13` |
-| IV | Contract drift: breaking, restore then attempt re-verification *(scene 14)* | "The model is untouched, but a Verus contract is weakened (***after codegen, but before verification***) and the code is inverted to match — verus checks pass. Contract repair (restoring the true Verus contract) exposes the verification failure." | `./examples/demo_isolette.sh --scenes 14` |
-| V | Implementation drift: breaking, diagnose then repair *(scene 2)* | "Implementation code (developer-owned) changes, breaking a Verus contract. Blackboard loop diagnoses, repairs (simulated for demo), then ***returns the artifact to good standing only by re-measurement***." | `./examples/demo_isolette.sh --scenes 2` |
-| VI | Baseline drift: tampered evidence bundle, protocol, tooling *(scenes 6 + 7)* | "The signed golden evidence bundle, an installed golden value in the protocol ASP ARGS, then the verifier itself — each tamper attributed, each refused by cryptographic checks." | `./examples/demo_isolette.sh --scenes "6 7"` |
-| VII | Axiom drift: semantic measurement detects axioms and unsound proof techniques *(scenes 9 + 12)* | "Proofs verify, but measurement detects **subtle ways that proof attempts cheat** to undermine verification soundness." | `./examples/demo_isolette.sh --scenes "9 12"` |
+| I | The consistent baseline *(Demo scene 1)* | "All artifacts start in a “pass” state with integrity against golden values and / implementations meet their contracts." | `./examples/demo_isolette.sh --scenes 1` |
+| II | Spec drift: benign, promote then re-verify *(Demo scene 3)* | "A benign change in requirements — the temperature alarm range widened — model appraisal fails quickly. Administrator re-blesses new spec, all contract appraisals again pass." | `./examples/demo_isolette.sh --scenes 3 --drift range` (ruling: bless) |
+| III | Implementation drift: benign, re-verify *(Demo scene 13)* | "A developer rewrites semantically equivalent implementation logic. The hash moves, but / **every contract slice maintains integrity**, and the proofs re-verify: the benign change survives." | `./examples/demo_isolette.sh --scenes 13` |
+| IV | Contract drift: breaking, restore then attempt re-verification *(Demo scene 14)* | "The model is untouched, but a live Verus contract is weakened (***after codegen, but before verification***) and the code is inverted to match — verus checks pass. Contract repair (restoring the true Verus contract) exposes the verification failure." | `./examples/demo_isolette.sh --scenes 14` |
+| V | Implementation drift: breaking, diagnose then repair *(Demo scene 2)* | "Implementation code (developer-owned) changes, breaking a Verus contract. Blackboard loop diagnoses, repairs, then ***returns the artifact to good standing only by re-measurement***." | `./examples/demo_isolette.sh --scenes 2` |
+| VI | Baseline drift: tampered evidence bundle, protocol, tooling *(Demo scenes 6 + 7)* | "The signed golden evidence bundle, an installed (live) golden value in the appraisal protocol, then the verification tool itself — each tamper attributed, ***each refused by cryptographic checks***." | `./examples/demo_isolette.sh --scenes "6 7"` |
+| VII | Axiom drift: semantic measurement detects axioms and unsound proof techniques *(Demo scenes 9 + 12)* | "Proofs verify, but measurement detects **subtle cheating in proof attempts,** / that would otherwise undermine verification soundness." | `./examples/demo_isolette.sh --scenes "9 12"` |
 
 **Decisions**
 
@@ -524,6 +524,13 @@ runbook):
   tightens: fold III into II, drop VI's scene 7, or show one of scene
   9's two axiom beats.
 
+**User edits 2026-09-04 (ported)**: scene tags read "Demo scene N"
+(Act II's "(expand allowed temperature range)" dropped); the tag sits
+0.09 in lower on Acts IV–VII; watch-for lines reworded as in the table
+("/" marks a deliberate paragraph break on I, III, VII; "(simulated for
+demo)" dropped from V; VI names the appraisal protocol and the
+verification tool and bolds its refusal clause).
+
 **Checklist legend on Act I** (user edit 2026-09-03, ported): the
 ✓/✗/? glyph legend formerly on slide 5 now sits bottom-right of the
 Act I transition slide only, as three monospace lines — "✓ attested /
@@ -534,23 +541,26 @@ frames appear.
 
 ## Ecosystems — "One blackboard, many artifact pipelines" — DRAFTED (deck slide 16)
 
-**Layout**: title + one-line thesis (blackboard / controller / repair
-ladder / artifact classes invariant; only the pipeline swaps — modeling
-language, prover, target runtime, **and the attestation primitives**),
+**Layout**: title + two-line thesis ("The blackboard infrastructure and
+artifact classes don't change — only the **pipeline around them does**:
+modeling language, prover, / target runtime, and attestation
+primitives." — wording and line break per user edit 2026-09-04),
 then a **2×2 card grid**. Each card: title = the artifact pipeline,
 caption = example system(s), 3–4 bullets. The isolette card is
 highlighted navy.
 
 - **SysML v2 → HAMR → Rust / Verus** — *isolette (◀ the demo)*:
   SysMLv2 GUMBO component contracts · seL4/Microkit runtime target ·
-  every artifact class measured
+  every artifact class measured (the "— the full demo" tail dropped
+  2026-09-04)
 - **AADL → HAMR → Slang / Logika** — *temp-control*: AADL GUMBO
   contracts · JVM runtime target · same blackboard, similar Copland
-  protocols
+  protocols to SysMLv2 pipeline
 - **Standalone Rust / Verus** — *find-max-verus*: contracts + proofs
   written directly in Verus · no model/codegen (impl + proof classes
-  only) · proof-repair experiments: AutoVerus, KU Dogtreat linear
-  planner
+  only) · proof-repair experiments, with two "o" sub-bullets: AutoVerus
+  · KU Dogtreat linear planner (2026-09-04; sub-bullet pPr patched
+  post-build)
 - **Interactive Theorem Provers: Lean / Rocq** — *landing-gear,
   temp-control*: blessed theorem statements, workflow-owned
   implementations + proofs · tactic- and LLM-driven proof repair ·
@@ -569,6 +579,12 @@ eco_edited.pptx, ported verbatim into the generator.
 Content finalized at slide level in the outline's section-3 capstone
 (three tables + kickers). Will migrate here verbatim when the .pptx
 pass starts, to keep one source of truth.
+
+**User edits 2026-09-04 (ported)**: capstone A's footer line ("🔒 the
+bottom two — the judges — are AI-free by design: …") removed from the
+slide (the point stays in the speaker notes); capstone B's kicker
+nudged up (y 6.70 → 6.61); capstone C's kicker now ends "…anomaly
+detection, proposed mitigation."
 
 ## Slide R — References (deck final slide) — DRAFTED
 

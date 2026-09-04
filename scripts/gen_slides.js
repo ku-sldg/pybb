@@ -645,48 +645,56 @@ s7.addNotes(
 
 // ---------- Act transition slides I-V (deck positions 9-13) ----------
 const ACTS = [
-  { num: "ACT I", title: "The consistent baseline", scenes: "scene 1",
-    watch: "All artifacts start in a \u201Cpass\u201D state:  all artifacts have integrity against golden values and implementations meet their contracts.",
+  // Scene tags, watch-for wording and the scenesY nudge on Acts IV-VII per user edits 2026-09-04.
+  { num: "ACT I", title: "The consistent baseline", scenes: "Demo scene 1",
+    watch: [
+      { text: "All artifacts start in a \u201Cpass\u201D state with integrity against golden values and ", options: { italic: true, breakLine: true } },
+      { text: "implementations meet their contracts.", options: { italic: true } },
+    ],
     cmd: "./examples/demo_isolette.sh --scenes 1",
     legend: true,
     notes: "Beats: readiness gate green -> one full episode -> per-crate checklist all green. Dwell on the final checklist - it is the frame every later refusal is compared against." },
-  { num: "ACT II", title: "Spec drift: benign, promote then re-verify", scenes: "scene 3 (expand allowed temperature range)",
+  { num: "ACT II", title: "Spec drift: benign, promote then re-verify", scenes: "Demo scene 3",
     watch: "A benign change in requirements — the temperature alarm range widened — model appraisal fails quickly.  Administrator re-blesses new spec, all contract appraisals again pass.",
     cmd: "./examples/demo_isolette.sh --scenes 3 --drift range         (ruling at the prompt: bless)",
     notes: "Single benign beat (per user deck edit, restored 2026-08-27): the Table A-12 upper-alarm ceiling widened 102 -> 103 in the shared GUMBO library constant. Beats: appraisal fails, gumbo_library attributed, all else green (dwell: 'sanction, not semantics') -> ruling diff -> bless -> spec-first green -> promote (real codegen; speed-ramp) -> re-proves ALL GREEN; offered diff = the regenerated shared-library constant. The breaking spec beat lives elsewhere (breaking-impl is Act V/scene 2, breaking-contract is Act IV/scene 14), so Act II stays the clean benign-model story." },
-  { num: "ACT III", title: "Implementation drift: benign, re-verify", scenes: "scene 13",
+  { num: "ACT III", title: "Implementation drift: benign, re-verify", scenes: "Demo scene 13",
     watch: [
-      { text: "A developer rewrites implementation logic — semantically equivalent. The hash moves, but ", options: { italic: true } },
+      { text: "A developer rewrites semantically equivalent implementation logic.  The hash moves, but ", options: { italic: true, breakLine: true } },
       { text: "every contract slice maintains integrity", options: { bold: true, italic: false } },
       { text: ", and the proofs re-verify: the benign change survives.", options: { italic: true } },
     ],
     cmd: "./examples/demo_isolette.sh --scenes 13",
     notes: "Beats: equivalent NORMAL-mode guard rewrite (x>y -> y<x), outside every marker block -> l1a hash moves -> files entry passes via l2 refinement (slices intact) -> the l1b contracts entry stays clean -> confirmation chain RE-VERIFIES the rewrite green. The mirror of Act II's benign spec beat, one artifact class down: a developer-owned region has no blessed bytes to match, so its attested properties are contracts (intact) + provability (re-verified live)." },
-  { num: "ACT IV", title: "Contract drift: breaking, restore then attempt re-verification", scenes: "scene 14",
+  { num: "ACT IV", title: "Contract drift: breaking, restore then attempt re-verification", scenes: "Demo scene 14", scenesY: 3.54,
     watch: [
-      { text: "The model is untouched, but a Verus contract is weakened (", options: { italic: true } },
+      { text: "The model is untouched, but a live Verus contract is weakened (", options: { italic: true } },
       { text: "after codegen, but before verification", options: { bold: true, italic: true } },
       { text: ") and the code is inverted to match — verus checks pass.  Contract repair (restoring the true Verus contract) exposes the verification failure.", options: { italic: true } },
     ],
     cmd: "./examples/demo_isolette.sh --scenes 14",
     notes: "The report emits NO slice for compute_cases realizations, so the weakened REQ_MHS_2 lands between l2 slices. Beats: launder (weaken REQ_MHS_2 ensures + invert impl) -> cargo-verus SUCCEEDS (self-consistent) -> the l1b MARKER tier (a new Copland protocol: readfile_marker_range over every contract-block byte) refuses -> its repair rung splices the golden contract back -> the restored TRUE contract refutes the still-inverted impl: end on the exposed Verus refusal (verus_targ Appraisal was not successful). Discovered while building this demo; the marker-coverage lint now enforces the invariant. Do NOT auto-repair to green - the exposure IS the beat; the impl repair is Act V's ladder. Slide-C candidate row." },
-  { num: "ACT V", title: "Implementation drift: breaking, diagnose then repair", scenes: "scene 2",
+  { num: "ACT V", title: "Implementation drift: breaking, diagnose then repair", scenes: "Demo scene 2", scenesY: 3.54,
     watch: [
-      { text: "Implementation code (developer-owned) changes, breaking a Verus contract.  Blackboard loop diagnoses, repairs (simulated for demo), then ", options: { italic: true } },
+      { text: "Implementation code (developer-owned) changes, breaking a Verus contract.  Blackboard loop diagnoses, repairs, then ", options: { italic: true } },
       { text: "returns the artifact to good standing only by re-measurement", options: { bold: true, italic: true } },
       { text: ".", options: { italic: true } },
     ],
     cmd: "./examples/demo_isolette.sh --scenes 2",
     notes: "Beats: dummy-bad-impl diff (take the [v]iew - VSCode diff D1 on camera) -> contracts-intact rung exhausts -> impl rung restores crate-scoped -> restart -> re-attested clean." },
-  { num: "ACT VI", title: "Baseline drift:  tampered evidence bundle, protocol, tooling", scenes: "scenes 6 + 7",
-    watch: "The signed golden evidence bundle, an installed golden value in the protocol ASP ARGS, then the verifier itself — each tamper attributed, each refused by cryptographic checks.",
+  { num: "ACT VI", title: "Baseline drift:  tampered evidence bundle, protocol, tooling", scenes: "Demo scenes 6 + 7", scenesY: 3.54,
+    watch: [
+      { text: "The signed golden evidence bundle, an installed (live) golden value in the appraisal protocol, then the verification tool itself — each tamper attributed, ", options: { italic: true } },
+      { text: "each refused by cryptographic checks", options: { bold: true, italic: true } },
+      { text: ".", options: { italic: true } },
+    ],
     cmd: "./examples/demo_isolette.sh --scenes \"6 7\"",
     notes: "Scene 6 beats: three tampers, three attributed refusals (signature -> anchor -> derivability); optionally the flipped-evidence-byte diff on camera. Scene 7 beats: wrapper edit (take the [v]iew, diff D10) -> readiness still passes -> tool hash refutes, every proof cell poisons to ? - dwell, this is the act's money shot. --restore-tools recovery in VO only." },
-  { num: "ACT VII", title: "Axiom drift:  semantic measurement detects axioms and unsound proof techniques", scenes: "scenes 9 + 12",
+  { num: "ACT VII", title: "Axiom drift:  semantic measurement detects axioms and unsound proof techniques", scenes: "Demo scenes 9 + 12", scenesY: 3.54,
     watch: [
       { text: "Proofs verify, but measurement detects ", options: { italic: true } },
-      { text: "subtle ways that proof attempts cheat ", options: { bold: true } },
-      { text: "to undermine verification soundness.", options: { italic: true } },
+      { text: "subtle cheating in proof attempts, ", options: { bold: true, breakLine: true } },
+      { text: "that would otherwise undermine verification soundness.", options: { italic: true } },
     ],
     cmd: "./examples/demo_isolette.sh --scenes \"9 12\"",
     notes: "The detector escalation that closes the demo. BEAT 1 (scene 9, axioms): two-grid view - the verus grid all green (cargo-verus succeeds) beside the proof-escape grid refusing the exact crate and naming the construct (ADMIT: assume 0->1; SMUGGLE: broadcast 0->1, external_body 0->1). The CHEAT SCAN catches what the outcome cannot - a construct appeared. BEAT 2 (scene 12, FFI): the heat command inverted behind external_body (diff D18) -> every proof passes AND the cheat scan is SILENT (no construct) -> only the GENSRC byte anchor refuses, naming the file -> diagnosis rung classifies -> repair by regeneration (speed-ramp). Three detectors, three blind spots: outcome (blind to both), construct scan (catches beat 1), byte anchor (catches beat 2). Close naming scenes 10-11 (slide C carries the rest)." },
@@ -718,7 +726,7 @@ ACTS.forEach((act) => {
     color: NAVY, margin: 0,
   });
   sa.addText(act.scenes, {
-    x: 0.9, y: 3.45, w: 11.5, h: 0.45, fontFace: BODY, fontSize: 15, italic: true,
+    x: 0.9, y: act.scenesY || 3.45, w: 11.5, h: 0.45, fontFace: BODY, fontSize: 15, italic: true,
     color: MUTED, margin: 0,
   });
   sa.addText(act.watch, {
@@ -751,18 +759,21 @@ ACTS.forEach((act) => {
     x: 0.7, y: 0.4, w: 12.0, h: 0.7, fontFace: HDR, fontSize: 34, bold: true, color: NAVY, margin: 0,
   });
   seco.addText([
-    { text: "The blackboard, controller, repair ladder, and artifact classes don\u2019t change \u2014 only the ", options: {} },
+    { text: "The blackboard infrastructure and artifact classes don\u2019t change \u2014 only the ", options: {} },
     { text: "pipeline around them does", options: { bold: true } },
-    { text: ": the modeling language, the prover, the target runtime, and the attestation primitives.", options: {} },
+    { text: ": modeling language, prover, ", options: { breakLine: true } },
+    { text: "target runtime, and attestation primitives.", options: {} },
   ], { x: 0.7, y: 1.12, w: 12.0, h: 0.5, fontFace: BODY, fontSize: 15, italic: true, color: DARK, margin: 0 });
 
   const cards = [
     { header: "SysML v2 \u2192 HAMR \u2192 Rust / Verus", caption: "isolette", badge: "the demo", ref: true,
-      bullets: ["SysMLv2 GUMBO component contracts", "seL4 / Microkit runtime target", "Every artifact class measured \u2014 the full demo"] },
+      bullets: ["SysMLv2 GUMBO component contracts", "seL4 / Microkit runtime target", "Every artifact class measured"] },
     { header: "AADL \u2192 HAMR \u2192 Slang / Logika", caption: "temp-control",
-      bullets: ["AADL GUMBO component contracts", "JVM runtime target", "Same blackboard, similar Copland protocols"] },
+      bullets: ["AADL GUMBO component contracts", "JVM runtime target", "Same blackboard, similar Copland protocols to SysMLv2 pipeline"] },
     { header: "Standalone Rust / Verus", caption: "find-max-verus",
-      bullets: ["Contracts + proofs written directly in Verus", "No model, no codegen \u2014 implementation + proof classes only", "Proof-repair experiments: AutoVerus, KU Dogtreat linear planner"] },
+      // { sub: true } = level-2 "o" sub-bullet (user edit 2026-09-04; exact pPr patched post-build, see PPR_OVERRIDES)
+      bullets: ["Contracts + proofs written directly in Verus", "No model, no codegen \u2014 implementation + proof classes only", "Proof-repair experiments",
+        { text: "AutoVerus", sub: true }, { text: "KU Dogtreat linear planner", sub: true }] },
     { header: "Interactive Theorem Provers:  Lean / Rocq", caption: "landing-gear, temp-control",
       bullets: ["Blessed theorem statements, workflow-owned implementations, proofs", "Tactic-driven and LLM-driven proof repair", "Goal-directed: attestation enforces one invariant while synthesis iterates", "ITP-specific axiom checks"] },
   ];
@@ -783,8 +794,9 @@ ACTS.forEach((act) => {
     seco.addText(capRuns, { x: x + 0.26, y: y + 0.5, w: CW - 0.5, h: 0.28, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
     const paras = [];
     c.bullets.forEach((b, j) => {
-      paras.push({ text: b, options: {
-        bullet: { code: "2022" }, color: c.ref ? ICE : DARK, fontSize: 12,
+      const sub = typeof b === "object" && b.sub;
+      paras.push({ text: typeof b === "object" ? b.text : b, options: {
+        bullet: { code: sub ? "006F" : "2022" }, indentLevel: sub ? 1 : 0, color: c.ref ? ICE : DARK, fontSize: 12,
         breakLine: j !== c.bullets.length - 1, paraSpaceAfter: 4 } });
     });
     seco.addText(paras, { x: x + 0.3, y: y + 0.85, w: CW - 0.55, h: CH - 0.98, fontFace: BODY, align: "left", valign: "top", margin: 0 });
@@ -837,10 +849,8 @@ ACTS.forEach((act) => {
     rowH: [0.4, 0.62, 0.62, 1.0, 0.72, 0.72], margin: 0.09, fontFace: BODY,
   });
 
-  sa.addText([
-    { text: "\uD83D\uDD12  the bottom two \u2014 the judges \u2014 are AI-free by design", options: { bold: true, color: NAVY } },
-    { text: ":  an LLM\u2019s output is just another untrusted artifact, facing the same episode and appraisal as a human edit or a tamper. Guarantees never depend on LLM engines being good, honest, or even present.", options: { color: DARK } },
-  ], { x: 0.7, y: 6.55, w: 11.9, h: 0.75, fontFace: BODY, fontSize: 12.5, italic: true, align: "left", valign: "top", margin: 0 });
+  // (The "🔒 the bottom two — the judges — are AI-free by design" footer was removed per user edits 2026-09-04;
+  //  the point stays in the speaker notes.)
 
   sa.addNotes(
     "Capstone slide 1 of 3 (theme: 'AI in the loop' as the big title, a descriptive caption beneath - B and C reuse the header).\n" +
@@ -894,7 +904,7 @@ ACTS.forEach((act) => {
   sb.addText([
     { text: "A virtuous cycle \u2013 ", options: { bold: true } },
     { text: "AI-assisted workflow to add (deterministic) tools and domain-specific measurement capabilities.  ", options: {} },
-  ], { x: 0.7, y: 6.7, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13.5, italic: true, color: NAVY, align: "left", margin: 0 });
+  ], { x: 0.7, y: 6.61, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13.5, italic: true, color: NAVY, align: "left", margin: 0 });
 
   sb.addNotes(
     "Capstone slide 2 of 3 (theme: 'AI in the loop' big title + caption). The one idea: AI built the entire attestation stack, and that stack is held to the same measured discipline it enforces.\n" +
@@ -955,7 +965,7 @@ ACTS.forEach((act) => {
 
   sc.addText([
     { text: "Adversarial co-development", options: { bold: true } },
-    { text: " \u2014 defense-in-depth, anomaly detection, mitigation.", options: {} },
+    { text: " \u2014 defense-in-depth, anomaly detection, proposed mitigation.", options: {} },
   ], { x: 0.7, y: 6.72, w: 11.9, h: 0.4, fontFace: BODY, fontSize: 13.5, italic: true, color: NAVY, align: "left", margin: 0 });
 
   sc.addNotes(
@@ -1024,6 +1034,11 @@ const PPR_OVERRIDES = [
     ppr: '<a:pPr marL="628650" lvl="1" indent="-171450"><a:spcAft><a:spcPts val="1000"/></a:spcAft><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
   { part: "ppt/slides/slide8.xml", lvl1Index: 1,
     ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
+  // Ecosystems slide (deck position 16): the two "o" sub-bullets under "Proof-repair experiments" (user edit 2026-09-04).
+  { part: "ppt/slides/slide16.xml", lvl1Index: 0,
+    ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
+  { part: "ppt/slides/slide16.xml", lvl1Index: 1,
+    ppr: '<a:pPr marL="800100" lvl="1" indent="-342900"><a:spcAft><a:spcPts val="400"/></a:spcAft><a:buSzPct val="100000"/><a:buFont typeface="Courier New" panose="02070309020205020404" pitchFamily="49" charset="0"/><a:buChar char="o"/></a:pPr>' },
 ];
 async function applyPprOverrides(file) {
   const fs = require("fs"), JSZip = require("jszip");
