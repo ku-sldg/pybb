@@ -95,7 +95,9 @@ highlighted:
 - Traditional remote attestation: did system components boot into a
   predictable state? (boot-time, static runtime)
 - Layered, runtime attestation: extend boot-time trust via dynamic
-  measurement of system components and their context/dependencies
+  measurement of system components and their context/dependencies [1]
+  (citation added 2026-09-04: Thomas et al., *Designing Trustworthy
+  Layered Attestations*, arXiv:2603.06326 — the deck's first citation)
 - Lifecycle attestation: extends this notion to **artifacts of the development lifecycle**:
   models, contracts, implementations, proofs, toolchains 
   - ...including the attestation infrastructure and evidence itself
@@ -161,17 +163,20 @@ bolded (generator briefly re-added the old bolding; fixed same day).
 **Content**: layered diagram, top to bottom, one phrase of "what this
 layer contributes" each:
 
-- **Copland** — attestation protocols as formal terms with an evidence
+- **Copland** [2] — attestation protocols as formal terms with an evidence
   semantics (the "*what* was measured, in *what order*, signed by *whom*"
-  tail dropped 2026-09-03)
-- **Copland Virtual Machine (CVM)** — executes Copland phrases;
+  tail dropped 2026-09-03). Citations [2]–[6] added 2026-09-04: the
+  Copland paper, the CVM / asp-libs GitHub repositories, SEFM'24
+  (verified configuration/deployment, on the CVM box) and ISSE'22
+  (verified bundling/appraisal, on the output box).
+- **Copland Virtual Machine (CVM)** [3,4] — executes Copland phrases;
   dispatches ASPs according to **manifest** configurations; appraises
   results
-- **asp-libs** — its own layer box under CVM: the
+- **asp-libs** [5] — its own layer box under CVM: the
   measurement/appraisal primitives (hash, readfile, signature, golden
   comparison, …); still one spoken clause at most, not a talking point
 - Output arrow: **signed evidence bundles**, appraised against
-  **golden baselines**
+  **golden baselines** [6]
 
 **Copland snippet** (visual texture, sidebar; captioned "Copland
 protocol from the demo — the Isolette model class:"): the isolette's actual
@@ -383,8 +388,10 @@ position 7 the same day.
 ## Slide 7 (deck position 8) — The isolette — DRAFTED
 
 **Timing**: ~1 min. This slide IS the section transition into the
-demo: the roadmap strip rides at the top with the "Demo:" segment
-highlighted.
+demo. (The compact roadmap strip that rode at the top with the "Demo:"
+segment highlighted is OFF as of 2026-09-04 — it appeared only in the
+demo portion and read as confusing; `SHOW_COMPACT_STRIP` in the
+generator restores it.)
 
 **On-slide title**: "The Isolette Example" (was "The isolette";
 user edit 2026-09-03).
@@ -427,21 +434,14 @@ heading above them removed 2026-09-03):
   `props` · `l1a` · `l2` · `verus` · `cheat` · `sysproof` · `gensrc` ·
   `report`
 
-**References footer** (bottom, 8.5pt muted; K-State HAMR/isolette
-credits, in addition to the AR-08-32 citation in the system beat):
-
-1. Hatcliff & Belt, *The Isolette System: Illustrating End-to-End
-   Artifacts for Rigorous Model-Based Engineering*, Springer LNCS
-   15240, 2025. doi:10.1007/978-3-031-73887-6_9
-2. Hatcliff, Belt, Robby, McKenzie, Liang, *End-to-End Formal Methods
-   Integrated Development with SysMLv2 Using HAMR*, Springer, 2025.
-   doi:10.1007/978-3-032-00942-5_13
-3. Hatcliff, Belt, Robby, Carpenter, *HAMR: An AADL Multi-platform
-   Code Generation Toolset*, ISoLA 2021, LNCS 13036, pp. 274–295.
-   doi:10.1007/978-3-030-89159-6_18
-
-(DOIs kept here for the record; on-slide the footer shows authors,
-italic title, venue, year only.)
+**Numbered citations** (2026-09-04; the 8.5pt references footer that
+used to sit at the bottom was removed the same day): "[7]" after the
+system beat, "[10]" after "FAA AR-08-32", "[11]" after the relevance
+beat, and "[8,9]" / "[12]" / "[13]" inside the HAMR / Verus / seL4
+pipeline boxes (renumbered as earlier slides gained citations: the
+CVM / asp-libs repos, SEFM'24 / ISSE'22, then the arXiv layered
+attestations paper on the lifecycle slide). Full entries with DOIs live on the References slide
+(see Slide R).
 
 **Speaker notes**
 
@@ -467,7 +467,8 @@ italic title, venue, year only.)
 
 ## Slides 8–12 — Act transitions I–V — DRAFTED (generated into deck positions 9–13, 2026-08-26)
 
-Layout per slide: compact roadmap strip (Demo active) · "ACT N" label
+Layout per slide: (compact roadmap strip — OFF since 2026-09-04, see
+the isolette slide note) · "ACT N" label
 (letter-spaced, muted) · descriptive title (40pt) · scene tag ·
 watch-for line (20pt italic — the VO opener) · capture invocation as a
 monospace presenter footer. Speaker notes carry the per-act beats from
@@ -620,20 +621,64 @@ the source of truth — the outline's versions are the earlier draft)**:
 ## Slide R — References (deck final slide) — DRAFTED
 
 The collection point for every reference in the deck — always the last
-slide; keep it current as sections are added. Grouped:
+slide; keep it current as sections are added. Entries are **numbered
+in order of first on-slide citation** ([1] on the lifecycle slide,
+[2]–[6] on the core-stack slide, [7]–[13] on the isolette slide) but
+**kept grouped** (user decision 2026-09-04; with attestation
+foundations first the numbers happen to read in order). All thirteen
+verified against Crossref / DBLP / GitHub / FAA / arXiv on 2026-09-04.
+Group order (user, 2026-09-04): attestation foundations first:
 
-- **The isolette & HAMR (Kansas State)**: the three Hatcliff et al.
-  papers (see slide 7's reference list for full details + DOIs),
-  Lempia & Miller DOT/FAA/AR-08/32, and the INSPECTA models repo
-  (github.com/loonwerks/INSPECTA-models).
-- **Attestation foundations**: Ramsdell, Rowe, Alexander, Helble,
-  Loscocco, Pendergrass, Petz, *Orchestrating Layered Attestations*,
-  POST 2019, LNCS 11426. doi:10.1007/978-3-030-17138-4_9
-- **Verification & platform**: Lattuada, Hance, Cho, Brun, Subasinghe,
-  Zhou, Howell, Parno, Hawblitzel, *Verus: Verifying Rust Programs
-  using Linear Ghost Types*, PACMPL 7 (OOPSLA1), 2023.
-  doi:10.1145/3586037 · Klein et al., *seL4: Formal Verification of an
-  OS Kernel*, SOSP 2009.
+- **Attestation foundations**
+  - [1] Thomas, Schmalz, Petz, Alexander, Guttman, Rowe, Carter,
+    *Designing Trustworthy Layered Attestations*, arXiv:2603.06326
+    (cs.CR), submitted 6 Mar 2026, 40 pp. (cited on the lifecycle
+    slide's "Layered, runtime attestation" bullet)
+  - [2] Ramsdell, Rowe, Alexander, Helble, Loscocco, Pendergrass,
+    Petz, *Orchestrating Layered Attestations*, POST 2019, LNCS 11426,
+    pp. 197–221. doi:10.1007/978-3-030-17138-4_9
+  - [3] Copland Virtual Machine (CVM), KU SLDG: github.com/ku-sldg/cvm
+    (Rocq formalization of the Copland VM; cited on the CVM layer box)
+  - [4] Petz, Thomas, Fritz, Barclay, Schmalz, Alexander, *Verified
+    Configuration and Deployment of Layered Attestation Managers*,
+    SEFM 2024, Springer LNCS 15280, pp. 290–308.
+    doi:10.1007/978-3-031-77382-2_17 (cited with [3] on the CVM box —
+    its caption's "manifest configurations")
+  - [5] asp-libs (attestation service provider libraries), KU SLDG:
+    github.com/ku-sldg/asp-libs (cited on the asp-libs layer box)
+  - [6] Petz & Alexander, *Formally Verified Bundling and Appraisal of
+    Evidence for Layered Attestations*, Innovations in Systems and
+    Software Engineering 19(4), 2023, pp. 411–426 (online Sept 2022).
+    doi:10.1007/s11334-022-00475-1 (cited on the output box "signed
+    evidence bundles, appraised against golden baselines"; journal
+    record year used per user)
+- **The isolette & HAMR (Kansas State)**
+  - [7] Hatcliff & Belt, *The Isolette System: Illustrating End-to-End
+    Artifacts for Rigorous Model-Based Engineering*, in *The Combined
+    Power of Research, Education, and Dissemination* (Margaria
+    Festschrift), Springer LNCS 15240, 2025, pp. 93–117.
+    doi:10.1007/978-3-031-73887-6_9
+  - [8] Hatcliff, Belt, Robby, McKenzie, Liang, *End-to-End Formal
+    Methods Integrated Development with SysMLv2 Using HAMR*, FMICS
+    2025, Springer LNCS 16040, pp. 241–260.
+    doi:10.1007/978-3-032-00942-5_13 (was "Springer, 2025" on the
+    slide before verification)
+  - [9] Hatcliff, Belt, Robby, Carpenter, *HAMR: An AADL Multi-platform
+    Code Generation Toolset*, ISoLA 2021, LNCS 13036, pp. 274–295.
+    doi:10.1007/978-3-030-89159-6_18
+  - [10] Lempia & Miller, *Requirements Engineering Management
+    Handbook*, DOT/FAA/AR-08/32, FAA, June 2009 (Rockwell Collins).
+  - [11] INSPECTA models: github.com/loonwerks/INSPECTA-models
+- **Verification & platform**
+  - [12] Lattuada, Hance, Cho, Brun, Subasinghe, Zhou, Howell, Parno,
+    Hawblitzel, *Verus: Verifying Rust Programs using Linear Ghost
+    Types*, PACMPL 7 (OOPSLA1), 2023. doi:10.1145/3586037
+  - [13] Klein et al., *seL4: Formal Verification of an OS Kernel*,
+    SOSP 2009, pp. 207–220. doi:10.1145/1629575.1629596
+
+Citation style on slides: bracketed "[n]" at the surrounding text
+size, muted/ice color, first mention only (later mentions of Verus,
+seL4, Copland, HAMR carry no repeat number).
 
 **Decisions**: Copland/Verus/seL4 seeded ahead of their sections
 (2026-08-25); candidates to add later: the GUMBO contract-language

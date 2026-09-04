@@ -11,6 +11,10 @@ pres.layout = "LAYOUT_WIDE"; // 13.3 x 7.5
 
 const NAVY = "1E2761", ICE = "CADCFC", WHITE = "FFFFFF", DARK = "212121", MUTED = "5A6478";
 const HDR = "Cambria", BODY = "Calibri";
+// Compact roadmap strip at the top of the demo slides (isolette + act transitions).
+// Off for now per user 2026-09-04: it only appeared in the demo portion, which read as confusing.
+// The full Roadmap slide (deck position 2) is unaffected. Flip to true to restore the strips.
+const SHOW_COMPACT_STRIP = false;
 
 // ---------- Slide 1: Title ----------
 let s1 = pres.addSlide();
@@ -137,6 +141,7 @@ const bullets = [
       { text: "Layered, runtime attestation", options: {} },
       { text: ": ", options: { bold: true } },
       { text: "extend boot-time trust via dynamic measurement of system components and their context/dependencies", options: {} },
+      { text: " [1]", options: { color: MUTED } }, // Thomas et al., Designing Trustworthy Layered Attestations (arXiv 2026) — first citation in the deck
     ], indent: 0 },
   { runs: [
       { text: "Lifecycle attestation", options: {} },
@@ -216,8 +221,12 @@ const LX = 0.7, LW = 6.3;
 s4.addShape(pres.ShapeType.roundRect, {
   x: LX, y: 1.45, w: LW, h: 1.1, rectRadius: 0.07, fill: { color: NAVY }, line: { type: "none" },
 });
+// Numbered citations (2026-09-04): "[n]" at the surrounding text size, muted/ice, on first mention only;
+// numbers index the References slide (kept grouped there, so they appear out of order on it).
+// [1] layered attestations (slide 3) · [2] Copland paper · [3] CVM repo · [4] SEFM'24 (CVM box) · [5] asp-libs repo · [6] ISSE'22 (output box) · [7]-[13] isolette slide.
 s4.addText([
-  { text: "Copland", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
+  { text: "Copland", options: { bold: true, fontSize: 17, color: WHITE } },
+  { text: " [2]", options: { fontSize: 17, color: ICE, breakLine: true, paraSpaceAfter: 2 } },
   { text: "attestation protocols as formal terms with an evidence semantics", options: { fontSize: 12, color: ICE } },
 ], { x: LX + 0.25, y: 1.45, w: LW - 0.5, h: 1.1, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
@@ -228,7 +237,8 @@ s4.addShape(pres.ShapeType.roundRect, {
   x: LX, y: 2.85, w: LW, h: 1.1, rectRadius: 0.07, fill: { color: "3A4A8C" }, line: { type: "none" },
 });
 s4.addText([
-  { text: "Copland Virtual Machine (CVM)", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
+  { text: "Copland Virtual Machine (CVM)", options: { bold: true, fontSize: 17, color: WHITE } },
+  { text: " [3,4]", options: { fontSize: 17, color: ICE, breakLine: true, paraSpaceAfter: 2 } },
   { text: "executes Copland phrases · dispatches ASPs according to manifest configurations · appraises results", options: { fontSize: 12, color: ICE } },
 ], { x: LX + 0.25, y: 2.85, w: LW - 0.5, h: 1.1, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
@@ -239,7 +249,8 @@ s4.addShape(pres.ShapeType.roundRect, {
   x: LX, y: 4.25, w: LW, h: 0.95, rectRadius: 0.07, fill: { color: "56659E" }, line: { type: "none" },
 });
 s4.addText([
-  { text: "asp-libs", options: { bold: true, fontSize: 17, color: WHITE, breakLine: true, paraSpaceAfter: 2 } },
+  { text: "asp-libs", options: { bold: true, fontSize: 17, color: WHITE } },
+  { text: " [5]", options: { fontSize: 17, color: ICE, breakLine: true, paraSpaceAfter: 2 } },
   { text: "measurement & appraisal primitives: hash, readfile, signature, golden comparison, \u2026", options: { fontSize: 12, color: ICE } },
 ], { x: LX + 0.25, y: 4.25, w: LW - 0.5, h: 0.95, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
@@ -253,6 +264,7 @@ s4.addText([
   { text: "signed evidence bundles", options: { bold: true, fontSize: 15, color: NAVY } },
   { text: ", appraised against ", options: { fontSize: 15, color: NAVY } },
   { text: "golden baselines", options: { bold: true, fontSize: 15, color: NAVY } },
+  { text: " [6]", options: { fontSize: 15, color: MUTED } },
 ], { x: LX + 0.25, y: 5.5, w: LW - 0.5, h: 0.95, fontFace: BODY, align: "left", valign: "middle", margin: 0 });
 
 // Right column: Copland snippet sidebar
@@ -532,7 +544,7 @@ let s7 = pres.addSlide();
 s7.background = { color: WHITE };
 
 // compact roadmap strip, "Demo" segment active
-{
+if (SHOW_COMPACT_STRIP) {
   const stripY = 0.22, stripH = 0.55, gap = 0.14, x0 = 0.7, totalW = 11.9, fs = 9;
   const segW = (totalW - gap * (sections.length - 1)) / sections.length;
   sections.forEach((name, i) => {
@@ -559,10 +571,12 @@ s7.addText("The Isolette Example", {
 const SUB = { code: "006F" }; // PowerPoint's default level-2 "o" bullet
 const introParas = [
   { text: "The system: ", options: { bold: true, breakLine: false, bullet: { code: "2022" } } },
-  { text: "infant-incubator thermostat that regulates and monitors a newborn's environment to maintain a safe temperature range (heat control on/off)", options: { breakLine: true, paraSpaceAfter: 2 } },
-  { text: "requirements traceable to FAA AR-08-32 (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10, bullet: SUB, indentLevel: 1 } },
+  { text: "infant-incubator thermostat that regulates and monitors a newborn's environment to maintain a safe temperature range (heat control on/off)", options: {} },
+  { text: " [7]", options: { color: MUTED, breakLine: true, paraSpaceAfter: 2 } },
+  { text: "requirements traceable to FAA AR-08-32 [10] (the REQ-MHS-* family the scenes will tamper with)", options: { fontSize: 11, italic: true, color: MUTED, breakLine: true, paraSpaceAfter: 10, bullet: SUB, indentLevel: 1 } },
   { text: "The relevance: ", options: { bold: true, breakLine: false, bullet: { code: "2022" } } },
-  { text: "the INSPECTA program's seL4/Microkit HAMR-based pipeline", options: { breakLine: true, paraSpaceAfter: 2 } },
+  { text: "the INSPECTA program's seL4/Microkit HAMR-based pipeline", options: {} },
+  { text: " [11]", options: { color: MUTED, breakLine: true, paraSpaceAfter: 2 } },
   { text: "current, safety-critical development artifact, not a toy example", options: { breakLine: false, bullet: SUB, indentLevel: 1 } },
 ];
 s7.addText(introParas, {
@@ -572,15 +586,19 @@ s7.addText(introParas, {
 
 // pipeline graphic
 {
-  const stages = ["SysMLv2 model\n+ GUMBO contracts", "HAMR\ncodegen", "Verus-verified\nRust", "seL4 + Microkit\ntarget"];
+  // [line1, line2, citation]; citation (if any) follows line 2 in ice, non-bold.
+  const stages = [["SysMLv2 model", "+ GUMBO contracts"], ["HAMR", "codegen", "[8,9]"], ["Verus-verified", "Rust", "[12]"], ["seL4 + Microkit", "target", "[13]"]];
   const py = 3.97, ph = 0.85, pgap = 0.34, px0 = 0.7, ptotal = 6.6; // py 4.35 -> 3.97 per user edits 2026-09-03
   const pw = (ptotal - pgap * (stages.length - 1)) / stages.length;
-  stages.forEach((t, i) => {
+  stages.forEach(([l1, l2, cite], i) => {
     const x = px0 + i * (pw + pgap);
     s7.addShape(pres.ShapeType.roundRect, {
       x, y: py, w: pw, h: ph, rectRadius: 0.06, fill: { color: MID5 }, line: { type: "none" },
     });
-    s7.addText(t, { x, y: py, w: pw, h: ph, fontFace: BODY, fontSize: 10.5, bold: true, color: WHITE, align: "center", valign: "middle", margin: 0.02 });
+    // bold on the label runs (not the box) so the citation run can stay plain — a run-level bold:false is ignored by pptxgenjs
+    const runs = [{ text: l1, options: { bold: true, breakLine: true } }, { text: l2, options: { bold: true } }];
+    if (cite) runs.push({ text: " " + cite, options: { color: ICE } });
+    s7.addText(runs, { x, y: py, w: pw, h: ph, fontFace: BODY, fontSize: 10.5, color: WHITE, align: "center", valign: "middle", margin: 0.02 });
     if (i < stages.length - 1) {
       s7.addText("→", { x: x + pw - 0.04, y: py, w: pgap + 0.08, h: ph, fontFace: BODY, fontSize: 13, color: MUTED, align: "center", valign: "middle", margin: 0 });
     }
@@ -595,21 +613,7 @@ s7.addText([
   align: "left", valign: "top", margin: 0,
 });
 
-// References footer (K-State HAMR/isolette credits + the pipeline tool papers)
-s7.addText([
-  { text: "Hatcliff & Belt, ", options: { breakLine: false } },
-  { text: "The Isolette System: Illustrating End-to-End Artifacts for Rigorous Model-Based Engineering", options: { italic: true, breakLine: false } },
-  { text: ", Springer LNCS 15240, 2025", options: { breakLine: true } },
-  { text: "Hatcliff, Belt, Robby, McKenzie, Liang, ", options: { breakLine: false } },
-  { text: "End-to-End Formal Methods Integrated Development with SysMLv2 Using HAMR", options: { italic: true, breakLine: false } },
-  { text: ", Springer, 2025", options: { breakLine: true } },
-  { text: "Hatcliff, Belt, Robby, Carpenter, ", options: { breakLine: false } },
-  { text: "HAMR: An AADL Multi-platform Code Generation Toolset", options: { italic: true, breakLine: false } },
-  { text: ", ISoLA 2021, LNCS 13036", options: {} },
-], {
-  x: 0.7, y: 6.82, w: 11.9, h: 0.62, fontFace: BODY, fontSize: 8.5, color: MUTED,
-  align: "left", valign: "top", margin: 0,
-});
+// (References footer removed 2026-09-04: the K-State papers are now cited by number [7][8][9] and listed on the References slide.)
 
 // Right half: big-number callouts ("the measured surface" heading removed per user edits 2026-09-03)
 const stats = [
@@ -705,7 +709,7 @@ ACTS.forEach((act) => {
   // compact roadmap strip, Demo active
   const stripY = 0.22, stripH = 0.55, sgap = 0.14, sx0 = 0.7, stotalW = 11.9, sfs = 9;
   const ssegW = (stotalW - sgap * (sections.length - 1)) / sections.length;
-  sections.forEach((name, i) => {
+  if (SHOW_COMPACT_STRIP) sections.forEach((name, i) => {
     const x = sx0 + i * (ssegW + sgap);
     const active = i === 1;
     sa.addShape(pres.ShapeType.roundRect, {
@@ -993,28 +997,40 @@ sref.addText("References", {
   color: NAVY, margin: 0,
 });
 
+// Numbers = order of first on-slide citation (2026-09-04; verified against Crossref/DBLP/FAA/GitHub the same day):
+//   lifecycle slide: [1] Thomas et al. layered attestations (arXiv 2026) ·
+//   core-stack slide: [2] Copland paper, [3] CVM repo, [4] SEFM'24 config/deployment, [5] asp-libs repo, [6] ISSE'22 bundling/appraisal ·
+//   isolette slide: [7] paper, [8][9] HAMR, [10] FAA handbook, [11] INSPECTA models, [12] Verus, [13] seL4.
+// Groupings kept per user, so numbers read out of order here — intentional. Group order per user 2026-09-04:
+// Attestation foundations first, then the isolette & HAMR group, then verification & platform.
 const refGroups = [
-  ["The isolette & HAMR (Kansas State)", [
-    [["Hatcliff & Belt, ", 0], ["The Isolette System: Illustrating End-to-End Artifacts for Rigorous Model-Based Engineering", 1], [", Springer LNCS 15240, 2025", 0]],
-    [["Hatcliff, Belt, Robby, McKenzie, Liang, ", 0], ["End-to-End Formal Methods Integrated Development with SysMLv2 Using HAMR", 1], [", Springer, 2025", 0]],
-    [["Hatcliff, Belt, Robby, Carpenter, ", 0], ["HAMR: An AADL Multi-platform Code Generation Toolset", 1], [", ISoLA 2021, LNCS 13036, pp. 274\u2013295", 0]],
-    [["Lempia & Miller, ", 0], ["Requirements Engineering Management Handbook", 1], [", DOT/FAA/AR-08/32, 2009", 0]],
-    [["INSPECTA models: github.com/loonwerks/INSPECTA-models", 0]],
-  ]],
   ["Attestation foundations", [
-    [["Ramsdell, Rowe, Alexander, Helble, Loscocco, Pendergrass, Petz, ", 0], ["Orchestrating Layered Attestations", 1], [", POST 2019, LNCS 11426", 0]],
+    [1, ["Thomas, Schmalz, Petz, Alexander, Guttman, Rowe, Carter, ", 0], ["Designing Trustworthy Layered Attestations", 1], [", arXiv:2603.06326, 2026", 0]],
+    [2, ["Ramsdell, Rowe, Alexander, Helble, Loscocco, Pendergrass, Petz, ", 0], ["Orchestrating Layered Attestations", 1], [", POST 2019, LNCS 11426, pp. 197\u2013221", 0]],
+    [3, ["Copland Virtual Machine (CVM), KU SLDG: github.com/ku-sldg/cvm", 0]],
+    [4, ["Petz, Thomas, Fritz, Barclay, Schmalz, Alexander, ", 0], ["Verified Configuration and Deployment of Layered Attestation Managers", 1], [", SEFM 2024, LNCS 15280, pp. 290\u2013308", 0]],
+    [5, ["asp-libs (attestation service provider libraries), KU SLDG: github.com/ku-sldg/asp-libs", 0]],
+    [6, ["Petz & Alexander, ", 0], ["Formally Verified Bundling and Appraisal of Evidence for Layered Attestations", 1], [", Innovations in Systems and Software Engineering 19(4), 2023, pp. 411\u2013426", 0]],
+  ]],
+  ["The isolette & HAMR (Kansas State)", [
+    [7, ["Hatcliff & Belt, ", 0], ["The Isolette System: Illustrating End-to-End Artifacts for Rigorous Model-Based Engineering", 1], [", Springer LNCS 15240, 2025, pp. 93\u2013117", 0]],
+    [8, ["Hatcliff, Belt, Robby, McKenzie, Liang, ", 0], ["End-to-End Formal Methods Integrated Development with SysMLv2 Using HAMR", 1], [", FMICS 2025, Springer LNCS 16040, pp. 241\u2013260", 0]],
+    [9, ["Hatcliff, Belt, Robby, Carpenter, ", 0], ["HAMR: An AADL Multi-platform Code Generation Toolset", 1], [", ISoLA 2021, LNCS 13036, pp. 274\u2013295", 0]],
+    [10, ["Lempia & Miller, ", 0], ["Requirements Engineering Management Handbook", 1], [", DOT/FAA/AR-08/32, 2009", 0]],
+    [11, ["INSPECTA models: github.com/loonwerks/INSPECTA-models", 0]],
   ]],
   ["Verification & platform", [
-    [["Lattuada, Hance, Cho, Brun, Subasinghe, Zhou, Howell, Parno, Hawblitzel, ", 0], ["Verus: Verifying Rust Programs using Linear Ghost Types", 1], [", PACMPL 7 (OOPSLA1), 2023", 0]],
-    [["Klein et al., ", 0], ["seL4: Formal Verification of an OS Kernel", 1], [", SOSP 2009", 0]],
+    [12, ["Lattuada, Hance, Cho, Brun, Subasinghe, Zhou, Howell, Parno, Hawblitzel, ", 0], ["Verus: Verifying Rust Programs using Linear Ghost Types", 1], [", PACMPL 7 (OOPSLA1), 2023", 0]],
+    [13, ["Klein et al., ", 0], ["seL4: Formal Verification of an OS Kernel", 1], [", SOSP 2009, pp. 207\u2013220", 0]],
   ]],
 ];
 let refParas = [];
 refGroups.forEach(([group, refs], gi) => {
   refParas.push({ text: group, options: { bold: true, color: NAVY, fontSize: 14, breakLine: true, paraSpaceBefore: gi === 0 ? 0 : 12, paraSpaceAfter: 4 } });
-  refs.forEach((runs) => {
+  refs.forEach(([num, ...runs]) => {
+    refParas.push({ text: `[${num}]  `, options: { bold: true, color: NAVY, fontSize: 11.5, breakLine: false } });
     runs.forEach(([text, ital], j) => {
-      refParas.push({ text, options: { italic: ital === 1, color: DARK, fontSize: 11.5, bullet: j === 0 ? { code: "2022" } : undefined, indentLevel: j === 0 ? 0 : undefined, breakLine: j === runs.length - 1, paraSpaceAfter: 3 } });
+      refParas.push({ text, options: { italic: ital === 1, color: DARK, fontSize: 11.5, breakLine: j === runs.length - 1, paraSpaceAfter: 3 } });
     });
   });
 });
@@ -1023,7 +1039,7 @@ sref.addText(refParas, {
   x: 0.7, y: 1.5, w: 12.0, h: 5.6, fontFace: BODY, align: "left", valign: "top", margin: 0,
 });
 sref.addNotes(
-  "Collection point for every reference in the deck - keep this slide current as sections are added (isolette slide carries the K-State + AR-08-32 citations inline; Copland/Verus/seL4 seeded here ahead of their sections).\n" +
+  "Collection point for every reference in the deck - keep this slide current as sections are added. Numbers follow first on-slide citation ([1] on the lifecycle slide; [2]-[6] on the core-stack slide; [7]-[13] on the isolette slide); groupings kept, so numbers read out of order here on purpose.\n" +
   "DOIs on record in docs/video_slide_drafts.md."
 );
 
