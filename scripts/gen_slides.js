@@ -825,26 +825,27 @@ ACTS.forEach((act) => {
   const B = (t) => ({ text: t, options: { bold: true } });
   const P = (t) => ({ text: t, options: {} });
 
+  // Cell wording per user edits 2026-09-04 (headers, every "rule" cell, LLM column trimmed).
   const rows = [
-    [th("Workflow stage"), th("Where AI participates"), th("The rule")],
+    [th("Workflow stage"), th("Where LLMs participate"), th("The Guardrail")],
     [td([B("Model / spec")]),
-     td([P("LLMs may draft or restate specs")]),
-     td([P("only the administrator "), B("blesses"), P(" \u2014 authority is human")])],
+     td([P("May draft or restate specs")]),
+     td([P("Only a human administrator may authenticate a new spec")])],
     [td([B("Implementation")]),
-     td([P("spec-guided synthesis / re-derivation with LLM engines")]),
-     td([P("the seed proofs must prove again against the blessed statements")])],
+     td([P("spec-guided synthesis / re-derivation")]),
+     td([P("Code must meet its formal contracts, checked by legitimate toolchain, derived from human-blessed spec")])],
     [td([B("Proofs")]),
-     td([P("LLM-suggested tactic portfolio (deterministic at runtime) \u00b7 LLM API calls + LLM-assisted desktop sessions (loop is paused) \u00b7 Custom proof repair agents (AutoVerus \u00b7 KU Dogtreat linear planner)")]),
-     td([P("a repair claim is worthless without evidence; only fresh measurement re-establishes good standing")])],
+     td([P("Suggests tactic portfolio (deterministic at runtime) \u00b7 API calls + LLM-assisted desktop sessions (loop is paused) \u00b7 Proof repair agents (AutoVerus \u00b7 KU Dogtreat linear planner)")]),
+     td([P("Only fresh measurement re-establishes good standing")])],
     [td([B("Verification & appraisal")], TINT),
      td([B("none \u2014 by design")], TINT),
-     td([P("deterministic judges: proof kernels (Rocq, Lean, Verus), hash appraisal vs signed goldens, semantic analysis of source code")], TINT)],
+     td([P("Verification kernels (Rocq, Lean, Verus), formally-verified attestation managers (evidence unbundling), trusted attestation primitives (hash checks, semantic analysis of source code, etc.)")], TINT)],
     [td([B("Evidence / trust state")], TINT),
      td([B("none \u2014 by design")], TINT),
-     td([P("cryptographic anchor \u00b7 non-derivability; no one (human or AI) may repair a baseline without fresh administrator blessing")], TINT)],
+     td([P("Cryptographic immutability")], TINT)],
   ];
   sa.addTable(rows, {
-    x: 0.7, y: 1.75, w: 11.9, colW: [2.5, 4.9, 4.5],
+    x: 0.7, y: 1.84, w: 11.9, colW: [2.5, 4.9, 4.5], // y 1.75 -> 1.84 per user edits 2026-09-04
     border: { type: "solid", color: "D8DEEA", pt: 1 },
     rowH: [0.4, 0.62, 0.62, 1.0, 0.72, 0.72], margin: 0.09, fontFace: BODY,
   });
@@ -876,24 +877,28 @@ ACTS.forEach((act) => {
   const B = (t) => ({ text: t, options: { bold: true } });
   const I = (t) => ({ text: t, options: { italic: true } });
   const P = (t) => ({ text: t, options: {} });
+  const C = (t) => ({ text: t, options: { fontFace: "Courier New" } });
+  const BR = (t) => ({ text: t, options: { breakLine: true } }); // ends a paragraph inside a cell
 
+  // Cell wording per user edits 2026-09-04 ("How we trust it (or not)" column rewritten; code names in Courier New).
   const rows = [
-    [th("What AI built"), th(""), th("Judged by")],
+    [th("What AI built"), th(""), th("How we trust it (or not)")],
     [td([B("Blackboard infrastructure")]),
-     td([P("pybb framework (blackboard / controller / knowledge sources), demo arcs, install script, CI suite, detailed documentation")]),
-     td([P("Untrusted orchestration (evidence bundles are independently-verifiable)")])],
+     td([P("pybb framework (blackboard, controller, knowledge sources), demo arcs, install script, CI suite, detailed documentation")]),
+     td([P("Orchestration in python is untrusted,"), B(" but evidence bundles are independently-verifiable")])],
     [td([B("CVM core & frontends")]),
-     td([P("bpar (parallel Copland term) "), I("in the verified CVM"), P("; --stdin / --req_file frontend fixes")]),
+     td([C("bpar"), P(" (parallel Copland term) "), { text: "in the verified CVM core,", options: { italic: true, breakLine: true } },
+         P("CVM frontend fixes ("), C("--stdin, --req_file "), P("interfaces)")]),
      td([B("Rocq proofs w.r.t. CVM reference semantics --"), P("Claude couldn\u2019t update existing proofs automatically, but assisted an expert Rocq developer")])],
     [td([B("Measurement primitives")]),
-     td([B("12 new + 7 upgraded"), P(" asp-libs binaries \u2014 hashing, the Lean/Rocq/HAMR runners & appraisers, the cheat scan, golden-slice extraction")]),
-     td([P("tool hashes measure-then-use; syntax-guided analysis of source files, appraisal vs signed goldens")])],
+     td([B("12 new + 7 upgraded"), P(" asp-libs binaries (hashing, the Lean/Rocq/HAMR runners & appraisers, cheat scan, golden-slice extraction)")]),
+     td([P("New attestation primitives are untrusted, require manual inspection (or formal analysis)")])],
     [td([B("Attestation protocols")]),
      td([B("42 provisioned"), P(" Copland protocol directories across the ecosystems")]),
-     td([P("readiness-gate config checks; blessed baselines")])],
+     td([P("Copland protocol analysis bolsters trust")])],
     [td([B("Attacks")]),
-     td([P("scripted demo tampers (scenes 1\u20138) + "), B("7 red-team attack classes"), P(" (scenes 9\u201312, 14)")]),
-     td([P("every scene gates on detection / attribution; each forced a new tier ("), I("\u2192 next slide"), P(")")])],
+     td([P("demo tampers + "), B("7 red-team attack classes "), P("(see next slide)")]),
+     td([P("Concrete \u201Ccounter-examples\u201D show attacks succeeding, "), B("undetected by existing measurement")])],
   ];
   sb.addTable(rows, {
     x: 0.7, y: 1.75, w: 11.9, colW: [2.6, 5.6, 3.7],
@@ -932,29 +937,31 @@ ACTS.forEach((act) => {
   const td = (runs, fill) => ({ text: runs, options: { fill: { color: fill || WHITE }, color: DARK, fontSize: 11, align: "left", valign: "middle" } });
   const B = (t) => ({ text: t, options: { bold: true } });
   const P = (t) => ({ text: t, options: {} });
+  const C = (t) => ({ text: t, options: { fontFace: "Courier New" } });
 
+  // Cell wording per user edits 2026-09-04 (identifiers in Courier New; several cells trimmed).
   const rows = [
-    [th("Attack"), th("Avoided detection by\u2026"), th("New measurement forced")],
-    [td([B("ADMIT"), P(" \u2014 assume(false) in an unmeasured bridge file")]),
+    [th("Attack"), th("Avoided detection by"), th("New measurement forced")],
+    [td([B("ADMIT"), P(" \u2014 "), C("assume(false) "), P("in an unmeasured bridge file")]),
      td([P("cargo-verus reports the same success over the hollow proof")]),
-     td([P("cheat scan (cheat_scan_verus)")])],
-    [td([B("SMUGGLE"), P(" \u2014 external_body broadcast axiom, ensures false")]),
+     td([P("cheat scan ("), C("cheat_scan_verus"), P(")")])],
+    [td([B("SMUGGLE"), P(" \u2014 "), C("external_body "), P("broadcast axiom, ensures false")]),
      td([P("cargo-verus reports the same success over the hollow proof")]),
-     td([P("cheat scan (cheat_scan_verus)")])],
-    [td([B("SHRINK"), P(" \u2014 a system-proof module commented out")]),
+     td([P("cheat scan ("), C("cheat_scan_verus"), P(")")])],
+    [td([B("SHRINK"), P(" \u2014 system-proof module commented out")]),
      td([P("smaller crate still verifies, 0 errors")]),
      td([P("sysproof file hashes")])],
-    [td([B("SWAP"), P(" \u2014 real VC dropped, trivial one added, constant count")]),
+    [td([B("SWAP"), P(" \u2014 contract dropped, trivial one added, same count")]),
      td([P("outcome, count, escape surface all unchanged")]),
      td([P("sysproof file hashes")])],
-    [td([B("STALE"), P(" \u2014 semantic flip in a cached dep, mtime preserved")]),
-     td([P("mtime-gated cache serves the stale verdict; green over false bytes")]),
-     td([P("gensrc measurement")])],
+    [td([B("STALE"), P(" \u2014 semantic flip in a cached dep, "), C("mtime"), P(" preserved")]),
+     td([P("mtime-gated cache serves the stale verdict")]),
+     td([C("gensrc"), P(" measurement")])],
     [td([B("INVERT"), P(" \u2014 heat command flipped in unverified FFI glue")]),
-     td([P("Verus never reads the body \u2014 unverified code, out of scope")]),
-     td([P("gensrc measurement")])],
+     td([P("Verus never reads the body (unverified code, out of scope)")]),
+     td([C("gensrc"), P(" measurement")])],
     [td([B("LAUNDER"), P(" \u2014 contract weakened + impl inverted to match")], HILITE),
-     td([P("self-consistent; gap in contract coverage for attestation report\u2019s compute_cases construct")], HILITE),
+     td([P("gap in contract coverage for attestation report\u2019s compute_cases construct")], HILITE),
      td([P("stopgap contract measurement, contract coverage check at provisioning")], HILITE)],
   ];
   sc.addTable(rows, {

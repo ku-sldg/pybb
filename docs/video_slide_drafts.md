@@ -586,6 +586,37 @@ slide (the point stays in the speaker notes); capstone B's kicker
 nudged up (y 6.70 → 6.61); capstone C's kicker now ends "…anomaly
 detection, proposed mitigation."
 
+**Table edits 2026-09-04 (ported; the tables in the generator are now
+the source of truth — the outline's versions are the earlier draft)**:
+
+- *A* — headers "Where LLMs participate" / "The Guardrail"; LLM column
+  trimmed ("May draft or restate specs", "spec-guided synthesis /
+  re-derivation", "Suggests tactic portfolio … Proof repair agents …");
+  guardrail column rewritten: "Only a human administrator may
+  authenticate a new spec" · "Code must meet its formal contracts,
+  checked by legitimate toolchain, derived from human-blessed spec" ·
+  "Only fresh measurement re-establishes good standing" · "Verification
+  kernels (Rocq, Lean, Verus), formally-verified attestation managers
+  (evidence unbundling), trusted attestation primitives (hash checks,
+  semantic analysis of source code, etc.)" · "Cryptographic
+  immutability"; table nudged down (y 1.75 → 1.84).
+- *B* — third column retitled "How we trust it (or not)" and rewritten:
+  "Orchestration in python is untrusted, **but evidence bundles are
+  independently-verifiable**" · (Rocq-proofs cell unchanged) · "New
+  attestation primitives are untrusted, require manual inspection (or
+  formal analysis)" · "Copland protocol analysis bolsters trust" ·
+  "Concrete “counter-examples” show attacks succeeding, **undetected by
+  existing measurement**"; CVM row now two lines with `bpar`, `--stdin,
+  --req_file` in Courier New; Attacks row reads "demo tampers + **7
+  red-team attack classes** (see next slide)".
+- *C* — header "Avoided detection by" (no ellipsis); identifiers
+  (`assume(false)`, `external_body`, `cheat_scan_verus`, `mtime`,
+  `gensrc`) in Courier New; SHRINK/SWAP/STALE/INVERT/LAUNDER cells
+  trimmed ("contract dropped, trivial one added, same count";
+  "mtime-gated cache serves the stale verdict"; "Verus never reads the
+  body (unverified code, out of scope)"; LAUNDER's "self-consistent;"
+  dropped).
+
 ## Slide R — References (deck final slide) — DRAFTED
 
 The collection point for every reference in the deck — always the last
