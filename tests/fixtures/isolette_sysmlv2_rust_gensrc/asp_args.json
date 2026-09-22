@@ -11,7 +11,7 @@
       ],
       "asp_targid": "isolette_sysmlv2_rust_GUMBO_Library_gensrc_targ",
       "golden_b64": "eyJDYXJnby50b21sIjoicFBTT1ZuSkpPR0YvZ1JZVGlFNjUrZVhPUGdIekNTRXI2VERlcndCdXBNOD0iLCJydXN0LXRvb2xjaGFpbi50b21sIjoiK2dEckRZc0tJRG9nczBEaFZEUEdlNzdYQlBWcnVvSW9XWlV5aU52bXRqWT0iLCJzcmMvbGliLnJzIjoiUWJ5dko3V2JHdnpCZVVqaXJxZnFYeGE1ZjZqbVp2RjkxbUJrQ1E5TlRycz0ifQ==",
-      "golden_ts": "2026-08-21 09:48:07"
+      "golden_ts": "2026-09-18 12:06:33"
     },
     "isolette_sysmlv2_rust_data_gensrc_targ": {
       "root": "/Users/adampetz/Claude_workspace/pybb/targets/isolette-microkit/hamr/microkit/crates/data",
