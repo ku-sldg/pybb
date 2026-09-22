@@ -410,6 +410,19 @@ would bless whatever codegen emitted.
   (`thermostat_rt_mhs_mhs_verus_targ` [Appraisal was not successful]).
   Restoring the contract is what makes the hidden implementation bug
   *measurable*; the implementation repair itself is scene 2's ladder.
+- Two **checklist beats** bracket the arc. Over the laundered tree
+  (`--tamper-contract-launder --ready --status --contract-status`)
+  readiness passes and the verus grid is *all green* — the pair is
+  self-consistent — while the new **contract-integrity grid**
+  (`--contract-status`: the l1b marker tier rendered per crate, worst
+  block wins, drifted block named) refutes `thermostat_rt_mhs_mhs` with
+  `TIME TRIGGERED ENSURES drifted from golden`. After the arc, the
+  state the marker rung left behind (true contract restored, impl
+  still inverted) is rebuilt with `--tamper-impl` — every driver exit
+  restores the tree — and the grids invert: contract grid all green,
+  verus grid ✗ on the mhs crate. Verus judges *outcomes*; the marker
+  grid judges *contract bytes* — a laundered contract is only visible
+  to the second.
 - **Discovered while building this demo** (2026-08-26): the
   contract-launder tamper slipped the report's slice coverage until
   the marker tier and its provision-time **marker-coverage lint**
@@ -430,7 +443,9 @@ would bless whatever codegen emitted.
   two beats, same before-the-arc reveal), the mtime-preserving semantic
   flip (scene 11, previewed as a pure text transform so the live file's
   mtime is never disturbed), the inverted FFI command (scene 12, same
-  pure-transform preview),
+  pure-transform preview), the weakened REQ_MHS_2 + inverted impl
+  (scene 14, same pure-transform preview — a `--verify` pre-run would
+  restore the live file from golden on exit and leave nothing to diff),
   the dummy-bad-impl inversion (scene 2), the codegen re-splice after
   a benign bless (scene 3), and scene 6's trust-state attacks — the
   flipped evidence byte and the hand-edited golden (both

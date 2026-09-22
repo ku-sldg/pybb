@@ -188,6 +188,7 @@ from pybb.attestation.proof_status import render_checklist
 from pybb.attestation.snapshot import mirror_path
 from pybb.attestation.verus_status import verus_crate_checklist
 from pybb.attestation.cheat_status import cheat_crate_checklist
+from pybb.attestation.marker_status import marker_crate_checklist
 from pybb.blackboard import Blackboard
 from pybb.knowledge_source import KnowledgeSource
 from pybb.attestation.copland import with_asp_targids
@@ -1910,7 +1911,8 @@ def ready_flow(fe: Frontend, protocols: dict):
 
 
 def status_flow(fe: Frontend, protocols: dict, ready: bool,
-                status: bool, cheat_status: bool = False) -> None:
+                status: bool, cheat_status: bool = False,
+                contract_status: bool = False) -> None:
     """The per-crate proof checklist, same semantics as the Rocq
     driver's goals view: QUICK by default (one verification-tier run —
     rows from the AM-owned crate list, cells from each crate's own
@@ -1919,7 +1921,7 @@ def status_flow(fe: Frontend, protocols: dict, ready: bool,
     gate first — alone it just prints the report; combined with
     --status a failure poisons every cell."""
     report = ready_flow(fe, protocols) if ready else None
-    if not (status or cheat_status):
+    if not (status or cheat_status or contract_status):
         return
     if status:
         verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
@@ -1944,6 +1946,23 @@ def status_flow(fe: Frontend, protocols: dict, ready: bool,
         if ready and report:
             cheat_list = cheat_list.model_copy(update={"trusted": True})
         print(render_checklist(cheat_list, subject="proof-escape scan"))
+    if contract_status:
+        # the contract-integrity grid: the verus grid judges OUTCOMES
+        # (does the pair prove?) and cannot see a contract weakened
+        # together with its implementation — the l1b marker tier judges
+        # the contract BYTES against the blessed model's rendering, so
+        # a laundered contract shows the verus grid green and this grid
+        # refusing the exact crate + block
+        marker_verdict = make_attestation_predicate(
+            CvmSubprocessClient(), protocols)(attestation_request(fe.l1b))
+        marker_list = marker_crate_checklist(
+            marker_verdict, protocols[fe.l1b].asp_args["readfile_marker_range"])
+        if ready and not report:
+            marker_list = marker_list.poison("readiness failed")
+        elif ready:
+            marker_list = marker_list.model_copy(update={"trusted": True})
+        print(render_checklist(marker_list,
+                               subject="contract slice integrity (l1b marker blocks)"))
 
 
 def _find_marker_block(lines: list, begin: str, end: str):
@@ -2270,6 +2289,9 @@ def main() -> None:
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--cheat-status", action="store_true",
                         help="render the per-crate proof-escape (cheat) grid")
+    parser.add_argument("--contract-status", action="store_true",
+                        help="render the per-crate contract slice integrity "
+                             "(l1b marker block) grid")
     parser.add_argument("--verify", action="store_true")
     parser.add_argument("--immutable-model", action="store_true")
     parser.add_argument("--repair-granularity", choices=("file", "slice"),
@@ -2305,7 +2327,7 @@ def main() -> None:
         # standalone: seed or check the freshness record, no episode
         fresh_deps_guard()
         return
-    if cli.ready or cli.status or cli.cheat_status:
+    if cli.ready or cli.status or cli.cheat_status or cli.contract_status:
         # the progress view: tamper flags apply first (a checklist over
         # a deliberately broken tree is a demo beat), and NOTHING is
         # restored on exit — the view must not mutate the tree
@@ -2314,7 +2336,8 @@ def main() -> None:
             if flag:
                 tamper(fe, protocols)
         status_flow(fe, protocols, ready=cli.ready, status=cli.status,
-                    cheat_status=cli.cheat_status)
+                    cheat_status=cli.cheat_status,
+                    contract_status=cli.contract_status)
         return
     if cli.promote:
         protocols = load_protocols(fe, validate=True)

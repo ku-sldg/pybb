@@ -159,7 +159,15 @@
 #            refuses, and its repair rung splices the golden contract
 #            back. The restored TRUE contract then refutes the inverted
 #            impl: the scene ends on that exposed Verus refusal (the
-#            implementation repair is scene 2's ladder).
+#            implementation repair is scene 2's ladder). Two checklist
+#            beats bracket the arc: over the laundered tree the verus
+#            grid is all green while the NEW contract-integrity grid
+#            (--contract-status, the l1b marker tier per crate) refutes
+#            the mhs crate's TIME TRIGGERED ENSURES block; over the
+#            post-repair state (contract restored, impl still inverted
+#            — rebuilt with --tamper-impl, since every driver exit
+#            restores the tree) the contract grid is all green and the
+#            verus grid refutes the mhs crate.
 #
 # Flags:
 #   --no-vscode            never open VSCode; show diffs in the terminal
@@ -1408,11 +1416,41 @@ if in_scenes 14; then
     "what makes the hidden implementation bug measurable."
   SCENE14_MHS="$LOG_DIR/mhs_app.rs.scene14"
   cp "$MHS_APP" "$SCENE14_MHS"
-  ( cd "$REPO" && "$PY" "$DRIVER" --frontend sysml --tamper-contract-launder --verify \
-      >"$LOG_DIR/scene14_pre.log" 2>&1 || true )
-  offer_diff "$SCENE14_MHS" "$MHS_APP" \
+  # preview the laundering as a pure text transform (scene 2's pattern):
+  # a --verify pre-run would restore the live file from golden on exit,
+  # leaving nothing to diff. Apply the tamper, copy the result aside,
+  # and put the original bytes straight back.
+  ( cd "$REPO" && "$PY" -c "
+import sys; sys.path.insert(0, '.'); sys.path.insert(0, 'examples')
+import isolette_rust as ex
+from pathlib import Path
+orig = ex.MHS_APP.read_text()
+try:
+    ex.tamper_contract_launder(None, None)
+    Path(sys.argv[1]).write_text(ex.MHS_APP.read_text())
+finally:
+    ex.MHS_APP.write_text(orig)
+" "$LOG_DIR/mhs_app.rs.laundered" >/dev/null )
+  offer_diff "$SCENE14_MHS" "$LOG_DIR/mhs_app.rs.laundered" \
     "the laundering the arc is about to apply (weakened REQ_MHS_2 + inverted impl)"
-  ( cd "$REPO" && git checkout -- targets/isolette-microkit 2>/dev/null || true )
+  echo
+  echo "${BOLD}the checklists over the laundered tree${RESET}"
+  echo "(readiness PASSES — the stored baselines are intact — and the verus"
+  echo "grid is ALL GREEN: the weakened contract and the inverted impl are"
+  echo "self-consistent. Only the contract-integrity grid — the l1b marker"
+  echo "tier, per crate — sees the drift: the mhs crate's TIME TRIGGERED"
+  echo "ENSURES block no longer matches the blessed model's rendering):"
+  note_slow
+  run_driver --tamper-contract-launder --ready --status --contract-status
+  expect "readiness: PASS" "the baselines must stay intact (only the live tree drifted)"
+  expect "thermostat_rt_mhs_mhs       ✓" \
+    "the verus grid must show the laundered crate GREEN (self-consistent pair)"
+  expect "thermostat_rt_mhs_mhs       ✗  (TIME TRIGGERED ENSURES drifted from golden)" \
+    "the contract grid must refute the mhs crate and name the drifted block"
+  expect_absent "?" "a genuine contract drift is ✗, not a poisoned ?"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit )
+  echo
+  echo "${BOLD}now the repair arc over a freshly re-applied laundering:${RESET}"
   note_slow
   run_driver --tamper-contract-launder --verify --repair-markers
   expect "self-consistent (verification succeeds)" \
@@ -1425,6 +1463,22 @@ if in_scenes 14; then
     "the restored true contract must refute the inverted implementation"
   expect "thermostat_rt_mhs_mhs_verus_targ" \
     "the exposed refusal must name the crate the laundering hid"
+  echo
+  echo "${BOLD}the checklists over the state the marker rung left behind${RESET}"
+  echo "(every driver exit restores the tree, so that state is rebuilt here:"
+  echo "--tamper-impl is exactly the laundering minus the contract weakening —"
+  echo "the TRUE contract back in place, the implementation still inverted."
+  echo "The contract grid is now ALL GREEN and the verus grid refutes the"
+  echo "mhs crate: the honest failure the laundering was hiding):"
+  note_slow
+  run_driver --tamper-impl --ready --status --contract-status
+  expect "readiness: PASS" "the baselines must stay intact"
+  expect "thermostat_rt_mhs_mhs       ✓  (5 contract block(s) intact)" \
+    "the contract grid must show the restored mhs contract block intact"
+  expect "thermostat_rt_mhs_mhs       ✗  (Appraisal was not successful)" \
+    "the verus grid must refute the still-inverted implementation"
+  expect_absent "?" "a genuine verification failure is ✗, not a poisoned ?"
+  ( cd "$REPO" && git checkout -- targets/isolette-microkit )
   echo
   echo "${BOLD}The laundering slipped the report's slice coverage — the report${RESET}"
   echo "${BOLD}emits no slice for compute_cases realizations — but the l1b marker${RESET}"
