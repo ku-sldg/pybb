@@ -2,6 +2,7 @@ from .blackboard import Blackboard, BlackboardEntry
 from .knowledge_source import KnowledgeSource
 from .controller import BlackboardController
 from .ks_examples import NumberSubtractor, NumberAdder, NumberNothinger, ComponentSubtractor, ComponentAdder, less_than_3, is_positive, is_100
+from .restart import RestartEpisodeKS
 
 __all__ = [
     "Blackboard",
@@ -15,5 +16,6 @@ __all__ = [
     "ComponentAdder",
     "less_than_3",
     "is_positive",
-    "is_100"
+    "is_100",
+    "RestartEpisodeKS"
 ]

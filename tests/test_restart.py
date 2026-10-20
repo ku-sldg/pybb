@@ -22,7 +22,7 @@ What is pinned:
 import json
 
 from pybb import BlackboardController
-from pybb.attestation.knowledge_sources import RestartEpisodeKS
+from pybb.restart import RestartEpisodeKS
 from pybb.knowledge_source import KnowledgeSource
 
 
