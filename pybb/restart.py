@@ -17,7 +17,7 @@ class RestartEpisodeKS(KnowledgeSource):
         for key in keys:
             if blackboard.restarts.get(key, 0) >= self.budget:
                 continue
-            blackboard.request_restart(key, "re-attest after repair")
+            blackboard.request_restart(key, "fresh episode after repair")
             for extra in self.also:
                 if extra == key or blackboard.restarts.get(extra, 0) >= self.budget:
                     continue
