@@ -3,6 +3,7 @@ from .knowledge_source import KnowledgeSource
 from .controller import BlackboardController
 from .ks_examples import NumberSubtractor, NumberAdder, NumberNothinger, ComponentSubtractor, ComponentAdder, less_than_3, is_positive, is_100
 from .restart import RestartEpisodeKS
+from .spec import WorkflowSpec, Entry, RouteSpec
 
 __all__ = [
     "Blackboard",
@@ -17,5 +18,8 @@ __all__ = [
     "less_than_3",
     "is_positive",
     "is_100",
-    "RestartEpisodeKS"
+    "RestartEpisodeKS",
+    "WorkflowSpec",
+    "Entry",
+    "RouteSpec"
 ]
