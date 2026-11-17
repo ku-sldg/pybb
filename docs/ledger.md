@@ -28,7 +28,10 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 
 1. **ASPs.** asp-libs must provide `generate_nonce`, `nonce_appr`,
    `hashevidence` and `magic_appr` beside the usual ones (`make` in asp-libs
-   builds them into `target/release`). Readiness reports any that are missing.
+   builds them into `target/release`), built against a rust-am-lib that
+   base64-encodes negative appraisal reasons (branch `ledger-verdict-b64`;
+   without it any ASP after `APPR` fails when a verdict fails). Readiness
+   reports ASPs that are missing.
 2. **immudb.** `scripts/immudb_dev.sh install` installs the Homebrew bottle
    and starts the service; set `PYBB_IMMUDB_PASSWORD` and run
    `scripts/immudb_dev.sh bootstrap` to create database `pybb` and user
@@ -63,6 +66,11 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 | `tooling.measure` | `at_provisioning` | `every_episode` / `every_run` re-measure the tools as ordinary ledger runs |
 | `fail_open` | `False` | with `True`, a ledger outage leaves the verdict unledgered instead of failing it |
 | `appraiser_id` | generated once under `state_dir` | opaque id of this installation; never a hostname |
+
+The Rocq scenario runs under the ledger with `python
+examples/temp_control_rocq.py --ready --status --ledger immudb` (or
+`--ledger PATH` for a FileLedger); every tamper and repair arc takes the
+same flag.
 
 ## Using it in a workflow
 

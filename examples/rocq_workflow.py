@@ -98,6 +98,52 @@ REPO = Path(__file__).parent.parent
 FIXTURES = REPO / "tests" / "fixtures"
 GOLDEN_ROOT = REPO / "golden"
 EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
+
+# ── attestation ledger (docs/ledger.md), opt-in via --ledger ─────────────────
+# With a ledger every protocol runs as the nonce'd two-run flow and its records
+# land in immudb (or a FileLedger); readiness additionally reports ledger
+# assurance and the tooling blessing. Off by default: nothing else changes.
+_LEDGER: dict = {"ledger": None, "config": None}
+
+
+def configure_ledger(spec: str | None) -> None:
+    """`immudb` (connection from the environment / ~/.pybb) or a FileLedger path."""
+    if not spec:
+        return
+    from pybb.attestation.ledger import LedgerConfig
+    cfg = LedgerConfig(golden_root=str(GOLDEN_ROOT))
+    if spec == "immudb":
+        from pybb.attestation import ImmudbLedger
+        ledger = ImmudbLedger(cfg)
+        where = f"immudb {cfg.host}:{cfg.port}/{cfg.db}"
+    else:
+        from pybb.attestation import FileLedger
+        ledger = FileLedger(spec)
+        where = f"file {spec}"
+    _LEDGER.update(ledger=ledger, config=cfg)
+    print(f"ledger: {where} (appraiser {cfg.appraiser_id or 'from ~/.pybb'})")
+
+
+def _with_tooling(protocols: dict) -> dict:
+    """The protocol map plus the attestation_tools protocol when it exists
+    (the ledger's tooling reference / readiness check need it loaded)."""
+    tools_dir = REPO / "tests" / "fixtures" / "attestation_tools"
+    if _LEDGER["ledger"] is None or "attestation_tools" in protocols \
+            or not (tools_dir / "session.json").is_file():
+        return protocols
+    out = dict(protocols)
+    out["attestation_tools"] = ProtocolDir.load(str(tools_dir))
+    return out
+
+
+def _attestation(client, protocols: dict, archive_dir=None):
+    return make_attestation_predicate(client, _with_tooling(protocols), archive_dir=archive_dir,
+                                      ledger=_LEDGER["ledger"], ledger_config=_LEDGER["config"])
+
+
+def _readiness(protocols: dict, client=None):
+    return make_readiness_predicate(_with_tooling(protocols), baseline_root=GOLDEN_ROOT,
+                                    client=client, ledger_config=_LEDGER["config"])
 CONTRACTS_TEMPLATE = "temp_control_aadl_slang_l2"  # session/manifest shape
 WORKSPACE_BIN = Path.home() / "Claude_workspace" / "bin"
 OPAM_BIN = Path.home() / ".opam" / "5.2" / "bin"
@@ -574,9 +620,8 @@ def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
     with --status a failure poisons every cell to '?'."""
     report = None
     if ready:
-        report = make_readiness_predicate(
-            protocols, baseline_root=GOLDEN_ROOT,
-            client=CvmSubprocessClient())(readiness_request(list(protocols)))
+        report = _readiness(protocols, client=CvmSubprocessClient())(
+            readiness_request(list(protocols)))
         print(f"readiness: {'PASS' if report else 'FAIL'} "
               f"(checked: {', '.join(report.checked)})")
         if report.baseline_verified:
@@ -586,7 +631,7 @@ def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
             print(f"  problem: {p}")
     if not status:
         return
-    verdict = make_attestation_predicate(CvmSubprocessClient(), protocols)(
+    verdict = _attestation(CvmSubprocessClient(), protocols)(
         attestation_request(cfg.verification_id))
     checklist = _checklist(cfg, protocols, verdict, isolate=True)
     if ready and not report:
@@ -727,7 +772,7 @@ def _closing_verdict(cfg: RocqExampleConfig, protocols: dict, verdict,
         return verdict
     print("\nre-measuring for the closing report: the last attested verdict "
           "may predate accepted candidates")
-    return make_attestation_predicate(CvmSubprocessClient(), protocols)(
+    return _attestation(CvmSubprocessClient(), protocols)(
         attestation_request(cfg.verification_id))
 
 
@@ -784,11 +829,9 @@ def synthesize_flow(cfg: RocqExampleConfig, protocols: dict,
         controller = BlackboardController()
         client = CvmSubprocessClient()
         controller.register_predicate(
-            "attestation", make_attestation_predicate(client, protocols,
-                                                      archive_dir=EVIDENCE_DIR))
+            "attestation", _attestation(client, protocols, archive_dir=EVIDENCE_DIR))
         controller.register_predicate(
-            "protocol_check", make_readiness_predicate(
-                protocols, baseline_root=GOLDEN_ROOT, client=client))
+            "protocol_check", _readiness(protocols, client=client))
         if stub == "package":
             chain = [RocqPackageSynthesisKS(
                 engines=package_engines or [],
@@ -1023,12 +1066,9 @@ def attest_episode(cfg: RocqExampleConfig, protocols: dict,
     controller = BlackboardController()
     client = CvmSubprocessClient()
     controller.register_predicate(
-        "attestation", make_attestation_predicate(client, protocols,
-                                                  archive_dir=EVIDENCE_DIR))
+        "attestation", _attestation(client, protocols, archive_dir=EVIDENCE_DIR))
     controller.register_predicate("protocol_check",
-                                  make_readiness_predicate(
-                                      protocols, baseline_root=GOLDEN_ROOT,
-                                      client=client))
+                                  _readiness(protocols, client=client))
     # repair_granularity: "whole-file" restores every confirmed-violated
     # file; "slice" splices ONLY the violated declarations (located BY
     # NAME, insertion-robust) — repair unit = measurement unit, and
@@ -1179,6 +1219,10 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "never by the operator's word")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--ready", action="store_true")
+    parser.add_argument("--ledger", metavar="immudb|PATH",
+                        help="record every run in the attestation ledger "
+                             "(docs/ledger.md): 'immudb' uses the connection "
+                             "from the environment / ~/.pybb, a PATH a FileLedger")
     parser.add_argument("--synthesize", action="store_true")
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--llm", choices=("anthropic", "openai"),
@@ -1228,6 +1272,7 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "(complete file contents), instead of the "
                              "impl-then-proofs rung chain; requires --llm")
     cli = parser.parse_args()
+    configure_ledger(cli.ledger)
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom,
             cli.tamper_audit, cli.tamper_audit_subst)) > 1:

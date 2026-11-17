@@ -33,8 +33,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_cheat_scan_verus_targ",
-      "golden_b64": "d0avdCWZbZXXyFuqmc8cb7lezhjczGW/oMOyErRNufk=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "L7q59zUNQDiS4rfpgsHPyHbT4MdiWdgDRB22wtrQvZY=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_generate_nonce_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/generate_nonce",
@@ -42,8 +42,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_generate_nonce_targ",
-      "golden_b64": "o2oAN9pm3zu8rARiiR47kMtrAmL7OTLVTrxIYVweyu8=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "rURgpfzcZvTk3FwzbUV8/g1S+d8R6R+mqq24zKzlKEg=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_goldenbytes_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/goldenbytes_appr",
@@ -51,8 +51,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_goldenbytes_appr_targ",
-      "golden_b64": "7hgOVJ+4TP6vg6V0tq7KcUEybVR8vY+E0CFGkZvRvQs=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "WneDHKNeMYhUgZWgk/umRuocgDHaszbPohEuf795Q/c=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_hashevidence_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashevidence",
@@ -60,8 +60,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_hashevidence_targ",
-      "golden_b64": "3OdPv0HBEMNU6hNY+oTZMhtVkcAAo7BZvJJhR4EDBgs=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "ixkJABKaRxJX7ZLHg3LPL9oH87z2jVhjvP5fvmq9QMM=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_hashfile_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile",
@@ -69,8 +69,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_hashfile_targ",
-      "golden_b64": "UafuAT1KEMQtqCwpT+arbp3pOR+j59rqyoH7Y5p7uCs=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "OYn+hyltkVf5XkqoyP2vsWXpXoMoGy/8/5OxEpEimEg=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_hashfile_many_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile_many",
@@ -78,8 +78,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_hashfile_many_targ",
-      "golden_b64": "HPtplPVqEDyEF4WV+b1QG9ya8Hzlxw0gjPMg1cxZYjc=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "OeOkIwBTWA744ql7BmEys7hjHegWvAE+mWMKHWt27GU=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_hashfile_many_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile_many_appr",
@@ -87,8 +87,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_hashfile_many_appr_targ",
-      "golden_b64": "+vwjenk32UXy0+oojd36Kp/A5ynML18QYc5bRYS/bzQ=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "R1ATR0gZlINLPUkrF7ViXLF4bxlQLIxSL+W8KXbkJWo=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_magic_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/magic_appr",
@@ -96,8 +96,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_magic_appr_targ",
-      "golden_b64": "popyH8Q/Ln5t19FlTxRsrOhGqpfGj32WiB57zYn8+S4=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "LoY28ft7efk+ZpQTHJb102loZqzg37ImcHuOohbqUiE=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_model_slices_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/model_slices_appr",
@@ -105,8 +105,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_model_slices_appr_targ",
-      "golden_b64": "sZbu8PUHaHRVSLPThX2GNz72uI5DyO2B+2OKRxKII3g=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "HrGv6QdzquvjpEw+a/GNXNPiwuC4DQullLxetBw+c3M=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_nonce_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/nonce_appr",
@@ -114,8 +114,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_nonce_appr_targ",
-      "golden_b64": "t4iRqLoNO2MqpJAWNAxeUsKbNI7Vqhe7j8nKefr7exg=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "RLD5j2hgjCOM5eNj0B63oStMFAmNku7W9+yGNc0qPsE=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_readfile_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile",
@@ -123,8 +123,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_readfile_targ",
-      "golden_b64": "+WOS3tYCYsqBj7BA7hcVhtxUCvYWslt7vQxN6XA+97Q=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "/ZBO98OlyW+p74f3vvSmab2hFdYxUsaVeWUJSXcC6Sw=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_readfile_marker_range_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile_marker_range",
@@ -132,8 +132,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_readfile_marker_range_targ",
-      "golden_b64": "+o4iQcnzDg2dfAxsW255bhh7xpSRkLSUAHs7AQ+3l50=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "8fS4033AP+EZuUa2P8295qlQEsOzAnkcXzrIdDXxZkA=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_readfile_range_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile_range",
@@ -141,8 +141,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_readfile_range_targ",
-      "golden_b64": "uuzBlyTk/WGQL7O6qv1LFp+qXLr8nB2h2BjEEthpVnI=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "ws6DpWBAGvDMA0xDTySHrlkrc0Jw4ZBMTk0lZDcmvk8=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_cargo_verus_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_cargo_verus",
@@ -150,8 +150,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_cargo_verus_targ",
-      "golden_b64": "Mz8wqBAUBKKZxtKuFTvIUWDNgG/J5/AjybZ6dBQzLUo=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "vBupnyW5ZDNTCMsMKWTkQxCgP61VN8OuAW753Xm0pQo=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_dune_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_dune",
@@ -159,8 +159,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_dune_targ",
-      "golden_b64": "mZRREIE011oMucSsdN7Iha6/brhs2BIrmTdxvZuG5ZI=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "T85jrrERJka1iDrnKCjFrJP3eCOLDGy9fZBVR9b6WqA=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_hamr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_hamr",
@@ -168,8 +168,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_hamr_targ",
-      "golden_b64": "pVpkU4F4POYyshpuhAbimDdHFQ1hJvLuJYqtDIBxck8=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "TolzQ5xYzwIB+gnF3SJn8GWfIJPLNWo7m3KtdGGmahc=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_hamr_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_hamr_appr",
@@ -177,8 +177,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_hamr_appr_targ",
-      "golden_b64": "MluxkEByI9PG4bxMNYcLIwx3uW5ZZ50GhyEz2S6Sp8Q=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "Dxcqc1iPxTwMwBUAdyhgo9/VuHtiQ7z/VrwkmJwlTPo=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_lean_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_lean",
@@ -186,8 +186,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_lean_targ",
-      "golden_b64": "mVgYwS1Q8OrsoP0GwMOAmwU9En1Lt4faURVJxQxN360=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "xaX1KYmI3tPn1rDgGUiJZxvJ3IKf474z3UNoPevuMaQ=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_lean_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_lean_appr",
@@ -195,8 +195,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_lean_appr_targ",
-      "golden_b64": "Em3UYejivE7I55dWCJGL9lcMS18ab4HBOrrwdz+8V4k=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "mT6K4sZslKbcHXc4OGomv2a0doEkUjhWSJzjs/3kbjQ=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_rocq_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_rocq",
@@ -204,8 +204,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_rocq_targ",
-      "golden_b64": "vHF8Q7Zkfd3wVpLso+rYZ8nC2g+4i/TCTZ2QsShNVm0=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "jljBPYvaODIldyAvv5HwwebaKKVvEAF74c8fTlf66us=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_rocq_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_rocq_appr",
@@ -213,8 +213,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_rocq_appr_targ",
-      "golden_b64": "g1yzDZfwbwj5p/7o5pB9e/Gf3vakAobQn7khsMgctVg=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "5XcIlSaIJaYp64uduIpgmIKmY0hdm6EGoqReSglNCtc=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_verus_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_verus",
@@ -222,8 +222,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_verus_targ",
-      "golden_b64": "qWbJDC5+xtHM152cWPIzIA80gfoSgxwZFhEP98qWRF8=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "XltqFn5z6uM6f7wyz3qfdb3HtcrxPNERaEtSm+eosV8=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_run_command_verus_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_verus_appr",
@@ -231,8 +231,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_run_command_verus_appr_targ",
-      "golden_b64": "hm0Hqej690jhWVhMzboYYqGpLh1hQrZwsht578kY0cg=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "E14KqINWWfdbaSa9unbJBOzG0Jst1sI2a9xRITwLKZg=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_sig_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/sig",
@@ -240,8 +240,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_sig_targ",
-      "golden_b64": "ugBqInru+3uYIYqSQ15UeKfquI/dbv5IoSlG/i12uSs=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "O2GJwzYccezNEPXXyjiUjnDc4KNPARPnJWwzHKDDwJs=",
+      "golden_ts": "2026-11-17 13:17:40"
     },
     "attestation_tool_attestation_stack_sig_appr_targ": {
       "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/sig_appr",
@@ -249,8 +249,8 @@
       "measure_in_place": true,
       "metadata": "tool::attestation_stack",
       "asp_targid": "attestation_tool_attestation_stack_sig_appr_targ",
-      "golden_b64": "1+3m7uwSdEwCJOxCEsZKRtZ6IYundwna8V5E2as4Rnk=",
-      "golden_ts": "2026-11-17 12:43:55"
+      "golden_b64": "67lezOCQSrLPHU9J9ZHekbYtOsdcjTepXO5aq8P4U2k=",
+      "golden_ts": "2026-11-17 13:17:40"
     }
   }
 }

@@ -705,12 +705,15 @@ def inject_binding_golden(et: Any, golden_b64: str) -> Any:
 
 def components_from_layout(branch_payload: list, session: dict) -> List[ComponentResult]:
     """Per-appraiser verdicts of an appraisal-output tree read by slot layout
-    (REPLACE appraisers: one verdict slot each). Used where the verified
-    summarizer refuses the shape (audits of appraisal packages)."""
+    (each companion span's first slot is its verdict). Used where the
+    verified summarizer refuses the shape (audits of appraisal packages)."""
     from .appraisal import _decode_verdict
+    from .ledger import _appraised_node
 
     raw = branch_payload[0]["RawEv"]
-    out: List[ComponentResult] = []
+    spans = slot_layout(branch_payload[1], session)
+    # companion -> the ASP_ID of the event it judged, by walking the type tree
+    judged: Dict[int, str] = {}
 
     def walk(n: Any) -> None:
         if not isinstance(n, dict):
@@ -722,38 +725,24 @@ def components_from_layout(branch_payload: list, session: dict) -> List[Componen
             walk(b if isinstance(b, dict) else b[0])
         elif c == "asp_evt":
             params, sub = b[1], b[2]
-            asp = params.get("ASP_ID", "")
-            if asp.endswith("_appr"):
-                out.append((asp, dict(params.get("ASP_ARGS") or {}), sub))
+            if params.get("ASP_ID", "") in {s.asp for s in spans if s.companion}:
+                node = _appraised_node(sub)
+                judged[id(params)] = node["EvidenceT_BODY"][1].get("ASP_ID", "unknown") if node else "unknown"
             else:
                 walk(sub)
 
-    def appraised_asp(sub: Any) -> str:
-        """The appraised event: the CVM records it as a path of left_evt /
-        right_evt wrappers (outermost wrapper = innermost split choice)
-        over the original evidence type, so follow the path through the
-        splits down to an asp_evt."""
-        dirs: List[str] = []
-        node = sub
-        while isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") in ("left_evt", "right_evt"):
-            dirs.append(node["EvidenceT_CONSTRUCTOR"])
-            b = node.get("EvidenceT_BODY")
-            node = b if isinstance(b, dict) else (b[0] if b else None)
-        for d in reversed(dirs):
-            if not (isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") == "split_evt"):
-                break
-            node = node["EvidenceT_BODY"][0 if d == "left_evt" else 1]
-        if isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") == "asp_evt":
-            return node["EvidenceT_BODY"][1].get("ASP_ID", "unknown")
-        return "unknown"
-
     walk(branch_payload[1])
+    targets = list(judged.values())
     comps: List[ComponentResult] = []
-    for i, (asp, args, sub) in enumerate(out):
-        passed, reason = _decode_verdict(raw[i] if i < len(raw) else "")
-        target = appraised_asp(sub)
-        comps.append(ComponentResult(appr_asp=asp, target_asp=target, targ_id=args.get("asp_targid"),
-                                     passed=passed, reason=reason, args=args, description=target))
+    k = 0
+    for sp in spans:
+        if not sp.companion:
+            continue
+        passed, reason = _decode_verdict(raw[sp.start] if sp.start < len(raw) else "")
+        target = targets[k] if k < len(targets) else "unknown"
+        k += 1
+        comps.append(ComponentResult(appr_asp=sp.asp, target_asp=target, targ_id=sp.asp_targid,
+                                     passed=passed, reason=reason, args=sp.args, description=target))
     return comps
 
 

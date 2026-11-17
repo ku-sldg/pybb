@@ -57,9 +57,27 @@ against `min_assurance` with exceptions honoured, and a missing
 `attestation_tools` protocol or blessing bundle — all as configuration
 failures before attestation starts. Docs (step 7) done: `docs/ledger.md`,
 the ledger section of `docs/INSTALL.md`, README pointer. Steps 1–7 of
-the order of work are complete; G (step 8) is the follow-up. Not yet
-done by the operator: commits in pybb and asp-libs, immudb service +
-bootstrap, blessing on the deployed stack, evidence repository.**
+the order of work are complete; G (step 8) is the follow-up.
+**Rocq scenario on immudb (2026-11-17):** service started and bootstrapped
+(`~/.pybb/immudb_password`, admin rotated), stack blessed, Rocq driver
+gained `--ledger immudb|PATH` (five predicate sites), `--ready --status`,
+`--tamper-admitted` and `--repair` ran with every run recorded; contract
+slices and verification output are recoverable from the ledger; fresh
+re-appraisal and the CVM-native audit of the appraisal package both
+recorded. Two defects found and fixed: (1) `slot_layout` double-counted
+under EXTEND companions (`run_command_rocq_appr` keeps the judged event's
+bytes; its sub-evidence is appraised as a sibling) — fixed, with the real
+verification packages as fixtures; (2) rust-am-lib's
+`handle_appraisal_body` returned negative-appraisal reasons as plain text
+in RawEv, so any ASP after `APPR` (the B.6 `generate_nonce`/`SIG`) failed
+to decode when a verdict failed — fixed on rust-am-lib branch
+`ledger-verdict-b64` (reasons base64 like every RawEv value); asp-libs
+`ledger-asps` carries a temporary `[patch]` to the local checkout until
+the fix is upstream. Note: an audit of an appraisal package re-judges the
+retained measurement outputs with their real companions, so its `passed`
+follows the recorded verdict while `signature_ok`/`nonce_wellformed`/
+`binding_ok` carry the authenticity result. Still operator-owned: the
+evidence repository; commits of the Rocq-test changes.**
 
 Goal: bind a fresh nonce to a Copland evidence structure, push the
 structure (or a pointer to it) to an append-only, cryptographically

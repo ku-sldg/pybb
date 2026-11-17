@@ -46,7 +46,12 @@ import sys
 from immudb import ImmudbClient
 old, new = sys.argv[1], sys.argv[2]
 c = ImmudbClient("127.0.0.1:3322"); c.login("immudb", old)
-c.changePassword("immudb", new, old); c.logout()
+c.changePassword("immudb", new, old)
+try:
+    c.logout()
+except Exception:
+    pass  # changing the own password ends the session
+ImmudbClient("127.0.0.1:3322").login("immudb", new)  # prove the new password works
 print("admin password changed; export IMMUDB_ADMIN_PASSWORD accordingly")
 EOF
     ;;

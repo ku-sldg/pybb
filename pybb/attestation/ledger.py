@@ -328,13 +328,19 @@ def key_for(record: LedgerRecord) -> str:
 
 
 class SlotSpan(BaseModel):
-    """One event's output span in the flat RawEv list (DFS order, newest first)."""
+    """One event's output span in the flat RawEv list (DFS order, newest first).
+
+    `companion` marks an appraiser event (a value of the session's
+    ASP_Comps); `retained` marks the appraised evidence bytes an EXTEND
+    companion keeps beneath its verdict (attributed to the measured ASP)."""
 
     asp: str
     plc: str = ""
     args: Dict[str, Any] = {}
     start: int
     count: int
+    companion: bool = False
+    retained: bool = False
 
     @property
     def asp_targid(self) -> Optional[str]:
@@ -355,18 +361,64 @@ def _fwd_of(asp_types: dict, asp_id: str) -> Tuple[str, int]:
     return kind, size
 
 
+def _appraised_node(sub: Any) -> Any:
+    """The event a companion judged: the CVM records it as a path of
+    left_evt/right_evt wrappers (outermost wrapper = innermost split
+    choice) over the original evidence type."""
+    dirs: List[str] = []
+    node = sub
+    while isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") in ("left_evt", "right_evt"):
+        dirs.append(node["EvidenceT_CONSTRUCTOR"])
+        b = node.get("EvidenceT_BODY")
+        node = b if isinstance(b, dict) else (b[0] if b else None)
+    for d in reversed(dirs):
+        if not (isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") == "split_evt"):
+            break
+        node = node["EvidenceT_BODY"][0 if d == "left_evt" else 1]
+    return node if isinstance(node, dict) and node.get("EvidenceT_CONSTRUCTOR") == "asp_evt" else None
+
+
 def slot_layout(et: Any, session: dict) -> List[SlotSpan]:
     """
     Lay the evidence type out against the flat RawEv list.
 
-    Mirrors the CVM's bundling: an EXTEND event's output precedes (is
-    prepended to) the evidence it extended, a REPLACE event's output
-    stands in for it, splits lay out left then right. This is the same
-    DFS the appraisal walker and the verified summarizer rely on.
+    Mirrors the CVM's bundling. Measurement events: an EXTEND event's output
+    precedes (is prepended to) the evidence it extended, a REPLACE event's
+    output stands in for it, splits lay out left then right. Companion
+    (appraiser) events — the values of the session's ASP_Comps — carry the
+    original evidence type beneath them for attribution only: a REPLACE
+    companion contributes just its verdict slots; an EXTEND companion
+    contributes its verdict slots plus the bytes of the event it judged
+    (that event's whole raw-package subtree), which the CVM retains. The
+    judged event's own sub-evidence is appraised separately, as a sibling
+    in the output tree. Spike-verified on hashfile/goldenbytes_appr
+    (REPLACE) and run_command_rocq/run_command_rocq_appr (EXTEND).
     """
-    asp_types = (session.get("Session_Context") or {}).get("ASP_Types") or {}
+    ctx = session.get("Session_Context") or {}
+    asp_types = ctx.get("ASP_Types") or {}
+    companions = set((ctx.get("ASP_Comps") or {}).values())
     spans: List[SlotSpan] = []
     cursor = [0]
+
+    def measured_size(node: Any) -> int:
+        """Bytes of a raw-package subtree (measurement semantics)."""
+        if not isinstance(node, dict):
+            raise EvidenceLayoutError(f"malformed evidence type node {node!r}")
+        ctor = node.get("EvidenceT_CONSTRUCTOR")
+        body = node.get("EvidenceT_BODY")
+        if ctor == "mt_evt":
+            return 0
+        if ctor == "nonce_evt":
+            return 1
+        if ctor == "asp_evt":
+            _plc, params, sub = body
+            kind, size = _fwd_of(asp_types, params.get("ASP_ID", ""))
+            return size + (measured_size(sub) if kind == "EXTEND" else 0)
+        if ctor == "split_evt":
+            return measured_size(body[0]) + measured_size(body[1])
+        if ctor in ("left_evt", "right_evt"):
+            return measured_size(body if isinstance(body, dict) else body[0])
+        raise EvidenceLayoutError(f"unknown evidence constructor {ctor!r}")
 
     def walk(node: Any) -> None:
         if not isinstance(node, dict):
@@ -383,13 +435,27 @@ def slot_layout(et: Any, session: dict) -> List[SlotSpan]:
             plc, params, sub = body
             asp_id = params.get("ASP_ID", "")
             kind, size = _fwd_of(asp_types, asp_id)
+            is_companion = asp_id in companions
             spans.append(SlotSpan(asp=asp_id, plc=str(plc),
                                   args=dict(params.get("ASP_ARGS") or {}),
-                                  start=cursor[0], count=size))
+                                  start=cursor[0], count=size, companion=is_companion))
             cursor[0] += size
+            if is_companion:
+                if kind == "EXTEND":
+                    judged = _appraised_node(sub)
+                    if judged is None:
+                        raise EvidenceLayoutError(
+                            f"EXTEND companion '{asp_id}': cannot locate the judged event")
+                    kept = measured_size(judged)
+                    jp = judged["EvidenceT_BODY"][1]
+                    spans.append(SlotSpan(asp=jp.get("ASP_ID", ""), plc=str(judged["EvidenceT_BODY"][0]),
+                                          args=dict(jp.get("ASP_ARGS") or {}), start=cursor[0],
+                                          count=kept, retained=True))
+                    cursor[0] += kept
+                return  # the type beneath a companion is attribution only
             if kind == "EXTEND":
                 walk(sub)
-            return  # REPLACE: the appraised sub-evidence bytes are gone
+            return  # REPLACE measurement: the sub-evidence bytes are gone
         if ctor == "split_evt":
             walk(body[0])
             walk(body[1])
@@ -502,6 +568,13 @@ def assurance_at_least(level: str, minimum: str) -> bool:
 # ── configuration ────────────────────────────────────────────────────────────
 
 
+def _read_secret(path: str) -> str:
+    try:
+        return Path(path).read_text().strip()
+    except OSError:
+        return ""
+
+
 class ToolingConfig(BaseModel):
     protocol_id: Optional[str] = "attestation_tools"
     measure: Literal["at_provisioning", "every_episode", "every_run"] = "at_provisioning"
@@ -512,7 +585,10 @@ class LedgerConfig(BaseModel):
     port: int = 3322
     db: str = "pybb"
     user: str = Field(default_factory=lambda: os.environ.get("PYBB_IMMUDB_USER", "pybb"))
-    password: str = Field(default_factory=lambda: os.environ.get("PYBB_IMMUDB_PASSWORD", ""))
+    # PYBB_IMMUDB_PASSWORD, else the file <state_dir>/immudb_password written
+    # by scripts/immudb_dev.sh bootstrap (never a value in code or chat)
+    password: str = Field(default_factory=lambda: os.environ.get("PYBB_IMMUDB_PASSWORD")
+                          or _read_secret(os.path.expanduser("~/.pybb/immudb_password")))
     state_dir: str = Field(default_factory=lambda: os.path.expanduser("~/.pybb"))
     # the verifying public key (the copy baked into sig_appr at build time);
     # its fingerprint is every record's committer_fp

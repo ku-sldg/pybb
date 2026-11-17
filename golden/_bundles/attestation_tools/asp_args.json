@@ -1,0 +1,200 @@
+{
+  "hashfile": {
+    "attestation_tool_attestation_stack_cvm_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/cvm/_build/default/theories/cvm",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_cvm_targ"
+    },
+    "attestation_tool_attestation_stack_copland_evidence_tools_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/copland-evidence-tools/_build/default/theories/copland_evidence_tools",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_copland_evidence_tools_targ"
+    },
+    "attestation_tool_attestation_stack_unsecure_pub_key_dont_use_pem_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/common_files/unsecure_pub_key_dont_use.pem",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_unsecure_pub_key_dont_use_pem_targ"
+    },
+    "attestation_tool_attestation_stack_cheat_scan_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/cheat_scan_verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_cheat_scan_verus_targ"
+    },
+    "attestation_tool_attestation_stack_generate_nonce_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/generate_nonce",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_generate_nonce_targ"
+    },
+    "attestation_tool_attestation_stack_goldenbytes_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/goldenbytes_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_goldenbytes_appr_targ"
+    },
+    "attestation_tool_attestation_stack_hashevidence_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashevidence",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_hashevidence_targ"
+    },
+    "attestation_tool_attestation_stack_hashfile_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_hashfile_targ"
+    },
+    "attestation_tool_attestation_stack_hashfile_many_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile_many",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_hashfile_many_targ"
+    },
+    "attestation_tool_attestation_stack_hashfile_many_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/hashfile_many_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_hashfile_many_appr_targ"
+    },
+    "attestation_tool_attestation_stack_magic_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/magic_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_magic_appr_targ"
+    },
+    "attestation_tool_attestation_stack_model_slices_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/model_slices_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_model_slices_appr_targ"
+    },
+    "attestation_tool_attestation_stack_nonce_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/nonce_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_nonce_appr_targ"
+    },
+    "attestation_tool_attestation_stack_readfile_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_readfile_targ"
+    },
+    "attestation_tool_attestation_stack_readfile_marker_range_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile_marker_range",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_readfile_marker_range_targ"
+    },
+    "attestation_tool_attestation_stack_readfile_range_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/readfile_range",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_readfile_range_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_cargo_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_cargo_verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_cargo_verus_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_dune_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_dune",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_dune_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_hamr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_hamr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_hamr_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_hamr_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_hamr_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_hamr_appr_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_lean_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_lean",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_lean_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_lean_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_lean_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_lean_appr_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_rocq_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_rocq",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_rocq_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_rocq_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_rocq_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_rocq_appr_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_verus_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_verus",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_verus_targ"
+    },
+    "attestation_tool_attestation_stack_run_command_verus_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/run_command_verus_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_run_command_verus_appr_targ"
+    },
+    "attestation_tool_attestation_stack_sig_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/sig",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_sig_targ"
+    },
+    "attestation_tool_attestation_stack_sig_appr_targ": {
+      "filepath": "/Users/adampetz/Claude_workspace/asp-libs/target/release/sig_appr",
+      "env_var": "",
+      "measure_in_place": true,
+      "metadata": "tool::attestation_stack",
+      "asp_targid": "attestation_tool_attestation_stack_sig_appr_targ"
+    }
+  }
+}
