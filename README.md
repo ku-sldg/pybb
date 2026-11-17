@@ -1,5 +1,7 @@
 # Mr. Pybb (Python Blackboard)
 
+**Attestation ledger:** [docs/ledger.md](docs/ledger.md) — immudb-backed, append-only record of every run, with a git evidence mirror and CVM-driven re-appraisal.
+
 **Install / run the demos:** see [docs/INSTALL.md](docs/INSTALL.md) —
 `scripts/install.sh` builds the full attestation stack (CVM, asp-libs,
 Rocq, Verus, Sireum/HAMR) and brings both interactive demo arcs

@@ -74,6 +74,12 @@ class BaselineReport(BaseModel):
     protocol: str
     bundle_path: str = ""
     signature_ok: bool = False
+    # nonce'd bundles (docs/ledger_plan.md point 4): the nonce_appr verdict;
+    # None for legacy bundles without a generate_nonce event
+    nonce_ok: Optional[bool] = None
+    # with a ledger: does the bundle on disk match its ledger record?
+    ledger_ok: Optional[bool] = None
+    ledger_key: str = ""
     anchored: List[str] = []  # targ_ids whose installed golden matches signed evidence
     linked: Dict[str, str] = {}  # build-mode cross-links: targ_id -> anchor protocol
     problems: List[str] = []
@@ -292,10 +298,14 @@ def _inject_goldens(et_node: Any, records: List[dict], golden_ids: set,
 
 
 def verify_bundle(client: Any, protocol: Any, golden_root: Path,
-                  anchor_protocols: Optional[Dict[str, Any]] = None) -> BaselineReport:
+                  anchor_protocols: Optional[Dict[str, Any]] = None,
+                  ledger: Any = None) -> BaselineReport:
     """
     Verify one protocol's signed golden baseline via an appraisal-only CVM
     run over the stored provision bundle.
+
+    With `ledger`, `ledger_ok` says whether the bundle bytes on disk are the
+    ones its ledger `bundle` record describes (plan D).
 
     `anchor_protocols` (a protocol map, typically the episode's full set)
     activates blessed-content anchoring for props protocols: each blessed
@@ -351,7 +361,13 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
     if report.problems:
         return report
 
-    plc = protocol.session.get("Session_Plc", "P0")
+    # the appraisal session is the protocol's plus the ledger ASP types and
+    # companions (nonce'd bundles need nonce_appr; a superset is harmless
+    # for legacy bundles)
+    from .ledger_runs import ledger_manifest, ledger_session
+
+    session = ledger_session(protocol.session)
+    plc = session.get("Session_Plc", "P0")
     request = {
         "TYPE": "REQUEST",
         "ACTION": "RUN",
@@ -359,11 +375,14 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
         "TO_PLC": plc,
         "TERM": _APPR_TERM,
         "EVIDENCE": evidence,
-        "ATTESTATION_SESSION": protocol.session,
+        "ATTESTATION_SESSION": session,
     }
+    if ledger is not None:
+        _ledger_check(report, bundle_path, protocol_id, ledger)
     try:
         response = client.run_protocol(
-            protocol.model_copy(update={"prebuilt_request": request}))
+            protocol.model_copy(update={"prebuilt_request": request, "session": session,
+                                        "manifest": ledger_manifest(protocol.manifest)}))
     except Exception as e:
         report.problems.append(f"verification run failed: {e}")
         return report
@@ -377,7 +396,7 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
     if summarizer.available():
         try:
             report.components = summarizer.summarize_response(
-                response, protocol.session)
+                response, session)
         except summarizer.SummaryError as e:
             report.problems.append(f"verified appraisal summary refused: {e}")
             return report
@@ -395,6 +414,10 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
             if not c.passed:
                 report.problems.append(
                     f"bundle signature verification FAILED: {c.reason or 'invalid'}")
+        elif c.appr_asp == "nonce_appr":
+            report.nonce_ok = c.passed
+            if not c.passed:
+                report.problems.append(f"bundle nonce malformed: {c.reason or 'invalid'}")
         elif c.targ_id is not None:
             if c.passed:
                 report.anchored.append(c.targ_id)
@@ -408,3 +431,21 @@ def verify_bundle(client: Any, protocol: Any, golden_root: Path,
     if not any(c.appr_asp == "sig_appr" for c in report.components):
         report.problems.append("no signature event in bundle evidence")
     return report
+
+
+def _ledger_check(report: BaselineReport, bundle_path: Path, protocol_id: str, ledger: Any) -> None:
+    """ledger_ok: the on-disk bundle's sha256 is a `bundle` record of this
+    protocol in the ledger (plan D)."""
+    import hashlib
+
+    sha = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    from .ledger import key_for
+
+    for rec in ledger.records(kind="bundle", protocol_id=protocol_id):
+        if getattr(rec, "blob_sha256", "") == sha:
+            report.ledger_ok = True
+            report.ledger_key = key_for(rec)
+            return
+    report.ledger_ok = False
+    report.problems.append("bundle on disk is not recorded in the ledger (re-provisioned "
+                           "without a commit, or replaced)")

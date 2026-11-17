@@ -65,6 +65,13 @@ def attestation_request(protocol_id: str) -> dict:
     return {"protocol": protocol_id}
 
 
+def ledger_request(nid: str) -> dict:
+    """Measurement descriptor for an audit entry: re-appraise the run the
+    ledger holds under `nid` (docs/ledger_plan.md, B.5/E) instead of
+    measuring the live tree. Needs a ledger on the predicate."""
+    return {"ledger_nonce": nid}
+
+
 class Verdict(BaseModel):
     """
     Appraised outcome of one protocol run; an attestation entry's result.
@@ -81,6 +88,13 @@ class Verdict(BaseModel):
     # archived raw response (gzipped) this verdict was interpreted from —
     # the episode's durable evidence artifact, re-summarizable later
     evidence_ref: str = ""
+    # ledger runs (docs/ledger_plan.md): the signed appraisal package and the
+    # interpreted component list archived beside it, the run's nonce id, and
+    # the ledger key of its evidence record ("" when no ledger is configured)
+    appraisal_ref: str = ""
+    components_ref: str = ""
+    nonce_id: str = ""
+    ledger_ref: str = ""
 
     def __bool__(self) -> bool:
         return self.passed
@@ -90,7 +104,8 @@ class Verdict(BaseModel):
 
 
 def make_attestation_predicate(
-    client: Any, protocols: Dict[str, Any], archive_dir: Any = None
+    client: Any, protocols: Dict[str, Any], archive_dir: Any = None,
+    ledger: Any = None, ledger_config: Any = None,
 ) -> Callable[[dict], Verdict]:
     """
     Predicate over attestation-request measurements: run the named protocol
@@ -104,34 +119,68 @@ def make_attestation_predicate(
     regardless of verdict: failures especially deserve durable evidence.
     The verdict's evidence_ref names its artifact; a summary is always
     re-derivable from it via the verified summarizer.
+
+    With `ledger` set (a `pybb.attestation.ledger.Ledger`), every protocol
+    runs as the nonce'd two-run flow of `ledger_runs` — a measurement+SIG
+    run whose raw signed package is the archived artifact, then a signed
+    appraisal run — and the run's records are committed to the ledger in
+    one batch. Without a ledger the single-run, in-run-APPR flow is
+    unchanged.
     """
+    from .ledger import LedgerConfig
+
+    if ledger is not None and ledger_config is None:
+        ledger_config = LedgerConfig()
+    tooling_resolver: List[Any] = [None]  # built lazily: needs _archive
     cache: Dict[str, Verdict] = {}
     episode_dir: List[Any] = [None]
 
-    def _archive(response: dict, protocol_id: str) -> str:
+    def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
         if archive_dir is None:
             return ""
         import gzip
+        import secrets
         import time
         from pathlib import Path as _P
 
         if episode_dir[0] is None:
-            d = _P(archive_dir) / time.strftime("%Y%m%d-%H%M%S")
+            # timestamp plus a random suffix: two predicates built in the
+            # same second never share a directory (docs/ledger_plan.md,
+            # schema point 5); the name is an archive detail, not a ledger field
+            d = _P(archive_dir) / (time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2))
             d.mkdir(parents=True, exist_ok=True)
             episode_dir[0] = d
-        path = episode_dir[0] / f"{protocol_id}.response.json.gz"
+        path = episode_dir[0] / f"{protocol_id}.{kind}.json.gz"
         seq = 1
         while path.exists():  # restarted protocols archive alongside, never over
             seq += 1
-            path = episode_dir[0] / f"{protocol_id}.response.{seq}.json.gz"
-        with gzip.open(path, "wt") as f:
-            json.dump(response, f)
+            path = episode_dir[0] / f"{protocol_id}.{kind}.{seq}.json.gz"
+        if isinstance(response, list):  # the components artifact: canonical bytes
+            from .ledger import canonical_json
+
+            with gzip.open(path, "wb") as f:
+                f.write(canonical_json(response))
+        else:
+            with gzip.open(path, "wt") as f:
+                json.dump(response, f)
         return str(path)
 
     def predicate(measurement: dict) -> Verdict:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
-            cache[key] = _attest(client, protocols, measurement, _archive)
+            if measurement.get("ledger_nonce"):
+                cache[key] = _audit_ledger(client, protocols, measurement, _archive,
+                                           ledger, ledger_config)
+            elif ledger is not None:
+                if tooling_resolver[0] is None:
+                    from .ledger_tooling import ToolingResolver
+
+                    tooling_resolver[0] = ToolingResolver(client, protocols, ledger,
+                                                          ledger_config, archive=_archive)
+                cache[key] = _attest_ledger(client, protocols, measurement, _archive,
+                                            ledger, ledger_config, tooling_resolver[0])
+            else:
+                cache[key] = _attest(client, protocols, measurement, _archive)
         return cache[key]
 
     def forget(measurement: dict) -> None:
@@ -167,6 +216,54 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
         components=components,
         evidence_ref=ref,
     )
+
+
+def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
+                   archive: Any, ledger: Any, config: Any, tooling_resolver: Any = None) -> Verdict:
+    """The nonce'd two-run flow (ledger_runs.attest_with_ledger) as a Verdict,
+    carrying the tooling reference the B.8 cadence prescribes."""
+    from .ledger_runs import attest_with_ledger
+
+    protocol_id = measurement.get("protocol", "")
+    protocol = protocols.get(protocol_id)
+    if protocol is None:
+        return Verdict(protocol=protocol_id, passed=False,
+                       error=f"unknown protocol '{protocol_id}'")
+    tooling = tooling_resolver.ref(protocol_id) if tooling_resolver is not None else None
+    r = attest_with_ledger(client, protocol, ledger, config, archive=archive, tooling=tooling)
+    return Verdict(protocol=protocol_id, passed=r.passed, components=r.components,
+                   error=r.error, evidence_ref=r.evidence_ref, appraisal_ref=r.appraisal_ref,
+                   components_ref=r.components_ref, nonce_id=r.nonce_id, ledger_ref=r.ledger_ref)
+
+
+def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
+                  archive: Any, ledger: Any, config: Any) -> Verdict:
+    """Re-appraise a ledger-held run (ledger_runs.appraise_record) as a Verdict:
+    truthy iff the ledger reads verified, the bytes and nonce id matched,
+    and the fresh signed appraisal passed."""
+    from .ledger_runs import appraise_record
+
+    nid = measurement.get("ledger_nonce", "")
+    if ledger is None:
+        return Verdict(protocol="", passed=False, nonce_id=nid,
+                       error="ledger audit requested but no ledger is configured")
+    try:
+        records = ledger.get(nid)
+    except Exception as e:
+        return Verdict(protocol="", passed=False, nonce_id=nid, error=f"ledger run {nid}: {e}")
+    protocol_id = records.evidence.protocol_id
+    protocol = protocols.get(protocol_id)
+    if protocol is None:
+        return Verdict(protocol=protocol_id, passed=False, nonce_id=nid,
+                       error=f"unknown protocol '{protocol_id}' for ledger run {nid}")
+    rep = appraise_record(client, protocol, ledger, config, nid, archive=archive)
+    error = rep.error
+    if not error and rep.agrees_with_recorded_verdict is False:
+        error = (f"audit verdict ({'pass' if rep.passed else 'fail'}) disagrees with the "
+                 f"recorded verdict ({'pass' if records.verdict.passed else 'fail'})")
+    return Verdict(protocol=protocol_id, passed=bool(rep), components=rep.components, error=error,
+                   evidence_ref=records.evidence.locators[0].path if records.evidence.locators else "",
+                   appraisal_ref=rep.appraisal_ref, nonce_id=nid, ledger_ref=rep.ledger_ref)
 
 
 def _interpret(response: dict, protocol: Any):

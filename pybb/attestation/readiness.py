@@ -65,6 +65,11 @@ class ReadinessReport(BaseModel):
     problems: List[str] = []
     baseline_verified: List[str] = []  # protocols with a verified signed baseline
     baseline_problems: List[str] = []
+    # ledger runs (docs/ledger_plan.md B.7/B.8): the assurance level each
+    # protocol's configuration can reach, and the tooling blessing in force
+    assurance: Dict[str, str] = {}
+    assurance_excepted: Dict[str, str] = {}  # protocol -> reason
+    tooling_blessing: str = ""  # path of the attestation_tools bundle, "" if none
 
     def __bool__(self) -> bool:
         return (bool(self.checked) and not self.problems
@@ -74,6 +79,7 @@ class ReadinessReport(BaseModel):
 def make_readiness_predicate(
     protocols: Dict[str, Any], config: Optional[CvmConfig] = None, *,
     baseline_root: Optional[Any] = None, client: Optional[Any] = None,
+    ledger_config: Optional[Any] = None,
 ) -> Callable[[dict], ReadinessReport]:
     """
     Predicate over readiness measurements: check every named protocol
@@ -88,6 +94,13 @@ def make_readiness_predicate(
     a baseline-integrity failure before any attestation runs — never
     disguised as a config problem or an integrity violation of the live
     tree. `client` defaults to a CvmSubprocessClient on the same config.
+
+    With `ledger_config` (a `ledger.LedgerConfig`), readiness also reports,
+    as configuration failures before any attestation runs: the ledger ASPs
+    missing from asp_bin; every protocol whose configuration cannot reach
+    `min_assurance` and is not in `assurance_exceptions`; and, when tooling
+    tracking is on, a missing `attestation_tools` protocol or blessing
+    bundle (docs/ledger_plan.md B.7/B.8).
     """
     config = config or CvmConfig()
     cache: Dict[str, ReadinessReport] = {}
@@ -96,6 +109,8 @@ def make_readiness_predicate(
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
             report = _check(protocols, config, measurement)
+            if ledger_config is not None:
+                _ledger_checks(protocols, config, ledger_config, measurement, report)
             if baseline_root is not None:
                 _verify_baselines(protocols, config, client, baseline_root, report)
             cache[key] = report
@@ -161,3 +176,70 @@ def _check(
     # NOTE: deliberately shallow. Deeper readiness (CVM dry-run of the
     # measurement-only term, term typechecking via cvm tools) slots in here.
     return ReadinessReport(checked=list(ids), problems=problems)
+
+
+def reachable_assurance(protocol: Any) -> str:
+    """The assurance level a protocol's configuration can reach under
+    ledger runs: pybb always adds the nonce event, so it is `signed+nonce`
+    with a `sig` step and companion, `nonce` without."""
+    comps = protocol.session.get("Session_Context", {}).get("ASP_Comps", {})
+    has_sig = "sig" in comps and "sig" in protocol.manifest.get("ASPS", []) \
+        and _term_has_sig(protocol.term)
+    return "signed+nonce" if has_sig else "nonce"
+
+
+def _term_has_sig(term: Any) -> bool:
+    if not isinstance(term, dict):
+        return False
+    body = term.get("TERM_BODY")
+    if term.get("TERM_CONSTRUCTOR") == "asp":
+        return isinstance(body, dict) and body.get("ASP_CONSTRUCTOR") == "SIG"
+    if isinstance(body, list):
+        return any(_term_has_sig(x) for x in body)
+    if isinstance(body, dict):
+        return _term_has_sig(body)
+    return False
+
+
+def _ledger_checks(protocols: Dict[str, Any], config: CvmConfig, ledger_config: Any,
+                   measurement: dict, report: ReadinessReport) -> None:
+    from pathlib import Path
+
+    from .ledger import assurance_at_least
+    from .ledger_runs import LEDGER_ASPS
+
+    if os.path.isdir(config.asp_bin):
+        for asp in LEDGER_ASPS:
+            path = os.path.join(config.asp_bin, asp)
+            if not (os.path.isfile(path) and os.access(path, os.X_OK)):
+                report.problems.append(f"ledger ASP executable not found: {asp}")
+
+    for pid in measurement.get("protocols", []):
+        protocol = protocols.get(pid)
+        if protocol is None:
+            continue
+        level = reachable_assurance(protocol)
+        report.assurance[pid] = level
+        if not assurance_at_least(level, ledger_config.min_assurance):
+            reason = ledger_config.assurance_exceptions.get(pid)
+            if reason is None:
+                report.problems.append(
+                    f"{pid}: configuration reaches assurance '{level}', below the ledger "
+                    f"minimum '{ledger_config.min_assurance}' and not excepted")
+            else:
+                report.assurance_excepted[pid] = reason
+
+    tooling_pid = ledger_config.tooling.protocol_id
+    if tooling_pid:
+        if tooling_pid not in protocols:
+            report.problems.append(
+                f"tooling tracking is on but protocol '{tooling_pid}' is not loaded "
+                f"(examples/provision_tools.py builds it)")
+        else:
+            bundle = Path(ledger_config.golden_root) / "_bundles" / tooling_pid / "provision_bundle.json"
+            if bundle.is_file():
+                report.tooling_blessing = str(bundle)
+            else:
+                report.problems.append(
+                    f"no blessing for the attestation stack at {bundle} "
+                    f"(provision '{tooling_pid}' once after deploying the tools)")

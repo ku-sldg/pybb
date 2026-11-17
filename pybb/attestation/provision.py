@@ -144,6 +144,31 @@ class ProvisionOutcome(BaseModel):
         return not self.error and bool(self.provisioned)
 
 
+# Provisioning runs carry a generate_nonce event (docs/ledger_plan.md, schema
+# point 4): the bundle has the same shape as a measurement package — nonce,
+# measurements, signature — keys by nonce id in the ledger, and every
+# re-blessing is a distinct event (deterministic RSA would otherwise make an
+# unchanged re-provisioning byte-identical). PYBB_PROVISION_NONCE=0 restores
+# legacy nonce-less bundles for hosts without the generate_nonce ASP.
+PROVISION_WITH_NONCE = os.environ.get("PYBB_PROVISION_NONCE", "1") != "0"
+
+
+def _with_nonce(term: dict) -> dict:
+    """`lseq (bseq left_path (asp generate_nonce) M) SIG` over a stripped
+    provisioning term `lseq M SIG` (or `bseq left_path (generate_nonce) T`
+    when the protocol has no SIG step)."""
+    from .ledger_runs import NONCE_ARGS, NONCE_ASP
+
+    nonce = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "ASPC",
+             "ASP_BODY": {"ASP_ID": NONCE_ASP, "ASP_ARGS": dict(NONCE_ARGS)}}}
+    sig = {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}
+    if term.get("TERM_CONSTRUCTOR") == "lseq" and len(term["TERM_BODY"]) == 2 \
+            and term["TERM_BODY"][1] == sig:
+        split = {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["left_path", nonce, term["TERM_BODY"][0]]}
+        return {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [split, sig]}
+    return {"TERM_CONSTRUCTOR": "bseq", "TERM_BODY": ["left_path", nonce, term]}
+
+
 def _measurement_term(term: dict) -> dict:
     """
     Return a copy of term with every APPR ASP removed, so the provisioning
@@ -276,7 +301,14 @@ def _provision(
             error="no golden copy for: " + ", ".join(sorted(missing)),
         )
 
-    plc = protocol.session.get("Session_Plc", "P0")
+    session, manifest = protocol.session, protocol.manifest
+    if PROVISION_WITH_NONCE:
+        from .ledger_runs import ledger_manifest, ledger_session
+
+        term = _with_nonce(term)
+        session, manifest = ledger_session(session), ledger_manifest(manifest)
+
+    plc = session.get("Session_Plc", "P0")
     request = {
         "TYPE": "REQUEST",
         "ACTION": "RUN",
@@ -284,11 +316,12 @@ def _provision(
         "TO_PLC": plc,
         "TERM": term,
         "EVIDENCE": empty_evidence(),
-        "ATTESTATION_SESSION": protocol.session,
+        "ATTESTATION_SESSION": session,
     }
     try:
         response = client.run_protocol(
-            protocol.model_copy(update={"prebuilt_request": request})
+            protocol.model_copy(update={"prebuilt_request": request,
+                                        "session": session, "manifest": manifest})
         )
     except Exception as e:
         return ProvisionOutcome(protocol=protocol_id, error=str(e))
@@ -300,10 +333,11 @@ def _provision(
 
     # the golden evidence bundle: [payload, global_context], the format
     # extract_golden_slice / do_EvidenceSlice expects
-    session_ctx = protocol.session.get("Session_Context", {})
+    # the bundle's context must type every event in it, nonce included
+    session_ctx = session.get("Session_Context", {})
     global_context = {
         "ASP_Types": session_ctx.get("ASP_Types", {}),
-        "ASP_Comps": comps,
+        "ASP_Comps": session_ctx.get("ASP_Comps", comps),
     }
     bundle_dir = Path(golden_root) / "_bundles" / protocol_id
     bundle_dir.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,464 @@
+{
+  "TERM_CONSTRUCTOR": "lseq",
+  "TERM_BODY": [
+    {
+      "TERM_CONSTRUCTOR": "lseq",
+      "TERM_BODY": [
+        {
+          "TERM_CONSTRUCTOR": "bseq",
+          "TERM_BODY": [
+            "both_paths",
+            {
+              "TERM_CONSTRUCTOR": "bseq",
+              "TERM_BODY": [
+                "both_paths",
+                {
+                  "TERM_CONSTRUCTOR": "bseq",
+                  "TERM_BODY": [
+                    "both_paths",
+                    {
+                      "TERM_CONSTRUCTOR": "bseq",
+                      "TERM_BODY": [
+                        "both_paths",
+                        {
+                          "TERM_CONSTRUCTOR": "bseq",
+                          "TERM_BODY": [
+                            "both_paths",
+                            {
+                              "TERM_CONSTRUCTOR": "bseq",
+                              "TERM_BODY": [
+                                "both_paths",
+                                {
+                                  "TERM_CONSTRUCTOR": "bseq",
+                                  "TERM_BODY": [
+                                    "both_paths",
+                                    {
+                                      "TERM_CONSTRUCTOR": "bseq",
+                                      "TERM_BODY": [
+                                        "both_paths",
+                                        {
+                                          "TERM_CONSTRUCTOR": "bseq",
+                                          "TERM_BODY": [
+                                            "both_paths",
+                                            {
+                                              "TERM_CONSTRUCTOR": "bseq",
+                                              "TERM_BODY": [
+                                                "both_paths",
+                                                {
+                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                  "TERM_BODY": [
+                                                    "both_paths",
+                                                    {
+                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                      "TERM_BODY": [
+                                                        "both_paths",
+                                                        {
+                                                          "TERM_CONSTRUCTOR": "bseq",
+                                                          "TERM_BODY": [
+                                                            "both_paths",
+                                                            {
+                                                              "TERM_CONSTRUCTOR": "bseq",
+                                                              "TERM_BODY": [
+                                                                "both_paths",
+                                                                {
+                                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                                  "TERM_BODY": [
+                                                                    "both_paths",
+                                                                    {
+                                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                                      "TERM_BODY": [
+                                                                        "both_paths",
+                                                                        {
+                                                                          "TERM_CONSTRUCTOR": "bseq",
+                                                                          "TERM_BODY": [
+                                                                            "both_paths",
+                                                                            {
+                                                                              "TERM_CONSTRUCTOR": "bseq",
+                                                                              "TERM_BODY": [
+                                                                                "both_paths",
+                                                                                {
+                                                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                                                  "TERM_BODY": [
+                                                                                    "both_paths",
+                                                                                    {
+                                                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                                                      "TERM_BODY": [
+                                                                                        "both_paths",
+                                                                                        {
+                                                                                          "TERM_CONSTRUCTOR": "bseq",
+                                                                                          "TERM_BODY": [
+                                                                                            "both_paths",
+                                                                                            {
+                                                                                              "TERM_CONSTRUCTOR": "bseq",
+                                                                                              "TERM_BODY": [
+                                                                                                "both_paths",
+                                                                                                {
+                                                                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                                                                  "TERM_BODY": [
+                                                                                                    "both_paths",
+                                                                                                    {
+                                                                                                      "TERM_CONSTRUCTOR": "bseq",
+                                                                                                      "TERM_BODY": [
+                                                                                                        "both_paths",
+                                                                                                        {
+                                                                                                          "TERM_CONSTRUCTOR": "bseq",
+                                                                                                          "TERM_BODY": [
+                                                                                                            "both_paths",
+                                                                                                            {
+                                                                                                              "TERM_CONSTRUCTOR": "bseq",
+                                                                                                              "TERM_BODY": [
+                                                                                                                "both_paths",
+                                                                                                                {
+                                                                                                                  "TERM_CONSTRUCTOR": "bseq",
+                                                                                                                  "TERM_BODY": [
+                                                                                                                    "both_paths",
+                                                                                                                    {
+                                                                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                                                                      "TERM_BODY": {
+                                                                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                                        "ASP_BODY": {
+                                                                                                                          "ASP_ID": "hashfile",
+                                                                                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_cvm_targ"
+                                                                                                                        }
+                                                                                                                      }
+                                                                                                                    },
+                                                                                                                    {
+                                                                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                                                                      "TERM_BODY": {
+                                                                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                                        "ASP_BODY": {
+                                                                                                                          "ASP_ID": "hashfile",
+                                                                                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_copland_evidence_tools_targ"
+                                                                                                                        }
+                                                                                                                      }
+                                                                                                                    }
+                                                                                                                  ]
+                                                                                                                },
+                                                                                                                {
+                                                                                                                  "TERM_CONSTRUCTOR": "asp",
+                                                                                                                  "TERM_BODY": {
+                                                                                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                                    "ASP_BODY": {
+                                                                                                                      "ASP_ID": "hashfile",
+                                                                                                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_unsecure_pub_key_dont_use_pem_targ"
+                                                                                                                    }
+                                                                                                                  }
+                                                                                                                }
+                                                                                                              ]
+                                                                                                            },
+                                                                                                            {
+                                                                                                              "TERM_CONSTRUCTOR": "asp",
+                                                                                                              "TERM_BODY": {
+                                                                                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                                "ASP_BODY": {
+                                                                                                                  "ASP_ID": "hashfile",
+                                                                                                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_cheat_scan_verus_targ"
+                                                                                                                }
+                                                                                                              }
+                                                                                                            }
+                                                                                                          ]
+                                                                                                        },
+                                                                                                        {
+                                                                                                          "TERM_CONSTRUCTOR": "asp",
+                                                                                                          "TERM_BODY": {
+                                                                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                            "ASP_BODY": {
+                                                                                                              "ASP_ID": "hashfile",
+                                                                                                              "ASP_TARG_ID": "attestation_tool_attestation_stack_generate_nonce_targ"
+                                                                                                            }
+                                                                                                          }
+                                                                                                        }
+                                                                                                      ]
+                                                                                                    },
+                                                                                                    {
+                                                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                                                      "TERM_BODY": {
+                                                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                        "ASP_BODY": {
+                                                                                                          "ASP_ID": "hashfile",
+                                                                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_goldenbytes_appr_targ"
+                                                                                                        }
+                                                                                                      }
+                                                                                                    }
+                                                                                                  ]
+                                                                                                },
+                                                                                                {
+                                                                                                  "TERM_CONSTRUCTOR": "asp",
+                                                                                                  "TERM_BODY": {
+                                                                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                    "ASP_BODY": {
+                                                                                                      "ASP_ID": "hashfile",
+                                                                                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_hashevidence_targ"
+                                                                                                    }
+                                                                                                  }
+                                                                                                }
+                                                                                              ]
+                                                                                            },
+                                                                                            {
+                                                                                              "TERM_CONSTRUCTOR": "asp",
+                                                                                              "TERM_BODY": {
+                                                                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                                                                "ASP_BODY": {
+                                                                                                  "ASP_ID": "hashfile",
+                                                                                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_hashfile_targ"
+                                                                                                }
+                                                                                              }
+                                                                                            }
+                                                                                          ]
+                                                                                        },
+                                                                                        {
+                                                                                          "TERM_CONSTRUCTOR": "asp",
+                                                                                          "TERM_BODY": {
+                                                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                                                            "ASP_BODY": {
+                                                                                              "ASP_ID": "hashfile",
+                                                                                              "ASP_TARG_ID": "attestation_tool_attestation_stack_hashfile_many_targ"
+                                                                                            }
+                                                                                          }
+                                                                                        }
+                                                                                      ]
+                                                                                    },
+                                                                                    {
+                                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                                      "TERM_BODY": {
+                                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                                        "ASP_BODY": {
+                                                                                          "ASP_ID": "hashfile",
+                                                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_hashfile_many_appr_targ"
+                                                                                        }
+                                                                                      }
+                                                                                    }
+                                                                                  ]
+                                                                                },
+                                                                                {
+                                                                                  "TERM_CONSTRUCTOR": "asp",
+                                                                                  "TERM_BODY": {
+                                                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                                                    "ASP_BODY": {
+                                                                                      "ASP_ID": "hashfile",
+                                                                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_magic_appr_targ"
+                                                                                    }
+                                                                                  }
+                                                                                }
+                                                                              ]
+                                                                            },
+                                                                            {
+                                                                              "TERM_CONSTRUCTOR": "asp",
+                                                                              "TERM_BODY": {
+                                                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                                                "ASP_BODY": {
+                                                                                  "ASP_ID": "hashfile",
+                                                                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_model_slices_appr_targ"
+                                                                                }
+                                                                              }
+                                                                            }
+                                                                          ]
+                                                                        },
+                                                                        {
+                                                                          "TERM_CONSTRUCTOR": "asp",
+                                                                          "TERM_BODY": {
+                                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                                            "ASP_BODY": {
+                                                                              "ASP_ID": "hashfile",
+                                                                              "ASP_TARG_ID": "attestation_tool_attestation_stack_nonce_appr_targ"
+                                                                            }
+                                                                          }
+                                                                        }
+                                                                      ]
+                                                                    },
+                                                                    {
+                                                                      "TERM_CONSTRUCTOR": "asp",
+                                                                      "TERM_BODY": {
+                                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                                        "ASP_BODY": {
+                                                                          "ASP_ID": "hashfile",
+                                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_readfile_targ"
+                                                                        }
+                                                                      }
+                                                                    }
+                                                                  ]
+                                                                },
+                                                                {
+                                                                  "TERM_CONSTRUCTOR": "asp",
+                                                                  "TERM_BODY": {
+                                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                                    "ASP_BODY": {
+                                                                      "ASP_ID": "hashfile",
+                                                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_readfile_marker_range_targ"
+                                                                    }
+                                                                  }
+                                                                }
+                                                              ]
+                                                            },
+                                                            {
+                                                              "TERM_CONSTRUCTOR": "asp",
+                                                              "TERM_BODY": {
+                                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                                "ASP_BODY": {
+                                                                  "ASP_ID": "hashfile",
+                                                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_readfile_range_targ"
+                                                                }
+                                                              }
+                                                            }
+                                                          ]
+                                                        },
+                                                        {
+                                                          "TERM_CONSTRUCTOR": "asp",
+                                                          "TERM_BODY": {
+                                                            "ASP_CONSTRUCTOR": "ASPC",
+                                                            "ASP_BODY": {
+                                                              "ASP_ID": "hashfile",
+                                                              "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_cargo_verus_targ"
+                                                            }
+                                                          }
+                                                        }
+                                                      ]
+                                                    },
+                                                    {
+                                                      "TERM_CONSTRUCTOR": "asp",
+                                                      "TERM_BODY": {
+                                                        "ASP_CONSTRUCTOR": "ASPC",
+                                                        "ASP_BODY": {
+                                                          "ASP_ID": "hashfile",
+                                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_dune_targ"
+                                                        }
+                                                      }
+                                                    }
+                                                  ]
+                                                },
+                                                {
+                                                  "TERM_CONSTRUCTOR": "asp",
+                                                  "TERM_BODY": {
+                                                    "ASP_CONSTRUCTOR": "ASPC",
+                                                    "ASP_BODY": {
+                                                      "ASP_ID": "hashfile",
+                                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_hamr_targ"
+                                                    }
+                                                  }
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "TERM_CONSTRUCTOR": "asp",
+                                              "TERM_BODY": {
+                                                "ASP_CONSTRUCTOR": "ASPC",
+                                                "ASP_BODY": {
+                                                  "ASP_ID": "hashfile",
+                                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_hamr_appr_targ"
+                                                }
+                                              }
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "TERM_CONSTRUCTOR": "asp",
+                                          "TERM_BODY": {
+                                            "ASP_CONSTRUCTOR": "ASPC",
+                                            "ASP_BODY": {
+                                              "ASP_ID": "hashfile",
+                                              "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_lean_targ"
+                                            }
+                                          }
+                                        }
+                                      ]
+                                    },
+                                    {
+                                      "TERM_CONSTRUCTOR": "asp",
+                                      "TERM_BODY": {
+                                        "ASP_CONSTRUCTOR": "ASPC",
+                                        "ASP_BODY": {
+                                          "ASP_ID": "hashfile",
+                                          "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_lean_appr_targ"
+                                        }
+                                      }
+                                    }
+                                  ]
+                                },
+                                {
+                                  "TERM_CONSTRUCTOR": "asp",
+                                  "TERM_BODY": {
+                                    "ASP_CONSTRUCTOR": "ASPC",
+                                    "ASP_BODY": {
+                                      "ASP_ID": "hashfile",
+                                      "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_rocq_targ"
+                                    }
+                                  }
+                                }
+                              ]
+                            },
+                            {
+                              "TERM_CONSTRUCTOR": "asp",
+                              "TERM_BODY": {
+                                "ASP_CONSTRUCTOR": "ASPC",
+                                "ASP_BODY": {
+                                  "ASP_ID": "hashfile",
+                                  "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_rocq_appr_targ"
+                                }
+                              }
+                            }
+                          ]
+                        },
+                        {
+                          "TERM_CONSTRUCTOR": "asp",
+                          "TERM_BODY": {
+                            "ASP_CONSTRUCTOR": "ASPC",
+                            "ASP_BODY": {
+                              "ASP_ID": "hashfile",
+                              "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_verus_targ"
+                            }
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "TERM_CONSTRUCTOR": "asp",
+                      "TERM_BODY": {
+                        "ASP_CONSTRUCTOR": "ASPC",
+                        "ASP_BODY": {
+                          "ASP_ID": "hashfile",
+                          "ASP_TARG_ID": "attestation_tool_attestation_stack_run_command_verus_appr_targ"
+                        }
+                      }
+                    }
+                  ]
+                },
+                {
+                  "TERM_CONSTRUCTOR": "asp",
+                  "TERM_BODY": {
+                    "ASP_CONSTRUCTOR": "ASPC",
+                    "ASP_BODY": {
+                      "ASP_ID": "hashfile",
+                      "ASP_TARG_ID": "attestation_tool_attestation_stack_sig_targ"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "TERM_CONSTRUCTOR": "asp",
+              "TERM_BODY": {
+                "ASP_CONSTRUCTOR": "ASPC",
+                "ASP_BODY": {
+                  "ASP_ID": "hashfile",
+                  "ASP_TARG_ID": "attestation_tool_attestation_stack_sig_appr_targ"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "TERM_CONSTRUCTOR": "asp",
+          "TERM_BODY": {
+            "ASP_CONSTRUCTOR": "SIG"
+          }
+        }
+      ]
+    },
+    {
+      "TERM_CONSTRUCTOR": "asp",
+      "TERM_BODY": {
+        "ASP_CONSTRUCTOR": "APPR"
+      }
+    }
+  ]
+}

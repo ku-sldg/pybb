@@ -178,3 +178,70 @@ def test_starter_never_clobbers_live_episode(tmp_path):
     ctl.run()
     # pre-existing entry untouched by the starter
     assert ctl.blackboard.entries["sys"].measurement == {"protocol": "l2"}
+
+
+# ── ledger readiness (docs/ledger_plan.md B.7 / B.8) ─────────────────────────
+
+
+def _ledger_cfg(tmp_path, **kw):
+    from pybb.attestation.ledger import LedgerConfig, ToolingConfig
+    base = dict(state_dir=str(tmp_path / "state"), appraiser_id="ap-r",
+                golden_root=str(tmp_path / "golden"), tooling=ToolingConfig(protocol_id=None))
+    base.update(kw)
+    return LedgerConfig(**base)
+
+
+LEDGER_ASPS = ("hashfile", "sig", "generate_nonce", "nonce_appr", "hashevidence", "magic_appr")
+
+
+def _sig_protocol(pid="l1"):
+    p = _protocol(pid)
+    p.term = {"TERM_CONSTRUCTOR": "lseq", "TERM_BODY": [
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "ASPC",
+                                                 "ASP_BODY": {"ASP_ID": "hashfile", "ASP_TARG_ID": "t1"}}},
+        {"TERM_CONSTRUCTOR": "asp", "TERM_BODY": {"ASP_CONSTRUCTOR": "SIG"}}]}
+    return p
+
+
+def test_ledger_readiness_reports_reachable_assurance(tmp_path):
+    predicate = make_readiness_predicate({"l1": _sig_protocol()}, _config(tmp_path, LEDGER_ASPS),
+                                         ledger_config=_ledger_cfg(tmp_path))
+    r = predicate(readiness_request(["l1"]))
+    assert r and r.assurance == {"l1": "signed+nonce"} and r.assurance_excepted == {}
+
+
+def test_ledger_readiness_flags_protocols_below_minimum_unless_excepted(tmp_path):
+    unsigned = _protocol("plain")  # no SIG in the term
+    cvm = _config(tmp_path, LEDGER_ASPS)
+    cfg = _ledger_cfg(tmp_path)
+    r = make_readiness_predicate({"plain": unsigned}, cvm, ledger_config=cfg)(readiness_request(["plain"]))
+    assert not r and r.assurance == {"plain": "nonce"}
+    assert any("below the ledger minimum 'signed+nonce'" in p for p in r.problems)
+    cfg2 = _ledger_cfg(tmp_path, assurance_exceptions={"plain": "readiness probe"})
+    r2 = make_readiness_predicate({"plain": unsigned}, cvm, ledger_config=cfg2)(readiness_request(["plain"]))
+    assert r2 and r2.assurance_excepted == {"plain": "readiness probe"}
+
+
+def test_ledger_readiness_requires_the_ledger_asps(tmp_path):
+    r = make_readiness_predicate({"l1": _sig_protocol()}, _config(tmp_path, ("hashfile", "sig")),
+                                 ledger_config=_ledger_cfg(tmp_path))(readiness_request(["l1"]))
+    assert not r
+    missing = {p.split(": ")[1] for p in r.problems if p.startswith("ledger ASP executable not found")}
+    assert missing == {"generate_nonce", "nonce_appr", "hashevidence", "magic_appr"}
+
+
+def test_ledger_readiness_requires_a_tooling_blessing_when_tracking_is_on(tmp_path):
+    from pybb.attestation.ledger import ToolingConfig
+    cfg = _ledger_cfg(tmp_path, tooling=ToolingConfig(protocol_id="attestation_tools"))
+    protos = {"l1": _sig_protocol()}
+    cvm = _config(tmp_path, LEDGER_ASPS)
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
+    assert not r and any("not loaded" in p for p in r.problems)
+    protos["attestation_tools"] = _sig_protocol("attestation_tools")
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
+    assert not r and any("no blessing for the attestation stack" in p for p in r.problems)
+    bundle = tmp_path / "golden" / "_bundles" / "attestation_tools" / "provision_bundle.json"
+    bundle.parent.mkdir(parents=True)
+    bundle.write_text("[]")
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
+    assert r and r.tooling_blessing == str(bundle)

@@ -28,11 +28,12 @@ once per episode in a dedicated always-run entry; "provision_only" trusts
 the blessed hashes without live re-measurement. The registry is cadence-
 agnostic.
 
-Deliberately out of scope (user decision 2026-07-30): the attestation
-stack itself (cvm binary, ASP executables). Self-measurement is drift
-detection, not a root of trust; a system mechanism (e.g. TPM-backed boot
-attestation) is the right tool for that layer and can be added later —
-the registry accepts new classes without redesign (register_tool).
+The attestation stack itself (cvm binary, summarizer, ASP executables,
+verifying key) was out of scope by the 2026-07-30 decision; the ledger
+plan (docs/ledger_plan.md B.8, 2026-11-17) brought it in as the
+`attestation_stack` tool registered by `ledger_tooling.py` — measured once
+at provisioning by default, as drift detection and provenance, not a root
+of trust (a TPM-backed mechanism remains the right tool for that layer).
 """
 
 from __future__ import annotations

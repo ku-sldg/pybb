@@ -11,6 +11,7 @@ dependencies = ["pydantic>=2.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+ledger = ["immudb-py>=1.5"]
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -20,4 +21,5 @@ include = ["pybb*"]
 markers = [
     "cvm: end-to-end tests requiring the local CVM binary, asp-libs, and temp-control-jvm",
     "sireum: multi-minute Sireum tipe/logika/test runs; also gated by RUN_SIREUM=1",
+    "ledger: tests needing an ephemeral immudb server (skipped when the immudb binary is absent)",
 ]

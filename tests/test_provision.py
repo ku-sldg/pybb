@@ -173,8 +173,16 @@ def test_provisioning_term_is_measurement_only_and_golden_rooted(tmp_path):
     term_json = json.dumps(request["TERM"])
     assert '"APPR"' not in term_json  # appraisal stripped: run cannot fail on missing goldens
     bodies = list(iter_aspc_bodies(request["TERM"]))
-    assert len(bodies) == 1
-    args = bodies[0]["ASP_ARGS"]
+    # nonce'd provisioning (ledger plan point 4): generate_nonce first in a
+    # left_path split, measurements in the right branch, SIG last
+    assert [b["ASP_ID"] for b in bodies] == ["generate_nonce", "hashfile"]
+    assert bodies[0]["ASP_ARGS"] == {"asp_targid": "nonce_targ", "bytes": 32}
+    assert request["TERM"]["TERM_BODY"][0]["TERM_BODY"][0] == "left_path"
+    assert request["TERM"]["TERM_BODY"][1] == _SIG
+    types = request["ATTESTATION_SESSION"]["Session_Context"]["ASP_Types"]
+    assert "generate_nonce" in types and "nonce_appr" in types
+    assert request["ATTESTATION_SESSION"]["Session_Context"]["ASP_Comps"]["generate_nonce"] == "nonce_appr"
+    args = bodies[1]["ASP_ARGS"]
     assert args["filepath"] == str(mirror_path(golden_root, live))  # measures golden copy
     assert args["asp_id_appr"] == "hashfile"
     assert "golden_b64" not in args and "golden_ts" not in args

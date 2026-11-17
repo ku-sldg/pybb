@@ -1,0 +1,5 @@
+{
+  "name": "attestation toolchain measurement",
+  "description": "identity of the attestation stack: CVM, verified summarizer, ASP executables, verifying key (docs/ledger_plan.md B.8); provisioning this protocol is the blessing",
+  "copland": "lseq( lseq( bseq( hashfile\u00d728 ), SIG ), APPR )"
+}

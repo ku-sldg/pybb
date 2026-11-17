@@ -181,6 +181,28 @@ dependencies (`vstd`/`verus_builtin`), which takes several minutes once.
 Only one demo can run at a time (they share a lock — see
 troubleshooting below).
 
+## Attestation ledger (optional)
+
+The ledger records every attestation run in immudb and mirrors evidence to
+a git repository of your choice; see [ledger.md](ledger.md) for the model
+and day-to-day use. Nothing below is needed for the demos.
+
+1. Build asp-libs so `target/release` includes `generate_nonce`,
+   `nonce_appr`, `hashevidence` and `magic_appr` (the default `make` does).
+2. `scripts/immudb_dev.sh install` — Homebrew `immudb` 1.11+ and its
+   launchd service; `pip install -e '.[ledger]'` for the Python client.
+3. `export PYBB_IMMUDB_PASSWORD='<8-32 chars, upper+lower+digit+symbol>'`
+   then `scripts/immudb_dev.sh bootstrap` (database `pybb`, user `pybb`),
+   and `scripts/immudb_dev.sh rotate-admin NEWPASS` once.
+4. `python examples/provision_tools.py` — bless the attestation stack.
+5. Optional: clone your evidence repository and `export
+   PYBB_EVIDENCE_REPO=<clone path>`; `python examples/ledger_push.py`
+   after an episode, `python examples/ledger_reconcile.py` to check.
+
+Tests: `pytest -m ledger` runs the immudb backend tests against an
+ephemeral server (skipped when `immudb` is not on PATH); the real-CVM
+ledger tests are under the `cvm` marker.
+
 ## Environment overrides
 
 Everything works with no environment setup. For non-standard layouts:
@@ -191,6 +213,11 @@ Everything works with no environment setup. For non-standard layouts:
 | `ASP_BIN` | ASP binaries dir (default `~/Claude_workspace/asp-libs/target/release`) |
 | `COPLAND_EVIDENCE_TOOLS` | evidence summarizer binary (optional feature) |
 | `VERUS_DIST` | Verus distribution dir (default `~/Claude_workspace/verus-dist`) |
+| `PYBB_IMMUDB_USER` / `PYBB_IMMUDB_PASSWORD` | ledger user (default `pybb`) and its password |
+| `PYBB_EVIDENCE_REPO` | local clone of the evidence repository (ledger mirror and blob store) |
+| `PYBB_GOLDEN_ROOT` | golden root the ledger reads blessings from (default `golden`) |
+| `PYBB_VERIFY_KEY` | verifying public key fingerprinted into ledger records |
+| `PYBB_PROVISION_NONCE` | `0` restores nonce-less provisioning bundles (hosts without `generate_nonce`) |
 
 Note that the *attested tool wrappers* in `~/Claude_workspace/bin`
 hardcode the canonical layout — if you relocate a toolchain, re-bless
