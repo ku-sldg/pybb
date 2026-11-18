@@ -595,7 +595,9 @@ class LedgerConfig(BaseModel):
     verify_key_path: str = Field(default_factory=lambda: os.environ.get(
         "PYBB_VERIFY_KEY",
         os.path.expanduser("~/Claude_workspace/asp-libs/common_files/unsecure_pub_key_dont_use.pem")))
-    evidence_repo: Optional[str] = Field(default_factory=lambda: os.environ.get("PYBB_EVIDENCE_REPO"))
+    # PYBB_EVIDENCE_REPO, else the clone path written to <state_dir>/evidence_repo
+    evidence_repo: Optional[str] = Field(default_factory=lambda: os.environ.get("PYBB_EVIDENCE_REPO")
+                                         or _read_secret(os.path.expanduser("~/.pybb/evidence_repo")) or None)
     # where provisioning bundles live (<golden_root>/_bundles/<pid>/); the
     # attestation_tools blessing is read from here (B.8)
     golden_root: str = Field(default_factory=lambda: os.environ.get("PYBB_GOLDEN_ROOT", "golden"))

@@ -44,9 +44,13 @@ The one check pybb owns is refusing a nonce the ledger already holds.
    only time the tools are measured under the default cadence; repeat it
    after rebuilding asp-libs or the CVM.
 4. **Evidence repository** (optional until you want durability). Clone any
-   git repository you choose, protect its default branch against
-   force-pushes, and set `PYBB_EVIDENCE_REPO` to the clone's path. The
-   repository's `owner/name` is read from its `origin` remote.
+   git repository you choose and set `PYBB_EVIDENCE_REPO` to the clone's
+   path, or write the path to `~/.pybb/evidence_repo`. The repository's
+   `owner/name` is read from its `origin` remote. Protect its default
+   branch against force-pushes where the hosting plan allows (GitHub Free
+   organizations cannot protect private repositories); the mirror's
+   integrity rests on the ledger's hashes and state snapshots either way.
+   The project's repository is the private `ku-sldg/pybb-ledger`.
 
 ## Configuration
 
@@ -195,9 +199,11 @@ python examples/ledger_restore.py replay  <clone> --into-immudb   # content rest
 python examples/ledger_restore.py exact   <clone> --db pybb       # prints the immuadmin hot-restore command
 ```
 
-`verify` must pass before anything is loaded. `replay` writes one batch per
-journal line with the mirrored canonical values; the new instance has new tx
-ids, and a `restore` record names the source commit. `exact` restores an
+`verify` must pass before anything is loaded. Journal tx ids strictly
+increase but are not contiguous on immudb, because SQL mirror and DDL
+transactions carry no records. `replay` writes one batch per journal line
+with the mirrored canonical values; the new instance has new tx ids, and a
+`restore` record names the source commit. `exact` restores an
 identical instance from backup segments so the old client state still
 verifies. The full procedure and its timing estimate are in plan section H.4.
 
@@ -215,3 +221,7 @@ verifies. The full procedure and its timing estimate are in plan section H.4.
   force, not that the binaries were unchanged at run time.
 - Legacy bundles (provisioned before nonces) are recorded by content hash
   with `assurance: signed` until the protocol is re-provisioned.
+- Provisioning overwrites `golden/_bundles/<pid>/provision_bundle.json`. A
+  bundle re-blessed before its predecessor was pushed leaves the older
+  bundle record pointing at bytes that no longer exist; push after every
+  blessing, or expect that record to stay pending in `ledger_reconcile.py`.

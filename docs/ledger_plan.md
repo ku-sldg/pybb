@@ -76,8 +76,21 @@ to decode when a verdict failed — fixed on rust-am-lib branch
 the fix is upstream. Note: an audit of an appraisal package re-judges the
 retained measurement outputs with their real companions, so its `passed`
 follows the recorded verdict while `signature_ok`/`nonce_wellformed`/
-`binding_ok` carry the authenticity result. Still operator-owned: the
-evidence repository; commits of the Rocq-test changes.**
+`binding_ok` carry the authenticity result.
+**Evidence repository created 2026-11-18:** private `ku-sldg/pybb-ledger`,
+cloned to `~/Claude_workspace/pybb-ledger` (path in `~/.pybb/evidence_repo`,
+read by `LedgerConfig.evidence_repo`). First push: 31 blobs, all records,
+journal txs 1–97, state tx 99, 31 verified `github` locators; reconcile
+clean. Findings: (1) branch protection is unavailable on a private repo in
+a GitHub Free organization (403 "upgrade to Pro or make public") — the
+mirror's integrity rests on the ledger's hashes and the mirrored state
+files, not on GitHub; (2) the first blessing's bundle bytes are gone —
+provisioning overwrites `golden/_bundles/<pid>/provision_bundle.json`, and
+the re-blessing happened before any push, so one `bundle` record stays
+pending forever (follow-up: archive each bundle content-addressed at
+blessing time, or push after every blessing); (3) journal tx ids are not
+contiguous on immudb (SQL mirror/DDL transactions carry no records) —
+`verify_mirror` now requires strictly increasing ids, not contiguity.**
 
 Goal: bind a fresh nonce to a Copland evidence structure, push the
 structure (or a pointer to it) to an append-only, cryptographically

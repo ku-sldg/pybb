@@ -499,11 +499,14 @@ def verify_mirror(repo_path: str | Path) -> MirrorReport:
     rep = MirrorReport()
     journal = read_journal(root)
     rep.txs = len(journal)
-    expect = 1
+    # tx ids must strictly increase; they need not be contiguous, because an
+    # immudb ledger interleaves SQL transactions (mirror rows, DDL) that carry
+    # no records and therefore no journal line
+    last_tx = 0
     for line in journal:
-        if line["tx"] != expect:
-            rep.problems.append(f"journal gap: expected tx {expect}, found {line['tx']}")
-        expect = line["tx"] + 1
+        if line["tx"] <= last_tx:
+            rep.problems.append(f"journal order: tx {line['tx']} after tx {last_tx}")
+        last_tx = line["tx"]
         for key, csha in line["keys"].items():
             f = _record_file_for_key(root, key)
             if f is None:
