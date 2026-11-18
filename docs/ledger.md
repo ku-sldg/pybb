@@ -208,6 +208,16 @@ with the mirrored canonical values; the new instance has new tx ids, and a
 identical instance from backup segments so the old client state still
 verifies. The full procedure and its timing estimate are in plan section H.4.
 
+## Other members
+
+Anyone can read the public mirror and run the fetch, audit, and verify
+tooling against it. Pushing needs write access on `ku-sldg/pybb-ledger`,
+and the ledger behind it is a single immudb instance: the repository
+layout assumes one ledger per repository, so a second immudb must not
+push into it. The two ways to open it up — a shared immudb instance, or
+per-appraiser namespacing of the journal and state in the repo — are
+documented and awaiting a decision in plan section J.
+
 ## Limits to keep in mind
 
 - Freshness is post-hoc. A compromised CVM or ASP on the same host can

@@ -1019,6 +1019,42 @@ and `txById` returns the tx's keys as a list rather than the tx object.
    embed it. `protocol_id` stays: it names a Copland protocol
    configuration, with term/session/manifest hashes as its identity.
 
+## J. Open decision: multi-member use of the ledger (deferred 2026-11-18)
+
+Other ku-sldg members can already **read** the public mirror
+(`ku-sldg/pybb-ledger`) with nothing more than a clone; `fetch_run`, the
+audit scripts and `ledger_restore.py verify` work for anyone. Two things
+need a decision before they can **write**:
+
+1. **Repository permissions.** `ledger_push.py` needs write access on
+   `ku-sldg/pybb-ledger`, granted to an org team (candidates seen in the
+   org: `inspecta-team`, `caseteam`, `case`, `faa-a58`, `honeywell`) or to
+   named collaborators. Branch protection on `main` (no force-push, no
+   deletion, enforced for admins) does not block ordinary pushes. **No
+   grants made yet.**
+2. **A ledger they can reach.** The immudb behind the mirror is the
+   Homebrew service on the appraiser's laptop, and the repository layout
+   assumes **one ledger per repository**: `ledger/journal.jsonl` and
+   `ledger/state/` record one transaction sequence, so two independent
+   immudb instances pushing to the same repo would interleave tx ids and
+   fail `verify_mirror`. Options:
+   - **Shared immudb instance** (decision 3's deferred path): one server
+     on a lab host, TLS, one database user per appraiser; clients change
+     only `LedgerConfig` (host, port, credentials). Each member also needs
+     `pip install -e '.[ledger]'`, the ledger ASPs built from asp-libs
+     `ledger-asps` with rust-am-lib `ledger-verdict-b64`, and their own
+     blessing of their stack (`provision_tools.py`; tooling refs are
+     per host by design).
+   - **Per-appraiser namespacing in the repo**: `ledger/<appraiser_id>/
+     journal.jsonl` and `ledger/<appraiser_id>/state/`, blobs and records
+     staying shared and content-addressed. A modest change to
+     `ledger_repo.py` (`push_archive`, `last_journaled_tx`,
+     `verify_mirror`, `replay`, `reconcile`) and the simpler path when
+     members mostly work alone and share results.
+   Until one of these lands, a member can run pybb with a ledger of their
+   own (FileLedger or own immudb) and read the mirror, but must not push
+   into it.
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
