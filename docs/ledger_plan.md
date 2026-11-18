@@ -82,9 +82,12 @@ cloned to `~/Claude_workspace/pybb-ledger` (path in `~/.pybb/evidence_repo`,
 read by `LedgerConfig.evidence_repo`). First push: 31 blobs, all records,
 journal txs 1–97, state tx 99, 31 verified `github` locators; reconcile
 clean. Findings: (1) branch protection is unavailable on a private repo in
-a GitHub Free organization (403 "upgrade to Pro or make public") — the
-mirror's integrity rests on the ledger's hashes and the mirrored state
-files, not on GitHub; (2) the first blessing's bundle bytes are gone —
+a GitHub Free organization (403 "upgrade to Pro or make public"); on
+2026-11-18 the repository was made **public** (pybb itself is public, so
+the model bytes are not new exposure; the records do embed local archive
+paths) and `main` is now protected against force-pushes and deletion,
+enforced for admins — the mirror's integrity still rests on the ledger's
+hashes and the mirrored state files first; (2) the first blessing's bundle bytes are gone —
 provisioning overwrites `golden/_bundles/<pid>/provision_bundle.json`, and
 the re-blessing happened before any push, so one `bundle` record stays
 pending forever (follow-up: archive each bundle content-addressed at
@@ -618,8 +621,9 @@ remote or a separate process on the same host.
 ## H. Evidence repo: durable blobs, ledger mirror, and restore
 
 Decisions 2 and 5 (resolved): the ledger is **pointer-primary** — no
-evidence bytes inside immudb — and a separate, **private** GitHub
-repository — **any repository the operator chooses**: `LedgerConfig.
+evidence bytes inside immudb — and a separate GitHub repository (private
+by the original decision; made public on 2026-11-18, see the status note)
+— **any repository the operator chooses**: `LedgerConfig.
 evidence_repo` (env `PYBB_EVIDENCE_REPO`) names a local clone and the
 locators' `repo` slug is read from its `origin` remote; nothing in the
 code assumes a name — is the durable store

@@ -47,10 +47,11 @@ The one check pybb owns is refusing a nonce the ledger already holds.
    git repository you choose and set `PYBB_EVIDENCE_REPO` to the clone's
    path, or write the path to `~/.pybb/evidence_repo`. The repository's
    `owner/name` is read from its `origin` remote. Protect its default
-   branch against force-pushes where the hosting plan allows (GitHub Free
-   organizations cannot protect private repositories); the mirror's
-   integrity rests on the ledger's hashes and state snapshots either way.
-   The project's repository is the private `ku-sldg/pybb-ledger`.
+   branch against force-pushes and deletion; the mirror's integrity rests
+   on the ledger's hashes and state snapshots either way. The project's
+   repository is `ku-sldg/pybb-ledger`, public (like `ku-sldg/pybb`, whose
+   model bytes the bundles contain) with `main` protected. Note that
+   records embed the appraiser's local archive paths.
 
 ## Configuration
 
