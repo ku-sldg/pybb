@@ -631,7 +631,7 @@ def status_flow(cfg: RocqExampleConfig, protocols: dict, ready: bool,
             print(f"  problem: {p}")
     if not status:
         return
-    verdict = _attestation(CvmSubprocessClient(), protocols)(
+    verdict = _attestation(CvmSubprocessClient(), protocols, archive_dir=EVIDENCE_DIR)(
         attestation_request(cfg.verification_id))
     checklist = _checklist(cfg, protocols, verdict, isolate=True)
     if ready and not report:
@@ -772,7 +772,7 @@ def _closing_verdict(cfg: RocqExampleConfig, protocols: dict, verdict,
         return verdict
     print("\nre-measuring for the closing report: the last attested verdict "
           "may predate accepted candidates")
-    return _attestation(CvmSubprocessClient(), protocols)(
+    return _attestation(CvmSubprocessClient(), protocols, archive_dir=EVIDENCE_DIR)(
         attestation_request(cfg.verification_id))
 
 

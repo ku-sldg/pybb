@@ -1,148 +1,118 @@
-# Ledger records
+# Ledger records (schema v2)
 
 The attestation ledger stores one JSON record per key. Records are pydantic
 models in `pybb/attestation/ledger.py`, serialized in canonical form (sorted
-keys, no whitespace, UTF-8); `content_sha256` in the journal and the SQL
-mirror is the hash of exactly those bytes. Schema tag: `pybb-ledger/v1`.
-Unknown fields are preserved on read, so additions within v1 do not break
-older readers.
+keys, no whitespace, UTF-8, `null` members omitted); `content_sha256` in the
+journal and the SQL mirror is the hash of exactly those bytes. Schema tag:
+`pybb-ledger/v2`. Unknown fields are preserved on read, so additions within
+v2 do not break older readers. v1 records (`pybb-ledger/v1`, the seven-kind
+schema) remain readable through `pybb/attestation/ledger_v1.py`; nothing
+writes them.
 
-Keys: `nonce/<nid>`, `evidence/<nid>`, `verdict/<nid>`, `appraisal/<nid>/<seq>`,
-`locator/<nid>/<seq>`, `bundle/<nid>` (legacy: `bundle/sha256:<hash>`),
-`restore/<created_at>`. `nid` is the sha256 of the run's nonce bytes.
+Four kinds, four key shapes:
+
+| key | kind | one per |
+|---|---|---|
+| `bundle/<bid>` (legacy: `bundle/sha256:<blob hash>`) | `bundle` | CVM run output: a measurement, an appraisal, a provisioning bundle, a (planned) challenge |
+| `judged_by/<bid>/<appraisal bid>` | `judged_by` | appraisal, pointing from the bundle it judged |
+| `mirror/<store>/<state_tx>` | `mirror` | push to an evidence store |
+| `restore/<created_at>` | `restore` | restore of the ledger from a mirror |
+
+`bid` is the **bundle id**: the sha256 of the nonce the CVM's `generate_nonce`
+ASP drew inside that run. A bundle and its nonce are one thing; a replayed
+or duplicated package has a bid the ledger already holds and is refused
+(pybb checks, and immudb enforces it with a `keyMustNotExist` precondition
+on every `bundle/` key).
 
 ## Envelope (every record)
 
 | field | type | description |
 |---|---|---|
-| `schema` | string | `"pybb-ledger/v1"` |
-| `kind` | string | `nonce`, `evidence`, `verdict`, `appraisal`, `locator`, `bundle`, `restore` |
-| `nid` | hex or null | nonce id the record belongs to; null on legacy bundles, absent on restores |
+| `schema` | string | `"pybb-ledger/v2"` |
+| `kind` | string | `bundle`, `judged_by`, `mirror`, `restore` |
+| `bid` | hex | on bundles: the bundle id (absent on legacy nonce-less bundles); on `judged_by`: the judged bundle |
 | `created_at` | RFC 3339 UTC | when pybb built the record (the ledger's own transaction order is authoritative) |
 | `committer_fp` | `sha256:<hex>` | fingerprint of the verifying public key pybb trusts |
 | `pybb_version` | string | package version that wrote the record |
 | `appraiser_id` | string | opaque, stable id of the pybb installation; never a hostname or user name |
 
-## `nonce/<nid>`
+## `bundle/<bid>`
 
-One per nonce. A nonce is generated inside the CVM by the `generate_nonce`
-ASP and recorded after the run; it gives a package identity, binds it under
-the signature, and lets the ledger refuse a replayed package.
-
-| field | type | description |
-|---|---|---|
-| `nonce_b64` | base64 | the nonce bytes (stored in clear; unpredictability before use is what matters) |
-| `nonce_bytes` | int | nonce length; validated against the bytes |
-| `role` | `measurement` or `appraisal` | the run's own nonce, or an appraiser nonce from an appraisal run |
-| `for_nid` | hex or null | for an appraiser nonce, the run it judged |
-| `state` | string | `committed` today; `issued`, `bound`, `consumed`, `expired` under the planned pre-registration |
-| `freshness` | `post-hoc`, `pre-registered`, `none` | what the nonce proves: today always `post-hoc` |
-| `protocol_id` | string | the Copland protocol configuration the run used |
-
-Validation: `nid == sha256(nonce)`; an appraiser nonce must carry `for_nid`.
-
-## `evidence/<nid>`
-
-One per run: describes the raw signed package from the measurement run
-(nonce, measurements, signature) and where its bytes are. Never holds the
-bytes.
+What every CVM run produces: a signed, nonce'd package that pybb archived,
+hashed and laid out. What the bundle is evidence *of* is its `role` and its
+`inputs`.
 
 | field | type | description |
 |---|---|---|
-| `protocol_id` | string | protocol run |
-| `term_sha256`, `session_sha256`, `manifest_sha256` | hex | hashes of the protocol files used, so "same configuration" is a comparison |
+| `role` | `measurement`, `appraisal`, `provision`, `challenge` | a measurement of the target system; an appraisal of another bundle; a provisioning bundle (signed golden baseline, including the tooling blessing); a pre-registered challenge (section G, planned) |
+| `protocol_id` | string | the protocol configuration the run belongs to (for an appraisal: the protocol it appraises) |
+| `term_sha256`, `session_sha256`, `manifest_sha256` | hex | hashes of the exact term/session/manifest the CVM ran; for an appraisal these pin the **appraisal policy** (companion map, goldens) |
 | `response_sha256` | hex | hash of the package's canonical JSON; the stable identity of the evidence |
-| `blob_sha256` | hex | hash of the archived bytes exactly as stored (gzip is not reproducible); what every fetch verifies and what names the blob in the evidence repo |
-| `blob_bytes` | int | size of the archived blob |
-| `encoding` | string | `gzip+json` |
+| `blob` | BlobRef | the archived bytes: hash, size, encoding and every known location |
 | `rawev_count` | int | number of RawEv slots |
-| `rawev_sha256` | hex | sha256 over the flattened RawEv bytes, which is what the `hashevidence` ASP computes; appraisal bindings compare to it |
+| `rawev_sha256` | hex | sha256 over the flattened RawEv bytes, which is what the `hashevidence` ASP computes; an appraisal's binding compares to it |
+| `nonce` | NonceInfo or absent | the run's nonce: slot, producing event, and the bytes in clear (unpredictability before use is what matters, not secrecy after); absent only on legacy nonce-less provisioning bundles |
 | `signature` | SignatureInfo | where the signature slot is and who signed |
-| `nonce` | SlotRef | where the nonce slot is and which event produced it |
 | `assurance` | `signed+nonce`, `signed`, `nonce`, `none` | computed from the package as produced |
-| `freshness` | enum | as on the nonce record |
-| `exception_reason` | string or null | set only when the run committed below the configured minimum assurance through an explicit exception |
-| `tooling` | ToolingRef or null | the Copland evidence identifying the binaries in force (the tooling blessing) |
-| `locators` | list of Locator | where the bytes were at commit time (the local path); later places are `locator` records |
+| `freshness` | `post-hoc`, `pre-registered`, `none` | what the nonce proves: `post-hoc` today (binding, uniqueness, order; not a challenge) |
+| `exception_reason` | string or absent | set only when the run committed below the configured minimum assurance through an explicit exception |
+| `tooling` | ToolingRef or absent | the Copland evidence identifying the binaries in force (the tooling blessing) |
+| `error` | string | non-empty on a measurement whose live appraisal never happened: why |
+| `inputs` | list of InputRef, appraisal only (and a challenged measurement) | the bundles this run took as initial evidence: an appraisal names the one bundle it judged; a challenged measurement names its challenge |
+| `verdict` | Verdict, appraisal only | the reading of this appraisal package |
+| `appraisal_kind` | string, appraisal only | caller-chosen label: `live` (the appraisal run right after the measurement), `audit`, or a policy name such as `slices-only` |
+| `provision` | ProvisionInfo, provision only | goldens timestamp and target count |
+| `state`, `challenge` | challenge only | section G lifecycle (`issued`, `bound`, `consumed`, `expired`) and the challenge's metadata; the only key the appraiser ever writes twice |
 
-Durability (two locator kinds resolving) is derived at read time, never
-stored.
+Validation: `bid == sha256(nonce bytes)`; an appraisal has `inputs` and a
+`verdict`, no other role carries a verdict or `appraisal_kind`; a challenged
+measurement names exactly one input; a challenge has a `state`.
 
-## `verdict/<nid>`
+### What a run writes
 
-One per run: the queryable summary of the live appraisal.
+| event | batch |
+|---|---|
+| live run (two CVM invocations) | `bundle/<mid>` (measurement) + `bundle/<abid>` (appraisal, `inputs=[mid]`, `appraisal_kind: live`) + `judged_by/<mid>/<abid>` |
+| later appraisal of a measurement (`appraise_bundle`), same or different policy | `bundle/<abid2>` (`inputs=[mid]`, `appraisal_kind` set, `session_sha256` pinning the policy) + `judged_by/<mid>/<abid2>` |
+| appraisal of an appraisal bundle (plan B.6: signature, appraiser nonce and binding judged inside the CVM) | `bundle/<abid3>` with `inputs=[abid]` + `judged_by/<abid>/<abid3>` |
+| provisioning / tooling blessing | `bundle/<bid>` (`provision`) |
 
-| field | type | description |
-|---|---|---|
-| `protocol_id` | string | protocol run |
-| `passed` | bool | overall verdict |
-| `components_total` | int | appraised components |
-| `components_failed` | int | failing components |
-| `failing` | list of FailingComponent | the failures with their reasons |
-| `components_sha256` | hex | hash of the full component list, archived as a blob |
-| `appraisal_seq` | int | which appraisal record the components came from (1, the live one) |
-| `evidence_assurance` | enum | assurance of the raw package |
-| `appraisal_assurance` | enum | assurance of the live appraisal package |
-| `interpreter` | Interpreter | how the components were read |
-| `error` | string | non-empty when the run itself failed; then `passed` is false and the lists are empty |
+## `judged_by/<bid>/<appraisal bid>`
 
-## `appraisal/<nid>/<seq>`
-
-One per appraisal run over a run's package. Seq 1 is the live appraisal;
-later seqs are audits. An appraisal run is itself a signed, nonce-bound
-Copland package bound to the judged package by a `hashevidence` slot.
+A pointer written in the same batch as every appraisal bundle, so "every
+appraisal of bundle X" is one prefix scan (`immuclient scan --prefix
+judged_by/<bid>/`) with no secondary index. Nothing is sequenced; ledger
+transaction order is the order.
 
 | field | type | description |
 |---|---|---|
-| `seq` | int | order within the run |
-| `mode` | `live` or `audit` | live appraisal, or a later audit |
-| `anid` | hex | the appraiser nonce's id |
-| `response_sha256`, `blob_sha256`, `blob_bytes`, `encoding`, `rawev_sha256` | as on evidence | the appraisal package's own hashes |
-| `binding` | Binding | the `hashevidence` slot that ties this appraisal to the exact package it judged |
-| `signature` | SignatureInfo | the appraiser's signature slot |
-| `nonce` | SlotRef | the appraiser nonce slot |
-| `assurance` | enum | of the appraisal package |
-| `freshness` | enum | copied from the run's nonce |
-| `passed` | bool | the appraisal's verdict |
-| `components_sha256` | hex | hash of this appraisal's component list |
-| `interpreter` | Interpreter | `verified-summary` for live and raw-package audits; `legacy-walker` for audits of appraisal packages |
-| `tooling` | ToolingRef or null | binaries in force for this appraisal |
-| `checks` | map of bool | audit only: `ledger_verified`, `bytes_match`, `nid_ok` |
-| `locator_used` | Locator or null | audit only: which copy of the package was judged |
-| `agrees_with_recorded_verdict` | bool or null | audits of the raw package: agreement with `verdict/<nid>`; null otherwise |
-| `audits_seq` | int or null | set when this record audits an appraisal package: the seq of the appraisal judged |
+| `bid` | hex | the judged bundle |
+| `appraisal_bid` | hex | the appraisal bundle |
 
-## `locator/<nid>/<seq>`
+## `mirror/<store>/<state_tx>`
 
-One per place a blob can be found, appended by pushes to the evidence repo
-and by audits. Never rewritten.
+One per push to an evidence store (`ledger_repo.push_archive`). Bundles
+state at commit time where their bytes are and will be (`blob.locations`:
+`local` plus the content-addressed path in each configured store); a
+mirror record witnesses that a push happened and what it carried. The key's
+`<store>` is the store id with `:` and `/` replaced by `-`
+(`github:ku-sldg/pybb-ledger` → `github-ku-sldg-pybb-ledger`); `<state_tx>`
+is the ledger head the push captured, zero-padded to 12 digits.
 
 | field | type | description |
 |---|---|---|
-| `seq` | int | order within the run |
-| `target` | `evidence`, `appraisal`, `components`, `bundle` | which blob |
-| `blob_sha256` | hex | the exact bytes it locates |
-| `locator` | Locator | where |
-| `verified` | bool | the writer re-read the bytes at that location and matched the hash |
+| `store` | string | store id: `github:owner/name`, or `git:<name>` for a non-hosted remote |
+| `repo` | string | the remote's `owner/name` (or basename) |
+| `commit` | hex | the git commit the push made |
+| `state_tx`, `state_hash` | int, hex | the ledger head (`tx_id`, `tx_hash_hex`) written to `ledger/state/<tx>.json` |
+| `journal_from_tx`, `journal_to_tx` | int | the journal lines this push appended |
+| `blobs` | int | blobs carried |
+| `blob_hashes_sha256` | hex | sha256 over the sorted, concatenated hashes of those blobs |
+| `skipped` | list of `{blob_sha256, reason}` | stated blobs the push could not carry (`local bytes missing`, `local bytes mismatch`) |
 
-## `bundle/<nid>`
-
-One per provisioning bundle (a signed golden baseline). Shaped like an
-evidence record without a verdict. Legacy bundles, provisioned before
-nonces, key by content hash with `nid` and `nonce` null and
-`assurance: signed`.
-
-| field | type | description |
-|---|---|---|
-| `protocol_id` | string | provisioned protocol |
-| `response_sha256`, `blob_sha256`, `blob_bytes`, `encoding`, `rawev_count`, `rawev_sha256` | as on evidence | the bundle's hashes (`encoding` is `json`) |
-| `golden_ts` | string | the goldens' timestamp |
-| `targets` | int | number of golden targets |
-| `signature` | SignatureInfo | signature slot |
-| `nonce` | SlotRef or null | nonce slot; null on legacy bundles |
-| `assurance`, `freshness` | enum | as on evidence |
-| `tooling` | ToolingRef or null | blessing in force; null for the tooling bundle itself |
-| `locators` | list of Locator | where the bundle file is |
+A stated location is **durable** when the clone (or the remote) has the file
+at that path and it hashes to its name; `reconcile` reports stated-but-absent
+blobs as pending. Nothing is derived from mirror records alone.
 
 ## `restore/<created_at>`
 
@@ -158,13 +128,35 @@ One per restore of a ledger from the evidence repo.
 
 ## Nested models
 
-**SlotRef** — where an event's output sits in the flat RawEv list.
+**BlobRef** — archived bytes.
+
+| field | type | description |
+|---|---|---|
+| `blob_sha256` | hex | hash of the archived bytes exactly as stored (gzip is not reproducible); what every fetch verifies and what names the blob in a store |
+| `blob_bytes` | int | size |
+| `encoding` | string | `gzip+json` (packages, component lists) or `json` (provision bundles) |
+| `locations` | list of Location | every place the bytes are or will be |
+
+**Location**
+
+| field | type | description |
+|---|---|---|
+| `store` | string | `local`, or a store id such as `github:owner/name` |
+| `path` | string | file path (local) or path inside the store (`blobs/<sha256>.json.gz`) |
+
+**NonceInfo** — the bundle's nonce.
 
 | field | type | description |
 |---|---|---|
 | `slot` | int | RawEv index |
-| `asp` | string | ASP that produced it |
-| `asp_targid` | string or null | pybb's target id for the event |
+| `asp` | string | `generate_nonce` |
+| `asp_targid` | string | `nonce_targ` (measurement, provision) or `appraiser_nonce_targ` (appraisal) |
+| `b64` | base64 | the nonce bytes |
+| `bytes` | int | nonce length; validated against the bytes |
+
+**SlotRef** — where an event's output sits in the flat RawEv list (`slot`,
+`asp`, `asp_targid`); the base of NonceInfo and the shape `describe_package`
+reports.
 
 **SignatureInfo**
 
@@ -174,44 +166,42 @@ One per restore of a ledger from the evidence repo.
 | `slot` | int or null | its RawEv index |
 | `asp` | string or null | `sig` or `sig_tpm` |
 | `signer_fp` | string or null | fingerprint of the verifying key |
-| `verified` | bool or null | set only by a CVM-native audit (`sig_appr` verdict); never by pybb |
+
+**InputRef** — a bundle this run took as initial evidence.
+
+| field | type | description |
+|---|---|---|
+| `bid` | hex | the input bundle (legacy: `sha256:<blob hash>`) |
+| `binding_slot` | int | RawEv index of the `hashevidence` output in this appraisal package |
+| `binding_hash` | hex | the hash it computed over the judged bundle's RawEv; equals that bundle's `rawev_sha256` |
+
+**Verdict** — an appraisal bundle's reading.
+
+| field | type | description |
+|---|---|---|
+| `passed` | bool | overall verdict |
+| `components_total`, `components_failed` | int | appraised components and failures |
+| `failing` | list of FailingComponent | the failures with their reasons |
+| `components_sha256` | hex | hash of the full component list |
+| `components_blob` | BlobRef or absent | the archived component list |
+| `interpreter` | Interpreter | how the components were read |
+| `checks` | map of bool | appraisals of a stored bundle: `ledger_verified`, `bytes_match`, `bid_ok` |
+| `agrees_with_live` | bool or absent | a later appraisal under the same session: agreement with the measurement's live appraisal; absent otherwise |
+
+**FailingComponent**: `targ_id`, `appr_asp`, `reason`.
+
+**Interpreter**: `kind` (`verified-summary` or `legacy-walker`), `tool` (a
+name, never a hash; tool identity is the `tooling` reference).
 
 **ToolingRef**
 
 | field | type | description |
 |---|---|---|
 | `kind` | `bundle` or `run` | the tooling blessing bundle, or a tooling run under a re-measurement cadence |
-| `ref` | string | the bundle's sha256, or the run's nonce id |
+| `ref` | string | the bundle's sha256, or the run's bundle id |
 
-**Locator**
+**ProvisionInfo**: `golden_ts` (the goldens' timestamp), `targets` (number of
+golden targets).
 
-| field | type | description |
-|---|---|---|
-| `kind` | `local` or `github` | where |
-| `path` | string | file path, or path inside the repository |
-| `appraiser_id` | string or null | local: whose filesystem |
-| `repo`, `commit`, `git_blob_sha` | string or null | github: `owner/name`, commit, git blob id |
-
-**Binding**
-
-| field | type | description |
-|---|---|---|
-| `slot` | int | RawEv index of the `hashevidence` output |
-| `asp` | string | `hashevidence` |
-| `evidence_hash` | hex | the hash it computed over the judged package |
-| `matches_evidence` | bool or null | the `goldenbytes_appr` verdict from a CVM-native audit of this appraisal package; null until one has run |
-
-**FailingComponent**
-
-| field | type | description |
-|---|---|---|
-| `targ_id` | string or null | the failing target |
-| `appr_asp` | string | the appraiser that failed it |
-| `reason` | string | its reason text |
-
-**Interpreter**
-
-| field | type | description |
-|---|---|---|
-| `kind` | `verified-summary` or `legacy-walker` | the verified summarizer, or pybb's slot-layout reader |
-| `tool` | string | tool name (never a hash; tool identity is the `tooling` reference) |
+**ChallengeInfo** (section G, planned): `requested_protocol`, `requester`,
+`issued_at`, `expires_at`.

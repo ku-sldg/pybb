@@ -65,11 +65,11 @@ def attestation_request(protocol_id: str) -> dict:
     return {"protocol": protocol_id}
 
 
-def ledger_request(nid: str) -> dict:
+def ledger_request(bid: str) -> dict:
     """Measurement descriptor for an audit entry: re-appraise the run the
-    ledger holds under `nid` (docs/ledger_plan.md, B.5/E) instead of
+    ledger holds under `bid` (docs/ledger_plan.md, B.5/E/K.4) instead of
     measuring the live tree. Needs a ledger on the predicate."""
-    return {"ledger_nonce": nid}
+    return {"ledger_bundle": bid}
 
 
 class Verdict(BaseModel):
@@ -93,8 +93,8 @@ class Verdict(BaseModel):
     # the ledger key of its evidence record ("" when no ledger is configured)
     appraisal_ref: str = ""
     components_ref: str = ""
-    nonce_id: str = ""
-    ledger_ref: str = ""
+    bid: str = ""  # the measurement bundle id (sha256 of its nonce)
+    ledger_ref: str = ""  # `bundle/<appraisal bid>`: the appraisal bundle the verdict came from
 
     def __bool__(self) -> bool:
         return self.passed
@@ -168,7 +168,7 @@ def make_attestation_predicate(
     def predicate(measurement: dict) -> Verdict:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
-            if measurement.get("ledger_nonce"):
+            if measurement.get("ledger_bundle") or measurement.get("ledger_nonce"):
                 cache[key] = _audit_ledger(client, protocols, measurement, _archive,
                                            ledger, ledger_config)
             elif ledger is not None:
@@ -222,7 +222,7 @@ def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
                    archive: Any, ledger: Any, config: Any, tooling_resolver: Any = None) -> Verdict:
     """The nonce'd two-run flow (ledger_runs.attest_with_ledger) as a Verdict,
     carrying the tooling reference the B.8 cadence prescribes."""
-    from .ledger_runs import attest_with_ledger
+    from .ledger_runs import attest
 
     protocol_id = measurement.get("protocol", "")
     protocol = protocols.get(protocol_id)
@@ -230,40 +230,44 @@ def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
         return Verdict(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
     tooling = tooling_resolver.ref(protocol_id) if tooling_resolver is not None else None
-    r = attest_with_ledger(client, protocol, ledger, config, archive=archive, tooling=tooling)
+    r = attest(client, protocol, ledger, config, archive=archive, tooling=tooling)
     return Verdict(protocol=protocol_id, passed=r.passed, components=r.components,
                    error=r.error, evidence_ref=r.evidence_ref, appraisal_ref=r.appraisal_ref,
-                   components_ref=r.components_ref, nonce_id=r.nonce_id, ledger_ref=r.ledger_ref)
+                   components_ref=r.components_ref, bid=r.bid, ledger_ref=r.ledger_ref)
 
 
 def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
                   archive: Any, ledger: Any, config: Any) -> Verdict:
-    """Re-appraise a ledger-held run (ledger_runs.appraise_record) as a Verdict:
-    truthy iff the ledger reads verified, the bytes and nonce id matched,
-    and the fresh signed appraisal passed."""
-    from .ledger_runs import appraise_record
+    """Appraise a ledger-held bundle again (ledger_runs.appraise_bundle) as a
+    Verdict: truthy iff the ledger reads verified, the bytes and bundle id
+    matched, and the fresh signed appraisal passed. A disagreement with the
+    live appraisal is surfaced as the error, never re-decided."""
+    from .ledger_runs import appraise_bundle, live_appraisal_of
 
-    nid = measurement.get("ledger_nonce", "")
+    bid = measurement.get("ledger_bundle") or measurement.get("ledger_nonce", "")
     if ledger is None:
-        return Verdict(protocol="", passed=False, nonce_id=nid,
+        return Verdict(protocol="", passed=False, bid=bid,
                        error="ledger audit requested but no ledger is configured")
     try:
-        records = ledger.get(nid)
+        target = ledger.get(bid)
     except Exception as e:
-        return Verdict(protocol="", passed=False, nonce_id=nid, error=f"ledger run {nid}: {e}")
-    protocol_id = records.evidence.protocol_id
+        return Verdict(protocol="", passed=False, bid=bid, error=f"ledger bundle {bid}: {e}")
+    protocol_id = target.protocol_id
     protocol = protocols.get(protocol_id)
     if protocol is None:
-        return Verdict(protocol=protocol_id, passed=False, nonce_id=nid,
-                       error=f"unknown protocol '{protocol_id}' for ledger run {nid}")
-    rep = appraise_record(client, protocol, ledger, config, nid, archive=archive)
+        return Verdict(protocol=protocol_id, passed=False, bid=bid,
+                       error=f"unknown protocol '{protocol_id}' for ledger bundle {bid}")
+    rep = appraise_bundle(client, protocol, ledger, config, bid, archive=archive,
+                          appraisal_kind=measurement.get("appraisal_kind", "audit"))
     error = rep.error
-    if not error and rep.agrees_with_recorded_verdict is False:
+    if not error and rep.agrees_with_live is False:
+        live = live_appraisal_of(ledger, bid)
+        recorded = live.verdict.passed if live is not None and live.verdict is not None else None
         error = (f"audit verdict ({'pass' if rep.passed else 'fail'}) disagrees with the "
-                 f"recorded verdict ({'pass' if records.verdict.passed else 'fail'})")
+                 f"live appraisal ({'pass' if recorded else 'fail'})")
+    local = next((l.path for l in target.blob.locations if l.store == "local"), "")
     return Verdict(protocol=protocol_id, passed=bool(rep), components=rep.components, error=error,
-                   evidence_ref=records.evidence.locators[0].path if records.evidence.locators else "",
-                   appraisal_ref=rep.appraisal_ref, nonce_id=nid, ledger_ref=rep.ledger_ref)
+                   evidence_ref=local, appraisal_ref=rep.appraisal_ref, bid=bid, ledger_ref=rep.ledger_ref)
 
 
 def _interpret(response: dict, protocol: Any):

@@ -25,7 +25,7 @@ from pybb.attestation.ledger import (
 from pybb.attestation.ledger_runs import (
     appraisal_branch,
     appraisal_term,
-    attest_with_ledger,
+    attest,
     ledger_protocol,
     measurement_term,
 )
@@ -71,7 +71,7 @@ def proto() -> ProtocolDir:
 
 @pytest.fixture
 def config(tmp_path) -> LedgerConfig:
-    return LedgerConfig(state_dir=str(tmp_path / "state"), appraiser_id="ap-test",
+    return LedgerConfig(state_dir=str(tmp_path / "state"), appraiser_id="ap-test", evidence_repo="",
                         verify_key_path=str(tmp_path / "no-such-key.pem"))
 
 
@@ -109,7 +109,7 @@ def test_real_raw_package_lays_out_as_sig_nonce_measurements(proto):
     d = describe_package(RAW["PAYLOAD"], ledger_protocol(proto).session)
     assert [s.asp for s in d.spans] == ["sig", "generate_nonce"] + ["hashfile"] * 4
     assert d.nonce.slot == 1 and d.signature.slot == 0 and d.assurance == "signed+nonce"
-    assert d.nid == sha256_hex(base64.b64decode(RAW["PAYLOAD"][0]["RawEv"][1]))
+    assert d.bid == sha256_hex(base64.b64decode(RAW["PAYLOAD"][0]["RawEv"][1]))
 
 
 def test_real_appraisal_package_binds_the_raw_package(proto):
@@ -119,7 +119,7 @@ def test_real_appraisal_package_binds_the_raw_package(proto):
     assert [s.asp for s in appr.spans][:3] == ["sig", "generate_nonce", "hashevidence"]
     binding = base64.b64decode(APPR["PAYLOAD"][0]["RawEv"][2]).hex()
     assert binding == raw.rawev_sha256
-    assert appr.assurance == "signed+nonce" and appr.nid != raw.nid
+    assert appr.assurance == "signed+nonce" and appr.bid != raw.bid
 
 
 def test_appraisal_branch_is_the_pure_appr_evidence(proto):
@@ -149,7 +149,7 @@ def test_attest_with_ledger_commits_a_full_run(proto, config, tmp_path):
         archived[kind] = str(p)
         return str(p)
 
-    r = attest_with_ledger(client, proto, ledger, config, archive=archive)
+    r = attest(client, proto, ledger, config, archive=archive)
     assert r.error == "", r.error
     assert r.passed and len(r.components) == 6
     assert {c.appr_asp for c in r.components} == {"sig_appr", "nonce_appr", "goldenbytes_appr"}
@@ -158,34 +158,38 @@ def test_attest_with_ledger_commits_a_full_run(proto, config, tmp_path):
     assert len(client.requests) == 2
     assert client.requests[1]["EVIDENCE"] == RAW["PAYLOAD"], "run 2 appraises run 1's package"
 
-    run = ledger.get(r.nonce_id)
-    assert r.ledger_ref == f"evidence/{r.nonce_id}"
-    assert run.nonce.role == "measurement" and run.nonce.protocol_id == proto.protocol_id
-    assert run.evidence.assurance == "signed+nonce" and run.evidence.nonce.slot == 1
-    assert run.evidence.blob_sha256 == sha256_hex(Path(archived["response"]).read_bytes())
-    assert run.evidence.locators[0].appraiser_id == "ap-test"
-    assert run.verdict.passed and run.verdict.components_total == 6 and run.verdict.failing == []
-    assert run.appraisals[0].mode == "live" and run.appraisals[0].binding.evidence_hash == run.evidence.rawev_sha256
-    assert run.appraisals[0].binding.matches_evidence is None  # judged only by a CVM-native audit
-    assert run.appraiser_nonces[0].for_nid == r.nonce_id
-    assert {l.target for l in run.locators} == {"appraisal", "components"}
+    m = ledger.get(r.bid)
+    a = ledger.get(r.appraisal_bid)
+    assert r.ledger_ref == f"bundle/{r.appraisal_bid}"
+    assert m.role == "measurement" and m.protocol_id == proto.protocol_id and m.freshness == "post-hoc"
+    assert m.assurance == "signed+nonce" and m.nonce.slot == 1 and m.bid == sha256_hex(base64.b64decode(m.nonce.b64))
+    assert m.blob.blob_sha256 == sha256_hex(Path(archived["response"]).read_bytes())
+    assert [l.store for l in m.blob.locations] == ["local"] and m.appraiser_id == "ap-test"
+    assert m.verdict is None and m.inputs is None
+    assert a.role == "appraisal" and a.appraisal_kind == "live" and a.protocol_id == proto.protocol_id
+    assert a.inputs == [__import__("pybb.attestation.ledger", fromlist=["InputRef"]).InputRef(
+        bid=m.bid, binding_slot=2, binding_hash=m.rawev_sha256)]
+    assert a.verdict.passed and a.verdict.components_total == 6 and a.verdict.failing == []
+    assert a.verdict.components_blob.blob_sha256 == sha256_hex(Path(archived["components"]).read_bytes())
+    assert a.verdict.interpreter.kind in ("verified-summary", "legacy-walker")
+    assert ledger.appraisals_of(m.bid) == [a] and ledger.exists(f"judged_by/{m.bid}/{a.bid}")
     assert len(ledger) == 1  # one batch
 
 
 def test_duplicate_package_is_refused_and_fails_closed(proto, config, tmp_path):
     ledger = FileLedger(tmp_path / "ledger.jsonl")
-    first = attest_with_ledger(CannedClient(), proto, ledger, config)
+    first = attest(CannedClient(), proto, ledger, config)
     assert first.passed and first.ledger_ref
-    again = attest_with_ledger(CannedClient(), proto, ledger, config)  # same canned nonce
+    again = attest(CannedClient(), proto, ledger, config)  # same canned nonce
     assert not again.passed and "duplicate nonce" in again.error and again.ledger_ref == ""
     assert len(ledger) == 1
 
 
 def test_cvm_failures_fail_closed(proto, config, tmp_path):
     ledger = FileLedger(tmp_path / "ledger.jsonl")
-    r = attest_with_ledger(CannedClient(fail_on="measurement"), proto, ledger, config)
+    r = attest(CannedClient(fail_on="measurement"), proto, ledger, config)
     assert not r.passed and r.error.startswith("measurement run failed") and len(ledger) == 0
-    r = attest_with_ledger(CannedClient(fail_on="appraisal"), proto, ledger, config)
+    r = attest(CannedClient(fail_on="appraisal"), proto, ledger, config)
     assert not r.passed and r.error.startswith("appraisal run failed") and len(ledger) == 0
 
 
@@ -196,14 +200,14 @@ def test_assurance_policy_refuses_unsigned_runs_unless_excepted(proto, config, t
     assert et["EvidenceT_BODY"][1]["ASP_ID"] == "sig"
     raw["PAYLOAD"] = [{"RawEv": raw["PAYLOAD"][0]["RawEv"][1:]}, et["EvidenceT_BODY"][2]]
     ledger = FileLedger(tmp_path / "ledger.jsonl")
-    r = attest_with_ledger(CannedClient(raw=raw), proto, ledger, config)
+    r = attest(CannedClient(raw=raw), proto, ledger, config)
     assert not r.passed and "assurance nonce below minimum signed+nonce" in r.error
     assert len(ledger) == 0
     cfg = config.model_copy(update={"assurance_exceptions": {proto.protocol_id: "demo tier"}})
-    r = attest_with_ledger(CannedClient(raw=raw), proto, ledger, cfg)
+    r = attest(CannedClient(raw=raw), proto, ledger, cfg)
     assert r.error == "" and r.ledger_ref
-    ev = ledger.get(r.nonce_id).evidence
-    assert ev.assurance == "nonce" and ev.exception_reason == "demo tier"
+    m = ledger.get(r.bid)
+    assert m.assurance == "nonce" and m.exception_reason == "demo tier"
 
 
 def test_predicate_uses_ledger_flow_and_verdict_carries_refs(proto, config, tmp_path):
@@ -213,7 +217,8 @@ def test_predicate_uses_ledger_flow_and_verdict_carries_refs(proto, config, tmp_
                                            archive_dir=tmp_path / "evidence",
                                            ledger=ledger, ledger_config=config)
     verdict = predicate({"protocol": proto.protocol_id})
-    assert verdict and verdict.nonce_id and verdict.ledger_ref == f"evidence/{verdict.nonce_id}"
+    assert verdict and verdict.bid and verdict.ledger_ref.startswith("bundle/")
+    assert ledger.get(verdict.ledger_ref.split("/", 1)[1]).inputs[0].bid == verdict.bid
     for ref in (verdict.evidence_ref, verdict.appraisal_ref, verdict.components_ref):
         assert Path(ref).is_file() and ref.endswith(".json.gz")
     episode_dir = Path(verdict.evidence_ref).parent
@@ -233,7 +238,7 @@ def test_predicate_without_ledger_is_the_legacy_single_run(proto, tmp_path):
 
     predicate = make_attestation_predicate(Legacy(), {proto.protocol_id: proto})
     v = predicate({"protocol": proto.protocol_id})
-    assert not v and v.nonce_id == "" and v.ledger_ref == ""
+    assert not v and v.bid == "" and v.ledger_ref == ""
 
 
 # ── fetch and re-appraise from the ledger (plan B.5 / E) ─────────────────────
@@ -249,61 +254,74 @@ def _archiver(tmp_path):
     return archive
 
 
-def test_fetch_run_resolves_local_locator_and_checks_hash(proto, config, tmp_path):
-    from pybb.attestation.ledger_runs import fetch_run
+def test_fetch_bundle_resolves_local_location_and_checks_hash(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import fetch_bundle
     from pybb.attestation.ledger import LedgerError
 
     ledger = FileLedger(tmp_path / "ledger.jsonl")
-    r = attest_with_ledger(CannedClient(), proto, ledger, config, archive=_archiver(tmp_path))
-    fetched = fetch_run(ledger, r.nonce_id)
-    assert fetched.payload == RAW["PAYLOAD"] and fetched.locator.kind == "local"
+    r = attest(CannedClient(), proto, ledger, config, archive=_archiver(tmp_path))
+    fetched = fetch_bundle(ledger, r.bid)
+    assert fetched.payload == RAW["PAYLOAD"] and fetched.location.store == "local"
     # corrupt the archived bytes: the fetch refuses rather than returning them
     Path(r.evidence_ref).write_bytes(gzip.compress(b'{"PAYLOAD": "tampered"}'))
     with pytest.raises(LedgerError, match="sha256"):
-        fetch_run(ledger, r.nonce_id)
-    # no resolvable locator at all
+        fetch_bundle(ledger, r.bid)
+    # no resolvable location at all
     Path(r.evidence_ref).unlink()
-    with pytest.raises(LedgerError, match="no locator"):
-        fetch_run(ledger, r.nonce_id)
+    with pytest.raises(LedgerError, match="no location"):
+        fetch_bundle(ledger, r.bid)
 
 
-def test_appraise_record_appends_a_signed_audit(proto, config, tmp_path):
-    from pybb.attestation.ledger_runs import appraise_record
+def _distinct_appraisal(tag: int):
+    """The canned appraisal package carries the same appraiser nonce as the
+    live one; a real CVM draws a fresh one — give each appraisal a distinct
+    canned nonce."""
+    pkg = json.loads(json.dumps(APPR))
+    pkg["PAYLOAD"][0]["RawEv"][1] = base64.b64encode(bytes([tag]) * 32).decode()
+    return pkg
+
+
+def test_appraise_bundle_records_another_appraisal_of_the_measurement(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import appraise_bundle
 
     ledger = FileLedger(tmp_path / "ledger.jsonl")
     archive = _archiver(tmp_path)
-    live = attest_with_ledger(CannedClient(), proto, ledger, config, archive=archive)
-    # the canned appraisal package carries the same appraiser nonce as the live
-    # one; a real CVM draws a fresh one — give the audit a distinct canned nonce
-    audit_pkg = json.loads(json.dumps(APPR))
-    raw = audit_pkg["PAYLOAD"][0]["RawEv"]
-    raw[1] = base64.b64encode(bytes([7]) * 32).decode()
-    rep = appraise_record(CannedClient(appr=audit_pkg), proto, ledger, config, live.nonce_id,
-                          archive=archive)
+    live = attest(CannedClient(), proto, ledger, config, archive=archive)
+    rep = appraise_bundle(CannedClient(appr=_distinct_appraisal(7)), proto, ledger, config, live.bid, archive=archive)
     assert rep.error == "", rep.error
-    assert rep and rep.ledger_verified and rep.bytes_match and rep.nid_ok
-    assert rep.signature_ok is True and rep.nonce_wellformed is True
-    assert rep.agrees_with_recorded_verdict is True and rep.seq == 2
-    assert rep.ledger_ref == f"appraisal/{live.nonce_id}/2"
-    run = ledger.get(live.nonce_id)
-    assert [a.seq for a in run.appraisals] == [1, 2]
-    assert run.appraisals[1].mode == "audit" and run.appraisals[1].audits_seq is None
-    assert run.appraisals[1].checks == {"ledger_verified": True, "bytes_match": True, "nid_ok": True}
-    assert len(run.appraiser_nonces) == 2 and run.appraiser_nonces[1].nid == run.appraisals[1].anid
+    assert rep and rep.ledger_verified and rep.bytes_match and rep.bid_ok and rep.input_role == "measurement"
+    assert rep.signature_ok is True and rep.nonce_wellformed is True and rep.binding_ok is None
+    assert rep.agrees_with_live is True and rep.appraisal_kind == "audit"
+    assert rep.ledger_ref == f"bundle/{rep.appraisal_bid}"
+    of_m = ledger.appraisals_of(live.bid)
+    assert [a.appraisal_kind for a in of_m] == ["live", "audit"]
+    audit = of_m[1]
+    assert audit.inputs[0].bid == live.bid and audit.inputs[0].binding_hash == ledger.get(live.bid).rawev_sha256
+    assert audit.verdict.checks == {"ledger_verified": True, "bytes_match": True, "bid_ok": True}
+    assert audit.verdict.agrees_with_live is True and audit.session_sha256 == of_m[0].session_sha256
     # the same canned appraiser nonce again: refused as a duplicate
-    again = appraise_record(CannedClient(appr=audit_pkg), proto, ledger, config, live.nonce_id)
-    assert "duplicate nonce" in again.error and not again
+    again = appraise_bundle(CannedClient(appr=_distinct_appraisal(7)), proto, ledger, config, live.bid)
+    assert "duplicate" in again.error and not again
+    # a different policy: a session override is pinned by session_sha256 and not compared with live
+    # (the canned package fixes the companions that ran; the override differs by an extra ASP type)
+    session = json.loads(json.dumps(proto.session))
+    session["Session_Context"]["ASP_Types"]["extra_appr"] = {"FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []}
+    rep2 = appraise_bundle(CannedClient(appr=_distinct_appraisal(8)), proto, ledger, config, live.bid,
+                           session_override=session, appraisal_kind="no-goldens")
+    assert rep2.error == "" and rep2.agrees_with_live is None
+    other = ledger.get(rep2.appraisal_bid)
+    assert other.appraisal_kind == "no-goldens" and other.session_sha256 != audit.session_sha256
 
 
-def test_appraise_record_fails_closed_on_unknown_run_and_wrong_protocol(proto, config, tmp_path):
-    from pybb.attestation.ledger_runs import appraise_record
+def test_appraise_bundle_fails_closed_on_unknown_bundle_and_wrong_protocol(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import appraise_bundle
 
     ledger = FileLedger(tmp_path / "ledger.jsonl")
-    rep = appraise_record(CannedClient(), proto, ledger, config, "00" * 32)
+    rep = appraise_bundle(CannedClient(), proto, ledger, config, "00" * 32)
     assert not rep and rep.error.startswith("fetch failed")
-    live = attest_with_ledger(CannedClient(), proto, ledger, config, archive=_archiver(tmp_path))
+    live = attest(CannedClient(), proto, ledger, config, archive=_archiver(tmp_path))
     other = proto.model_copy(update={"protocol_id": "some_other_protocol"})
-    rep = appraise_record(CannedClient(), other, ledger, config, live.nonce_id)
+    rep = appraise_bundle(CannedClient(), other, ledger, config, live.bid)
     assert "is of protocol" in rep.error
 
 
@@ -317,25 +335,22 @@ def test_ledger_request_routes_the_predicate_to_an_audit(proto, config, tmp_path
                                            ledger=ledger, ledger_config=config)
     live = predicate({"protocol": proto.protocol_id})
     assert live
-    audit_pkg = json.loads(json.dumps(APPR))
-    audit_pkg["PAYLOAD"][0]["RawEv"][1] = base64.b64encode(bytes([9]) * 32).decode()
-    client.appr = audit_pkg
-    audit = predicate(ledger_request(live.nonce_id))
+    client.appr = _distinct_appraisal(9)
+    audit = predicate(ledger_request(live.bid))
     assert audit.error == "", audit.error
-    assert audit and audit.nonce_id == live.nonce_id and audit.ledger_ref == f"appraisal/{live.nonce_id}/2"
-    assert audit.protocol == proto.protocol_id and Path(audit.appraisal_ref).name.startswith(proto.protocol_id + ".audit-appraisal")
+    assert audit and audit.bid == live.bid and audit.ledger_ref.startswith("bundle/") and audit.ledger_ref != live.ledger_ref
+    assert audit.protocol == proto.protocol_id and Path(audit.appraisal_ref).name.startswith(proto.protocol_id + ".appraisal-audit")
     assert len(client.requests) == 3  # two live runs + one audit appraisal run
 
     # a disagreeing audit is a failing verdict with an explicit reason
-    failing_pkg = json.loads(json.dumps(APPR))
-    failing_pkg["PAYLOAD"][0]["RawEv"][1] = base64.b64encode(bytes([11]) * 32).decode()
+    failing_pkg = _distinct_appraisal(11)
     failing_pkg["PAYLOAD"][0]["RawEv"][5] = base64.b64encode(b"File contents do not match").decode()
     client.appr = failing_pkg
-    predicate.forget(ledger_request(live.nonce_id))
-    disagree = predicate(ledger_request(live.nonce_id))
-    assert not disagree and "disagrees with the recorded verdict" in disagree.error
+    predicate.forget(ledger_request(live.bid))
+    disagree = predicate(ledger_request(live.bid))
+    assert not disagree and "disagrees with the live appraisal" in disagree.error
 
     # without a ledger the audit request is a configuration error
     plain = make_attestation_predicate(CannedClient(), {proto.protocol_id: proto})
-    v = plain(ledger_request(live.nonce_id))
+    v = plain(ledger_request(live.bid))
     assert not v and "no ledger is configured" in v.error

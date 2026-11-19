@@ -3,7 +3,7 @@ Reconcile the ledger against the evidence repo (docs/ledger_plan.md H.2 step 3).
 
     python examples/ledger_reconcile.py [--verify-all] [--ledger FILE]
 
-Lists blobs that are not yet durable (no github locator), optionally re-reads
+Lists blobs stated for the repo's store but not yet in it, optionally re-reads
 every committed blob and checks its hash, and compares the live ledger head
 with the latest mirrored state. Exit 1 when anything is off.
 """
@@ -29,9 +29,12 @@ def main() -> int:
         from pybb.attestation import ImmudbLedger
         ledger = ImmudbLedger(config)
     rep = reconcile(ledger, EvidenceRepo(config.evidence_repo), verify_all=args.verify_all)
-    print(f"pending blobs: {len(rep.pending)}")
-    for pb in rep.pending:
-        print(f"  {pb.target:10s} {pb.blob_sha256[:12]}… nid={(pb.nid or '')[:12]} {pb.local.path}")
+    print(f"store {rep.store}: pending blobs: {len(rep.pending)}")
+    for sb in rep.pending:
+        print(f"  {sb.part:10s} {sb.blob_sha256[:12]}… bid={sb.bid[:12]} {sb.local_path or '(no local copy)'}")
+    if rep.last_mirror is not None:
+        m = rep.last_mirror
+        print(f"last mirror: commit {m.commit[:12]} state tx {m.state_tx} journal {m.journal_from_tx}-{m.journal_to_tx} blobs={m.blobs}")
     if args.verify_all:
         print(f"remote blobs verified: {rep.verified_remote}, mismatches: {len(rep.remote_mismatches)}")
         for m in rep.remote_mismatches:

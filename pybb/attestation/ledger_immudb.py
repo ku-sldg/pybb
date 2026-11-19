@@ -1,14 +1,17 @@
 """
 immudb backend for the attestation ledger (docs/ledger_plan.md, sections A,
-B.3, H; decision 3).
+B.3, H, K; decision 3).
 
-Keys and canonical values are exactly those of `ledger.py`; a run's records
-go in with one `execAll` (atomic), reads use `verifiedGet` with a persistent
-client state so the client checks the server's inclusion and consistency
-proofs itself. A SQL mirror table, `attestation_records`, is written after
-the KV batch for external `immuclient`/SQL readers; it is a convenience view
-(each row carries the KV value's `content_sha256`) and `rebuild_mirror()`
-regenerates it from the KV history, so the KV side alone is the ledger.
+Keys and canonical values are exactly those of `ledger.py`; a batch goes in
+with one `ExecAll` (atomic) carrying a `keyMustNotExist` precondition for
+every `bundle/` key it writes, so the uniqueness rule (one bundle per nonce)
+is enforced by the server as well as by pybb. Reads use `verifiedGet` with a
+persistent client state so the client checks the server's inclusion and
+consistency proofs itself. A SQL mirror table, `attestation_records`, is
+written after the KV batch for external `immuclient`/SQL readers; it is a
+convenience view (each row carries the KV value's `content_sha256`) and
+`rebuild_mirror()` regenerates it from the KV history, so the KV side alone
+is the ledger.
 
 Bootstrap (database + non-admin user) is `ImmudbLedger.bootstrap(...)`,
 also exposed as `python -m pybb.attestation.ledger_immudb bootstrap` for
@@ -24,45 +27,40 @@ from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from .ledger import (
+    DuplicateNonceError,
     Ledger,
     LedgerConfig,
     LedgerError,
-    LedgerRecord,
     Receipt,
-    RunRecords,
-    AppraisalRecord,
-    EvidenceRecord,
-    LocatorRecord,
-    NonceRecord,
-    VerdictRecord,
     key_for,
     parse_record,
-    sha256_hex,
 )
 
-RECORD_PREFIXES = ("nonce/", "evidence/", "verdict/", "locator/", "appraisal/", "bundle/", "restore/")
+# v2 prefixes first; the v1 prefixes keep a v1 database readable through `history()`
+RECORD_PREFIXES = ("bundle/", "judged_by/", "mirror/", "restore/",
+                   "nonce/", "evidence/", "verdict/", "locator/", "appraisal/")
 
 MIRROR_TABLE = "attestation_records"
-# immudb caps indexed key sizes: the longest ledger key is ~80 bytes
-# (`appraisal/<64 hex>/<seq>`), so the primary key is VARCHAR[128]
+# immudb caps indexed key sizes: the longest ledger key is ~140 bytes
+# (`judged_by/<64 hex>/<64 hex>`), so the primary key is VARCHAR[160]
 MIRROR_DDL = f"""CREATE TABLE IF NOT EXISTS {MIRROR_TABLE} (
-  key VARCHAR[128], kind VARCHAR[16], nid VARCHAR[64], protocol_id VARCHAR[96],
-  passed BOOLEAN, assurance VARCHAR[16], freshness VARCHAR[16], blob_sha256 VARCHAR[64],
+  key VARCHAR[160], kind VARCHAR[16], role VARCHAR[16], protocol_id VARCHAR[96],
+  input_bid VARCHAR[64], appraisal_kind VARCHAR[32], passed BOOLEAN,
+  assurance VARCHAR[16], freshness VARCHAR[16], blob_sha256 VARCHAR[64],
   created_at VARCHAR[32], content_sha256 VARCHAR[64], PRIMARY KEY key)"""
 MIRROR_INDEXES = (
-    f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(nid)",
+    f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(input_bid)",
     f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(protocol_id, created_at)",
 )
+_COLS = ("key", "kind", "role", "protocol_id", "input_bid", "appraisal_kind", "passed",
+         "assurance", "freshness", "blob_sha256", "created_at", "content_sha256")
 # two statements: immudb-py cannot bind a NULL parameter, so records without
 # a verdict omit the `passed` column (NULL by omission)
-MIRROR_UPSERT = (f"UPSERT INTO {MIRROR_TABLE}(key, kind, nid, protocol_id, passed, assurance, "
-                 f"freshness, blob_sha256, created_at, content_sha256) VALUES "
-                 f"(@key, @kind, @nid, @protocol_id, @passed, @assurance, @freshness, "
-                 f"@blob_sha256, @created_at, @content_sha256)")
-MIRROR_UPSERT_NO_VERDICT = (f"UPSERT INTO {MIRROR_TABLE}(key, kind, nid, protocol_id, assurance, "
-                            f"freshness, blob_sha256, created_at, content_sha256) VALUES "
-                            f"(@key, @kind, @nid, @protocol_id, @assurance, @freshness, "
-                            f"@blob_sha256, @created_at, @content_sha256)")
+MIRROR_UPSERT = (f"UPSERT INTO {MIRROR_TABLE}({', '.join(_COLS)}) VALUES "
+                 f"({', '.join('@' + c for c in _COLS)})")
+_COLS_NO_VERDICT = tuple(c for c in _COLS if c != "passed")
+MIRROR_UPSERT_NO_VERDICT = (f"UPSERT INTO {MIRROR_TABLE}({', '.join(_COLS_NO_VERDICT)}) VALUES "
+                            f"({', '.join('@' + c for c in _COLS_NO_VERDICT)})")
 
 
 def _client_module():
@@ -76,14 +74,30 @@ def _client_module():
     return ImmudbClient, KeyValue, PersistentRootService
 
 
-def mirror_row(key: str, rec: LedgerRecord) -> Dict[str, Any]:
+def mirror_row(key: str, rec: Any) -> Dict[str, Any]:
+    """The SQL mirror's view of one record (v2 columns; v1 records map onto
+    the same columns as far as they can)."""
     d = rec.to_dict()
-    passed = d.get("passed") if rec.kind in ("verdict", "appraisal") else None
+    passed: Optional[bool] = None
+    role = d.get("role") or ""
+    input_bid = ""
+    appraisal_kind = ""
+    if rec.kind == "bundle" and d.get("verdict"):
+        passed = d["verdict"].get("passed")
+    if rec.kind == "bundle" and d.get("inputs"):
+        input_bid = d["inputs"][0].get("bid") or ""
+        appraisal_kind = d.get("appraisal_kind") or ""
+    if rec.kind == "judged_by":
+        input_bid = d.get("bid") or ""
+    if rec.kind in ("verdict", "appraisal"):  # v1
+        passed = d.get("passed")
+    blob = d.get("blob_sha256") or (d.get("blob") or {}).get("blob_sha256") or ""
     return {
-        "key": key, "kind": rec.kind, "nid": d.get("nid") or "",
-        "protocol_id": d.get("protocol_id") or "", "passed": passed,
+        "key": key, "kind": rec.kind, "role": role,
+        "protocol_id": d.get("protocol_id") or "", "input_bid": input_bid,
+        "appraisal_kind": appraisal_kind, "passed": passed,
         "assurance": d.get("assurance") or d.get("evidence_assurance") or "",
-        "freshness": d.get("freshness") or "", "blob_sha256": d.get("blob_sha256") or "",
+        "freshness": d.get("freshness") or "", "blob_sha256": blob,
         "created_at": d.get("created_at") or "", "content_sha256": rec.content_sha256(),
     }
 
@@ -128,9 +142,12 @@ class ImmudbLedger(Ledger):
             admin.createDatabase(config.db.encode())
         try:
             admin.createUser(config.user, config.password, ReadWrite, config.db.encode())
-        except Exception as e:  # already exists
+        except Exception as e:  # already exists: grant on the (possibly new) database instead
             if "already" not in str(e).lower() and "exists" not in str(e).lower():
                 raise
+            from immudb.grpc import schema_pb2
+
+            admin.changePermission(schema_pb2.GRANT, config.user, config.db, ReadWrite)
         admin.logout()
 
     # -- SQL mirror -----------------------------------------------------------
@@ -169,7 +186,7 @@ class ImmudbLedger(Ledger):
         except Exception:
             return False
 
-    def get_record(self, key: str) -> Optional[LedgerRecord]:
+    def get_record(self, key: str) -> Optional[Any]:
         try:
             resp = self.client.verifiedGet(key.encode())
         except Exception:
@@ -184,16 +201,31 @@ class ImmudbLedger(Ledger):
         except Exception:
             return None
 
-    def _write_batch(self, records: List[LedgerRecord]) -> Receipt:
+    def _exec_all(self, keys: List[str], records: List[Any]) -> int:
+        """One atomic ExecAll. Every non-challenge `bundle/` key carries a
+        `keyMustNotExist` precondition (plan K.3): immudb-py 1.5 does not
+        expose preconditions, so the request is built on the stub directly."""
+        from immudb.grpc import schema_pb2
+
+        ops = [schema_pb2.Op(kv=schema_pb2.KeyValue(key=k.encode(), value=r.canonical()))
+               for k, r in zip(keys, records)]
+        pre = [schema_pb2.Precondition(keyMustNotExist=schema_pb2.Precondition.KeyMustNotExistPrecondition(key=k.encode()))
+               for k, r in zip(keys, records)
+               if r.kind == "bundle" and getattr(r, "role", None) != "challenge"]
+        req = schema_pb2.ExecAllRequest(Operations=ops, noWait=False, preconditions=pre)
+        header = self.client._stub.ExecAll(req)
+        return int(header.id)
+
+    def _write_batch(self, records: List[Any]) -> Receipt:
         if not records:
             raise LedgerError("empty batch")
         keys = [key_for(r) for r in records]
-        ops = [self._KeyValue(key=k.encode(), value=r.canonical()) for k, r in zip(keys, records)]
         try:
-            header = self.client.execAll(ops)
+            tx = self._exec_all(keys, records)
         except Exception as e:
-            raise LedgerError(f"immudb execAll failed: {e}") from e
-        tx = int(header.id)
+            if "precondition" in str(e).lower():
+                raise DuplicateNonceError(f"immudb refused the batch: a bundle key already exists ({e})") from e
+            raise LedgerError(f"immudb ExecAll failed: {e}") from e
         # the client-side proof check: the first key of the batch must verify
         # against the persisted state (which this call advances)
         verified = False
@@ -209,7 +241,7 @@ class ImmudbLedger(Ledger):
             sys.stderr.write(f"[ledger] SQL mirror write failed (KV tx {tx} stands): {e}\n")
         return Receipt(tx=tx, keys=keys, verified=verified)
 
-    def history(self) -> Iterator[Tuple[int, str, LedgerRecord]]:
+    def history(self) -> Iterator[Tuple[int, str, Any]]:
         """Every record in tx order, reading each tx's keys and the value as
         of that tx (verified). SQL-internal entries are skipped."""
         last = int(self.client.currentState().txId)
@@ -232,34 +264,16 @@ class ImmudbLedger(Ledger):
                     continue
                 yield tx, k, parse_record(json.loads(resp.value))
 
-    def _scan(self, prefix: str) -> Dict[str, dict]:
-        out: Dict[str, dict] = {}
+    def scan_prefix(self, prefix: str) -> Dict[str, Any]:
+        """Latest record per key under `prefix` (a real server-side scan)."""
+        out: Dict[str, Any] = {}
         try:
             found = self.client.scan(b"", prefix.encode(), False, 1000)
         except Exception:
             return out
         for k, v in found.items():
-            out[k.decode()] = json.loads(v)
+            out[k.decode()] = parse_record(json.loads(v))
         return out
-
-    def get(self, nid: str) -> RunRecords:
-        nonce = self.get_record(f"nonce/{nid}")
-        evidence = self.get_record(f"evidence/{nid}")
-        verdict = self.get_record(f"verdict/{nid}")
-        if not (isinstance(nonce, NonceRecord) and isinstance(evidence, EvidenceRecord)
-                and isinstance(verdict, VerdictRecord)):
-            raise LedgerError(f"run {nid} is not (fully) in the ledger")
-        appraisals = [parse_record(v) for _k, v in sorted(self._scan(f"appraisal/{nid}/").items())]
-        locators = [parse_record(v) for _k, v in sorted(self._scan(f"locator/{nid}/").items())]
-        appraiser_nonces: List[NonceRecord] = []
-        for a in appraisals:
-            an = self.get_record(f"nonce/{a.anid}")  # type: ignore[attr-defined]
-            if isinstance(an, NonceRecord):
-                appraiser_nonces.append(an)
-        return RunRecords(nonce=nonce, evidence=evidence, verdict=verdict,
-                          appraisals=[a for a in appraisals if isinstance(a, AppraisalRecord)],
-                          appraiser_nonces=appraiser_nonces,
-                          locators=[l for l in locators if isinstance(l, LocatorRecord)])
 
     def db_name(self) -> str:
         return self.config.db

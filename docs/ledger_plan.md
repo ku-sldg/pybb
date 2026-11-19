@@ -1246,7 +1246,7 @@ need a decision before they can **write**:
 
 ## K. Unified bundle records — schema v2 (planning, 2026-11-18; naming settled 2026-11-19)
 
-**STATUS: plan complete, decisions resolved 2026-11-19; not implemented.** Replaces the parallel `nonce` / `evidence` /
+**STATUS: implemented 2026-11-19** (`ledger.py`, `ledger_runs.py`, `ledger_immudb.py`, `ledger_repo.py`; v1 records readable via `ledger_v1.py`; schema reference in `docs/ledger_records.md`; database `pybb2`). Replaces the parallel `nonce` / `evidence` /
 `verdict` / `appraisal` / `bundle` kinds with **one `bundle` record per CVM run
 output**, keeping measurement evidence and appraisal evidence distinct by
 *role* and *inputs* rather than by record shape, so that several different

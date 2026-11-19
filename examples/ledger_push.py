@@ -6,9 +6,9 @@ Push the ledger's local artifacts to the evidence repo (docs/ledger_plan.md H.2)
 
 Copies pending blobs and every record into the clone named by
 PYBB_EVIDENCE_REPO (or LedgerConfig.evidence_repo), appends the journal and
-a state snapshot, commits once, pushes, and appends `github` locator
-records. With --bundles, first backfills `bundle` records for the provision
-bundles under GOLDEN_ROOT/_bundles whose protocol dirs exist under
+a state snapshot, commits once, pushes, and writes one `mirror` record
+witnessing the push. With --bundles, first records `provision` bundles for the
+provision bundles under GOLDEN_ROOT/_bundles whose protocol dirs exist under
 tests/fixtures.
 """
 import argparse
@@ -17,7 +17,7 @@ from pathlib import Path
 
 from pybb.attestation import FileLedger, ProtocolDir
 from pybb.attestation.ledger import LedgerConfig
-from pybb.attestation.ledger_repo import EvidenceRepo, commit_bundles, push_archive
+from pybb.attestation.ledger_repo import EvidenceRepo, push_archive, record_provision_bundles
 
 REPO = Path(__file__).parent.parent
 
@@ -46,15 +46,15 @@ def main() -> int:
         fixtures = REPO / "tests" / "fixtures"
         protocols = {p.name: ProtocolDir.load(str(p)) for p in sorted(fixtures.iterdir())
                      if (p / "session.json").is_file()}
-        keys = commit_bundles(ledger, args.bundles, protocols, config)
-        print(f"bundle records committed: {len(keys)}")
+        keys = record_provision_bundles(ledger, args.bundles, protocols, config)
+        print(f"provision bundles recorded: {len(keys)}")
     rep = push_archive(ledger, repo, config,
                        archive_dir=Path(args.archive_dir) if args.archive_dir else None,
                        push=not args.no_push,
                        backup_segment=Path(args.backup_segment) if args.backup_segment else None)
     print(f"commit {rep.commit[:12]} committed={rep.committed} pushed={rep.pushed} "
           f"blobs={len(rep.blobs)} skipped={len(rep.skipped)} journal txs {rep.journal_from_tx}-{rep.journal_to_tx} "
-          f"state tx {rep.state_tx} locators appended={rep.locators_appended}")
+          f"state tx {rep.state_tx} mirror record {rep.mirror_key or '-'}")
     for p in rep.problems:
         print("PROBLEM:", p)
     return 1 if rep.problems else 0

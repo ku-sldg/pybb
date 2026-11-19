@@ -3,9 +3,9 @@ Restore tooling for the ledger mirror (docs/ledger_plan.md H.4).
 
     python examples/ledger_restore.py verify  CLONE
     python examples/ledger_restore.py replay  CLONE --into FILE | --into-immudb
-    python examples/ledger_restore.py exact   CLONE --db pybb --out restore.bkp
+    python examples/ledger_restore.py exact   CLONE --db pybb2 --out restore.bkp
 
-verify: record files re-hash to the journal, the journal is contiguous, and
+verify: record files re-hash to the journal, the journal is in order, and
 every present blob hashes to its name (H.4 step 1).
 replay: content restore, one batch per journal line, into a fresh FileLedger
 or the configured immudb database (H.4 step 3); appends a restore record.
@@ -27,7 +27,7 @@ def main() -> int:
     ap.add_argument("clone", help="path of the evidence repo clone at the commit to restore from")
     ap.add_argument("--into", help="replay target: a FileLedger path")
     ap.add_argument("--into-immudb", action="store_true", help="replay target: immudb from the environment")
-    ap.add_argument("--db", default="pybb")
+    ap.add_argument("--db", default="pybb2")
     ap.add_argument("--out", default="restore.bkp")
     args = ap.parse_args()
     clone = Path(args.clone)

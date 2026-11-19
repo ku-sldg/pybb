@@ -1,29 +1,34 @@
 """
 The evidence repository: durable blobs, ledger mirror, and restore
-(docs/ledger_plan.md, section H; decisions 2 and 5).
+(docs/ledger_plan.md, section H, K decision 7; decisions 2 and 5).
 
 A git repository — any repository the operator chooses, named by the path
-of a local clone in `LedgerConfig.evidence_repo`; its GitHub slug is read
-from the clone's `origin` remote — holds, content-addressed and append-only
-by convention:
+of a local clone in `LedgerConfig.evidence_repo`; its store id
+(`github:owner/name`) is read from the clone's `origin` remote — holds,
+content-addressed and append-only by convention:
 
-    blobs/<sha256>.json.gz              evidence, appraisal, components, bundles
+    blobs/<sha256>.json.gz              packages and component lists (provision bundles: .json)
     ledger/journal.jsonl                one line per ledger tx: {tx, ts, db, keys:{key: content_sha256}}
-    ledger/records/<nid>/<kind>.json    nonce/evidence/verdict, appraisal-<seq>, locator-<seq>
-    ledger/bundles/<id>.json            bundle records
+    ledger/bundles/<bid>.json           bundle records
+    ledger/judged_by/<mid>/<abid>.json  pointer records
+    ledger/mirror/<store>/<tx>.json     mirror records
     ledger/restores/<created_at>.json   restore records
     ledger/state/<tx>.json              the ledger backend's head at each push
     ledger/backups/                     immuadmin hot-backup segments (operator-produced, H.3)
-    runs/<archive_dir>/manifest.json    push-time grouping: protocol -> nid -> blobs
+    runs/<archive_dir>/manifest.json    push-time grouping: protocol -> bid -> blobs
 
-`push_archive` copies what the ledger holds locally into the clone, makes
-one commit per push (a consistent snapshot), pushes, and appends `github`
-locator records so runs become durable. `reconcile` reports what is not yet
-durable and checks the live head against the mirrored states.
-`verify_mirror` / `replay` are the restore path (H.4): a mirror is checked
-against its own hashes before anything is loaded, then replayed tx by tx
-into a fresh ledger. The exact restore of an immudb instance from backup
-segments is `immuadmin hot-restore`, documented in `exact_restore_command`.
+Every bundle states at commit time where its bytes are and will be (`local`
+plus the content-addressed path in each configured store), so no record is
+ever appended to say "now it is there". `push_archive` copies what is stated
+but not yet present into the clone, makes one commit per push (a consistent
+snapshot), pushes, and writes ONE `mirror` record witnessing the push: the
+store, commit, ledger state and journal range it covers, and a hash over the
+blobs it carried. `reconcile` reports what is stated but not durable and
+checks the live head against the mirrored states. `verify_mirror` /
+`replay` are the restore path (H.4): a mirror is checked against its own
+hashes before anything is loaded, then replayed tx by tx into a fresh
+ledger. The exact restore of an immudb instance from backup segments is
+`immuadmin hot-restore`, documented in `exact_restore_command`.
 """
 
 from __future__ import annotations
@@ -35,7 +40,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from pydantic import BaseModel
 
@@ -44,11 +49,10 @@ from .ledger import (
     Ledger,
     LedgerConfig,
     LedgerError,
-    LedgerRecord,
-    Locator,
-    LocatorRecord,
+    Location,
+    MirrorRecord,
+    ProvisionInfo,
     RestoreRecord,
-    SignatureInfo,
     canonical_json,
     describe_package,
     key_for,
@@ -56,6 +60,7 @@ from .ledger import (
     parse_record,
     pybb_version,
     sha256_hex,
+    store_slug,
     utc_now,
 )
 
@@ -69,6 +74,7 @@ class EvidenceRepo:
         self.path = Path(os.path.expanduser(str(path)))
         self.remote = remote
         self._slug = slug
+        self._hosted: Optional[bool] = None
         if not (self.path / ".git").exists():
             raise LedgerError(f"{self.path} is not a git clone (LedgerConfig.evidence_repo)")
 
@@ -87,18 +93,25 @@ class EvidenceRepo:
 
     def slug(self) -> str:
         """`owner/name` for a hosted remote (GitHub or any host), the bare
-        repository's basename for a local or file remote; recorded as the
-        `repo` of github locators."""
+        repository's basename for a local or file remote."""
         if self._slug:
             return self._slug
         url = self.git("remote", "get-url", self.remote, check=False) or str(self.path)
         m = re.match(r"^(?:[a-z+]+://)?(?:[^@/]+@)?[^/:]+[:/](?P<owner>[^/]+)/(?P<name>[^/]+?)(?:\.git)?/?$", url)
         if m and not url.startswith(("/", "file://", ".")):
             self._slug = f"{m.group('owner')}/{m.group('name')}"
+            self._hosted = True
         else:
             name = url.rstrip("/").rsplit("/", 1)[-1]
             self._slug = name[:-4] if name.endswith(".git") else name
+            self._hosted = False
         return self._slug
+
+    def store_id(self) -> str:
+        """The store id recorded in bundle locations and mirror records:
+        `github:owner/name` for a hosted remote, `git:<name>` for a local one."""
+        slug = self.slug()
+        return f"github:{slug}" if self._hosted else f"git:{slug}"
 
     def head(self) -> str:
         return self.git("rev-parse", "HEAD")
@@ -112,6 +125,10 @@ class EvidenceRepo:
 
     def show(self, commit: str, relpath: str) -> bytes:
         return self.git_bytes("show", f"{commit}:{relpath}")
+
+    def has_path(self, relpath: str, commit: str = "HEAD") -> bool:
+        return subprocess.run(["git", "-C", str(self.path), "cat-file", "-e", f"{commit}:{relpath}"],
+                              capture_output=True).returncode == 0
 
     def commit_all(self, message: str) -> Tuple[str, bool]:
         """Stage everything and commit; returns (head, committed)."""
@@ -132,21 +149,46 @@ class EvidenceRepo:
 # ── layout ───────────────────────────────────────────────────────────────────
 
 
-def blob_relpath(sha256: str) -> str:
-    return f"blobs/{sha256}.json.gz"
+def blob_relpath(sha256: str, encoding: str = "gzip+json") -> str:
+    return f"blobs/{sha256}.json.gz" if encoding.startswith("gzip") else f"blobs/{sha256}.json"
 
 
-def record_relpath(key: str, rec: LedgerRecord) -> str:
+def record_relpath(key: str, rec: Any) -> str:
     kind = rec.kind
+    if kind == "bundle":
+        return f"ledger/bundles/{key.split('/', 1)[1].replace(':', '-')}.json"
+    if kind == "judged_by":
+        return f"ledger/judged_by/{rec.bid}/{rec.appraisal_bid}.json"
+    if kind == "mirror":
+        return f"ledger/mirror/{store_slug(rec.store)}/{rec.state_tx:012d}.json"
+    if kind == "restore":
+        return f"ledger/restores/{rec.created_at}.json"
+    # v1 kinds (readable mirrors of a v1 database)
     if kind in ("nonce", "evidence", "verdict"):
         return f"ledger/records/{rec.nid}/{kind}.json"
     if kind in ("appraisal", "locator"):
-        return f"ledger/records/{rec.nid}/{kind}-{rec.seq}.json"  # type: ignore[attr-defined]
-    if kind == "bundle":
-        return f"ledger/bundles/{key.split('/', 1)[1].replace(':', '-')}.json"
-    if kind == "restore":
-        return f"ledger/restores/{rec.created_at}.json"
+        return f"ledger/records/{rec.nid}/{kind}-{rec.seq}.json"
     return f"ledger/other/{key.replace('/', '_')}.json"
+
+
+def _record_file_for_key(repo_path: Path, key: str) -> Optional[Path]:
+    kind, rest = key.split("/", 1)
+    if kind == "bundle":
+        p = repo_path / f"ledger/bundles/{rest.replace(':', '-')}.json"
+    elif kind == "judged_by":
+        p = repo_path / f"ledger/judged_by/{rest}.json"
+    elif kind == "mirror":
+        p = repo_path / f"ledger/mirror/{rest}.json"
+    elif kind == "restore":
+        p = repo_path / f"ledger/restores/{rest}.json"
+    elif kind in ("nonce", "evidence", "verdict"):
+        p = repo_path / f"ledger/records/{rest}/{kind}.json"
+    elif kind in ("appraisal", "locator"):
+        nid, seq = rest.split("/")
+        p = repo_path / f"ledger/records/{nid}/{kind}-{seq}.json"
+    else:
+        p = repo_path / f"ledger/other/{key.replace('/', '_')}.json"
+    return p if p.is_file() else None
 
 
 def _write(path: Path, data: bytes) -> None:
@@ -167,48 +209,50 @@ def last_journaled_tx(repo: EvidenceRepo) -> int:
     return last
 
 
-# ── pending blobs: what the ledger holds locally but not yet in the repo ──────
+# ── stated blobs: every blob a bundle says is (or will be) somewhere ──────────
 
 
-class PendingBlob(BaseModel):
-    nid: Optional[str]
-    target: str  # evidence | appraisal | components | bundle
+class StatedBlob(BaseModel):
+    """One blob as a bundle states it: its hash, which bundle, which part
+    (`package` or `components`), its local path and its path in `store`."""
+
+    bid: str
+    protocol_id: str = ""
+    part: str  # package | components
     blob_sha256: str
-    local: Locator
-    key: str  # the record whose blob this is (for the manifest)
+    encoding: str
+    local_path: str = ""
+    remote_path: str = ""
+    key: str
 
 
-def pending_blobs(ledger: Ledger, archive_dir: Optional[Path] = None) -> List[PendingBlob]:
-    """Every blob with a local locator and no github locator (per blob)."""
-    local: Dict[str, PendingBlob] = {}
-    remote: set = set()
+def stated_blobs(ledger: Ledger, store: str) -> List[StatedBlob]:
+    """Every blob whose bundle states a location in `store`, deduplicated by
+    hash, with its local path when the bundle states one."""
+    out: Dict[str, StatedBlob] = {}
     for _tx, key, rec in ledger.history():
-        if rec.kind == "evidence":
-            for loc in rec.locators:  # type: ignore[attr-defined]
-                if loc.kind == "local":
-                    local.setdefault(rec.blob_sha256, PendingBlob(  # type: ignore[attr-defined]
-                        nid=rec.nid, target="evidence", blob_sha256=rec.blob_sha256,  # type: ignore[attr-defined]
-                        local=loc, key=key))
-                elif loc.kind == "github":
-                    remote.add(rec.blob_sha256)  # type: ignore[attr-defined]
-        elif rec.kind == "bundle":
-            for loc in rec.locators:  # type: ignore[attr-defined]
-                if loc.kind == "local":
-                    local.setdefault(rec.blob_sha256, PendingBlob(  # type: ignore[attr-defined]
-                        nid=rec.nid, target="bundle", blob_sha256=rec.blob_sha256, local=loc, key=key))  # type: ignore[attr-defined]
-                elif loc.kind == "github":
-                    remote.add(rec.blob_sha256)  # type: ignore[attr-defined]
-        elif rec.kind == "locator":
-            loc = rec.locator  # type: ignore[attr-defined]
-            if loc.kind == "local":
-                local.setdefault(rec.blob_sha256, PendingBlob(  # type: ignore[attr-defined]
-                    nid=rec.nid, target=rec.target, blob_sha256=rec.blob_sha256, local=loc, key=key))  # type: ignore[attr-defined]
-            elif loc.kind == "github":
-                remote.add(rec.blob_sha256)  # type: ignore[attr-defined]
-    out = [pb for sha, pb in local.items() if sha not in remote]
+        if not isinstance(rec, BundleRecord):
+            continue
+        parts = [("package", rec.blob)]
+        if rec.verdict is not None and rec.verdict.components_blob is not None:
+            parts.append(("components", rec.verdict.components_blob))
+        for part, blob in parts:
+            remote = next((l.path for l in blob.locations if l.store == store), None)
+            if remote is None or not blob.blob_sha256:
+                continue
+            local = next((l.path for l in blob.locations if l.store == "local"), "")
+            out.setdefault(blob.blob_sha256, StatedBlob(
+                bid=rec.key_id, protocol_id=rec.protocol_id, part=part, blob_sha256=blob.blob_sha256,
+                encoding=blob.encoding, local_path=local, remote_path=remote, key=key))
+    return list(out.values())
+
+
+def pending_blobs(ledger: Ledger, repo: EvidenceRepo, archive_dir: Optional[Path] = None) -> List[StatedBlob]:
+    """Stated for this store but not at that path in the clone's HEAD."""
+    out = [sb for sb in stated_blobs(ledger, repo.store_id()) if not repo.has_path(sb.remote_path)]
     if archive_dir is not None:
         root = Path(archive_dir).resolve()
-        out = [pb for pb in out if _under(Path(pb.local.path).resolve(), root)]
+        out = [sb for sb in out if sb.local_path and _under(Path(sb.local_path).resolve(), root)]
     return out
 
 
@@ -224,6 +268,7 @@ def _under(path: Path, root: Path) -> bool:
 
 
 class PushReport(BaseModel):
+    store: str = ""
     commit: str = ""
     committed: bool = False
     pushed: bool = False
@@ -231,8 +276,8 @@ class PushReport(BaseModel):
     skipped: List[str] = []  # blobs whose local bytes are gone or mismatch
     journal_from_tx: int = 0
     journal_to_tx: int = 0
-    locators_appended: int = 0
     state_tx: int = 0
+    mirror_key: str = ""
     problems: List[str] = []
 
 
@@ -240,36 +285,35 @@ def push_archive(ledger: Ledger, repo: EvidenceRepo, config: LedgerConfig,
                  archive_dir: Optional[Path] = None, push: bool = True,
                  backup_segment: Optional[Path] = None) -> PushReport:
     """
-    Plan H.2: copy pending blobs and every ledger record into the clone,
-    append journal lines for txs since the last push, write the state file,
-    optionally add a hot-backup segment, commit once, push, then append a
-    `github` locator record per pushed blob (verified by re-reading the
-    committed bytes).
+    Plan H.2 / K.7: copy pending blobs and every ledger record into the
+    clone, append journal lines for txs since the last push, write the state
+    file, optionally add a hot-backup segment, commit once, push, then write
+    ONE `mirror` record witnessing what this push carried.
     """
-    rep = PushReport()
-    appraiser_id = config.appraiser_id or load_appraiser_id(config.state_dir)
+    rep = PushReport(store=repo.store_id())
     manifest: Dict[str, Dict[str, Dict[str, str]]] = {}
+    skipped: List[Dict[str, str]] = []
 
     # 1. blobs
-    pend = pending_blobs(ledger, archive_dir)
-    for pb in pend:
-        src = Path(pb.local.path)
-        if not src.is_file():
-            rep.skipped.append(pb.blob_sha256)
-            rep.problems.append(f"{pb.target} blob {pb.blob_sha256[:12]}… not at {src}")
+    pend = pending_blobs(ledger, repo, archive_dir)
+    for sb in pend:
+        src = Path(sb.local_path) if sb.local_path else None
+        if src is None or not src.is_file():
+            rep.skipped.append(sb.blob_sha256)
+            skipped.append({"blob_sha256": sb.blob_sha256, "reason": "local bytes missing"})
+            rep.problems.append(f"{sb.part} blob {sb.blob_sha256[:12]}… not at {src}")
             continue
         data = src.read_bytes()
-        if sha256_hex(data) != pb.blob_sha256:
-            rep.skipped.append(pb.blob_sha256)
+        if sha256_hex(data) != sb.blob_sha256:
+            rep.skipped.append(sb.blob_sha256)
+            skipped.append({"blob_sha256": sb.blob_sha256, "reason": "local bytes mismatch"})
             rep.problems.append(f"{src}: bytes do not match the ledger's blob_sha256")
             continue
-        dest = repo.path / blob_relpath(pb.blob_sha256)
+        dest = repo.path / sb.remote_path
         if not dest.exists():
             _write(dest, data)
-        rep.blobs.append(pb.blob_sha256)
-        run_dir = src.parent.name
-        proto = _protocol_of(ledger, pb)
-        manifest.setdefault(run_dir, {}).setdefault(proto, {})[f"{pb.target}:{pb.nid or ''}"] = blob_relpath(pb.blob_sha256)
+        rep.blobs.append(sb.blob_sha256)
+        manifest.setdefault(src.parent.name, {}).setdefault(sb.protocol_id, {})[f"{sb.part}:{sb.bid}"] = sb.remote_path
 
     # 2. records (every record, canonical bytes; existing files are identical by construction)
     for _tx, key, rec in ledger.history():
@@ -323,49 +367,28 @@ def push_archive(ledger: Ledger, repo: EvidenceRepo, config: LedgerConfig,
     elif push and not rep.committed:
         rep.pushed = True  # nothing new; the remote already has it
 
-    # 8. github locators (only for blobs actually in the commit; verified by re-reading)
-    slug = repo.slug()
-    env = dict(committer_fp="", pybb_version=pybb_version(), appraiser_id=appraiser_id)
-    for pb in pend:
-        if pb.blob_sha256 not in rep.blobs:
-            continue
-        rel = blob_relpath(pb.blob_sha256)
-        committed_bytes = repo.show(rep.commit, rel)
-        verified = sha256_hex(committed_bytes) == pb.blob_sha256
-        loc = Locator(kind="github", path=rel, repo=slug, commit=rep.commit, git_blob_sha=repo.blob_sha(rel))
-        if pb.target == "bundle":
-            nid = pb.nid or f"sha256:{pb.blob_sha256}"
-            seq = _next_locator_seq(ledger, nid)
-            rec = LocatorRecord(nid=nid, seq=seq, target="bundle", blob_sha256=pb.blob_sha256,
-                                locator=loc, verified=verified, **env)
-        else:
-            seq = _next_locator_seq(ledger, pb.nid or "")
-            rec = LocatorRecord(nid=pb.nid or "", seq=seq, target=pb.target,  # type: ignore[arg-type]
-                                blob_sha256=pb.blob_sha256, locator=loc, verified=verified, **env)
-        ledger.append_locator(rec)
-        rep.locators_appended += 1
+    # 8. the mirror record (K decision 7): one per push that carried anything
+    if rep.committed:
+        for sha in rep.blobs:  # verify by re-reading the committed bytes
+            sb = next(s for s in pend if s.blob_sha256 == sha)
+            if sha256_hex(repo.show(rep.commit, sb.remote_path)) != sha:
+                rep.problems.append(f"{sb.remote_path}: committed bytes do not hash to the blob name")
+        mirror = MirrorRecord(
+            store=rep.store, repo=repo.slug(), commit=rep.commit, state_tx=rep.state_tx,
+            state_hash=str(st.get("tx_hash_hex", "")), journal_from_tx=rep.journal_from_tx,
+            journal_to_tx=rep.journal_to_tx, blobs=len(rep.blobs),
+            blob_hashes_sha256=sha256_hex("".join(sorted(rep.blobs)).encode()), skipped=skipped,
+            appraiser_id=config.appraiser_id or load_appraiser_id(config.state_dir),
+            pybb_version=pybb_version())
+        try:
+            ledger.commit_mirror(mirror)
+            rep.mirror_key = key_for(mirror)
+        except LedgerError as e:
+            rep.problems.append(f"mirror record not committed: {e}")
     return rep
 
 
-def _protocol_of(ledger: Ledger, pb: PendingBlob) -> str:
-    if pb.nid:
-        for key in (f"evidence/{pb.nid}", f"bundle/{pb.nid}"):
-            rec = ledger.get_record(key)
-            if rec is not None:
-                return getattr(rec, "protocol_id", "") or ""
-    rec = ledger.get_record(pb.key)
-    return getattr(rec, "protocol_id", "") or "" if rec else ""
-
-
-def _next_locator_seq(ledger: Ledger, nid: str) -> int:
-    seq = 0
-    for _tx, key, rec in ledger.history():
-        if rec.kind == "locator" and rec.nid == nid:
-            seq = max(seq, rec.seq)  # type: ignore[attr-defined]
-    return seq + 1
-
-
-# ── resolving github locators ────────────────────────────────────────────────
+# ── resolving remote locations ───────────────────────────────────────────────
 
 _REPO_CACHE: Dict[str, EvidenceRepo] = {}
 
@@ -382,21 +405,30 @@ def configured_repo(config: Optional[LedgerConfig] = None) -> Optional[EvidenceR
     return _REPO_CACHE[path]
 
 
-def resolve_github_locator(loc: Locator, config: Optional[LedgerConfig] = None) -> Optional[bytes]:
-    """Bytes of a `github` locator: from the configured clone at the recorded
-    commit (fetching first if the commit is unknown), else through `gh api`
-    on the recorded git blob. None when neither is available."""
+def resolve_remote_location(loc: Location, config: Optional[LedgerConfig] = None) -> Optional[bytes]:
+    """Bytes of a remote location: from the configured clone when it is that
+    store (fetching first if the path is unknown), else — for a `github:`
+    store — through `gh api` on the repository contents. None when neither
+    is available."""
     repo = configured_repo(config)
-    if repo is not None and loc.commit and loc.path:
-        if not repo.has_commit(loc.commit):
+    if repo is not None and repo.store_id() == loc.store:
+        if not repo.has_path(loc.path):
             repo.fetch()
-        if repo.has_commit(loc.commit):
+            branch = repo.git("rev-parse", "--abbrev-ref", "HEAD", check=False) or "main"
+            ref = f"{repo.remote}/{branch}"
+            if repo.has_path(loc.path, ref):
+                try:
+                    return repo.show(ref, loc.path)
+                except LedgerError:
+                    pass
+        else:
             try:
-                return repo.show(loc.commit, loc.path)
+                return repo.show("HEAD", loc.path)
             except LedgerError:
                 pass
-    if loc.repo and loc.git_blob_sha and shutil.which("gh") and "/" in loc.repo:
-        r = subprocess.run(["gh", "api", f"repos/{loc.repo}/git/blobs/{loc.git_blob_sha}", "--jq", ".content"],
+    if loc.store.startswith("github:") and shutil.which("gh"):
+        slug = loc.store.split(":", 1)[1]
+        r = subprocess.run(["gh", "api", f"repos/{slug}/contents/{loc.path}", "--jq", ".content"],
                            capture_output=True, text=True)
         if r.returncode == 0 and r.stdout.strip():
             return base64.b64decode(r.stdout.replace("\n", ""))
@@ -407,9 +439,11 @@ def resolve_github_locator(loc: Locator, config: Optional[LedgerConfig] = None) 
 
 
 class ReconcileReport(BaseModel):
-    pending: List[PendingBlob] = []
+    store: str = ""
+    pending: List[StatedBlob] = []
     verified_remote: int = 0
     remote_mismatches: List[str] = []
+    last_mirror: Optional[MirrorRecord] = None
     live_state: dict = {}
     mirrored_state: dict = {}
     state_ok: Optional[bool] = None
@@ -420,24 +454,30 @@ class ReconcileReport(BaseModel):
 
 
 def reconcile(ledger: Ledger, repo: EvidenceRepo, verify_all: bool = False) -> ReconcileReport:
-    """Plan H.2 step 3: what is not durable, whether committed blobs still hash
-    right, and whether the live head is consistent with the latest mirrored
-    state (a rolled-back or rewritten server is caught here)."""
-    rep = ReconcileReport(pending=pending_blobs(ledger))
+    """Plan H.2 step 3: what is stated for this store but not durable, whether
+    committed blobs still hash right, and whether the live head is consistent
+    with the latest mirrored state (a rolled-back or rewritten server is
+    caught here)."""
+    store = repo.store_id()
+    rep = ReconcileReport(store=store, pending=pending_blobs(ledger, repo))
     if verify_all:
-        for _tx, key, rec in ledger.history():
-            if rec.kind != "locator" or rec.locator.kind != "github":  # type: ignore[attr-defined]
+        for sb in stated_blobs(ledger, store):
+            if not repo.has_path(sb.remote_path):
                 continue
-            loc = rec.locator  # type: ignore[attr-defined]
             try:
-                data = repo.show(loc.commit, loc.path)
+                data = repo.show("HEAD", sb.remote_path)
             except LedgerError as e:
-                rep.remote_mismatches.append(f"{key}: {e}")
+                rep.remote_mismatches.append(f"{sb.key}: {e}")
                 continue
-            if sha256_hex(data) != rec.blob_sha256:  # type: ignore[attr-defined]
-                rep.remote_mismatches.append(f"{key}: committed bytes do not hash to blob_sha256")
+            if sha256_hex(data) != sb.blob_sha256:
+                rep.remote_mismatches.append(f"{sb.key}: committed bytes do not hash to blob_sha256")
             else:
                 rep.verified_remote += 1
+    rep.last_mirror = ledger.latest_mirror(store)
+    if rep.last_mirror is not None and not repo.has_commit(rep.last_mirror.commit):
+        repo.fetch()
+        if not repo.has_commit(rep.last_mirror.commit):
+            rep.problems.append(f"mirror record names commit {rep.last_mirror.commit[:12]} which the clone does not have")
     rep.live_state = ledger.state()
     states = sorted((repo.path / "ledger/state").glob("*.json")) if (repo.path / "ledger/state").is_dir() else []
     if states:
@@ -468,22 +508,6 @@ class MirrorReport(BaseModel):
         return not self.problems
 
 
-def _record_file_for_key(repo_path: Path, key: str) -> Optional[Path]:
-    kind, rest = key.split("/", 1)
-    if kind in ("nonce", "evidence", "verdict"):
-        p = repo_path / f"ledger/records/{rest}/{kind}.json"
-    elif kind in ("appraisal", "locator"):
-        nid, seq = rest.split("/")
-        p = repo_path / f"ledger/records/{nid}/{kind}-{seq}.json"
-    elif kind == "bundle":
-        p = repo_path / f"ledger/bundles/{rest.replace(':', '-')}.json"
-    elif kind == "restore":
-        p = repo_path / f"ledger/restores/{rest}.json"
-    else:
-        p = repo_path / f"ledger/other/{key.replace('/', '_')}.json"
-    return p if p.is_file() else None
-
-
 def read_journal(repo_path: Path) -> List[dict]:
     jp = Path(repo_path) / "ledger/journal.jsonl"
     if not jp.is_file():
@@ -493,7 +517,7 @@ def read_journal(repo_path: Path) -> List[dict]:
 
 def verify_mirror(repo_path: str | Path) -> MirrorReport:
     """H.4 step 1: every record file re-hashes to its journal entry, the
-    journal is contiguous, and every blob a record points to is present
+    journal is in order, and every blob a record points to is present
     and hashes right. Nothing is loaded until this passes."""
     root = Path(repo_path)
     rep = MirrorReport()
@@ -518,22 +542,29 @@ def verify_mirror(repo_path: str | Path) -> MirrorReport:
                 continue
             rep.records += 1
             rec = parse_record(json.loads(data))
-            for sha in _blob_hashes(rec):
-                bp = root / blob_relpath(sha)
+            for sha, enc in _blob_hashes(rec):
+                bp = root / blob_relpath(sha, enc)
                 if not bp.is_file():
                     continue  # pointer-only records may reference blobs never pushed here
                 if sha256_hex(bp.read_bytes()) != sha:
-                    rep.problems.append(f"{blob_relpath(sha)}: blob does not hash to its name")
+                    rep.problems.append(f"{bp.relative_to(root)}: blob does not hash to its name")
                 else:
                     rep.blobs_checked += 1
     return rep
 
 
-def _blob_hashes(rec: LedgerRecord) -> List[str]:
+def _blob_hashes(rec: Any) -> List[Tuple[str, str]]:
+    out: List[Tuple[str, str]] = []
+    if isinstance(rec, BundleRecord):
+        if rec.blob.blob_sha256:
+            out.append((rec.blob.blob_sha256, rec.blob.encoding))
+        if rec.verdict is not None and rec.verdict.components_blob is not None and rec.verdict.components_blob.blob_sha256:
+            cb = rec.verdict.components_blob
+            out.append((cb.blob_sha256, cb.encoding))
+        return out
     d = rec.to_dict()
-    out = []
     if d.get("blob_sha256"):
-        out.append(d["blob_sha256"])
+        out.append((d["blob_sha256"], d.get("encoding", "gzip+json")))
     return out
 
 
@@ -541,8 +572,8 @@ def replay(repo_path: str | Path, ledger: Ledger, require_verified: bool = True)
     """H.4 step 3 (content restore): one batch per journal line, in order,
     writing the mirrored canonical values; returns the number of txs
     replayed. Keys already present are skipped (idempotent). The new
-    backend's tx ids differ from the originals; the original tx id is kept
-    under `restore/txmap/<new_tx>` by the caller's restore record."""
+    backend's tx ids differ from the originals; the restore record names
+    the last mirrored tx."""
     root = Path(repo_path)
     if require_verified:
         mr = verify_mirror(root)
@@ -550,7 +581,7 @@ def replay(repo_path: str | Path, ledger: Ledger, require_verified: bool = True)
             raise LedgerError("mirror does not verify: " + "; ".join(mr.problems[:5]))
     n = 0
     for line in read_journal(root):
-        batch: List[LedgerRecord] = []
+        batch: List[Any] = []
         for key in line["keys"]:
             if ledger.exists(key):
                 continue
@@ -586,40 +617,33 @@ def exact_restore_command(db: str, segments: List[Path], output: Path) -> List[s
     return ["immuadmin", "hot-restore", db, "-i", str(output)]
 
 
-# ── legacy bundles → bundle records (plan D / open point 4) ──────────────────
+# ── provision bundles → `provision` bundle records (plan D / K.3) ────────────
 
 
-def bundle_record_from_file(bundle_path: str | Path, protocol: Any, config: LedgerConfig,
+def provision_bundle_record(bundle_path: str | Path, protocol: Any, config: LedgerConfig,
                             golden_ts: str = "") -> BundleRecord:
-    """A `bundle` record for a provision bundle on disk. Legacy bundles (no
-    `generate_nonce`) key by content hash with `assurance: signed`."""
-    from .ledger_runs import ledger_protocol
+    """A `provision` bundle record for a provision bundle on disk (a signed
+    golden baseline). Legacy bundles (no `generate_nonce`) key by content
+    hash with `assurance: signed`."""
+    from .ledger_runs import blob_ref, build_bundle_record, ledger_protocol, remote_stores
 
     p = Path(bundle_path)
     data = p.read_bytes()
     payload, _ctx = json.loads(data)
     lp = ledger_protocol(protocol)
     desc = describe_package(payload, lp.session, nonce_targid="nonce_targ")
-    appraiser_id = config.appraiser_id or load_appraiser_id(config.state_dir)
-    targets = sum(len(t) for a, t in protocol.asp_args.items()
-                  if a in {k for k, c in protocol.session.get("Session_Context", {}).get("ASP_Comps", {}).items()})
-    return BundleRecord(
-        nid=desc.nid, protocol_id=protocol.protocol_id, response_sha256=desc.response_sha256,
-        blob_sha256=sha256_hex(data), blob_bytes=len(data), encoding="json",
-        golden_ts=golden_ts, targets=targets, rawev_count=desc.rawev_count,
-        rawev_sha256=desc.rawev_sha256,
-        signature=desc.signature if desc.signature.present else SignatureInfo(present=False),
-        nonce=desc.nonce, assurance=desc.assurance,
-        freshness="post-hoc" if desc.nonce else "none",
-        locators=[Locator(kind="local", path=str(p), appraiser_id=appraiser_id)],
-        appraiser_id=appraiser_id, pybb_version=pybb_version())
+    comps = protocol.session.get("Session_Context", {}).get("ASP_Comps", {})
+    targets = sum(len(t) for a, t in protocol.asp_args.items() if a in comps)
+    blob = blob_ref(str(p), data, encoding="json", remote_stores=remote_stores(config))
+    return build_bundle_record("provision", lp, payload, desc, blob, config,
+                               provision=ProvisionInfo(golden_ts=golden_ts, targets=targets))
 
 
-def commit_bundles(ledger: Ledger, golden_root: str | Path, protocols: Dict[str, Any],
-                   config: LedgerConfig) -> List[str]:
-    """Backfill `bundle` records for every provision bundle under
-    `<golden_root>/_bundles/<pid>/` whose protocol dir is known; returns the
-    keys committed (existing ones are skipped)."""
+def record_provision_bundles(ledger: Ledger, golden_root: str | Path, protocols: Dict[str, Any],
+                             config: LedgerConfig) -> List[str]:
+    """Record every provision bundle under `<golden_root>/_bundles/<pid>/`
+    whose protocol dir is known; returns the keys committed (existing ones
+    are skipped)."""
     keys: List[str] = []
     for pid, protocol in protocols.items():
         bp = Path(golden_root) / "_bundles" / pid / "provision_bundle.json"
@@ -633,10 +657,10 @@ def commit_bundles(ledger: Ledger, golden_root: str | Path, protocols: Dict[str,
                 golden_ts = max(s for s in stamps if s) if any(stamps) else ""
             except Exception:
                 golden_ts = ""
-        rec = bundle_record_from_file(bp, protocol, config, golden_ts)
+        rec = provision_bundle_record(bp, protocol, config, golden_ts)
         key = key_for(rec)
         if ledger.exists(key):
             continue
-        ledger.commit_bundle(rec)
+        ledger.commit_bundles([rec])
         keys.append(key)
     return keys

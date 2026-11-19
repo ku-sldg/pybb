@@ -1,8 +1,8 @@
-"""Ledger core: record schema, package inspection, FileLedger hash chain.
+"""Ledger core (schema v2): bundle records, package inspection, FileLedger
+hash chain.
 
-Synthetic packages only — the generate_nonce ASP does not exist yet (plan
-section C); these tests pin down what pybb reads out of a package once it
-does, following the EXTEND/REPLACE layout the CVM uses today.
+Synthetic packages, following the EXTEND/REPLACE layout the CVM uses today;
+the real packages are exercised in test_ledger_runs.py.
 """
 
 import base64
@@ -14,26 +14,28 @@ import pytest
 from pydantic import ValidationError
 
 from pybb.attestation.ledger import (
-    AppraisalRecord,
-    Binding,
+    BlobRef,
     BundleRecord,
     DuplicateNonceError,
     EvidenceLayoutError,
-    EvidenceRecord,
     FileLedger,
+    InputRef,
     Interpreter,
+    JudgedByRecord,
+    LedgerError,
     LedgerIntegrityError,
     LedgerRecord,
-    Locator,
-    LocatorRecord,
-    NonceRecord,
+    Location,
+    MirrorRecord,
+    NonceInfo,
+    ProvisionInfo,
     RestoreRecord,
     SignatureInfo,
     SlotRef,
-    VerdictRecord,
+    Verdict,
     assurance_at_least,
     canonical_json,
-    derive_nid,
+    derive_bid,
     describe_package,
     key_for,
     load_appraiser_id,
@@ -41,6 +43,7 @@ from pybb.attestation.ledger import (
     sha256_hex,
     slot_layout,
 )
+from pybb.attestation.ledger_v1 import EvidenceRecord as EvidenceRecordV1
 
 # ── synthetic Copland evidence ───────────────────────────────────────────────
 
@@ -120,42 +123,113 @@ def test_canonical_json_is_order_independent_and_compact():
     assert a == b == '{"a":[1,2],"b":1,"c":{"x":null,"y":"ü"}}'.encode("utf-8")
 
 
-def test_envelope_uses_schema_alias_and_preserves_unknown_fields():
+def test_envelope_uses_schema_alias_omits_none_and_preserves_unknown_fields():
+    m = _measurement_bundle()
+    d = m.to_dict()
+    assert d["schema"] == "pybb-ledger/v2" and "schema_version" not in d
+    assert "verdict" not in d and "inputs" not in d and "appraisal_kind" not in d  # None omitted
+    rec = parse_record({**d, "future_field": {"kept": True}})
+    assert isinstance(rec, BundleRecord) and rec.to_dict()["future_field"] == {"kept": True}
+    assert rec.content_sha256() == sha256_hex(canonical_json(rec.to_dict()))
+
+
+def test_v1_records_still_parse_through_their_schema_tag():
     rec = parse_record({"schema": "pybb-ledger/v1", "kind": "evidence", "nid": "00",
                         "protocol_id": "p", "response_sha256": "r", "blob_sha256": "b",
                         "blob_bytes": 1, "rawev_count": 1, "rawev_sha256": "h",
                         "signature": {"present": False}, "nonce": {"slot": 0, "asp": "generate_nonce"},
-                        "assurance": "nonce", "future_field": {"kept": True}})
-    assert isinstance(rec, EvidenceRecord)
-    d = rec.to_dict()
-    assert d["schema"] == "pybb-ledger/v1" and "schema_version" not in d
-    assert d["future_field"] == {"kept": True}
-    assert rec.content_sha256() == sha256_hex(canonical_json(d))
+                        "assurance": "nonce"})
+    assert isinstance(rec, EvidenceRecordV1) and key_for(rec) == "evidence/00"
 
 
 def test_unknown_kind_parses_as_generic_record():
-    rec = parse_record({"schema": "pybb-ledger/v1", "kind": "mystery", "x": 1})
+    rec = parse_record({"schema": "pybb-ledger/v2", "kind": "mystery", "x": 1})
     assert type(rec) is LedgerRecord and rec.kind == "mystery"
 
 
-# ── nonce record validation ──────────────────────────────────────────────────
+# ── bundle records ───────────────────────────────────────────────────────────
 
 
-def _nonce_record(nonce=NONCE, **kw):
-    fields = dict(nid=sha256_hex(nonce), nonce_b64=_b64(nonce), nonce_bytes=len(nonce),
-                  protocol_id="proto")
+def _nonce_info(nonce: bytes, slot: int = 2) -> NonceInfo:
+    return NonceInfo(slot=slot, asp="generate_nonce", asp_targid="nonce_targ", b64=_b64(nonce), bytes=len(nonce))
+
+
+def _blob(sha: str = "b" * 64, local: str = "evidence/x/p.response.json.gz", store: str = "github:o/r") -> BlobRef:
+    return BlobRef(blob_sha256=sha, blob_bytes=10,
+                   locations=[Location(store="local", path=local), Location(store=store, path=f"blobs/{sha}.json.gz")])
+
+
+def _measurement_bundle(nonce_bytes: bytes = NONCE, protocol: str = "proto", **kw) -> BundleRecord:
+    fields = dict(bid=sha256_hex(nonce_bytes), role="measurement", protocol_id=protocol, response_sha256="r" * 64,
+                  blob=_blob(), rawev_count=3, rawev_sha256="h" * 64, nonce=_nonce_info(nonce_bytes),
+                  signature=SignatureInfo(present=True, slot=0, asp="sig"), assurance="signed+nonce",
+                  appraiser_id="ap-1")
     fields.update(kw)
-    return NonceRecord(**fields)
+    return BundleRecord(**fields)
 
 
-def test_nonce_record_checks_nid_against_bytes():
-    assert _nonce_record().nid == sha256_hex(NONCE)
-    with pytest.raises(ValidationError, match="sha256"):
-        _nonce_record(nid="00" * 32)
-    with pytest.raises(ValidationError, match="nonce_bytes"):
-        _nonce_record(nonce_bytes=31)
-    with pytest.raises(ValidationError, match="for_nid"):
-        _nonce_record(role="appraisal")
+def _appraisal_bundle(of: BundleRecord, nonce_bytes: bytes = None, passed: bool = True, kind: str = "live",
+                      **kw) -> BundleRecord:
+    nonce = nonce_bytes or secrets.token_bytes(32)
+    fields = dict(bid=sha256_hex(nonce), role="appraisal", protocol_id=of.protocol_id, response_sha256="q" * 64,
+                  blob=_blob("c" * 64, "evidence/x/p.appraisal.json.gz"), rawev_count=5, rawev_sha256="g" * 64,
+                  nonce=_nonce_info(nonce, slot=1), signature=SignatureInfo(present=True, slot=0, asp="sig"),
+                  assurance="signed+nonce",
+                  inputs=[InputRef(bid=of.key_id, binding_slot=2, binding_hash=of.rawev_sha256)],
+                  verdict=Verdict(passed=passed, components_total=2, components_failed=0 if passed else 1,
+                                  interpreter=Interpreter(kind="verified-summary", tool="copland-evidence-tools")),
+                  appraisal_kind=kind, appraiser_id="ap-1")
+    fields.update(kw)
+    return BundleRecord(**fields)
+
+
+def test_bundle_id_is_the_sha256_of_its_nonce():
+    m = _measurement_bundle()
+    assert m.bid == sha256_hex(NONCE) and m.key_id == m.bid
+    with pytest.raises(ValidationError, match="sha256 of the nonce"):
+        _measurement_bundle(bid="00" * 32)
+    with pytest.raises(ValidationError, match="nonce.bytes"):
+        _measurement_bundle(nonce=_nonce_info(NONCE).model_copy(update={"bytes": 31}))
+    # a legacy nonce-less bundle has no bid and keys by blob hash
+    legacy = _measurement_bundle(bid=None, nonce=None, role="provision", assurance="signed")
+    assert legacy.key_id == f"sha256:{'b' * 64}"
+    with pytest.raises(ValidationError, match="has no bid"):
+        _measurement_bundle(nonce=None)
+
+
+def test_role_invariants():
+    m = _measurement_bundle()
+    with pytest.raises(ValidationError, match="needs inputs and a verdict"):
+        _appraisal_bundle(m, inputs=None)
+    with pytest.raises(ValidationError, match="needs inputs and a verdict"):
+        _appraisal_bundle(m, verdict=None)
+    with pytest.raises(ValidationError, match="carries no verdict"):
+        _measurement_bundle(verdict=_appraisal_bundle(m).verdict)
+    with pytest.raises(ValidationError, match="carries no verdict"):
+        _measurement_bundle(appraisal_kind="live")
+    with pytest.raises(ValidationError, match="takes no inputs"):
+        _measurement_bundle(role="provision", inputs=[InputRef(bid="x" * 64)])
+    with pytest.raises(ValidationError, match="needs a state"):
+        _measurement_bundle(role="challenge")
+    with pytest.raises(ValidationError, match="no challenge state"):
+        _measurement_bundle(state="issued")
+    # a challenged measurement names exactly one challenge (section G)
+    assert _measurement_bundle(inputs=[InputRef(bid="c" * 64)]).inputs[0].bid == "c" * 64
+    with pytest.raises(ValidationError, match="exactly one challenge"):
+        _measurement_bundle(inputs=[InputRef(bid="c" * 64), InputRef(bid="d" * 64)])
+
+
+def test_keys_follow_the_plan():
+    m = _measurement_bundle()
+    a = _appraisal_bundle(m)
+    assert key_for(m) == f"bundle/{m.bid}" and key_for(a) == f"bundle/{a.bid}"
+    assert key_for(JudgedByRecord(bid=m.bid, appraisal_bid=a.bid)) == f"judged_by/{m.bid}/{a.bid}"
+    legacy = _measurement_bundle(bid=None, nonce=None, role="provision", assurance="signed")
+    assert key_for(legacy) == f"bundle/sha256:{'b' * 64}"
+    mir = MirrorRecord(store="github:ku-sldg/pybb-ledger", repo="ku-sldg/pybb-ledger", commit="c", state_tx=42)
+    assert key_for(mir) == "mirror/github-ku-sldg-pybb-ledger/000000000042"
+    rr = RestoreRecord(mode="exact", source_repo="o/r", source_commit="c", source_last_state_tx=3, tx_count=3)
+    assert key_for(rr) == f"restore/{rr.created_at}"
 
 
 # ── package inspection ───────────────────────────────────────────────────────
@@ -168,12 +242,13 @@ def test_slot_layout_follows_extend_prepend_and_split_order():
         ("sig", 0, 1), ("hashfile", 1, 1), ("generate_nonce", 2, 1)]
 
 
-def test_describe_package_derives_nid_from_last_slot_and_labels_assurance():
+def test_describe_package_derives_bid_from_the_nonce_slot_and_labels_assurance():
     pkg = linear_package()
     desc = describe_package(pkg, SESSION)
     assert desc.rawev_count == 3
     assert desc.nonce == SlotRef(slot=2, asp="generate_nonce", asp_targid="nonce_targ")
-    assert desc.nid == sha256_hex(NONCE) == derive_nid(pkg, SESSION)
+    assert desc.bid == sha256_hex(NONCE) == derive_bid(pkg, SESSION)
+    assert desc.nonce_b64 == _b64(NONCE)
     assert desc.signature.present and desc.signature.slot == 0 and desc.signature.asp == "sig"
     assert desc.assurance == "signed+nonce"
     assert desc.rawev_sha256 == sha256_hex(SIG + HASH_A + NONCE)  # == hashevidence
@@ -185,14 +260,14 @@ def test_assurance_levels_from_what_is_present():
     et = _asp_evt("sig", {}, _asp_evt("hashfile", {"asp_targid": "a"}))
     pkg = [{"RawEv": [_b64(SIG), _b64(HASH_A)]}, et]
     d = describe_package(pkg, SESSION)
-    assert d.assurance == "signed" and d.nid is None and d.nonce is None
+    assert d.assurance == "signed" and d.bid is None and d.nonce is None
     et = _asp_evt("hashfile", {"asp_targid": "a"}, _asp_evt("generate_nonce", {"asp_targid": "nonce_targ"}))
     d = describe_package([{"RawEv": [_b64(HASH_A), _b64(NONCE)]}, et], SESSION)
-    assert d.assurance == "nonce" and d.nid == sha256_hex(NONCE)
+    assert d.assurance == "nonce" and d.bid == sha256_hex(NONCE)
     d = describe_package([{"RawEv": [_b64(HASH_A)]}, _asp_evt("hashfile", {"asp_targid": "a"})], SESSION)
     assert d.assurance == "none"
     with pytest.raises(EvidenceLayoutError, match="no generate_nonce"):
-        derive_nid([{"RawEv": [_b64(HASH_A)]}, _asp_evt("hashfile", {})], SESSION)
+        derive_bid([{"RawEv": [_b64(HASH_A)]}, _asp_evt("hashfile", {})], SESSION)
     assert assurance_at_least("signed+nonce", "signed") and not assurance_at_least("nonce", "signed")
 
 
@@ -223,7 +298,7 @@ def test_replace_events_consume_their_subtree():
     pkg = [{"RawEv": [_b64(b""), _b64(b"")]}, appraised]
     d = describe_package(pkg, SESSION)
     assert [s.asp for s in d.spans] == ["sig_appr", "goldenbytes_appr"]
-    assert d.assurance == "none" and d.nid is None
+    assert d.assurance == "none" and d.bid is None
 
 
 def test_unknown_asp_type_is_a_layout_error():
@@ -232,101 +307,75 @@ def test_unknown_asp_type_is_a_layout_error():
         slot_layout(et, SESSION)
 
 
-# ── records for a run ────────────────────────────────────────────────────────
-
-
-def _run_records(nonce=NONCE, anonce=None, protocol="proto"):
-    anonce = anonce or secrets.token_bytes(32)
-    nid, anid = sha256_hex(nonce), sha256_hex(anonce)
-    n = _nonce_record(nonce, protocol_id=protocol)
-    an = NonceRecord(nid=anid, nonce_b64=_b64(anonce), nonce_bytes=32, role="appraisal",
-                     for_nid=nid, protocol_id=protocol)
-    ev = EvidenceRecord(nid=nid, protocol_id=protocol, response_sha256="r" * 64,
-                        blob_sha256="b" * 64, blob_bytes=10, rawev_count=3, rawev_sha256="h" * 64,
-                        signature=SignatureInfo(present=True, slot=0, asp="sig"),
-                        nonce=SlotRef(slot=2, asp="generate_nonce", asp_targid="nonce_targ"),
-                        assurance="signed+nonce",
-                        locators=[Locator(kind="local", path="evidence/x/p.response.json.gz",
-                                          appraiser_id="ap-1")])
-    ap = AppraisalRecord(nid=nid, seq=1, mode="live", anid=anid, response_sha256="q" * 64,
-                         blob_sha256="c" * 64, blob_bytes=5, rawev_sha256="g" * 64,
-                         binding=Binding(slot=2, evidence_hash="h" * 64),
-                         signature=SignatureInfo(present=True, slot=0, asp="sig"),
-                         nonce=SlotRef(slot=1, asp="generate_nonce"), assurance="signed+nonce",
-                         passed=True, interpreter=Interpreter(kind="verified-summary",
-                                                              tool="copland-evidence-tools"))
-    vd = VerdictRecord(nid=nid, protocol_id=protocol, passed=True, components_total=2,
-                       evidence_assurance="signed+nonce", appraisal_assurance="signed+nonce",
-                       interpreter=Interpreter(kind="verified-summary"))
-    return n, an, ev, ap, vd
-
-
-def test_keys_follow_the_plan():
-    n, an, ev, ap, vd = _run_records()
-    assert key_for(n) == f"nonce/{n.nid}" and key_for(an) == f"nonce/{an.nid}"
-    assert key_for(ev) == f"evidence/{n.nid}" and key_for(vd) == f"verdict/{n.nid}"
-    assert key_for(ap) == f"appraisal/{n.nid}/1"
-    loc = LocatorRecord(nid=n.nid, seq=1, target="evidence", blob_sha256="b" * 64,
-                        locator=Locator(kind="github", path="blobs/x", repo="o/r", commit="c"))
-    assert key_for(loc) == f"locator/{n.nid}/1"
-    bundle = BundleRecord(nid=None, protocol_id="p", response_sha256="r", blob_sha256="s" * 64,
-                          blob_bytes=1, rawev_count=1, signature=SignatureInfo(present=True),
-                          assurance="signed")
-    assert key_for(bundle) == f"bundle/sha256:{'s' * 64}"
-    bundle2 = bundle.model_copy(update={"nid": "n" * 64})
-    assert key_for(bundle2) == f"bundle/{'n' * 64}"
-
-
 # ── FileLedger ───────────────────────────────────────────────────────────────
 
 
-def test_commit_run_round_trip_and_duplicate_refusal(tmp_path):
+def test_commit_bundles_round_trip_pointers_and_duplicate_refusal(tmp_path):
     led = FileLedger(tmp_path / "ledger.jsonl")
-    n, an, ev, ap, vd = _run_records()
-    receipt = led.commit_run(n, an, ev, ap, vd)
+    m = _measurement_bundle()
+    a = _appraisal_bundle(m)
+    receipt = led.commit_bundles([m, a])
     assert receipt.tx == 1 and receipt.verified
-    assert set(receipt.keys) == {key_for(r) for r in (n, an, ev, ap, vd)}
-    run = led.get(n.nid)
-    assert run.evidence == ev and run.verdict == vd and run.nonce == n
-    assert run.appraisals == [ap] and run.appraiser_nonces == [an]
+    assert receipt.keys == [key_for(m), key_for(a), f"judged_by/{m.bid}/{a.bid}"]
+    assert led.get(m.bid) == m and led.get(a.bid) == a
+    assert led.appraisals_of(m.bid) == [a] and led.appraisals_of(a.bid) == []
     # the same package again: refused before anything is written
     with pytest.raises(DuplicateNonceError):
-        led.commit_run(n, an, ev, ap, vd)
+        led.commit_bundles([m, a])
     assert len(led) == 1
-    # a fresh run nonce but a reused appraiser nonce: also refused
-    n2, _, ev2, ap2, vd2 = _run_records(nonce=secrets.token_bytes(32))
-    ap2 = ap2.model_copy(update={"anid": an.nid})
-    an2 = an.model_copy(update={"for_nid": n2.nid})
+    # a fresh measurement but a reused appraiser nonce: also refused
+    m2 = _measurement_bundle(secrets.token_bytes(32))
     with pytest.raises(DuplicateNonceError):
-        led.commit_run(n2, an2, ev2, ap2, vd2)
+        led.commit_bundles([m2, _appraisal_bundle(m2, base64.b64decode(a.nonce.b64))])
+    assert len(led) == 1
 
 
-def test_commit_run_rejects_inconsistent_batches(tmp_path):
+def test_commit_bundles_rejects_inconsistent_batches(tmp_path):
     led = FileLedger(tmp_path / "l.jsonl")
-    n, an, ev, ap, vd = _run_records()
-    other = _nonce_record(secrets.token_bytes(32))
-    with pytest.raises(Exception, match="disagree on nid"):
-        led.commit_run(n, an, ev.model_copy(update={"nid": other.nid}), ap, vd)
-    with pytest.raises(Exception, match="role 'appraisal'"):
-        led.commit_run(n, other, ev, ap, vd)
-    with pytest.raises(Exception, match="live seq-1"):
-        led.commit_run(n, an, ev, ap.model_copy(update={"seq": 2}), vd)
+    m = _measurement_bundle()
+    with pytest.raises(LedgerError, match="empty"):
+        led.commit_bundles([])
+    with pytest.raises(LedgerError, match="duplicate bundle in one batch"):
+        led.commit_bundles([m, m])
+    stranger = _measurement_bundle(secrets.token_bytes(32))
+    with pytest.raises(LedgerError, match="is not in the ledger"):
+        led.commit_bundles([_appraisal_bundle(stranger)])  # input neither stored nor in the batch
     assert len(led) == 0
+
+
+def test_many_appraisals_over_one_measurement(tmp_path):
+    led = FileLedger(tmp_path / "l.jsonl")
+    m = _measurement_bundle()
+    live = _appraisal_bundle(m, kind="live")
+    led.commit_bundles([m, live])
+    audit = _appraisal_bundle(m, kind="audit", verdict=live.verdict.model_copy(update={"agrees_with_live": True}))
+    slices = _appraisal_bundle(m, kind="slices-only", passed=False, session_sha256="s" * 64)
+    led.commit_bundles([audit])
+    led.commit_bundles([slices])
+    of_m = led.appraisals_of(m.bid)
+    assert {a.appraisal_kind for a in of_m} == {"live", "audit", "slices-only"}
+    assert {a.verdict.passed for a in of_m if a.appraisal_kind == "slices-only"} == {False}
+    # an appraisal of an appraisal: just an appraisal whose input is an appraisal
+    audit2 = _appraisal_bundle(live, kind="audit")
+    led.commit_bundles([audit2])
+    assert [a.bid for a in led.appraisals_of(live.bid)] == [audit2.bid]
+    assert len(led.bundles(role="appraisal")) == 4 and len(led.bundles(protocol_id="proto", role="measurement")) == 1
 
 
 def test_chain_persists_reloads_and_detects_tampering(tmp_path):
     path = tmp_path / "l.jsonl"
     led = FileLedger(path)
-    n, an, ev, ap, vd = _run_records()
-    led.commit_run(n, an, ev, ap, vd)
-    led.append_locator(LocatorRecord(nid=n.nid, seq=1, target="evidence", blob_sha256=ev.blob_sha256,
-                                     locator=Locator(kind="github", path="blobs/x", repo="o/r",
-                                                     commit="c", git_blob_sha="g"), verified=True))
+    m = _measurement_bundle()
+    a = _appraisal_bundle(m)
+    led.commit_bundles([m, a])
+    led.commit_mirror(MirrorRecord(store="github:o/r", repo="o/r", commit="c", state_tx=1, blobs=2))
     assert led.verify_chain() == 2
 
     reloaded = FileLedger(path)
-    assert len(reloaded) == 2 and reloaded.get(n.nid).locators[0].locator.repo == "o/r"
-    assert reloaded.tx_of(f"evidence/{n.nid}") == 1 and reloaded.tx_of(f"locator/{n.nid}/1") == 2
+    assert len(reloaded) == 2 and reloaded.latest_mirror("github:o/r").commit == "c"
+    assert reloaded.tx_of(f"bundle/{m.bid}") == 1 and reloaded.tx_of("mirror/github-o-r/000000000001") == 2
+    with pytest.raises(LedgerError, match="already exists"):
+        reloaded.commit_mirror(MirrorRecord(store="github:o/r", commit="d", state_tx=1))
 
     # flip the verdict inside the stored value: content hash and chain both break
     lines = path.read_text().splitlines()
@@ -342,46 +391,26 @@ def test_chain_persists_reloads_and_detects_tampering(tmp_path):
         FileLedger(path)
 
 
-def test_audit_appraisal_appends_with_new_appraiser_nonce(tmp_path):
+def test_provision_and_restore_records(tmp_path):
     led = FileLedger(tmp_path / "l.jsonl")
-    n, an, ev, ap, vd = _run_records()
-    led.commit_run(n, an, ev, ap, vd)
-    audit_nonce = secrets.token_bytes(32)
-    an2 = NonceRecord(nid=sha256_hex(audit_nonce), nonce_b64=_b64(audit_nonce), nonce_bytes=32,
-                      role="appraisal", for_nid=n.nid, protocol_id="proto")
-    ap2 = ap.model_copy(update={"seq": 2, "mode": "audit", "anid": an2.nid,
-                                "agrees_with_recorded_verdict": True,
-                                "checks": {"ledger_verified": True, "bytes_match": True, "nid_ok": True}})
-    led.append_appraisal(ap2, an2)
-    run = led.get(n.nid)
-    assert [a.seq for a in run.appraisals] == [1, 2]
-    assert run.appraisals[1].agrees_with_recorded_verdict is True
-    with pytest.raises(Exception, match="already recorded"):
-        led.append_appraisal(ap2, an2.model_copy(update={"nid": an2.nid}))
-    with pytest.raises(Exception, match="audit"):
-        led.append_appraisal(ap.model_copy(update={"seq": 3}), an2)
-
-
-def test_bundle_and_restore_records(tmp_path):
-    led = FileLedger(tmp_path / "l.jsonl")
-    legacy = BundleRecord(protocol_id="p", response_sha256="r" * 64, blob_sha256="s" * 64,
-                          blob_bytes=100, rawev_count=5, signature=SignatureInfo(present=True, slot=0, asp="sig"),
-                          assurance="signed",
-                          locators=[Locator(kind="local", path="golden/_bundles/p/provision_bundle.json")])
-    led.commit_bundle(legacy)
-    with pytest.raises(Exception, match="already recorded"):
-        led.commit_bundle(legacy)
-    nonced = legacy.model_copy(update={"nid": "n" * 64, "assurance": "signed+nonce",
-                                       "nonce": SlotRef(slot=4, asp="generate_nonce")})
-    led.commit_bundle(nonced)
+    legacy = BundleRecord(role="provision", protocol_id="p", response_sha256="r" * 64,
+                          blob=BlobRef(blob_sha256="s" * 64, blob_bytes=100, encoding="json",
+                                       locations=[Location(store="local", path="golden/_bundles/p/provision_bundle.json")]),
+                          rawev_count=5, rawev_sha256="h" * 64,
+                          signature=SignatureInfo(present=True, slot=0, asp="sig"), assurance="signed",
+                          freshness="none", provision=ProvisionInfo(golden_ts="2026-11-01T00:00:00Z", targets=4))
+    led.commit_bundles([legacy])
     with pytest.raises(DuplicateNonceError):
-        led.commit_bundle(nonced)
+        led.commit_bundles([legacy])
+    nonced = legacy.model_copy(update={"bid": sha256_hex(NONCE), "assurance": "signed+nonce",
+                                       "freshness": "post-hoc", "nonce": _nonce_info(NONCE, slot=4)})
+    led.commit_bundles([nonced])
     led.commit_restore(RestoreRecord(mode="exact", source_repo="o/r", source_commit="c",
                                      source_last_state_tx=3, tx_count=3))
-    kinds = [r.kind for r in led.records()]
-    assert kinds == ["bundle", "bundle", "restore"]
-    assert [r.kind for r in led.records(kind="bundle", protocol_id="p")] == ["bundle", "bundle"]
-    assert led.exists(f"bundle/{'n' * 64}") and led.exists(f"bundle/sha256:{'s' * 64}")
+    assert [r.kind for r in led.records()] == ["bundle", "bundle", "restore"]
+    assert [r.role for r in led.bundles(protocol_id="p")] == ["provision", "provision"]
+    assert led.exists(f"bundle/{sha256_hex(NONCE)}") and led.exists(f"bundle/sha256:{'s' * 64}")
+    assert led.get_record(f"bundle/sha256:{'s' * 64}").provision.targets == 4
 
 
 def test_appraiser_id_is_created_once_and_opaque(tmp_path):

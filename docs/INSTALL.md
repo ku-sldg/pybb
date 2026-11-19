@@ -192,7 +192,7 @@ and day-to-day use. Nothing below is needed for the demos.
 2. `scripts/immudb_dev.sh install` — Homebrew `immudb` 1.11+ and its
    launchd service; `pip install -e '.[ledger]'` for the Python client.
 3. `export PYBB_IMMUDB_PASSWORD='<8-32 chars, upper+lower+digit+symbol>'`
-   then `scripts/immudb_dev.sh bootstrap` (database `pybb`, user `pybb`),
+   then `scripts/immudb_dev.sh bootstrap` (database `pybb2`, user `pybb`),
    and `scripts/immudb_dev.sh rotate-admin NEWPASS` once.
 4. `python examples/provision_tools.py` — bless the attestation stack.
 5. Optional: clone your evidence repository and `export
@@ -214,6 +214,7 @@ Everything works with no environment setup. For non-standard layouts:
 | `COPLAND_EVIDENCE_TOOLS` | evidence summarizer binary (optional feature) |
 | `VERUS_DIST` | Verus distribution dir (default `~/Claude_workspace/verus-dist`) |
 | `PYBB_IMMUDB_USER` / `PYBB_IMMUDB_PASSWORD` | ledger user (default `pybb`) and its password |
+| `PYBB_IMMUDB_DB` | ledger database (default `pybb2`, schema v2; `pybb` holds the v1 records) |
 | `PYBB_EVIDENCE_REPO` | local clone of the evidence repository (ledger mirror and blob store) |
 | `PYBB_GOLDEN_ROOT` | golden root the ledger reads blessings from (default `golden`) |
 | `PYBB_VERIFY_KEY` | verifying public key fingerprinted into ledger records |

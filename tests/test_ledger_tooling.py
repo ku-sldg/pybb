@@ -41,7 +41,7 @@ def fake_stack(tmp_path):
 
 @pytest.fixture
 def config(tmp_path, fake_stack):
-    return LedgerConfig(state_dir=str(tmp_path / "state"), appraiser_id="ap-tool",
+    return LedgerConfig(state_dir=str(tmp_path / "state"), appraiser_id="ap-tool", evidence_repo="",
                         verify_key_path=fake_stack.key, golden_root=str(tmp_path / "golden"))
 
 
@@ -114,9 +114,9 @@ def test_runs_carry_the_blessing_reference_by_default(tmp_path, fake_stack, conf
                                            ledger=ledger, ledger_config=config)
     v = predicate({"protocol": proto.protocol_id})
     assert v.error == "", v.error
-    run = ledger.get(v.nonce_id)
+    m = ledger.get(v.bid)
     expect = ToolingRef(kind="bundle", ref=sha256_hex(bundle.read_bytes()))
-    assert run.evidence.tooling == expect and run.appraisals[0].tooling == expect
+    assert m.tooling == expect and ledger.appraisals_of(v.bid)[0].tooling == expect
     assert len(client.requests) == 2  # at_provisioning: no tooling run happened
 
 
@@ -143,8 +143,8 @@ def test_every_run_cadence_runs_the_tooling_protocol_first(tmp_path, fake_stack,
     ref = resolver.ref(proto.protocol_id)
     assert ref is not None and ref.kind == "run"
     tooling_run = ledger.get(ref.ref)
-    assert tooling_run.evidence.protocol_id == TOOLING_PROTOCOL_ID
-    assert tooling_run.evidence.tooling.kind == "bundle"  # the tooling run itself references the blessing
+    assert tooling_run.role == "measurement" and tooling_run.protocol_id == TOOLING_PROTOCOL_ID
+    assert tooling_run.tooling.kind == "bundle"  # the tooling run itself references the blessing
     # every_episode: the second ask reuses the first run
     cfg2 = cfg.model_copy(update={"tooling": ToolingConfig(measure="every_episode")})
     r2 = ToolingResolver(Client(), protocols, ledger, cfg2)

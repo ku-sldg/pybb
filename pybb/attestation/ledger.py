@@ -1,108 +1,86 @@
 """
-Append-only ledger of Copland runs (design: docs/ledger_plan.md).
+Append-only ledger of Copland bundles — schema v2 (design: docs/ledger_plan.md,
+section K; v1 history in sections A–I).
 
-The ledger records what the CVM produced — a nonce'd, signed measurement
-package; a signed, nonce-bound appraisal package; the verdict read out of
-it — and where the bytes live. It is keyed and linked by nonce ids and
-content hashes and carries no blackboard or orchestration concepts, so a
-reader who knows nothing of pybb can verify it.
+Every CVM run — a measurement, an appraisal, a provisioning run, a (future)
+challenge — produces one signed, nonce'd package, and the ledger records it
+as one `bundle` keyed by the sha256 of the nonce the CVM drew for that run.
+What a bundle is evidence *of* is its `role` and its `inputs`: a
+measurement is about the target system, an appraisal is about the bundle it
+names as input (bound to it by a `hashevidence` slot) and carries its own
+`verdict`, so one measurement can be judged any number of times by any
+policy. `judged_by/<input>/<appraisal>` pointers make those judgments one
+prefix scan; a `mirror` record per push to a store witnesses what has been
+mirrored; `restore` records a restore. Four kinds, nothing written about a
+run after its batch.
 
-Division of labour (plan B.9): pybb IDENTIFIES and DESCRIBES evidence —
-it hashes bytes to key and index them and reads evidence structure to
-label it — and the CVM JUDGES. Nothing in this module verifies a
-signature, compares a nonce, or compares a golden; those are companion
-ASP verdicts, read back through the verified summarizer. The one check
-pybb owns outright is duplicate-nonce refusal, which is ledger policy
-over history the CVM cannot see.
+Division of labour (plan B.9): pybb IDENTIFIES and DESCRIBES evidence — it
+hashes bytes to key and index them and reads evidence structure to label
+it — and the CVM JUDGES. The one check pybb owns outright is refusing a
+bundle id the ledger already holds.
 
-This module holds the record schema (plan section I), canonicalization,
-package inspection helpers, the `Ledger` interface, and `FileLedger`, a
-JSONL hash chain used by tests and as the no-server fallback. The immudb
-backend lives in `ledger_immudb.py` (plan step 4).
+This module holds the v2 records, the package inspection helpers, the
+`Ledger` interface and `FileLedger` (a JSONL hash chain for tests and the
+no-server fallback). immudb lives in `ledger_immudb.py`; v1 records are
+readable through `ledger_v1.py`.
 """
 
 from __future__ import annotations
 
 import base64
-import hashlib
-import json
 import os
 import secrets
-import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-SCHEMA = "pybb-ledger/v1"
-GENESIS = "0" * 64
+from .ledger_common import (  # noqa: F401  (re-exported)
+    APPRAISER_NONCE_TARGID,
+    ASSURANCE_RANK,
+    GENESIS,
+    NONCE_ASP,
+    NONCE_TARGID,
+    SIG_ASPS,
+    AssuranceLevel,
+    DuplicateNonceError,
+    EvidenceLayoutError,
+    Freshness,
+    LedgerError,
+    LedgerIntegrityError,
+    assurance_at_least,
+    canonical_json,
+    sha256_hex,
+    utc_now,
+)
 
-AssuranceLevel = Literal["signed+nonce", "signed", "nonce", "none"]
-ASSURANCE_RANK: Dict[str, int] = {"none": 0, "nonce": 1, "signed": 2, "signed+nonce": 3}
-Freshness = Literal["post-hoc", "pre-registered", "none"]
+import json  # noqa: E402
 
-NONCE_ASP = "generate_nonce"
-NONCE_TARGID = "nonce_targ"
-APPRAISER_NONCE_TARGID = "appraiser_nonce_targ"
-SIG_ASPS = ("sig", "sig_tpm")
-
-
-# ── canonical form ───────────────────────────────────────────────────────────
-
-
-def canonical_json(obj: Any) -> bytes:
-    """The stored form of every record: sorted keys, no whitespace, UTF-8."""
-    return json.dumps(obj, sort_keys=True, separators=(",", ":"),
-                      ensure_ascii=False).encode("utf-8")
-
-
-def sha256_hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def utc_now() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+SCHEMA = "pybb-ledger/v2"
+Role = Literal["measurement", "appraisal", "provision", "challenge"]
 
 
-# ── errors ───────────────────────────────────────────────────────────────────
-
-
-class LedgerError(RuntimeError):
-    """Base class for ledger failures."""
-
-
-class DuplicateNonceError(LedgerError):
-    """A nonce id the ledger already holds: a replayed or duplicated package."""
-
-
-class LedgerIntegrityError(LedgerError):
-    """The stored ledger does not verify (broken chain, altered value)."""
-
-
-class EvidenceLayoutError(LedgerError):
-    """A package's evidence type cannot be laid out against its session."""
-
-
-# ── record schema (plan section I) ───────────────────────────────────────────
+# ── record schema (plan section K) ───────────────────────────────────────────
 
 
 class LedgerRecord(BaseModel):
-    """Common envelope (I.1). Unknown fields are preserved, never dropped."""
+    """Common envelope. Unknown fields are preserved, never dropped; None
+    fields are omitted from the stored form so a measurement bundle never
+    shows appraisal-only keys."""
 
     model_config = ConfigDict(extra="allow", populate_by_name=True)
 
-    # `schema` shadows a deprecated BaseModel attribute; alias it on the wire.
     schema_version: str = Field(default=SCHEMA, alias="schema")
     kind: str
-    nid: Optional[str] = None
+    bid: Optional[str] = None
     created_at: str = Field(default_factory=utc_now)
     committer_fp: str = ""
     pybb_version: str = ""
     appraiser_id: str = ""
 
     def to_dict(self) -> dict:
-        return self.model_dump(by_alias=True, mode="json")
+        return self.model_dump(by_alias=True, mode="json", exclude_none=True)
 
     def canonical(self) -> bytes:
         return canonical_json(self.to_dict())
@@ -119,13 +97,19 @@ class SlotRef(BaseModel):
     asp_targid: Optional[str] = None
 
 
+class NonceInfo(SlotRef):
+    """The bundle's nonce: its slot and its value (stored in clear; a nonce's
+    worth is unpredictability before use, not secrecy after)."""
+
+    b64: str
+    bytes: int
+
+
 class SignatureInfo(BaseModel):
     present: bool
     slot: Optional[int] = None
     asp: Optional[str] = None
     signer_fp: Optional[str] = None
-    # set only by a CVM-native audit (sig_appr verdict); never by pybb
-    verified: Optional[bool] = None
 
 
 class ToolingRef(BaseModel):
@@ -135,58 +119,32 @@ class ToolingRef(BaseModel):
     ref: str
 
 
-class Locator(BaseModel):
-    kind: Literal["local", "github"]
+class Location(BaseModel):
+    """One place a blob is or will be. `store` is `local` or a configured
+    store id such as `github:owner/name`; remote paths are content-addressed
+    and therefore known at commit time (plan K decision 7)."""
+
+    store: str
     path: str
-    appraiser_id: Optional[str] = None  # local: whose filesystem
-    repo: Optional[str] = None  # github
-    commit: Optional[str] = None
-    git_blob_sha: Optional[str] = None
 
 
-class NonceRecord(LedgerRecord):
-    kind: Literal["nonce"] = "nonce"
-    nid: str
-    nonce_b64: str
-    nonce_bytes: int
-    role: Literal["measurement", "appraisal"] = "measurement"
-    for_nid: Optional[str] = None
-    state: str = "committed"
-    freshness: Freshness = "post-hoc"
-    protocol_id: str
+class BlobRef(BaseModel):
+    """Archived bytes: hash, size, encoding and every known location."""
 
-    @model_validator(mode="after")
-    def _nid_matches_bytes(self) -> "NonceRecord":
-        raw = base64.b64decode(self.nonce_b64)
-        if sha256_hex(raw) != self.nid:
-            raise ValueError("nid is not sha256 of the nonce bytes")
-        if len(raw) != self.nonce_bytes:
-            raise ValueError("nonce_bytes disagrees with the nonce length")
-        if self.role == "appraisal" and not self.for_nid:
-            raise ValueError("an appraisal nonce must name the run it judged (for_nid)")
-        return self
-
-
-class EvidenceRecord(LedgerRecord):
-    kind: Literal["evidence"] = "evidence"
-    nid: str
-    protocol_id: str
-    term_sha256: str = ""
-    session_sha256: str = ""
-    manifest_sha256: str = ""
-    response_sha256: str
     blob_sha256: str
     blob_bytes: int
     encoding: str = "gzip+json"
-    rawev_count: int
-    rawev_sha256: str
-    signature: SignatureInfo
-    nonce: SlotRef
-    assurance: AssuranceLevel
-    freshness: Freshness = "post-hoc"
-    exception_reason: Optional[str] = None
-    tooling: Optional[ToolingRef] = None
-    locators: List[Locator] = []
+    locations: List[Location] = []
+
+
+class InputRef(BaseModel):
+    """A bundle this run took as initial evidence. For an appraisal the
+    binding is the `hashevidence` slot over the judged bundle's flattened
+    RawEv bytes — compare with that bundle's `rawev_sha256`."""
+
+    bid: str
+    binding_slot: Optional[int] = None
+    binding_hash: Optional[str] = None
 
 
 class FailingComponent(BaseModel):
@@ -200,86 +158,117 @@ class Interpreter(BaseModel):
     tool: str = ""
 
 
-class VerdictRecord(LedgerRecord):
-    kind: Literal["verdict"] = "verdict"
-    nid: str
-    protocol_id: str
+class Verdict(BaseModel):
+    """An appraisal bundle's reading (plan K decision 2)."""
+
     passed: bool
     components_total: int = 0
     components_failed: int = 0
     failing: List[FailingComponent] = []
     components_sha256: str = ""
-    appraisal_seq: int = 1
-    evidence_assurance: AssuranceLevel
-    appraisal_assurance: AssuranceLevel
+    components_blob: Optional[BlobRef] = None
     interpreter: Interpreter
-    error: str = ""
-
-
-class LocatorRecord(LedgerRecord):
-    kind: Literal["locator"] = "locator"
-    nid: str
-    seq: int
-    target: Literal["evidence", "appraisal", "components", "bundle"]
-    blob_sha256: str
-    locator: Locator
-    verified: bool = False
-
-
-class Binding(BaseModel):
-    slot: int
-    asp: str = "hashevidence"
-    evidence_hash: str
-    # goldenbytes_appr verdict from a CVM-native audit (plan B.6); null until one ran
-    matches_evidence: Optional[bool] = None
-
-
-class AppraisalRecord(LedgerRecord):
-    kind: Literal["appraisal"] = "appraisal"
-    nid: str
-    seq: int
-    mode: Literal["live", "audit"]
-    anid: str
-    response_sha256: str
-    blob_sha256: str
-    blob_bytes: int
-    encoding: str = "gzip+json"
-    rawev_sha256: str
-    binding: Binding
-    signature: SignatureInfo
-    nonce: SlotRef
-    assurance: AssuranceLevel
-    freshness: Freshness = "post-hoc"
-    passed: bool
-    components_sha256: str = ""
-    interpreter: Interpreter
-    tooling: Optional[ToolingRef] = None
+    # appraisals of a stored bundle: the ledger/bytes/id checks pybb made
     checks: Dict[str, bool] = {}
-    locator_used: Optional[Locator] = None
-    agrees_with_recorded_verdict: Optional[bool] = None
-    # audit of an APPRAISAL package (plan B.6 'audit of the audit'): the seq
-    # of the appraisal record judged; None when the raw package was judged
-    audits_seq: Optional[int] = None
+    # agreement with the input measurement's live appraisal, when this is a
+    # later appraisal of the same measurement under the same policy
+    agrees_with_live: Optional[bool] = None
+
+
+class ProvisionInfo(BaseModel):
+    golden_ts: str = ""
+    targets: int = 0
+
+
+class ChallengeInfo(BaseModel):
+    """Section G (planned): the appraiser's pre-registered challenge."""
+
+    requested_protocol: str = ""
+    requester: str = ""
+    issued_at: str = ""
+    expires_at: str = ""
 
 
 class BundleRecord(LedgerRecord):
+    """One record per CVM run output (plan K.1)."""
+
     kind: Literal["bundle"] = "bundle"
-    nid: Optional[str] = None  # legacy bundles have no nonce
+    role: Role
     protocol_id: str
+    term_sha256: str = ""
+    session_sha256: str = ""
+    manifest_sha256: str = ""
     response_sha256: str
-    blob_sha256: str
-    blob_bytes: int
-    encoding: str = "json"
-    golden_ts: str = ""
-    targets: int = 0
+    blob: BlobRef
     rawev_count: int
-    rawev_sha256: str = ""
+    rawev_sha256: str
+    nonce: Optional[NonceInfo] = None  # None only on legacy nonce-less provisioning bundles
     signature: SignatureInfo
-    nonce: Optional[SlotRef] = None
     assurance: AssuranceLevel
     freshness: Freshness = "post-hoc"
+    exception_reason: Optional[str] = None
     tooling: Optional[ToolingRef] = None
-    locators: List[Locator] = []
+    error: str = ""  # measurement whose appraisal never happened: why
+    # role-gated members (serialized only when set)
+    inputs: Optional[List[InputRef]] = None
+    verdict: Optional[Verdict] = None
+    appraisal_kind: Optional[str] = None
+    provision: Optional[ProvisionInfo] = None
+    state: Optional[str] = None
+    challenge: Optional[ChallengeInfo] = None
+
+    @model_validator(mode="after")
+    def _role_invariants(self) -> "BundleRecord":
+        if self.nonce is not None:
+            if sha256_hex(base64.b64decode(self.nonce.b64)) != self.bid:
+                raise ValueError("bid is not sha256 of the nonce bytes")
+            if len(base64.b64decode(self.nonce.b64)) != self.nonce.bytes:
+                raise ValueError("nonce.bytes disagrees with the nonce length")
+        elif self.bid is not None:
+            raise ValueError("a bundle without a nonce has no bid (legacy bundles key by blob hash)")
+        if self.role == "appraisal":
+            if not self.inputs or self.verdict is None:
+                raise ValueError("an appraisal bundle needs inputs and a verdict")
+        else:
+            if self.inputs and self.role != "challenge" and self.role != "measurement":
+                raise ValueError(f"a {self.role} bundle takes no inputs")
+            if self.verdict is not None or self.appraisal_kind is not None:
+                raise ValueError(f"a {self.role} bundle carries no verdict")
+        if self.role == "measurement" and self.inputs and len(self.inputs) != 1:
+            raise ValueError("a challenged measurement names exactly one challenge bundle")
+        if self.role == "challenge" and not self.state:
+            raise ValueError("a challenge bundle needs a state")
+        if self.role != "challenge" and (self.state or self.challenge):
+            raise ValueError(f"a {self.role} bundle has no challenge state")
+        return self
+
+    @property
+    def key_id(self) -> str:
+        return self.bid if self.bid else f"sha256:{self.blob.blob_sha256}"
+
+
+class JudgedByRecord(LedgerRecord):
+    """Pointer: `bid` (the judged bundle) → `appraisal_bid` (plan K.2)."""
+
+    kind: Literal["judged_by"] = "judged_by"
+    bid: str
+    appraisal_bid: str
+
+
+class MirrorRecord(LedgerRecord):
+    """One per push to a store (plan K decision 7)."""
+
+    kind: Literal["mirror"] = "mirror"
+    store: str
+    repo: str = ""
+    commit: str = ""
+    state_tx: int
+    state_hash: str = ""
+    journal_from_tx: int = 0
+    journal_to_tx: int = 0
+    blobs: int = 0
+    blob_hashes_sha256: str = ""
+    skipped: List[Dict[str, str]] = []
 
 
 class RestoreRecord(LedgerRecord):
@@ -292,35 +281,45 @@ class RestoreRecord(LedgerRecord):
 
 
 RECORD_TYPES = {
-    "nonce": NonceRecord,
-    "evidence": EvidenceRecord,
-    "verdict": VerdictRecord,
-    "locator": LocatorRecord,
-    "appraisal": AppraisalRecord,
     "bundle": BundleRecord,
+    "judged_by": JudgedByRecord,
+    "mirror": MirrorRecord,
     "restore": RestoreRecord,
 }
 
 
-def parse_record(data: dict) -> LedgerRecord:
-    """Rebuild the typed record from its stored dict (unknown kinds stay generic)."""
+def parse_record(data: dict) -> Any:
+    """Rebuild the typed record from its stored dict. v1 records (by their
+    `schema` tag) come back as `ledger_v1` models; unknown v2 kinds stay
+    generic."""
+    if str(data.get("schema", "")).endswith("/v1"):
+        from .ledger_v1 import parse_record_v1
+
+        return parse_record_v1(data)
     cls = RECORD_TYPES.get(data.get("kind", ""), LedgerRecord)
     return cls.model_validate(data)
 
 
-def key_for(record: LedgerRecord) -> str:
-    """The ledger key of a record (plan B.3 / I)."""
+def store_slug(store: str) -> str:
+    """A store id as a key/path segment: `github:owner/name` → `github-owner-name`."""
+    return store.replace(":", "-").replace("/", "-")
+
+
+def key_for(record: Any) -> str:
+    """The ledger key of a record (plan K.2)."""
     k = record.kind
-    if k in ("nonce", "evidence", "verdict"):
-        return f"{k}/{record.nid}"
-    if k in ("locator", "appraisal"):
-        return f"{k}/{record.nid}/{record.seq}"  # type: ignore[attr-defined]
     if k == "bundle":
-        if record.nid:
-            return f"bundle/{record.nid}"
-        return f"bundle/sha256:{record.blob_sha256}"  # type: ignore[attr-defined]
+        return f"bundle/{record.key_id}"
+    if k == "judged_by":
+        return f"judged_by/{record.bid}/{record.appraisal_bid}"
+    if k == "mirror":
+        return f"mirror/{store_slug(record.store)}/{record.state_tx:012d}"
     if k == "restore":
         return f"restore/{record.created_at}"
+    if str(getattr(record, "schema_version", "")).endswith("/v1"):
+        from .ledger_v1 import key_for as key_for_v1
+
+        return key_for_v1(record)
     raise LedgerError(f"no key rule for record kind '{k}'")
 
 
@@ -481,7 +480,8 @@ class PackageDescription(BaseModel):
     rawev_sha256: str  # sha256 over the flattened RawEv bytes (= hashevidence)
     spans: List[SlotSpan]
     nonce: Optional[SlotRef] = None
-    nid: Optional[str] = None
+    bid: Optional[str] = None
+    nonce_b64: Optional[str] = None
     signature: SignatureInfo
     assurance: AssuranceLevel
 
@@ -515,7 +515,8 @@ def describe_package(payload: list, session: dict,
     nonces = [sp for sp in spans if sp.asp == NONCE_ASP
               and (nonce_targid is None or sp.asp_targid == nonce_targid)]
     nonce_ref: Optional[SlotRef] = None
-    nid: Optional[str] = None
+    bid: Optional[str] = None
+    nonce_b64: Optional[str] = None
     if len(nonces) > 1:
         raise EvidenceLayoutError(f"{len(nonces)} nonce events in one package")
     if nonces:
@@ -523,7 +524,8 @@ def describe_package(payload: list, session: dict,
         if sp.count != 1:
             raise EvidenceLayoutError("nonce event does not occupy exactly one slot")
         nonce_ref = SlotRef(slot=sp.start, asp=sp.asp, asp_targid=sp.asp_targid)
-        nid = sha256_hex(raw[sp.start])
+        bid = sha256_hex(raw[sp.start])
+        nonce_b64 = payload[0]["RawEv"][sp.start]
 
     sigs = [sp for sp in spans if sp.asp in SIG_ASPS]
     if sigs:
@@ -547,22 +549,22 @@ def describe_package(payload: list, session: dict,
         rawev_sha256=sha256_hex(b"".join(raw)),
         spans=spans,
         nonce=nonce_ref,
-        nid=nid,
+        bid=bid,
+        nonce_b64=nonce_b64,
         signature=signature,
         assurance=assurance,
     )
 
 
-def derive_nid(payload: list, session: dict) -> str:
-    """The run's nonce id, or EvidenceLayoutError when the package has no nonce."""
+def derive_bid(payload: list, session: dict) -> str:
+    """The bundle id, or EvidenceLayoutError when the package has no nonce."""
     desc = describe_package(payload, session)
-    if desc.nid is None:
+    if desc.bid is None:
         raise EvidenceLayoutError("package carries no generate_nonce event")
-    return desc.nid
+    return desc.bid
 
 
-def assurance_at_least(level: str, minimum: str) -> bool:
-    return ASSURANCE_RANK.get(level, -1) >= ASSURANCE_RANK.get(minimum, 99)
+derive_nid = derive_bid  # transitional alias
 
 
 # ── configuration ────────────────────────────────────────────────────────────
@@ -583,7 +585,7 @@ class ToolingConfig(BaseModel):
 class LedgerConfig(BaseModel):
     host: str = "127.0.0.1"
     port: int = 3322
-    db: str = "pybb"
+    db: str = Field(default_factory=lambda: os.environ.get("PYBB_IMMUDB_DB", "pybb2"))
     user: str = Field(default_factory=lambda: os.environ.get("PYBB_IMMUDB_USER", "pybb"))
     # PYBB_IMMUDB_PASSWORD, else the file <state_dir>/immudb_password written
     # by scripts/immudb_dev.sh bootstrap (never a value in code or chat)
@@ -642,35 +644,35 @@ class Receipt(BaseModel):
     verified: bool = False  # client-side proof checked (immudb); FileLedger: chain ok
 
 
-class RunRecords(BaseModel):
-    nonce: NonceRecord
-    evidence: EvidenceRecord
-    verdict: VerdictRecord
-    appraisals: List[AppraisalRecord] = []
-    appraiser_nonces: List[NonceRecord] = []
-    locators: List[LocatorRecord] = []
-
-
 class Ledger(ABC):
-    """The ledger interface (plan section A). Every write is append-only."""
+    """The ledger interface (plan K). Every write is append-only; the only key
+    the appraiser ever writes twice is a `challenge` bundle's (section G)."""
 
     @abstractmethod
     def exists(self, key: str) -> bool: ...
 
     @abstractmethod
-    def get_record(self, key: str) -> Optional[LedgerRecord]: ...
+    def get_record(self, key: str) -> Optional[Any]: ...
 
     @abstractmethod
-    def _write_batch(self, records: List[LedgerRecord]) -> Receipt: ...
+    def _write_batch(self, records: List[Any]) -> Receipt: ...
 
     @abstractmethod
-    def history(self) -> Iterator[Tuple[int, str, LedgerRecord]]:
+    def history(self) -> Iterator[Tuple[int, str, Any]]:
         """Every (tx, key, record) in transaction order."""
 
+    def scan_prefix(self, prefix: str) -> Dict[str, Any]:
+        """Latest record per key under `prefix`; backends override with a
+        real prefix scan."""
+        out: Dict[str, Any] = {}
+        for _tx, key, rec in self.history():
+            if key.startswith(prefix):
+                out[key] = rec
+        return out
+
     def journal(self, since_tx: int = 0) -> Iterator[dict]:
-        """Journal lines (plan H.1/I.9) for txs after `since_tx`, in order:
-        `{tx, ts, db, keys: {key: content_sha256}}`. Backends override
-        when they can do it in fewer reads."""
+        """Journal lines (plan H.1) for txs after `since_tx`, in order:
+        `{tx, ts, db, keys: {key: content_sha256}}`."""
         current: Optional[dict] = None
         for tx, key, rec in self.history():
             if tx <= since_tx:
@@ -690,105 +692,93 @@ class Ledger(ABC):
         """The backend's current head: `{kind, db, tx_id, tx_hash_hex}`."""
         raise NotImplementedError
 
-    # -- run commit -----------------------------------------------------------
+    # -- writes ---------------------------------------------------------------
 
-    def commit_run(self, nonce: NonceRecord, appraiser_nonce: NonceRecord,
-                   evidence: EvidenceRecord, appraisal: AppraisalRecord,
-                   verdict: VerdictRecord,
-                   extra: Optional[List[LocatorRecord]] = None) -> Receipt:
-        """One batch per run (plan B.3/B.4); refuses a nonce already held.
-        `extra` carries the local locator records for the appraisal and
-        components blobs, written in the same batch."""
-        nid = nonce.nid
-        if nonce.role != "measurement":
-            raise LedgerError("commit_run: the run nonce must have role 'measurement'")
-        if not (evidence.nid == verdict.nid == appraisal.nid == nid):
-            raise LedgerError("commit_run: records disagree on nid")
-        if appraiser_nonce.role != "appraisal" or appraiser_nonce.for_nid != nid:
-            raise LedgerError("commit_run: appraiser nonce must have role 'appraisal' for this nid")
-        if appraisal.anid != appraiser_nonce.nid or appraisal.seq != 1 or appraisal.mode != "live":
-            raise LedgerError("commit_run: appraisal must be the live seq-1 record for the appraiser nonce")
-        if evidence.nonce.slot < 0:
-            raise LedgerError("commit_run: evidence record has no nonce slot")
-        for n in (nonce, appraiser_nonce):
-            if self.exists(key_for(n)):
-                raise DuplicateNonceError(f"duplicate nonce {n.nid}")
-        for loc in extra or []:
-            if loc.nid != nid:
-                raise LedgerError("commit_run: locator record for another nid")
-        return self._write_batch([nonce, appraiser_nonce, evidence, appraisal, verdict, *(extra or [])])
+    def commit_bundles(self, bundles: List[BundleRecord]) -> Receipt:
+        """
+        One batch for one or more bundles (plan K.3): a live run passes its
+        measurement and appraisal together; a later appraisal passes one.
+        `judged_by` pointers are added for every appraisal input. Refused
+        when any bundle key already exists (the uniqueness rule — each
+        bundle's own nonce), when an appraisal's input is neither in the
+        ledger nor in this batch, or when records disagree.
+        """
+        if not bundles:
+            raise LedgerError("empty batch")
+        keys = [key_for(b) for b in bundles]
+        if len(set(keys)) != len(keys):
+            raise LedgerError("commit_bundles: duplicate bundle in one batch")
+        for b, k in zip(bundles, keys):
+            if self.exists(k):
+                if b.role == "challenge":
+                    continue  # versions of a challenge are allowed (section G)
+                raise DuplicateNonceError(f"duplicate bundle {b.key_id}")
+        in_batch = set(k.split("/", 1)[1] for k in keys)
+        pointers: List[JudgedByRecord] = []
+        for b in bundles:
+            for inp in b.inputs or []:
+                if inp.bid not in in_batch and not self.exists(f"bundle/{inp.bid}"):
+                    raise LedgerError(f"commit_bundles: input bundle {inp.bid} is not in the ledger")
+                if b.role == "appraisal":
+                    pointers.append(JudgedByRecord(bid=inp.bid, appraisal_bid=b.key_id,
+                                                   committer_fp=b.committer_fp,
+                                                   pybb_version=b.pybb_version,
+                                                   appraiser_id=b.appraiser_id))
+        return self._write_batch([*bundles, *pointers])
 
-    def append_appraisal(self, appraisal: AppraisalRecord,
-                         appraiser_nonce: NonceRecord,
-                         extra: Optional[List[LocatorRecord]] = None) -> Receipt:
-        """A later audit (plan B.5): next seq for the run, new appraiser nonce,
-        plus the local locator record for the archived audit package."""
-        if appraisal.mode != "audit":
-            raise LedgerError("append_appraisal is for audit appraisals")
-        if not self.exists(f"evidence/{appraisal.nid}") and not self.exists(f"bundle/{appraisal.nid}"):
-            raise LedgerError(f"no run or bundle {appraisal.nid} to audit")
-        if self.exists(key_for(appraisal)):
-            raise LedgerError(f"appraisal seq {appraisal.seq} already recorded for {appraisal.nid}")
-        if appraiser_nonce.nid != appraisal.anid or appraiser_nonce.for_nid != appraisal.nid:
-            raise LedgerError("appraiser nonce does not match the appraisal")
-        if self.exists(key_for(appraiser_nonce)):
-            raise DuplicateNonceError(f"duplicate nonce {appraiser_nonce.nid}")
-        for loc in extra or []:
-            if loc.nid != appraisal.nid or self.exists(key_for(loc)):
-                raise LedgerError("append_appraisal: bad or duplicate locator record")
-        return self._write_batch([appraiser_nonce, appraisal, *(extra or [])])
-
-    def append_locator(self, locator: LocatorRecord) -> Receipt:
-        if self.exists(key_for(locator)):
-            raise LedgerError(f"locator seq {locator.seq} already recorded for {locator.nid}")
-        return self._write_batch([locator])
-
-    def commit_bundle(self, bundle: BundleRecord) -> Receipt:
-        key = key_for(bundle)
-        if self.exists(key):
-            if bundle.nid:
-                raise DuplicateNonceError(f"duplicate nonce {bundle.nid}")
-            raise LedgerError(f"bundle {key} already recorded")
-        return self._write_batch([bundle])
+    def commit_mirror(self, mirror: MirrorRecord) -> Receipt:
+        if self.exists(key_for(mirror)):
+            raise LedgerError(f"mirror record for {mirror.store} at tx {mirror.state_tx} already exists")
+        return self._write_batch([mirror])
 
     def commit_restore(self, restore: RestoreRecord) -> Receipt:
         return self._write_batch([restore])
 
     # -- reads ----------------------------------------------------------------
 
-    def exists_nid(self, nid: str) -> bool:
-        return self.exists(f"nonce/{nid}")
+    def get(self, bid: str) -> BundleRecord:
+        rec = self.get_record(f"bundle/{bid}")
+        if not isinstance(rec, BundleRecord):
+            raise LedgerError(f"bundle {bid} is not in the ledger")
+        return rec
 
-    def get(self, nid: str) -> RunRecords:
-        nonce = self.get_record(f"nonce/{nid}")
-        evidence = self.get_record(f"evidence/{nid}")
-        verdict = self.get_record(f"verdict/{nid}")
-        if not (isinstance(nonce, NonceRecord) and isinstance(evidence, EvidenceRecord)
-                and isinstance(verdict, VerdictRecord)):
-            raise LedgerError(f"run {nid} is not (fully) in the ledger")
-        appraisals: List[AppraisalRecord] = []
-        appraiser_nonces: List[NonceRecord] = []
-        locators: List[LocatorRecord] = []
-        for _tx, key, rec in self.history():
-            if isinstance(rec, AppraisalRecord) and rec.nid == nid:
-                appraisals.append(rec)
-                an = self.get_record(f"nonce/{rec.anid}")
-                if isinstance(an, NonceRecord):
-                    appraiser_nonces.append(an)
-            elif isinstance(rec, LocatorRecord) and rec.nid == nid:
-                locators.append(rec)
-        return RunRecords(nonce=nonce, evidence=evidence, verdict=verdict,
-                          appraisals=appraisals, appraiser_nonces=appraiser_nonces,
-                          locators=locators)
+    def tx_of(self, key: str) -> Optional[int]:
+        """The transaction that wrote `key`'s current value, when the backend
+        exposes it."""
+        return None
 
-    def records(self, kind: Optional[str] = None,
-                protocol_id: Optional[str] = None) -> Iterator[LedgerRecord]:
+    def appraisals_of(self, bid: str) -> List[BundleRecord]:
+        """Every appraisal bundle whose input is `bid`, in ledger order (a
+        prefix scan returns key order, so the pointers' tx ids sort them)."""
+        pointers = self.scan_prefix(f"judged_by/{bid}/")
+        out: List[BundleRecord] = []
+        for key in sorted(pointers, key=lambda k: (self.tx_of(k) or 0, getattr(pointers[k], "created_at", ""), k)):
+            rec = self.get_record(f"bundle/{key.rsplit('/', 1)[1]}")
+            if isinstance(rec, BundleRecord):
+                out.append(rec)
+        return out
+
+    def latest_mirror(self, store: str) -> Optional[MirrorRecord]:
+        hits = self.scan_prefix(f"mirror/{store_slug(store)}/")
+        if not hits:
+            return None
+        rec = hits[max(hits)]
+        return rec if isinstance(rec, MirrorRecord) else None
+
+    def records(self, kind: Optional[str] = None, protocol_id: Optional[str] = None,
+                role: Optional[str] = None) -> Iterator[Any]:
         for _tx, _key, rec in self.history():
             if kind and rec.kind != kind:
                 continue
             if protocol_id and getattr(rec, "protocol_id", None) != protocol_id:
                 continue
+            if role and getattr(rec, "role", None) != role:
+                continue
             yield rec
+
+    def bundles(self, protocol_id: Optional[str] = None, role: Optional[str] = None) -> List[BundleRecord]:
+        return [r for r in self.records(kind="bundle", protocol_id=protocol_id, role=role)
+                if isinstance(r, BundleRecord)]
 
 
 # ── FileLedger: JSONL hash chain ─────────────────────────────────────────────

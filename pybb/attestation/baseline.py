@@ -441,8 +441,8 @@ def _ledger_check(report: BaselineReport, bundle_path: Path, protocol_id: str, l
     sha = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
     from .ledger import key_for
 
-    for rec in ledger.records(kind="bundle", protocol_id=protocol_id):
-        if getattr(rec, "blob_sha256", "") == sha:
+    for rec in ledger.records(kind="bundle", protocol_id=protocol_id, role="provision"):
+        if getattr(getattr(rec, "blob", None), "blob_sha256", "") == sha:
             report.ledger_ok = True
             report.ledger_key = key_for(rec)
             return

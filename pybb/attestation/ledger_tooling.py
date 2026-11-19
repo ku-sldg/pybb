@@ -8,13 +8,13 @@ protocol is a standard tools protocol (`tools.build_tools_protocol_dir`):
 `hashfile` over each artifact, measure-in-place, then SIG. **Provisioning
 it is the blessing**: the one measurement under the default cadence
 `tooling.measure = at_provisioning`, repeated only when the stack is
-rebuilt and re-provisioned. Every evidence and appraisal record then
+rebuilt and re-provisioned. Every measurement and appraisal bundle then
 carries `tooling: {kind: bundle, ref: <blessing bundle sha256>}` — "this
 blessing was in force" — and nothing re-measures the tools at run time.
 
 The opt-in cadences run the same protocol as an ordinary ledger run
 (`every_episode`: once per predicate instance; `every_run`: before each
-protocol run) and reference it as `{kind: run, ref: <its nid>}`.
+protocol run) and reference it as `{kind: run, ref: <its bundle id>}`.
 
 This supersedes the 2026-07-30 scope note in `tools.py` that kept the
 attestation stack out of the tool registry: measuring it is drift
@@ -109,12 +109,12 @@ def bless_tools(client: Any, protocol: Any, golden_root: str | Path, ledger: Opt
     """
     The blessing (B.8): provision `attestation_tools` — the CVM hashes the
     live binaries and signs — store the bundle under `<golden_root>/_bundles/`,
-    and record it in the ledger as a `bundle` record keyed by the bundle's
+    and record it in the ledger as a `provision` bundle keyed by the bundle's
     nonce id. Idempotent: unchanged tools re-provision to the same goldens
     and the stored bundle is left as it is (no new record); `force`
     re-blesses with a fresh nonce.
     """
-    from .ledger_repo import commit_bundles
+    from .ledger_repo import record_provision_bundles
     from .provision import make_provision_predicate, provision_request
 
     pid = protocol.protocol_id
@@ -127,14 +127,14 @@ def bless_tools(client: Any, protocol: Any, golden_root: str | Path, ledger: Opt
     b = Blessing(protocol_id=pid, bundle_path=str(bundle_path), bundle_sha256=sha,
                  provisioned=list(outcome.provisioned))
     if ledger is not None:
-        keys = commit_bundles(ledger, golden_root, {pid: protocol}, config)
+        keys = record_provision_bundles(ledger, golden_root, {pid: protocol}, config)
         b.ledger_key = keys[0] if keys else _bundle_key_for(ledger, pid, sha)
     return b
 
 
 def _bundle_key_for(ledger: Ledger, pid: str, sha: str) -> Optional[str]:
-    for rec in ledger.records(kind="bundle", protocol_id=pid):
-        if getattr(rec, "blob_sha256", "") == sha:
+    for rec in ledger.records(kind="bundle", protocol_id=pid, role="provision"):
+        if getattr(getattr(rec, "blob", None), "blob_sha256", "") == sha:
             from .ledger import key_for
 
             return key_for(rec)
@@ -159,9 +159,9 @@ def tooling_ref_for(ledger: Ledger, config: LedgerConfig, protocols: Dict[str, A
         return None
     sha = sha256_hex(bundle.read_bytes())
     if _bundle_key_for(ledger, pid, sha) is None:
-        from .ledger_repo import commit_bundles
+        from .ledger_repo import record_provision_bundles
 
-        commit_bundles(ledger, root, {pid: protocols[pid]}, config)
+        record_provision_bundles(ledger, root, {pid: protocols[pid]}, config)
     return ToolingRef(kind="bundle", ref=sha)
 
 
@@ -177,15 +177,15 @@ class ToolingResolver:
         self._episode_done = False
 
     def _run_tooling(self) -> Optional[ToolingRef]:
-        from .ledger_runs import attest_with_ledger
+        from .ledger_runs import attest
 
         pid = self.config.tooling.protocol_id
         if not pid or pid not in self.protocols:
             return None
-        r = attest_with_ledger(self.client, self.protocols[pid], self.ledger, self.config,
+        r = attest(self.client, self.protocols[pid], self.ledger, self.config,
                                archive=self.archive,
                                tooling=tooling_ref_for(self.ledger, self.config, self.protocols))
-        return ToolingRef(kind="run", ref=r.nonce_id) if r.nonce_id and not r.error else None
+        return ToolingRef(kind="run", ref=r.bid) if r.bid and not r.error else None
 
     def ref(self, for_protocol: str) -> Optional[ToolingRef]:
         pid = self.config.tooling.protocol_id

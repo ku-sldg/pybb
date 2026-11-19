@@ -16,7 +16,7 @@ the signed nonce slot, and commits the run's records to immudb in one
 transaction. The ledger holds hashes and pointers, never evidence bytes; a
 configured git repository holds the bytes and a complete mirror of the
 records. Nothing in the ledger refers to blackboard concepts; the blackboard
-links to the ledger through `Verdict.nonce_id`.
+links to the ledger through `Verdict.bid` and `Verdict.ledger_ref`.
 
 The division of labour is strict: **pybb identifies and describes, the CVM
 judges**. pybb hashes bytes to key and index them and reads evidence
@@ -59,7 +59,7 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 
 | field | default | meaning |
 |---|---|---|
-| `host`, `port`, `db` | `127.0.0.1`, `3322`, `pybb` | immudb connection |
+| `host`, `port`, `db` | `127.0.0.1`, `3322`, `pybb2` (`PYBB_IMMUDB_DB`) | immudb connection; `pybb` holds the schema v1 records |
 | `user`, `password` | `PYBB_IMMUDB_USER` / `PYBB_IMMUDB_PASSWORD` | the non-admin user |
 | `state_dir` | `~/.pybb` | client state (verified root) and the appraiser id |
 | `verify_key_path` | `PYBB_VERIFY_KEY` or asp-libs' demo public key | fingerprinted into every record as `committer_fp` |
@@ -92,8 +92,9 @@ attest = make_attestation_predicate(client, protocols, archive_dir=EVIDENCE_DIR,
 
 Without `ledger=` the predicate runs the legacy single-run flow unchanged.
 With it, every protocol runs as measurement + appraisal and the `Verdict`
-carries `nonce_id`, `ledger_ref` (`evidence/<nid>`), `evidence_ref`,
-`appraisal_ref` and `components_ref`. A verdict fails closed when the CVM
+carries `bid` (the measurement bundle id), `ledger_ref` (`bundle/<appraisal
+bid>`, the appraisal the verdict came from), `evidence_ref`, `appraisal_ref`
+and `components_ref`. A verdict fails closed when the CVM
 fails, the package is not describable, its assurance is below the minimum
 without an exception, its nonce is already in the ledger, or the ledger is
 unreachable.
@@ -102,35 +103,39 @@ Readiness with `ledger_config=` reports, before attestation starts: missing
 ledger ASPs; each protocol's reachable assurance against `min_assurance`;
 and a missing tooling protocol or blessing when tooling tracking is on.
 
-`ledger_request(nid)` as an entry's measurement makes the predicate
-re-appraise the ledger-held run instead of measuring the live tree (an audit
-rung); the verdict is truthy only if the verified reads, the byte and nonce
-checks, and the fresh signed appraisal all hold, and it fails with a reason
-when the audit disagrees with the recorded verdict.
+`ledger_request(bid)` as an entry's measurement makes the predicate
+appraise the ledger-held bundle again instead of measuring the live tree (an
+audit rung); the verdict is truthy only if the verified reads, the byte and
+bundle-id checks, and the fresh signed appraisal all hold, and it fails with
+a reason when the audit disagrees with the live appraisal.
 
 ## Records and keys
 
 Field-by-field reference: [ledger_records.md](ledger_records.md).
 
 Every record is canonical JSON (sorted keys, no whitespace, UTF-8) with a
-common envelope: `schema` (`pybb-ledger/v1`), `kind`, `nid`, `created_at`,
-`committer_fp`, `pybb_version`, `appraiser_id`. The full schema is section I
-of the plan. Keys:
+common envelope: `schema` (`pybb-ledger/v2`), `kind`, `bid`, `created_at`,
+`committer_fp`, `pybb_version`, `appraiser_id`. The full schema is section K
+of the plan. Every CVM run output is one **bundle**, keyed by the sha256 of
+the nonce drawn inside that run; what it is evidence of is its `role` and
+its `inputs`. Keys:
 
 | key | holds |
 |---|---|
-| `nonce/<nid>` | the nonce bytes, `role` (`measurement` or `appraisal`, then `for_nid`), `state`, `freshness`, protocol |
-| `evidence/<nid>` | the raw signed package: protocol and config hashes, `response_sha256`, `blob_sha256`, `rawev_sha256`, signature and nonce slots, `assurance`, `tooling`, local locator |
-| `appraisal/<nid>/<seq>` | one appraisal run: seq 1 is the live one, later seqs are audits; `anid`, `binding` (hashevidence over the judged package), `audits_seq` when it judged an appraisal package |
-| `verdict/<nid>` | pass/fail, counts, failing components, `components_sha256`, both assurance levels, interpreter |
-| `locator/<nid>/<seq>` | where a blob is (`local` or `github`), `target` (`evidence`, `appraisal`, `components`, `bundle`), `verified` |
-| `bundle/<nid>` | a provisioning bundle (legacy bundles: `bundle/sha256:<hash>`) |
+| `bundle/<bid>` | one CVM run output: `role` (`measurement`, `appraisal`, `provision`, `challenge`), protocol and config hashes, `response_sha256`, `blob` (hash, size, every location), `rawev_sha256`, `nonce` (slot and bytes), `signature`, `assurance`, `freshness`, `tooling`; an appraisal adds `inputs` (the bundle it judged, with its `hashevidence` binding), `verdict` and `appraisal_kind`; a provisioning bundle adds `provision` (legacy nonce-less bundles: `bundle/sha256:<hash>`) |
+| `judged_by/<bid>/<appraisal bid>` | pointer from a bundle to each appraisal of it: "every appraisal of X" is one prefix scan |
+| `mirror/<store>/<state_tx>` | one push to an evidence store: commit, ledger head, journal range, blobs carried, blobs skipped |
 | `restore/<created_at>` | a restore event |
 
-A run's commit is one batch: measurement nonce, appraiser nonce, evidence,
-appraisal, verdict, plus local locator records for the appraisal and
-components blobs. Durability (two locator kinds resolve) is derived at read
-time and never stored.
+A live run's commit is one batch: the measurement bundle, its live appraisal
+bundle (`appraisal_kind: live`) and the pointer between them. A later
+appraisal of the same measurement — an audit, or a *different policy* via a
+session override — is one more appraisal bundle plus pointer; judging an
+appraisal bundle (its signature, nonce and binding, inside the CVM) is just
+an appraisal whose input is an appraisal. Bundles state at commit time where
+their bytes are and will be (`local` plus the content-addressed path in each
+configured store); durability is whether the store has the file, and mirror
+records witness the pushes. Nothing is appended to a bundle after its batch.
 
 **Assurance** is computed from the package as produced: `signed+nonce`,
 `signed`, `nonce` or `none`. **Freshness** is `post-hoc` for every run today:
@@ -142,12 +147,13 @@ Pre-registered challenges are the section G follow-up.
 
 ```bash
 immuclient login pybb
-immuclient use pybb
-immuclient get nonce/<nid>                       # any key, as canonical JSON
-immuclient history nonce/<nid>                   # versions (section G will add states)
-immuclient scan --prefix appraisal/<nid>/        # every appraisal of a run
-immuclient query "SELECT key, kind, passed, assurance, created_at FROM attestation_records WHERE protocol_id = 'temp_control_aadl_slang_l1a' ORDER BY created_at DESC LIMIT 20"
-immuclient query "SELECT key FROM attestation_records WHERE assurance <> 'signed+nonce'"
+immuclient use pybb2
+immuclient get bundle/<bid>                      # any key, as canonical JSON
+immuclient scan --prefix judged_by/<bid>/        # every appraisal of a bundle
+immuclient scan --prefix mirror/                 # every push to an evidence store
+immuclient query "SELECT key, role, appraisal_kind, passed, assurance, created_at FROM attestation_records WHERE protocol_id = 'temp_control_aadl_slang_l1a' AND role = 'appraisal' ORDER BY created_at DESC LIMIT 20"
+immuclient query "SELECT key, appraisal_kind, passed FROM attestation_records WHERE input_bid = '<bid>'"
+immuclient query "SELECT key FROM attestation_records WHERE kind = 'bundle' AND assurance <> 'signed+nonce'"
 ```
 
 `attestation_records` is a SQL mirror written after each KV batch; each row's
@@ -158,20 +164,25 @@ immuclient query "SELECT key FROM attestation_records WHERE assurance <> 'signed
 ## Re-appraising and auditing
 
 ```bash
-python examples/appraise_from_ledger.py --latest temp_control_aadl_slang_l1a          # chain + fresh signed appraisal
-python examples/appraise_from_ledger.py <nid> --audit-appraisal --seq 1                 # CVM-native audit of the appraisal package
-python examples/appraise_from_ledger.py <nid> --no-run                                  # chain only
+python examples/appraise_from_ledger.py --latest temp_control_aadl_slang_l1a       # graph + fresh signed appraisal (audit)
+python examples/appraise_from_ledger.py <appraisal bid>                              # judge an appraisal bundle inside the CVM
+python examples/appraise_from_ledger.py <bid> --kind slices-only --session s.json    # a different appraisal policy
+python examples/appraise_from_ledger.py <bid> --no-run                               # graph only
 ```
 
-A fresh appraisal fetches the raw package through its locators (local path,
-then GitHub), refuses bytes whose hash is not the record's, checks that the
-package reproduces the recorded nonce id, runs the same signed appraisal
-term, and appends `appraisal/<nid>/<seq>` with a fresh appraiser nonce and
-`agrees_with_recorded_verdict`. An audit of an appraisal package judges its
-signature, appraiser nonce and binding inside the CVM (`sig_appr`,
-`nonce_appr`, `goldenbytes_appr` with the recorded hash as golden), with the
-appraiser nodes passed through `magic_appr`; its record carries
-`audits_seq`.
+`appraise_bundle` fetches the bundle through its stated locations (local
+path, then the evidence store), refuses bytes whose hash is not the
+record's, checks that the package reproduces the recorded bundle id, runs
+the same signed appraisal term under the protocol's session (or a session
+override: a different policy, pinned by `session_sha256`), and commits one
+appraisal bundle with `inputs=[bid]`, its `appraisal_kind` label and, under
+the same session, `agrees_with_live`. Given an appraisal bundle it judges
+that package's signature, appraiser nonce and binding inside the CVM
+(`sig_appr`, `nonce_appr`, `goldenbytes_appr` with the judged bundle's
+`rawev_sha256` as golden), with the appraiser nodes passed through
+`magic_appr`. Every appraisal is its own nonce'd, signed bundle; the graph
+printed by the example is measurement → its appraisals → appraisals of
+those.
 
 ## The evidence repository
 
@@ -181,17 +192,19 @@ python examples/ledger_push.py [--archive-dir evidence/<dir>] [--bundles golden]
 python examples/ledger_reconcile.py --verify-all
 ```
 
-A push copies every blob the ledger holds locally but not remotely into
-`blobs/<sha256>.json.gz`, writes every record under `ledger/records/<nid>/`,
-appends `ledger/journal.jsonl` (one line per ledger tx with each key's
-content hash), writes `ledger/state/<tx>.json` (the ledger head), updates
-`runs/<archive_dir>/manifest.json`, makes one commit, pushes, and appends a
-verified `github` locator per blob. Reconcile lists what is not yet durable,
-re-verifies committed blobs, and compares the live head with the mirrored
-state, which catches a rolled-back or replaced ledger.
+A push copies every blob a bundle states for this store but the clone does
+not have into `blobs/<sha256>.json.gz`, writes every record under
+`ledger/bundles/`, `ledger/judged_by/`, `ledger/mirror/`, appends
+`ledger/journal.jsonl` (one line per ledger tx with each key's content
+hash), writes `ledger/state/<tx>.json` (the ledger head), updates
+`runs/<archive_dir>/manifest.json`, makes one commit, pushes, and writes
+one `mirror` record witnessing the push (commit, head, journal range, blobs
+carried and skipped). Reconcile lists what is stated but not yet in the
+store, re-verifies committed blobs, and compares the live head with the
+mirrored state, which catches a rolled-back or replaced ledger.
 
 Hot-backup segments for an exact immudb restore are produced by the
-operator (`immuadmin hot-backup pybb -o seg.bkp` after `immuadmin login`)
+operator (`immuadmin hot-backup pybb2 -o seg.bkp` after `immuadmin login`)
 and added with `--backup-segment`.
 
 ## Restore
@@ -199,7 +212,7 @@ and added with `--backup-segment`.
 ```bash
 python examples/ledger_restore.py verify  <clone>                 # hashes, journal contiguity, blobs
 python examples/ledger_restore.py replay  <clone> --into-immudb   # content restore into a fresh database
-python examples/ledger_restore.py exact   <clone> --db pybb       # prints the immuadmin hot-restore command
+python examples/ledger_restore.py exact   <clone> --db pybb2      # prints the immuadmin hot-restore command
 ```
 
 `verify` must pass before anything is loaded. Journal tx ids strictly

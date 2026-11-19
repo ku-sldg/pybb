@@ -2,7 +2,7 @@
 # Local immudb for pybb's attestation ledger (docs/ledger_plan.md, decision 3).
 #
 #   scripts/immudb_dev.sh install     brew install + start the launchd service
-#   scripts/immudb_dev.sh bootstrap   create database `pybb` and user `pybb`
+#   scripts/immudb_dev.sh bootstrap   create database `pybb2` (PYBB_IMMUDB_DB) and user `pybb`
 #   scripts/immudb_dev.sh status      service state, version, databases
 #   scripts/immudb_dev.sh rotate-admin NEWPASS
 #                                     change the default admin password (do this
