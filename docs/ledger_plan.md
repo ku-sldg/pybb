@@ -1478,6 +1478,262 @@ not a run.
    history carry the same witness) and kept so `reconcile` can answer
    from the ledger alone.
 
+## L. Position-free records (planning, 2026-11-19)
+
+**STATUS: plan only; decided, not implemented.** Removes every RawEv slot
+position from the stored records. A bundle describes the evidence; where
+pybb found things inside it is pybb's reading, done again at read time.
+
+### L.0 Why the positions are there, and why they go
+
+The CVM returns a flat `RawEv` list with no labels. pybb lays the evidence
+type out against the session's ASP types (`slot_layout`) to learn which
+slot holds the nonce, which the signature, which the `hashevidence`
+binding, and to check that every slot is accounted for. v1 copied those
+positions into the records (`nonce.slot`, `signature.slot`,
+`binding.slot`) on the theory that a reader without the session could then
+find the bytes in the archived package directly. In practice nothing reads
+a position back from a record: the two-pass appraisal and the appraisal of
+an appraisal both relocate the binding and the nonce live, from the fetched
+package and the session (`span_for`), and the SQL mirror does not carry
+them. The positions are redundant, and they leak pybb's layout conventions
+(and its `asp_targid` labels) into a record that should describe evidence,
+not pybb's handling of it. Slot accounting remains a check pybb performs
+when it reads a package; it is not a fact about the package worth storing.
+
+### L.1 What the ledger needs per package
+
+Position-free, and each either not derivable from the package alone or the
+value a reader without blobs compares:
+
+| field | why |
+|---|---|
+| `bid` + `nonce.b64`/`bytes` | identity; a reader checks `bid == sha256(nonce)` without the session |
+| `rawev_sha256` | what the `hashevidence` ASP computes over this package's flat RawEv; the value a binding is compared against (neither `response_sha256`, the whole response, nor `blob_sha256`, the stored bytes, equals it) |
+| `inputs[].bid` | which bundle an appraisal judged (pybb's claim) |
+| `inputs[].binding_hash` | the value of the appraisal package's `hashevidence` slot (the CVM's claim, under the appraiser's signature). **Kept** (decision L.4.2): it is a hash, not a position, and it lets a reader holding only records check `appraisal.inputs[0].binding_hash == measurement.rawev_sha256` without blobs or session. It is a cross-check, never a source of truth: the B.6 appraisal-of-appraisal takes its golden from the judged bundle's `rawev_sha256` and judges the binding slot inside the CVM |
+| `signature.present`, `signature.asp`, `signer_fp` | that and by which ASP the package is signed, and whose key pybb trusts |
+| `rawev_count` | a count, not a position; a cheap sanity check against the archived bytes. Kept |
+
+Why `hashevidence` is load-bearing (restated from B.6 for this section):
+REPLACE companions overwrite the slots they judge, so an appraisal package
+holds verdicts, appraiser nonce and signature but none of the measured
+bytes — nothing inside it says *which* bytes it judged. The `hashevidence`
+slot, computed by the CVM over its input and signed with the rest, is the
+only in-evidence link from appraisal to measurement; it is what makes the
+pairing checkable from evidence and auditable by `goldenbytes_appr`.
+
+### L.2 The change (schema stays `pybb-ledger/v2`; additive-compatible readers)
+
+| model | now | after |
+|---|---|---|
+| `NonceInfo` | slot, asp, asp_targid, b64, bytes | asp, b64, bytes |
+| `SignatureInfo` | present, slot, asp, signer_fp | present, asp, signer_fp |
+| `InputRef` | bid, binding_slot, binding_hash | bid, binding_hash |
+
+- `asp` stays on both: *which ASP produced* the nonce or signature is
+  structural, matters for foreign packages, and is not a position.
+- `asp_targid` goes: it is pybb's own target label (`nonce_targ` /
+  `appraiser_nonce_targ`), used only to pick the right nonce event when
+  reading; `describe_package` keeps taking it as a parameter.
+- `SlotRef`, `SlotSpan`, `PackageDescription` remain as internal reading
+  tools in `ledger.py` and never enter a record. `NonceInfo` stops
+  inheriting from `SlotRef`.
+- Readers: unknown fields are preserved, so bundles written before the
+  change still parse; the position fields simply become unknown extras.
+  No schema tag bump: nothing a v2 reader relied on is removed.
+
+### L.3 Code impact (small)
+
+| where | change |
+|---|---|
+| `ledger.py` | the three models; `BundleRecord` unchanged otherwise |
+| `ledger_runs.py` | `build_bundle_record` stops copying `hs.start` / `desc.nonce.slot` / `asp_targid` |
+| `examples/appraise_from_ledger.py` | drop the `sig_slot` / `nonce_slot` / `binding slot` prints |
+| `docs/ledger_records.md` | NonceInfo, SignatureInfo, InputRef tables; `SlotRef` paragraph becomes "internal only" |
+| tests | `test_ledger.py` / `test_ledger_runs.py` / `test_ledger_immudb.py` / `test_integration_ledger.py` assertions on `.slot` / `binding_slot` |
+| `pybb2` | re-bootstrap (nothing pushed to the mirror yet), rerun the Rocq status run and the two post-hoc appraisals |
+| asp-libs / rust-am-lib / CVM | none |
+
+### L.4 Decisions
+
+1. *Resolved 2026-11-19:* **remove every slot position from records**
+   (`nonce.slot`, `signature.slot`, `inputs[].binding_slot`) and the
+   `asp_targid` label; keep `asp`.
+2. *Resolved 2026-11-19:* **keep `inputs[].binding_hash`** as the
+   record-level cross-check against the judged bundle's `rawev_sha256`
+   (rationale in L.1). Rejected: `inputs = [{bid}]` only, which would make
+   checking the pairing require the appraisal blob and the session.
+3. *Open (raised 2026-11-19, not decided):* **arbitrary Copland bundles
+   from other writers**, including packages produced by terms with an
+   inline `APPR`. Today the `role` enum is closed, only `role: appraisal`
+   may carry a `verdict`, and an appraisal must name `inputs`, so a
+   self-appraised package cannot record its verdicts and a foreign `role`
+   fails to parse. Sketch, if wanted: `role` becomes an open string with a
+   general `evidence` value; `verdict` allowed on any role with
+   `verdict.scope ∈ {inputs, inline}` and `inputs` required only for
+   scope `inputs`; an optional `context` BlobRef (session or
+   `[payload, ctx]`) so pybb can lay a foreign package out later; a
+   lenient `describe_package` (no nonce, no signature, unknown ASP types
+   reported, not fatal); an optional `writer` field beside `appraiser_id`.
+   Keys, uniqueness, `judged_by`, mirror records and the two-run flow are
+   unaffected. Permissions for other writers stay in section J.
+
+## M. Configurable bundle shapes (planning, 2026-11-19)
+
+**STATUS: plan only; shapes and setting decided, context blob open.** The
+ledger does not prescribe one way to build a bundle. A protocol chooses a
+**shape**: a Copland term construction that answers, for every package it
+produces, the four questions the ledger needs — where the nonce is, what
+the signature covers, where the verdicts are (if any), and how an appraisal
+is bound to what it judged. Two shapes are defined now; others can be added
+without touching the record schema.
+
+### M.0 Semantics the shapes rely on (from `cvm/theories/Monad.v`)
+
+- `EXTEND n` ASP: bits become `out ++ incoming`; type `asp_evt(asp, incoming)`.
+- `REPLACE n` ASP: bits become `out`; type `asp_evt(asp, incoming)`. The type
+  beneath survives, the bytes do not.
+- `NULL` returns empty evidence (`mt_evc`). There is no copy primitive; the
+  only way to carry evidence through a branch is an EXTEND ASP in that
+  branch.
+- `bseq`: left runs on the incoming evidence; right runs on it too
+  (`both_paths`) or on empty (`left_path`); join concatenates bits and
+  builds `split_evt`.
+- `APPR` over `asp_evt(a, below)` with `a` EXTEND: the companion runs over
+  **all remaining bits**, then `below` is appraised as a sibling (a split).
+  With `a` REPLACE: the companion only. Over `split_evt`: each half with
+  `left_evt`/`right_evt` wrappers in the type (the attribution path).
+- Consequence rejected for the shapes below: EXTEND-typed *companions*
+  keep the judged bytes but duplicate them — the outermost companion
+  (over `SIG`) retains the whole package and the inner ones retain their
+  slots again (P twice plus verdicts). Verified on the Rocq
+  `run_command_rocq_appr` packages: 30 slots where 17 were measured.
+- `WRAP`/`UNWRAP` are for reversible transforms whose dual is an inverse;
+  a verdict is not an inverse of a measurement, so they do not apply.
+
+### M.1 Shape `split` (today's B.0/B.6 flow; default)
+
+Two CVM runs.
+
+```
+run 1   lseq (bseq left_path (asp generate_nonce) M) SIG                → P
+run 2   lseq (bseq both_paths (asp hashevidence) APPR)
+             (lseq (asp generate_nonce) SIG)         over P              → A
+```
+
+`hashevidence` REPLACE: A holds `H = sha256(P's RawEv)` and verdicts, none
+of P's bytes. Bits for a two-measurement `M`: P `[sig, nonce, h_a, h_b]`,
+A `[sig2, nonce2, H, v_sig, v_nonce, v_a, v_b]`.
+
+Ledger: measurement bundle P + appraisal bundle A (`inputs=[P]`,
+`binding_hash = H`, `appraisal_kind: live`) + `judged_by/P/A`, one batch.
+Run 2 may happen at any later time instead, under any session, from the
+recorded P (`appraise_bundle`). P is a signed measurement artifact that
+stands on its own and can be handed to a third party.
+
+### M.2 Shape `inline` (one run, one nonce, one SIG)
+
+```
+lseq (bseq left_path (asp generate_nonce) M)                            → P' (unsigned)
+     (lseq (bseq both_paths (asp hashevidence) APPR) SIG)
+```
+
+`hashevidence` typed **EXTEND** with `EvInSig: ALL` (it must receive the
+bits to hash them): the hash lane comes out as `H` followed by all of P'
+exactly once; the APPR lane keeps REPLACE companions and adds verdicts
+only. Bits for the two-measurement `M`:
+
+```
+[ sig, H, nonce, h_a, h_b, v_nonce, v_a, v_b ]        8 slots
+       └── P' ──────────┘  └── verdicts ──┘
+```
+
+Type: `asp_evt SIG · split_evt(asp_evt hashevidence · et_P', APPR-tree)`,
+where the APPR-tree is the same tree as in `split` minus `sig_appr`
+(there is no inner signature to judge). No second nonce: one signed
+object, one identity (`bid = sha256(nonce)`), one bundle.
+
+Ledger: one appraisal bundle, `verdict.scope: inline`, no `inputs`,
+`binding_hash = H` over its own retained P' span. `H` is what any later
+appraiser's `hashevidence` computes over the extracted P' bits, so later
+appraisals bind to the same value.
+
+Why no inner `SIG`: a signed P plus an outer SIG duplicates signatures and
+signature appraisals in one package (the "term 1" variant, 11 slots with a
+second nonce); the user chose the single-signature form. What is given up:
+P' is covered only by the outer SIG, so no excerpt of the package is a
+signed measurement on its own. Clients that need that use `split`.
+
+### M.3 What other clients can do with an inline package
+
+With the session's `ASP_Types`/`ASP_Comps` and the signer's key: lay the
+package out, lift `[RawEv_P', et_P']` out as evidence, verify `H`, and
+either (a) extract-and-appraise P' under their own session in a CVM run of
+the `split` run-2 term (binds to the same `H`), or (b) appraise the whole
+package: `invoke_APPR'` judges the EXTEND `hashevidence` node with
+`goldenbytes_appr` and then appraises `et_P'` beneath it as a sibling, so
+their companions re-judge the measurements directly while pass-through
+companions (`magic_appr`) carry the existing verdict nodes and `sig_appr`
+judges the outer signature — the B.6 machinery without extraction. Both
+yield an appraisal bundle with `inputs=[inline bid]` and a pointer.
+
+### M.4 Configuration and code
+
+- Per-protocol setting `bundle_shape: split | inline` (in the protocol
+  directory alongside `ledger`-relevant settings, or in `LedgerConfig` as a
+  map protocol → shape); default `split`.
+- `measurement_term` (left_path nonce fork + `M`) and the both_paths
+  hash-and-APPR fork are shared; `inline` composes them with `lseq`, types
+  `hashevidence` EXTEND in the session copy it sends, and omits the second
+  `generate_nonce`. `attest` dispatches on the shape and records whichever
+  bundles the shape yields. `describe_package`, `slot_layout` (EXTEND ASP
+  span = 1 + size of subtree, as for `SIG`), `build_bundle_record`,
+  `commit_bundles`, the summarizer path over the extracted APPR branch:
+  unchanged.
+- Schema (additive within v2): `verdict.scope ∈ {inputs, inline}`;
+  `inputs` required for scope `inputs`, absent for `inline`; the inline
+  binding hash lives on the verdict (`verdict.binding_hash`) since it binds
+  to a span of the same package, not to another bundle. Validator rule
+  follows.
+- Provisioning keeps stripping APPR regardless of shape (no goldens yet).
+- The Rocq driver gets the setting per protocol; the demonstration is one
+  protocol run `inline` into `pybb2` beside the `split` ones.
+
+### M.5 Gate: the term-2 spike
+
+One real-CVM run of the `inline` term on the l1a fixture: `hashevidence`
+retyped EXTEND/`EvInSig: ALL` runs; the retained P' span lays out and
+`sha256(P' bits) == H`; the APPR branch extracts and type-checks in the
+verified summarizer; `describe_package` finds exactly one nonce. Nothing
+in M is implemented before this passes.
+
+### M.6 Decisions
+
+1. *Resolved 2026-11-19:* **shapes are configurable per protocol**, not
+   prescribed; the ledger needs only the four answers in the preamble.
+2. *Resolved 2026-11-19:* **two shapes now**: `split` (default; appraisal
+   now or later; signed measurement artifact) and `inline` (term 2; one
+   nonce, one SIG, EXTEND `hashevidence` carrying P'). Rejected: EXTEND
+   companions (duplication, M.0), inline with inner SIG (duplicate
+   signatures), `NULL` branches (erase).
+3. *Open — needs fleshing out:* **the context blob.** Sketch: optional
+   `context: BlobRef` on a bundle pointing at an archived copy of the
+   session (or the `[payload, ctx]` pair provision bundles already store),
+   content-addressed and stated at commit like the package blob;
+   `session_sha256` stays as its integrity check. Motivation: a client
+   without pybb's protocol directory cannot derive slot spans
+   (`ASP_Types`) or attribute verdicts (`ASP_Comps`) from the record alone,
+   and inline packages are the first ones other clients would plausibly
+   open (M.3). Not settled: whether it is the whole session or only
+   `Session_Context`; whether it is per bundle or shared per
+   `session_sha256` (one blob, many bundles); whether provision bundles'
+   embedded `ctx` is reused or normalized to the same form; where it lives
+   in the evidence repo layout; and whether `manifest`/`term` deserve the
+   same treatment. Decide together with the rest of L.4.3 (open `role`,
+   `writer`, lenient `describe_package`), since all of them serve clients
+   that are not pybb.
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
