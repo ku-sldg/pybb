@@ -110,6 +110,8 @@ when the audit disagrees with the recorded verdict.
 
 ## Records and keys
 
+Field-by-field reference: [ledger_records.md](ledger_records.md).
+
 Every record is canonical JSON (sorted keys, no whitespace, UTF-8) with a
 common envelope: `schema` (`pybb-ledger/v1`), `kind`, `nid`, `created_at`,
 `committer_fp`, `pybb_version`, `appraiser_id`. The full schema is section I

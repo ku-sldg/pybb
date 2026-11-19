@@ -585,38 +585,227 @@ pybb owns outright.
   (H.4). A restore drill (H.4 steps 1–6 into a scratch instance) is part
   of the integration suite under the `ledger` marker.
 
-## G. Follow-up: two-run pre-registration (challenge freshness)
+## G. Two-run pre-registration: challenge freshness (planning, 2026-11-18)
 
-Not in scope for this plan; recorded so sections A–E are built in a way
-that needs no change when it lands. It upgrades a record's guarantee
-from `post-hoc` to `pre-registered` and is valid whether the attester is
-remote or a separate process on the same host.
+**STATUS: plan only; nothing implemented.** Opt-in upgrade of a run's
+guarantee from `freshness: post-hoc` (B) to `freshness: pre-registered`.
+Valid whether the attester is remote or a separate process on the same
+host. Sections A–F, H and I need no schema change; what changes is listed
+in G.6.
 
-- **Run 1 (appraiser's challenge)**: term `asp generate_nonce` (optionally
-  followed by `sig` at the appraiser's place) with args carrying the
-  request metadata — `requested_protocol`, requester place, issued-at —
-  executed by the appraiser. Its package `P1` holds the nonce and, in
-  the event's args, the metadata.
-- **Commit before run 2**: pybb writes `nonce/<nid>` with `{state:
-  issued, freshness: pre-registered, requested_protocol, ...}` and
-  `challenge/<nid>` (sha256 of `P1`). The ledger tx now witnesses that
-  the nonce and the request existed before any measurement.
-- **Run 2 (attestation)**: the requested protocol with `EVIDENCE = P1`
-  as initial evidence (Copland permits initial evidence of any type; this
-  is the `build_request` seam). Before dispatch pybb injects
-  `expected_b64 = base64(N)` into the `generate_nonce` event's args in
-  that initial evidence type — the unsigned type tree, exactly as
-  `_inject_goldens` injects `golden_b64` today — so the appraisal run's
-  `nonce_appr` (section C) checks equality and the CVM itself judges
-  freshness. `sig` at the attester then covers the challenge nonce.
-- **After run 2**: `evidence/<nid>` and `verdict/<nid>` as in B.3; the
-  nonce key moves `issued → bound → consumed`; pybb never re-dispatches a
-  consumed nonce. Audits (B.5) re-inject `expected_b64` from the ledger
-  record.
-- Ledger schema, push, fetch, and appraisal code are unchanged; only
-  `build_request(initial_evidence=...)`, the arg injection, and the
-  issuance write are new. Requires no environment variable, file, or
-  ASP-side ledger access.
+### G.0 What it adds, and what it does not
+
+Under B the appraiser first learns a run's nonce from the package itself,
+so a replayed or precomputed package is indistinguishable by the nonce
+(binding, uniqueness and ordering hold; freshness does not). Under G the
+appraiser **generates and records the nonce before the attester runs**,
+hands it over as initial evidence, and the CVM's `nonce_appr` judges that
+the package carries exactly that nonce. The appraiser's knowledge of `N`
+is now independent of the package, which is what freshness needs. Still
+out of scope: a distinct appraiser signing key (today appraiser and
+attester use the same demo RSA key, so the challenge signature proves
+origin only by process separation) and multi-place terms (`@P1`), which
+this design accommodates but does not exercise.
+
+### G.1 Run 1 — the challenge
+
+Executed by the appraiser (pybb) through the CVM, no measurements:
+
+```
+lseq (asp generate_nonce {asp_targid: nonce_targ, bytes: 32,
+                          requested_protocol: <pid>, requester: <appraiser_id>,
+                          issued_at: <RFC 3339>}) SIG
+```
+
+- `generate_nonce` draws `N`; its args carry the **request metadata**, which
+  rides in the (unsigned) evidence type and is also recorded in the nonce
+  record. `SIG` at the appraiser's place signs `N`: the challenge package
+  `P1 = [sig_a, N]` is the appraiser's signed statement "I am challenging
+  protocol `<pid>` with this nonce, now".
+- `nid = sha256(N)` as everywhere. `P1` is archived as
+  `<pid>.challenge.json.gz` and is a blob like any other (locator target
+  `challenge`).
+- Spike item: the CVM's `generate_nonce` ignores unknown args today; the
+  CVM must accept the extra arg keys in the term (they are opaque JSON) —
+  expected to pass, since `hashfile` args already carry arbitrary keys.
+
+### G.2 Issue — the ledger write that makes it a challenge
+
+Before run 2 pybb commits, in one batch:
+
+| key | body |
+|---|---|
+| `nonce/<nid>` v1 | `{state: issued, freshness: pre-registered, role: measurement, nonce_b64, nonce_bytes, protocol_id: <pid>, requested_protocol: <pid>, requester: <appraiser_id>, issued_at, expires_at, challenge_sha256: sha256(canonical P1)}` |
+| `locator/<nid>/1` | the challenge blob, `target: challenge`, local path |
+
+The immudb transaction id and timestamp of this batch are the witness that
+the nonce and the request existed before any measurement; the evidence
+record written later carries `issued_tx` so an auditor can check the order
+without the journal. `verifiedGet` after the write proves inclusion as for
+every batch.
+
+### G.3 Run 2 — the attestation, challenged
+
+```
+EVIDENCE = P1 (with expected_b64 injected, see below)
+TERM     = lseq (bseq left_path (asp NULL) M) SIG
+```
+
+- `P1` is the request's initial evidence (the `build_request` seam). The
+  measurement term no longer generates a nonce: `M` is the protocol's
+  measurement term with APPR stripped and SIG detached, as in B.1.
+- `bseq left_path (asp NULL) M`: the left branch keeps `P1` unchanged
+  (`NULL` is Copland's identity ASP, already used by provisioning as
+  `_NULL_ASP`), the right branch measures with empty initial evidence —
+  the same device B.1 uses to avoid the spike's "nonce copied into every
+  branch" finding. `SIG` at the attester then covers `P1` (its appraiser
+  signature and `N`) together with every measurement.
+- Before dispatch pybb injects `expected_b64 = base64(N)` into the
+  `generate_nonce` event's args **in `P1`'s evidence type**. This is the
+  `_inject_goldens` pattern (B.9 rule 2): pybb supplies the expectation,
+  the CVM compares. `nonce_appr` already implements the check (section C).
+- Spike items: `NULL` accepted as a `bseq` branch with evidence flowing
+  through unchanged; the summarizer type-checks a package whose innermost
+  events are `sig` (appraiser) over `generate_nonce`; `sig_appr` over the
+  appraiser's signature passes with today's shared demo key.
+
+### G.4 Appraise, commit, consume
+
+The appraisal run is B.6 unchanged (`EVIDENCE` = the raw package of run 2,
+whose `P1` subtree already carries `expected_b64`). The verified summary
+then contains `nonce_appr` = equality with the registered nonce,
+`sig_appr` for the **appraiser's** signature over the challenge and
+`sig_appr` for the attester's signature over the run.
+
+Commit (one batch, as B.3/B.4) with two differences:
+
+- `nonce/<nid>` **v2** `{state: bound, evidence_tx}` replaces the B.3
+  "committed" state; `commit_run` accepts a pre-registered nonce **only if
+  its latest version is `issued`, unexpired, for this protocol, with
+  `expected_b64` equal to the package's nonce slot**, and refuses otherwise
+  (`bound`/`consumed` = replay; `expired` = stale challenge; mismatch =
+  wrong challenge). The B duplicate rule (refuse any existing nonce) applies
+  when the nonce record is absent or not `issued`.
+- after the live appraisal pybb writes `nonce/<nid>` **v3** `{state:
+  consumed}`; pybb never dispatches a consumed or bound nonce again.
+  Versions are new values of the same key (immudb keeps history;
+  `immuclient history nonce/<nid>` shows issued → bound → consumed; the
+  FileLedger appends a line and `_latest` moves).
+
+Expiry is pybb policy, like duplicate refusal: `expires_at = issued_at +
+LedgerConfig.challenge_ttl` (default 1 h). A challenge found expired at
+commit is marked `nonce/<nid>` `{state: expired}` and the run is refused
+(fail closed). Audits (B.5) re-inject `expected_b64` from the nonce
+record before their appraisal run; the audit's `nonce_wellformed` then
+reads as nonce **equality**, not just well-formedness.
+
+### G.5 Records (additions to section I, all additive within v1)
+
+- `nonce`: `state` gains `issued | bound | consumed | expired` (B's
+  `committed` stays for post-hoc runs); new optional fields
+  `requested_protocol`, `requester`, `issued_at`, `expires_at`,
+  `challenge_sha256`, `evidence_tx`.
+- `evidence`: new optional `issued_tx` (the tx of nonce v1) and
+  `challenge_sha256`; `freshness: pre-registered`.
+- `locator.target` gains `challenge`.
+- `appraisal`: unchanged; its `nonce_appr` component now means equality.
+- Assurance is unchanged (`signed+nonce`); freshness is the orthogonal
+  label that moves. SQL mirror: `freshness` column already exists.
+
+### G.6 Code changes
+
+| module | change |
+|---|---|
+| `ledger.py` | `NonceRecord` fields/states above; `commit_run` state-aware acceptance (G.4); `Ledger.set_nonce_state(nid, state, **fields)` writing a new version; `EvidenceRecord.issued_tx/challenge_sha256`; `Locator.target` `challenge` |
+| `ledger_immudb.py` | nothing structural; `get_record` already returns the latest version; add `versions(key)` via `history()` for audits/CLI |
+| `ledger_runs.py` | `challenge_term(pid, requester, issued_at)`, `issue_challenge(client, lp, ledger, config) -> Challenge(P1, nid, tx)`, `challenged_measurement_request(lp, P1_with_expected)`, `inject_expected_nonce(et, nonce_b64)` (mirrors `inject_binding_golden`); `attest_with_ledger` branches on `config.freshness`; audits re-inject from the record |
+| `client.py` | `ProtocolDir.build_request(initial_evidence=None)` (the seam G has pointed at since the first draft) |
+| `knowledge_sources.py` | none beyond passing `config` (already done) |
+| `readiness.py` | report `freshness` per protocol: `pre-registered` requires the `NULL` ASP acceptance spike to have passed and `sig` present |
+| `ledger_repo.py` | `challenge` blobs push like any blob; `verify_mirror` already hashes every blob a record names |
+| `examples/appraise_from_ledger.py` | print the nonce lifecycle (versions) in the chain |
+| asp-libs / rust-am-lib / CVM | **no changes**: `generate_nonce` and `nonce_appr` (with `expected_b64`) already exist; `NULL` and `SIG` are built in |
+
+Configuration: `LedgerConfig.freshness: Literal["post-hoc", "pre-registered"]
+= "post-hoc"` (per-protocol override via `freshness_overrides: {pid: level}`
+for a gradual rollout) and `challenge_ttl: str = "1h"`.
+
+### G.7 Cost
+
+Three CVM invocations per protocol run instead of two; the challenge run
+is milliseconds (one ASP and a signature). One extra ledger batch per run
+(the issuance) plus one version write (consume). Archive gains one small
+blob per run.
+
+### G.8 Tests and spike
+
+- Spike (half a day, before coding): G.1 extra args accepted; G.3 `NULL`
+  branch with `P1` flowing through; summarizer accepts the challenged
+  package shape; `nonce_appr` equality pass/fail with injected
+  `expected_b64`; APPR-only re-run with re-injected expectation.
+- Unit (canned packages from the spike): challenge term and record;
+  `commit_run` acceptance matrix (issued/bound/consumed/expired/
+  mismatch/absent); versions in FileLedger; audit re-injection.
+- Integration (real CVM, l1a and the Rocq verification protocol):
+  challenged run passes; re-dispatching the same challenge is refused as
+  replay; a package from an old challenge presented against a new one
+  fails `nonce_appr` (judged in the CVM); expired challenge refused;
+  `immuclient history nonce/<nid>` shows the lifecycle.
+
+### G.9 Decisions to make before coding
+
+1. **Default freshness**: keep `post-hoc` as the default and make
+   `pre-registered` opt-in per protocol (recommended for a gradual
+   rollout), or flip the default once the spike passes?
+2. **Challenge TTL**: 1 h default? Long tool runs (Rocq verification) need
+   minutes, not hours; a tight TTL narrows the window a stolen challenge
+   is usable.
+3. **Appraiser signature on the challenge**: include `SIG` in run 1
+   (recommended: the challenge is then provably the appraiser's), knowing
+   it is the same demo key as the attester's until the key-custody
+   follow-up lands.
+4. **Appraiser nonce of the appraisal run**: leave it post-hoc (its job is
+   uniqueness), or pre-register it too for symmetry?
+5. **Request metadata in args**: `requested_protocol`, `requester`,
+   `issued_at` as proposed; anything else the relying party should
+   state up front (e.g. a `purpose` or episode label)? Note the args are
+   unsigned type data, mirrored into the signed nonce record.
+6. **Attester receipts (speculative; not for the first G change set).**
+   Should the attester place be allowed to write to the ledger at all?
+   - *Case for:* two-way non-repudiation. Today the ledger is the
+     appraiser's account of what the attester produced; if the attester
+     commits a receipt for its signed package *before* handing it over,
+     the appraiser cannot later deny receipt, suppress a run, or alter
+     what was judged, because the attester's statement exists
+     independently and first. Relevant only once appraiser and attester
+     are parties who do not fully trust each other.
+   - *Case against:* every ledger guarantee assumes one writer applying
+     one policy (duplicate refusal, assurance minimum, the G lifecycle).
+     An attester with write access could write run-shaped records that
+     were never appraised, flood nonces to force collisions, or race the
+     appraiser's commit. Its genuine testimony — the signature over the
+     measurements — is already in the package and cannot be forged or
+     altered by the appraiser, so receipts add a witness and a timestamp,
+     not evidence.
+   - *If wanted, the shape:* keep run records single-writer and let the
+     attester write exactly one kind, `receipt/<appraiser_id>/<nid>`:
+     `{package_sha256 (= rawev_sha256 or blob hash), nid, attester_id,
+     signature over those fields, created_at}`, written with immudb's
+     key-must-not-exist precondition so it can never overwrite. The
+     appraiser's `commit_run` treats receipts as untrusted input: it
+     cites the receipt's tx id on the evidence record (`receipt_tx`) and
+     `verify_mirror`/`reconcile` check that the receipt's hash matches the
+     package the appraiser recorded. Order in the ledger then shows both
+     parties' statements.
+   - *immudb feasibility:* straightforward — one database user per place
+     (permissions are per database, so the key-prefix discipline is
+     pybb's), the shared TLS instance of decision 3 reachable from the
+     attester, each client keeping its own verified state. Moderate work
+     on the pybb side (receipt record kind, precondition writes,
+     commit-time cross-check, reconcile rule).
+   - *Recommendation:* defer. Not needed for a single organization; revisit
+     when a second party's word should not depend on the appraiser's
+     ledger alone.
 
 ## H. Evidence repo: durable blobs, ledger mirror, and restore
 
@@ -1055,6 +1244,240 @@ need a decision before they can **write**:
    own (FileLedger or own immudb) and read the mirror, but must not push
    into it.
 
+## K. Unified bundle records — schema v2 (planning, 2026-11-18; naming settled 2026-11-19)
+
+**STATUS: plan complete, decisions resolved 2026-11-19; not implemented.** Replaces the parallel `nonce` / `evidence` /
+`verdict` / `appraisal` / `bundle` kinds with **one `bundle` record per CVM run
+output**, keeping measurement evidence and appraisal evidence distinct by
+*role* and *inputs* rather than by record shape, so that several different
+appraisals can be recorded over one measurement, before or long after it.
+
+### K.0 Why
+
+Every CVM run — measurement, appraisal, provisioning, tooling blessing,
+and (G) challenge — produces the same thing: a signed, nonce'd package
+that pybb archives, hashes, lays out and labels. Section I gave each a
+record kind with the same twenty fields and a few extras, plus a separate
+`nonce` record carrying the identity those records already embed, plus a
+`verdict` record that is a reading of one appraisal package. Writing and
+reading five parallel kinds for one run is the onerous part. What must
+stay distinct is only *what a package is evidence of*: a measurement is
+about the target system, an appraisal is about another package, and one
+measurement may be judged many times by different appraisal policies.
+
+### K.1 The record: `bundle/<bid>`
+
+`bid` is the bundle's own nonce id — sha256 of the nonce slot that
+`generate_nonce` produced in that run (legacy nonce-less bundles:
+`bundle/sha256:<blob hash>`). One record kind, one builder
+(`describe_package` already computes most of it):
+
+| field | meaning |
+|---|---|
+| envelope | as I.1 (`schema: pybb-ledger/v2`, `kind: package`, `created_at`, `committer_fp`, `pybb_version`, `appraiser_id`) |
+| `role` | `measurement` · `appraisal` · `provision` · `challenge` (G) |
+| `protocol_id` | the protocol configuration the run belongs to (for an appraisal: the protocol it appraises) |
+| `term_sha256`, `session_sha256`, `manifest_sha256` | the exact term/session/manifest the CVM ran — for an appraisal these identify the **appraisal policy** (companion map, goldens) |
+| `response_sha256`, `blob_sha256`, `blob_bytes`, `encoding`, `rawev_count`, `rawev_sha256` | the package's bytes, as today |
+| `nonce` | `{slot, asp, asp_targid, b64, bytes}` — the nonce record folded in: the package *is* the nonce's existence |
+| `signature` | `{slot, asp, signer_fp}` |
+| `assurance`, `freshness`, `exception_reason` | as today |
+| `tooling` | `{kind: bundle|run, ref}` as today |
+| `inputs` | list of `{pid, binding_slot, binding_hash}`: the packages this run took as initial evidence — an appraisal names the package it judged (with its `hashevidence` binding), a G measurement names its challenge, a measurement or provision has none |
+| `verdict` | **appraisal role only**: `{passed, components_total, components_failed, failing[], components_sha256, components_blob_sha256, interpreter}` — the `verdict` record folded in: a verdict is a reading of one appraisal package and lives with it |
+| `appraisal_kind` | appraisal role only, caller-chosen label: `live`, `audit`, or a policy name such as `slices-only`, `tools-only`, `golden-set-2026-11` |
+| `state` | `committed` today; G lifecycle (`issued`, `bound`, `consumed`, `expired`) lives on the **challenge** package, since that is the nonce that exists before anything else |
+| `locations` | every place the blob is or will be, **stated once at commit**: `[{store: "local", path}, {store: "github:<owner/name>", path: "blobs/<blob_sha256>.json.gz"}, …]` — the local entry is where pybb archived the bytes; each remote entry is derived from configuration and the hash (content addressing fixes the path before any push); the components blob reference inside an appraisal bundle carries the same field |
+
+Appraiser nonces no longer need a record of their own: an appraisal
+package's `pid` *is* its appraiser nonce id, with the bytes in `nonce`.
+
+### K.2 Links, keys, and the "many appraisals" query
+
+- `judged_by/<input_bid>/<abid>` — a tiny pointer record written in the
+  same batch as an appraisal package, so "every appraisal of measurement
+  X" is one prefix scan with no secondary index (the role today's
+  `appraisal/<nid>/<seq>` prefix plays). Audits and alternative appraisals
+  of the same measurement simply add pointers; nothing is sequenced, the
+  ledger's tx order is the sequence.
+- `mirror/<state_tx>` — one record per push to a store (decision 7):
+  `{store, repo, commit, state_tx, state_hash, journal_from_tx,
+  journal_to_tx, blobs, blob_hashes_sha256, skipped[]}`. The ledger's
+  witness that every bundle at or below `state_tx` had its records and
+  blobs mirrored in that commit; the repo's `ledger/state/<tx>.json`
+  holds the same `state_tx`/`state_hash` for cross-checking. The push
+  verifies each copied blob against its hash before writing it; blobs it
+  could not copy are listed in `skipped` with a reason — the one place
+  "pending forever" is stated explicitly.
+- No `locator` records: locations live on the bundle (K.1) and nothing
+  about a run is written after its batch; the per-push `mirror` record is
+  the ledger's only post-run write.
+- `restore/<created_at>` — unchanged.
+- Kinds drop from seven to four: `bundle`, `judged_by`, `mirror`,
+  `restore`.
+
+### K.3 What a run writes
+
+| event | batch |
+|---|---|
+| live run (B.0) | `bundle/<mid>` (measurement) + `bundle/<abid>` (appraisal, `inputs=[mid]`, `appraisal_kind: live`, embedded verdict) + `judged_by/<mid>/<abid>` — locations are on the bundles |
+| later appraisal of the same measurement (audit, or a *different policy*) | `bundle/<abid2>` (`inputs=[mid]`, `appraisal_kind` set, `session_sha256` identifying the policy) + `judged_by/<mid>/<abid2>` |
+| audit of an appraisal package (B.6) | `bundle/<abid3>` with `inputs=[abid]` — the "audits_seq" field disappears: judging an appraisal is just an appraisal whose input is an appraisal |
+| provisioning / blessing | `bundle/<bid>` (`provision`) |
+| G challenge | `bundle/<cid>` (`challenge`, `state: issued`), later versions `bound`/`consumed`; the challenged measurement has `inputs=[cid]` |
+| push to a store | `mirror/<state_tx>` |
+
+Admission rule unchanged in spirit: a batch is refused if any `bundle/`
+key it writes already exists (the nonce-uniqueness rule, now literally key
+uniqueness), except the G challenge's own versions. immudb's
+key-must-not-exist precondition can enforce it server-side for every
+non-challenge package (the only writer that versions is the appraiser,
+and only on `challenge` keys).
+
+### K.4 Different appraisals over one measurement
+
+The design's purpose. `appraise_bundle(client, ledger, mid, protocol,
+session_override=None, appraisal_kind=...)` fetches the measurement
+package by locator, runs the B.6 signed appraisal term with the chosen
+session (companion map / goldens — e.g. a slices-only session omits the
+hash companions, a historical-golden session injects an older golden set),
+and writes one appraisal package plus pointer. Every such appraisal is
+identified by its own nonce, bound to the measurement by hash, labelled
+by `appraisal_kind` and pinned by `session_sha256`, so readers can compare
+verdicts across policies for the same measured bytes. The blackboard's
+`Verdict.ledger_ref` names the appraisal package it used (`bundle/<abid>`),
+not a run.
+
+### K.5 Readers
+
+- `get(bid)` returns the bundle; `appraisals_of(mid)` scans `judged_by/<mid>/`;
+  `inputs` walks the other way. The chain printed by
+  `appraise_from_ledger.py` becomes a small graph: measurement → its
+  appraisals → audits of those.
+- `fetch(bid)` reads one bundle and tries its `locations` in order
+  (local path, then each remote store's derived path in the configured
+  clone — fetching if absent — then the hosting API), refusing bytes that
+  do not hash to `blob_sha256`. One ledger read, no pointer scan.
+- Durability: a bundle's remote location is live when the bundle's tx is
+  at or below the latest `mirror` record for that store and its hash is
+  not in that record's `skipped`. `reconcile` compares bundle txs with
+  mirror records and spot-checks the clone; the backlog is "bundles above
+  the latest mirrored tx" plus the skipped list.
+- SQL mirror `attestation_records` v2 columns: `key, role, protocol_id,
+  input_bid, appraisal_kind, passed, assurance, freshness, created_at,
+  content_sha256`; "latest live verdict per protocol" is one query.
+- Evidence repo layout: `ledger/bundles/<bid>.json`,
+  `ledger/judged_by/<mid>/<abid>`, `ledger/mirror/<state_tx>.json`; blobs
+  unchanged (content-addressed, so a bundle's remote `locations` entry is
+  exactly where its blob lands).
+- Other stores (a second git remote, an OCI registry) are configuration:
+  new bundles carry one more `locations` entry and pushes to that store
+  write their own `mirror` records; nothing per blob is written later.
+
+### K.6 Migration
+
+- `schema: pybb-ledger/v2`; `parse_record` keeps v1 classes so the 81 v1
+  records in the current database remain readable, and `as_bundle(v1
+  records of one run)` projects them into the v2 view for the chain and
+  the mirror.
+- Recommended: start v2 in a **new database** (`pybb2`, or re-bootstrap)
+  rather than mixing kinds in one history; optionally backfill the Rocq
+  runs by projection. The evidence repo gets a `ledger/v2/` prefix or a
+  fresh repo branch — decision below.
+
+### K.7 Code impact (estimate: comparable to steps 1+3 of the original plan)
+
+| module | change |
+|---|---|
+| `ledger.py` | `BundleRecord` (v2, with `locations`), `JudgedByRecord`, `MirrorRecord`; `key_for`; `commit_batch(records)` generic with the uniqueness check over `bundle/` keys; `appraisals_of`; `latest_mirror(store)`; v1 projection |
+| `ledger_runs.py` | one `build_bundle_record(role, payload, desc, inputs, ...)` replacing the five builders; `attest_with_ledger`, `appraise_record` and `audit_appraisal_package` collapse into `attest` (measurement + live appraisal) and `appraise_bundle` (any later appraisal, any policy) |
+| `ledger_immudb.py` | prefix scan helper reused for `judged_by/`; precondition writes; mirror v2 columns |
+| `ledger_repo.py` | layout under `ledger/bundles/` and `ledger/mirror/`; `push_archive` writes one `mirror` record instead of per-blob locators; `reconcile` and `fetch` work from `locations` + `mirror`; `verify_mirror` unchanged in principle |
+| `ledger_tooling.py`, provisioning | the blessing is a `provision` bundle |
+| `knowledge_sources.py` | `Verdict.ledger_ref` → appraisal bundle key |
+| examples, docs, `ledger_records.md` | rewritten for v2 |
+| asp-libs / rust-am-lib / CVM | none |
+
+### K.8 Decisions (all seven resolved 2026-11-19; K is ready to schedule)
+
+1. *Resolved 2026-11-19:* **fold the nonce record into the bundle.** A
+   nonce has no existence apart from its bundle except for G's challenge,
+   which becomes a `challenge` bundle; nonce uniqueness becomes `bundle/`
+   key uniqueness (identical semantics, enforceable server-side). Id
+   derivation, confirmed end to end: the term carries `generate_nonce`
+   (first, in a `left_path` branch, for measurement/provision; after
+   `APPR` for appraisal) → the CVM forks the ASP, which draws 32 CSPRNG
+   bytes → `SIG` signs every slot, nonce included → pybb lays the type out
+   with `slot_layout`, requires exactly one one-slot `generate_nonce`
+   event and full slot accounting, base64-decodes that slot and takes its
+   sha256 → `bid`; refused if `bundle/<bid>` exists; written with
+   `execAll`, proof-checked with `verifiedGet`. Legacy nonce-less
+   provisioning bundles key by blob hash.
+2. *Resolved 2026-11-19:* **fold the verdict into the appraisal bundle.**
+   A verdict is a reading of exactly one appraisal, so it lives on the
+   appraisal bundle as a `verdict` object (`passed`, `components_total`,
+   `components_failed`, `failing[]`, `components_sha256`,
+   `components_blob_sha256`, `interpreter`); `evidence_assurance` is
+   dropped (the input bundle carries its own assurance); the mirror keeps
+   `passed` as a column on appraisal rows. A run whose appraisal never
+   happened has no appraisal bundle; its measurement bundle's `error`
+   field says why (that is the absence of a verdict, not a verdict).
+   **Roles on the client side:** one `Bundle` class, not a hierarchy — a
+   `role` enum with `inputs`, `verdict`, `appraisal_kind` and the
+   challenge fields as optional members serialized only when set, and one
+   validator enforcing the invariants (appraisal ⇒ `inputs` and
+   `verdict`; measurement/provision ⇒ neither; challenge ⇒ `state`). The
+   role is assigned by the producing flow (`attest` → measurement then
+   appraisal; `appraise_bundle` → appraisal; provisioning/blessing →
+   provision; G issuance → challenge) and asserted against the term
+   actually sent (APPR present ⇒ appraisal; stripped+SIG ⇒
+   measurement/provision; nonce+SIG only ⇒ challenge). Appraisal and
+   challenge roles are structurally checkable from the package;
+   measurement vs provision is the writer's claim, like `protocol_id`,
+   and nothing security-relevant depends on it. New purposes map onto
+   existing roles rather than adding roles.
+3. *Resolved 2026-11-19:* **`judged_by/<measurement_bid>/<appraisal_bid>`
+   pointer keys**, written in the same batch as the appraisal bundle with
+   a minimal value, so "every appraisal of X" is one prefix scan that is
+   verified, atomic with the appraisal, mirrored to the evidence repo and
+   present after a replay restore; the SQL mirror additionally carries
+   `input_bid` on appraisal rows for ad hoc queries. Rejected: mirror-only
+   reverse lookup (unverified, written after the batch, absent from the
+   git mirror until rebuilt).
+4. *Resolved 2026-11-19:* **a new database** (`pybb2`, bootstrapped on the
+   same server; `LedgerConfig.db` points at it) and a fresh prefix or
+   branch of the evidence repo for the v2 mirror. The v1 database stays
+   intact and readable as the record of the prototype runs; v2 starts at
+   tx 1 with a single-schema journal. Optional backfill of the Rocq runs by
+   projecting v1 records into v2 bundles (`as_bundle`), which also
+   exercises the projection readers need. Rejected: in place (every
+   reader, the journal, `verify_mirror` and the mirror table would carry
+   two interleaved schemas forever, for prototype data of no production
+   value).
+5. *Resolved 2026-11-19:* **`bundle`** — Copland's own word for what `SIG`
+   closes over and the project's existing usage; the provisioning case is
+   folded in as `role: provision`. Rejected: `package` (unsatisfying),
+   `evidence` (v1's narrower meaning), `attestation`, `capsule`,
+   `envelope`.
+6. *Resolved 2026-11-19:* **`session_sha256` + `appraisal_kind`**, no
+   separate companion-map hash: `ASP_Comps` is part of the session, so
+   `comps_sha256` would add nothing a reader cannot derive, and the policy
+   *by name* is what a reader without the session file wants.
+7. *Resolved 2026-11-19:* **no locator records.** Locations are stated once
+   on the bundle at commit (`locations`, K.1): the local archive path and,
+   for every configured store, the content-addressed path the blob will
+   have there. Whether a push has happened is answered by one
+   `mirror/<state_tx>` record per push (K.2). Rationale: the repo is
+   content-addressed, so every remote location except "arrived yet" is a
+   function of the hash and the configuration, and v1's per-blob `github`
+   locators restated the repo's own index inside the ledger while being
+   the only record kind that grew after a run was committed. Given up:
+   per-blob "reached commit C" statements, replaced by the per-push
+   statement at the granularity pushes actually happen. The `mirror`
+   record is optional in principle (the repo's state snapshots and git
+   history carry the same witness) and kept so `reconcile` can answer
+   from the ledger alone.
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
@@ -1064,7 +1487,8 @@ need a decision before they can **write**:
 5. E (fetch + appraise + example + blackboard variant).
 6. H (evidence repo, per-archive push, mirror, restore tooling + drill); bundle records.
 7. F docs.
-8. G (two-run pre-registration) — separate plan and change set.
+8. G (two-run pre-registration) — detailed plan in section G (2026-11-18), awaiting its decisions; separate change set.
+9. K (unified bundle records, schema v2) — plan in section K, all decisions resolved 2026-11-19; precedes G, since G's challenge becomes a `challenge` bundle.
 
 ## Decisions (all resolved 2026-11-17)
 
