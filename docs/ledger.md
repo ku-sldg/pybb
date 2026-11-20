@@ -26,6 +26,10 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 
 ## Setup
 
+(For a from-scratch walk-through — a fresh machine, your own immudb, the
+context evidence and the Rocq scenario — see
+[INSTALL_ledger_rocq.md](INSTALL_ledger_rocq.md).)
+
 1. **ASPs.** asp-libs must provide `generate_nonce`, `nonce_appr`,
    `hashevidence` and `magic_appr` beside the usual ones (`make` in asp-libs
    builds them into `target/release`), built against a rust-am-lib that

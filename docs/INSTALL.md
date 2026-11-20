@@ -185,7 +185,10 @@ troubleshooting below).
 
 The ledger records every attestation run in immudb and mirrors evidence to
 a git repository of your choice; see [ledger.md](ledger.md) for the model
-and day-to-day use. Nothing below is needed for the demos.
+and day-to-day use, and [INSTALL_ledger_rocq.md](INSTALL_ledger_rocq.md)
+for a from-scratch walk-through — a fresh machine, your own ledger, the
+context evidence, and the Rocq scenario under it. Nothing below is needed
+for the demos.
 
 1. Build asp-libs so `target/release` includes `generate_nonce`,
    `nonce_appr`, `hashevidence` and `magic_appr` (the default `make` does).
