@@ -51,8 +51,8 @@ hashed and laid out. What the bundle is evidence *of* is its `role` and its
 | `blob` | BlobRef | the archived bytes: hash, size, encoding and every known location |
 | `rawev_count` | int | number of RawEv slots |
 | `rawev_sha256` | hex | sha256 over the flattened RawEv bytes, which is what the `hashevidence` ASP computes; an appraisal's binding compares to it |
-| `nonce` | NonceInfo or absent | the run's nonce: slot, producing event, and the bytes in clear (unpredictability before use is what matters, not secrecy after); absent only on legacy nonce-less provisioning bundles |
-| `signature` | SignatureInfo | where the signature slot is and who signed |
+| `nonce` | NonceInfo or absent | the run's nonce: the ASP that drew it and the bytes in clear (unpredictability before use is what matters, not secrecy after); absent only on legacy nonce-less provisioning bundles |
+| `signature` | SignatureInfo | that the package is signed, by which ASP, and by whose key |
 | `assurance` | `signed+nonce`, `signed`, `nonce`, `none` | computed from the package as produced |
 | `freshness` | `post-hoc`, `pre-registered`, `none` | what the nonce proves: `post-hoc` today (binding, uniqueness, order; not a challenge) |
 | `exception_reason` | string or absent | set only when the run committed below the configured minimum assurance through an explicit exception |
@@ -144,26 +144,25 @@ One per restore of a ledger from the evidence repo.
 | `store` | string | `local`, or a store id such as `github:owner/name` |
 | `path` | string | file path (local) or path inside the store (`blobs/<sha256>.json.gz`) |
 
+Records carry no RawEv positions (plan section L). Where the nonce, the
+signature or a binding sits in a package is pybb's reading of that package,
+re-derived from the archived bytes and the session whenever it is needed
+(`describe_package`, `slot_layout`); the record describes the evidence,
+not pybb's handling of it.
+
 **NonceInfo** — the bundle's nonce.
 
 | field | type | description |
 |---|---|---|
-| `slot` | int | RawEv index |
-| `asp` | string | `generate_nonce` |
-| `asp_targid` | string | `nonce_targ` (measurement, provision) or `appraiser_nonce_targ` (appraisal) |
+| `asp` | string | the ASP that drew it: `generate_nonce` |
 | `b64` | base64 | the nonce bytes |
 | `bytes` | int | nonce length; validated against the bytes |
-
-**SlotRef** — where an event's output sits in the flat RawEv list (`slot`,
-`asp`, `asp_targid`); the base of NonceInfo and the shape `describe_package`
-reports.
 
 **SignatureInfo**
 
 | field | type | description |
 |---|---|---|
 | `present` | bool | the package has a signature |
-| `slot` | int or null | its RawEv index |
 | `asp` | string or null | `sig` or `sig_tpm` |
 | `signer_fp` | string or null | fingerprint of the verifying key |
 
@@ -172,8 +171,7 @@ reports.
 | field | type | description |
 |---|---|---|
 | `bid` | hex | the input bundle (legacy: `sha256:<blob hash>`) |
-| `binding_slot` | int | RawEv index of the `hashevidence` output in this appraisal package |
-| `binding_hash` | hex | the hash it computed over the judged bundle's RawEv; equals that bundle's `rawev_sha256` |
+| `binding_hash` | hex | the value of this appraisal package's `hashevidence` slot, computed by the CVM over the judged bundle's RawEv; equals that bundle's `rawev_sha256`. A record-level cross-check; the CVM's own check is `goldenbytes_appr` over the slot |
 
 **Verdict** — an appraisal bundle's reading.
 

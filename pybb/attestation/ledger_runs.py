@@ -260,6 +260,36 @@ class LedgerAttestation(BaseModel):
 ArchiveFn = Callable[[Any, str, str], str]  # (obj, protocol_id, kind) -> path
 
 
+def archiver(archive_dir: Any) -> ArchiveFn:
+    """
+    The standard archive callback: gzipped JSON under one directory per
+    predicate instance, `<archive_dir>/<UTC stamp>-<4 hex>/<protocol>.<kind>[.<n>].json.gz`.
+    Two instances started in the same second never share a directory; the
+    name is an archive detail, not a ledger field (plan schema point 5).
+    Lists (component artifacts) are written canonically so their hash is
+    stable; CVM responses are written as plain JSON.
+    """
+    import secrets
+    import time
+
+    root = Path(os.path.expanduser(str(archive_dir)))
+    episode: Dict[str, Path] = {}
+
+    def archive(obj: Any, protocol_id: str, kind: str = "response") -> str:
+        if "dir" not in episode:
+            episode["dir"] = root / (time.strftime("%Y%m%d-%H%M%S", time.gmtime()) + "-" + secrets.token_hex(2))
+        d = episode["dir"]
+        path = d / f"{protocol_id}.{kind}.json.gz"
+        n = 1
+        while path.exists():
+            n += 1
+            path = d / f"{protocol_id}.{kind}.{n}.json.gz"
+        write_gz_json(path, obj)
+        return str(path)
+
+    return archive
+
+
 def _gz_bytes(path: str) -> bytes:
     return Path(path).read_bytes() if path else b""
 
@@ -327,14 +357,14 @@ def build_bundle_record(role: str, lp: Any, payload: list, desc: PackageDescript
             raise LedgerError("appraisal bundle: inputs and verdict are required")
         raw_b64 = payload[0]["RawEv"]
         bound = base64.b64decode(raw_b64[hs.start]).hex()
-        inputs = [i.model_copy(update={"binding_slot": hs.start, "binding_hash": bound}) for i in inputs]
+        inputs = [i.model_copy(update={"binding_hash": bound}) for i in inputs]
     elif hs is not None and role != "challenge":
         raise LedgerError(f"{role} bundle: package carries a hashevidence binding (is it an appraisal?)")
     env = record_env(config)
     nonce: Optional[NonceInfo] = None
     if desc.nonce is not None and desc.nonce_b64 is not None:
-        nonce = NonceInfo(slot=desc.nonce.slot, asp=desc.nonce.asp, asp_targid=desc.nonce.asp_targid,
-                          b64=desc.nonce_b64, bytes=len(base64.b64decode(desc.nonce_b64)))
+        nonce = NonceInfo(asp=desc.nonce.asp, b64=desc.nonce_b64,
+                          bytes=len(base64.b64decode(desc.nonce_b64)))
     sig = desc.signature.model_copy(update={"signer_fp": env["committer_fp"] or None}) \
         if desc.signature.present else SignatureInfo(present=False)
     return BundleRecord(

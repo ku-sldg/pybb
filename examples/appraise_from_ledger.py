@@ -26,7 +26,7 @@ from pathlib import Path
 
 from pybb.attestation import CvmSubprocessClient, FileLedger, ProtocolDir
 from pybb.attestation.ledger import LedgerConfig
-from pybb.attestation.ledger_runs import appraise_bundle
+from pybb.attestation.ledger_runs import appraise_bundle, archiver
 
 REPO = Path(__file__).parent.parent
 FIXTURES = REPO / "tests" / "fixtures"
@@ -61,12 +61,12 @@ def show_bundle(ledger, bid: str, indent: str = "") -> None:
     key = f"bundle/{b.key_id}"
     print(f"{indent}{key}{tx(ledger, key)}")
     print(f"{indent}  role={b.role} protocol={b.protocol_id} assurance={b.assurance} freshness={b.freshness} at {b.created_at}")
-    print(f"{indent}  rawev_count={b.rawev_count} sig_slot={b.signature.slot} nonce_slot={b.nonce.slot if b.nonce else None}")
+    print(f"{indent}  rawev_count={b.rawev_count} signed_by={b.signature.asp} nonce_asp={b.nonce.asp if b.nonce else None}")
     print(f"{indent}  blob_sha256={b.blob.blob_sha256}  rawev_sha256={b.rawev_sha256}")
     for loc in b.blob.locations:
         print(f"{indent}  location {loc.store}: {loc.path}")
     for i in b.inputs or []:
-        print(f"{indent}  input {i.bid[:16]}…  binding slot {i.binding_slot} = {(i.binding_hash or '')[:16]}…")
+        print(f"{indent}  input {i.bid[:16]}…  binding_hash {(i.binding_hash or '')[:16]}…")
     if b.verdict is not None:
         v = b.verdict
         print(f"{indent}  verdict[{b.appraisal_kind}]: passed={v.passed} components={v.components_total} "
@@ -85,6 +85,8 @@ def main() -> int:
     ap.add_argument("--kind", default="audit", help="appraisal_kind label for the new appraisal bundle")
     ap.add_argument("--session", help="session JSON overriding the protocol's (a different appraisal policy)")
     ap.add_argument("--ledger", help="FileLedger path (default: immudb from the environment)")
+    ap.add_argument("--archive-dir", default=str(REPO / "evidence"),
+                    help="where the new appraisal package is archived (default: evidence/)")
     ap.add_argument("--no-run", action="store_true", help="show the graph only; run nothing")
     args = ap.parse_args()
 
@@ -105,7 +107,8 @@ def main() -> int:
     session = json.loads(Path(args.session).read_text()) if args.session else None
     print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ({args.kind}) ==")
     rep = appraise_bundle(CvmSubprocessClient(), protocol, ledger, config, bid,
-                          session_override=session, appraisal_kind=args.kind)
+                          session_override=session, appraisal_kind=args.kind,
+                          archive=archiver(args.archive_dir))
     if rep.error:
         print("ERROR:", rep.error)
         return 1

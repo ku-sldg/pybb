@@ -133,37 +133,13 @@ def make_attestation_predicate(
         ledger_config = LedgerConfig()
     tooling_resolver: List[Any] = [None]  # built lazily: needs _archive
     cache: Dict[str, Verdict] = {}
-    episode_dir: List[Any] = [None]
-
-    def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
-        if archive_dir is None:
+    if archive_dir is None:
+        def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
             return ""
-        import gzip
-        import secrets
-        import time
-        from pathlib import Path as _P
+    else:
+        from .ledger_runs import archiver
 
-        if episode_dir[0] is None:
-            # timestamp plus a random suffix: two predicates built in the
-            # same second never share a directory (docs/ledger_plan.md,
-            # schema point 5); the name is an archive detail, not a ledger field
-            d = _P(archive_dir) / (time.strftime("%Y%m%d-%H%M%S") + "-" + secrets.token_hex(2))
-            d.mkdir(parents=True, exist_ok=True)
-            episode_dir[0] = d
-        path = episode_dir[0] / f"{protocol_id}.{kind}.json.gz"
-        seq = 1
-        while path.exists():  # restarted protocols archive alongside, never over
-            seq += 1
-            path = episode_dir[0] / f"{protocol_id}.{kind}.{seq}.json.gz"
-        if isinstance(response, list):  # the components artifact: canonical bytes
-            from .ledger import canonical_json
-
-            with gzip.open(path, "wb") as f:
-                f.write(canonical_json(response))
-        else:
-            with gzip.open(path, "wt") as f:
-                json.dump(response, f)
-        return str(path)
+        _archive = archiver(archive_dir)  # one episode directory per predicate instance
 
     def predicate(measurement: dict) -> Verdict:
         key = json.dumps(measurement, sort_keys=True)

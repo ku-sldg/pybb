@@ -122,7 +122,7 @@ its `inputs`. Keys:
 
 | key | holds |
 |---|---|
-| `bundle/<bid>` | one CVM run output: `role` (`measurement`, `appraisal`, `provision`, `challenge`), protocol and config hashes, `response_sha256`, `blob` (hash, size, every location), `rawev_sha256`, `nonce` (slot and bytes), `signature`, `assurance`, `freshness`, `tooling`; an appraisal adds `inputs` (the bundle it judged, with its `hashevidence` binding), `verdict` and `appraisal_kind`; a provisioning bundle adds `provision` (legacy nonce-less bundles: `bundle/sha256:<hash>`) |
+| `bundle/<bid>` | one CVM run output: `role` (`measurement`, `appraisal`, `provision`, `challenge`), protocol and config hashes, `response_sha256`, `blob` (hash, size, every location), `rawev_sha256`, `nonce` (which ASP, the bytes), `signature`, `assurance`, `freshness`, `tooling`; an appraisal adds `inputs` (the bundle it judged, with its `hashevidence` binding), `verdict` and `appraisal_kind`; a provisioning bundle adds `provision` (legacy nonce-less bundles: `bundle/sha256:<hash>`) |
 | `judged_by/<bid>/<appraisal bid>` | pointer from a bundle to each appraisal of it: "every appraisal of X" is one prefix scan |
 | `mirror/<store>/<state_tx>` | one push to an evidence store: commit, ledger head, journal range, blobs carried, blobs skipped |
 | `restore/<created_at>` | a restore event |

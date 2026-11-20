@@ -108,7 +108,7 @@ def test_ledger_protocol_adds_asps_without_touching_disk(proto):
 def test_real_raw_package_lays_out_as_sig_nonce_measurements(proto):
     d = describe_package(RAW["PAYLOAD"], ledger_protocol(proto).session)
     assert [s.asp for s in d.spans] == ["sig", "generate_nonce"] + ["hashfile"] * 4
-    assert d.nonce.slot == 1 and d.signature.slot == 0 and d.assurance == "signed+nonce"
+    assert d.nonce.slot == 1 and d.signature_ref.slot == 0 and d.assurance == "signed+nonce"
     assert d.bid == sha256_hex(base64.b64decode(RAW["PAYLOAD"][0]["RawEv"][1]))
 
 
@@ -162,13 +162,14 @@ def test_attest_with_ledger_commits_a_full_run(proto, config, tmp_path):
     a = ledger.get(r.appraisal_bid)
     assert r.ledger_ref == f"bundle/{r.appraisal_bid}"
     assert m.role == "measurement" and m.protocol_id == proto.protocol_id and m.freshness == "post-hoc"
-    assert m.assurance == "signed+nonce" and m.nonce.slot == 1 and m.bid == sha256_hex(base64.b64decode(m.nonce.b64))
+    assert m.assurance == "signed+nonce" and m.nonce.asp == "generate_nonce" and m.bid == sha256_hex(base64.b64decode(m.nonce.b64))
+    assert m.signature == __import__("pybb.attestation.ledger", fromlist=["SignatureInfo"]).SignatureInfo(present=True, asp="sig", signer_fp=None)
     assert m.blob.blob_sha256 == sha256_hex(Path(archived["response"]).read_bytes())
     assert [l.store for l in m.blob.locations] == ["local"] and m.appraiser_id == "ap-test"
     assert m.verdict is None and m.inputs is None
     assert a.role == "appraisal" and a.appraisal_kind == "live" and a.protocol_id == proto.protocol_id
     assert a.inputs == [__import__("pybb.attestation.ledger", fromlist=["InputRef"]).InputRef(
-        bid=m.bid, binding_slot=2, binding_hash=m.rawev_sha256)]
+        bid=m.bid, binding_hash=m.rawev_sha256)]
     assert a.verdict.passed and a.verdict.components_total == 6 and a.verdict.failing == []
     assert a.verdict.components_blob.blob_sha256 == sha256_hex(Path(archived["components"]).read_bytes())
     assert a.verdict.interpreter.kind in ("verified-summary", "legacy-walker")

@@ -248,7 +248,7 @@ def test_nonced_provisioning_bundle_verifies_and_keys_by_nonce(tmp_path, config)
     keys = record_provision_bundles(ledger, golden, {proto.protocol_id: proto}, cfg)
     assert keys == [f"bundle/{d.bid}"]
     rec = ledger.get_record(keys[0])
-    assert rec.role == "provision" and rec.assurance == "signed+nonce" and rec.nonce.slot == 1 and rec.bid == d.bid
+    assert rec.role == "provision" and rec.assurance == "signed+nonce" and rec.nonce.asp == "generate_nonce" and rec.bid == d.bid
     report = verify_bundle(client, proto, golden, ledger=ledger)
     assert report and report.ledger_ok and report.ledger_key == keys[0]
 

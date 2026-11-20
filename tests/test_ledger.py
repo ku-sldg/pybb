@@ -150,8 +150,8 @@ def test_unknown_kind_parses_as_generic_record():
 # ── bundle records ───────────────────────────────────────────────────────────
 
 
-def _nonce_info(nonce: bytes, slot: int = 2) -> NonceInfo:
-    return NonceInfo(slot=slot, asp="generate_nonce", asp_targid="nonce_targ", b64=_b64(nonce), bytes=len(nonce))
+def _nonce_info(nonce: bytes) -> NonceInfo:
+    return NonceInfo(asp="generate_nonce", b64=_b64(nonce), bytes=len(nonce))
 
 
 def _blob(sha: str = "b" * 64, local: str = "evidence/x/p.response.json.gz", store: str = "github:o/r") -> BlobRef:
@@ -162,7 +162,7 @@ def _blob(sha: str = "b" * 64, local: str = "evidence/x/p.response.json.gz", sto
 def _measurement_bundle(nonce_bytes: bytes = NONCE, protocol: str = "proto", **kw) -> BundleRecord:
     fields = dict(bid=sha256_hex(nonce_bytes), role="measurement", protocol_id=protocol, response_sha256="r" * 64,
                   blob=_blob(), rawev_count=3, rawev_sha256="h" * 64, nonce=_nonce_info(nonce_bytes),
-                  signature=SignatureInfo(present=True, slot=0, asp="sig"), assurance="signed+nonce",
+                  signature=SignatureInfo(present=True, asp="sig"), assurance="signed+nonce",
                   appraiser_id="ap-1")
     fields.update(kw)
     return BundleRecord(**fields)
@@ -173,9 +173,9 @@ def _appraisal_bundle(of: BundleRecord, nonce_bytes: bytes = None, passed: bool 
     nonce = nonce_bytes or secrets.token_bytes(32)
     fields = dict(bid=sha256_hex(nonce), role="appraisal", protocol_id=of.protocol_id, response_sha256="q" * 64,
                   blob=_blob("c" * 64, "evidence/x/p.appraisal.json.gz"), rawev_count=5, rawev_sha256="g" * 64,
-                  nonce=_nonce_info(nonce, slot=1), signature=SignatureInfo(present=True, slot=0, asp="sig"),
+                  nonce=_nonce_info(nonce), signature=SignatureInfo(present=True, asp="sig"),
                   assurance="signed+nonce",
-                  inputs=[InputRef(bid=of.key_id, binding_slot=2, binding_hash=of.rawev_sha256)],
+                  inputs=[InputRef(bid=of.key_id, binding_hash=of.rawev_sha256)],
                   verdict=Verdict(passed=passed, components_total=2, components_failed=0 if passed else 1,
                                   interpreter=Interpreter(kind="verified-summary", tool="copland-evidence-tools")),
                   appraisal_kind=kind, appraiser_id="ap-1")
@@ -249,7 +249,10 @@ def test_describe_package_derives_bid_from_the_nonce_slot_and_labels_assurance()
     assert desc.nonce == SlotRef(slot=2, asp="generate_nonce", asp_targid="nonce_targ")
     assert desc.bid == sha256_hex(NONCE) == derive_bid(pkg, SESSION)
     assert desc.nonce_b64 == _b64(NONCE)
-    assert desc.signature.present and desc.signature.slot == 0 and desc.signature.asp == "sig"
+    assert desc.signature_ref == SlotRef(slot=0, asp="sig") and desc.signature == SignatureInfo(present=True, asp="sig")
+    # positions are reading tools only: no record field carries one (plan L)
+    for model in (NonceInfo, SignatureInfo, InputRef):
+        assert not {f for f in model.model_fields if "slot" in f or f == "asp_targid"}, model
     assert desc.assurance == "signed+nonce"
     assert desc.rawev_sha256 == sha256_hex(SIG + HASH_A + NONCE)  # == hashevidence
     assert desc.response_sha256 == sha256_hex(canonical_json(pkg))
@@ -397,13 +400,13 @@ def test_provision_and_restore_records(tmp_path):
                           blob=BlobRef(blob_sha256="s" * 64, blob_bytes=100, encoding="json",
                                        locations=[Location(store="local", path="golden/_bundles/p/provision_bundle.json")]),
                           rawev_count=5, rawev_sha256="h" * 64,
-                          signature=SignatureInfo(present=True, slot=0, asp="sig"), assurance="signed",
+                          signature=SignatureInfo(present=True, asp="sig"), assurance="signed",
                           freshness="none", provision=ProvisionInfo(golden_ts="2026-11-01T00:00:00Z", targets=4))
     led.commit_bundles([legacy])
     with pytest.raises(DuplicateNonceError):
         led.commit_bundles([legacy])
     nonced = legacy.model_copy(update={"bid": sha256_hex(NONCE), "assurance": "signed+nonce",
-                                       "freshness": "post-hoc", "nonce": _nonce_info(NONCE, slot=4)})
+                                       "freshness": "post-hoc", "nonce": _nonce_info(NONCE)})
     led.commit_bundles([nonced])
     led.commit_restore(RestoreRecord(mode="exact", source_repo="o/r", source_commit="c",
                                      source_last_state_tx=3, tx_count=3))

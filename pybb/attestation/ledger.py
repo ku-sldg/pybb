@@ -7,7 +7,7 @@ challenge — produces one signed, nonce'd package, and the ledger records it
 as one `bundle` keyed by the sha256 of the nonce the CVM drew for that run.
 What a bundle is evidence *of* is its `role` and its `inputs`: a
 measurement is about the target system, an appraisal is about the bundle it
-names as input (bound to it by a `hashevidence` slot) and carries its own
+names as input (bound to it by a `hashevidence` value) and carries its own
 `verdict`, so one measurement can be judged any number of times by any
 policy. `judged_by/<input>/<appraisal>` pointers make those judgments one
 prefix scan; a `mirror` record per push to a store witnesses what has been
@@ -90,24 +90,29 @@ class LedgerRecord(BaseModel):
 
 
 class SlotRef(BaseModel):
-    """Where an event's output sits in the flat RawEv list."""
+    """Where an event's output sits in the flat RawEv list. A reading tool
+    (plan L): it appears in `PackageDescription`, never in a record."""
 
     slot: int
     asp: str
     asp_targid: Optional[str] = None
 
 
-class NonceInfo(SlotRef):
-    """The bundle's nonce: its slot and its value (stored in clear; a nonce's
-    worth is unpredictability before use, not secrecy after)."""
+class NonceInfo(BaseModel):
+    """The bundle's nonce: which ASP drew it and its value (stored in clear;
+    a nonce's worth is unpredictability before use, not secrecy after).
+    Position-free (plan L): where it sat is re-derived from the package."""
 
+    asp: str
     b64: str
     bytes: int
 
 
 class SignatureInfo(BaseModel):
+    """That, and by which ASP, the package is signed, and whose key pybb
+    trusts. Position-free (plan L)."""
+
     present: bool
-    slot: Optional[int] = None
     asp: Optional[str] = None
     signer_fp: Optional[str] = None
 
@@ -138,12 +143,12 @@ class BlobRef(BaseModel):
 
 
 class InputRef(BaseModel):
-    """A bundle this run took as initial evidence. For an appraisal the
-    binding is the `hashevidence` slot over the judged bundle's flattened
-    RawEv bytes — compare with that bundle's `rawev_sha256`."""
+    """A bundle this run took as initial evidence. For an appraisal
+    `binding_hash` is the value of the `hashevidence` slot over the judged
+    bundle's flattened RawEv bytes — compare with that bundle's
+    `rawev_sha256` (plan L.1: a cross-check, never a source of truth)."""
 
     bid: str
-    binding_slot: Optional[int] = None
     binding_hash: Optional[str] = None
 
 
@@ -479,10 +484,11 @@ class PackageDescription(BaseModel):
     response_sha256: str  # canonical JSON of the whole payload
     rawev_sha256: str  # sha256 over the flattened RawEv bytes (= hashevidence)
     spans: List[SlotSpan]
-    nonce: Optional[SlotRef] = None
+    nonce: Optional[SlotRef] = None  # where the nonce sits (reading only)
     bid: Optional[str] = None
     nonce_b64: Optional[str] = None
-    signature: SignatureInfo
+    signature_ref: Optional[SlotRef] = None  # where the signature sits (reading only)
+    signature: SignatureInfo  # position-free, as recorded
     assurance: AssuranceLevel
 
     def span_for(self, asp: str, asp_targid: Optional[str] = None) -> Optional[SlotSpan]:
@@ -528,9 +534,11 @@ def describe_package(payload: list, session: dict,
         nonce_b64 = payload[0]["RawEv"][sp.start]
 
     sigs = [sp for sp in spans if sp.asp in SIG_ASPS]
+    signature_ref: Optional[SlotRef] = None
     if sigs:
         sp = sigs[0]
-        signature = SignatureInfo(present=True, slot=sp.start, asp=sp.asp)
+        signature_ref = SlotRef(slot=sp.start, asp=sp.asp, asp_targid=sp.asp_targid)
+        signature = SignatureInfo(present=True, asp=sp.asp)
     else:
         signature = SignatureInfo(present=False)
 
@@ -551,6 +559,7 @@ def describe_package(payload: list, session: dict,
         nonce=nonce_ref,
         bid=bid,
         nonce_b64=nonce_b64,
+        signature_ref=signature_ref,
         signature=signature,
         assurance=assurance,
     )

@@ -1480,7 +1480,7 @@ not a run.
 
 ## L. Position-free records (planning, 2026-11-19)
 
-**STATUS: plan only; decided, not implemented.** Removes every RawEv slot
+**STATUS: decided; implementation per L.5 (2026-11-20).** Removes every RawEv slot
 position from the stored records. A bundle describes the evidence; where
 pybb found things inside it is pybb's reading, done again at read time.
 
@@ -1578,6 +1578,40 @@ pairing checkable from evidence and auditable by `goldenbytes_appr`.
    reported, not fatal); an optional `writer` field beside `appraiser_id`.
    Keys, uniqueness, `judged_by`, mirror records and the two-run flow are
    unaffected. Permissions for other writers stay in section J.
+
+### L.5 Implementation plan (confirmed 2026-11-20)
+
+Confirmed: `rawev_count` stays (a count, a cheap check against archived
+bytes); `asp` stays on nonce and signature; `pybb2` is deleted and
+recreated rather than migrated; the schema tag stays `pybb-ledger/v2`.
+
+1. `ledger.py`: `NonceInfo` → `asp, b64, bytes` (no longer a `SlotRef`);
+   `SignatureInfo` → `present, asp, signer_fp`; `InputRef` → `bid,
+   binding_hash`. `PackageDescription` keeps `nonce: SlotRef` internally
+   and gains `signature_ref: SlotRef` for the signature's position;
+   `signature` becomes the position-free `SignatureInfo`. `describe_package`
+   keeps `nonce_targid` as a reading parameter. Validators unchanged.
+2. `ledger_runs.build_bundle_record` stops copying positions and
+   `asp_targid`; it still locates the `hashevidence` span to read the
+   binding value.
+3. Archiving: lift the archive callback out of
+   `knowledge_sources.make_attestation_predicate` into
+   `ledger_runs.archiver(archive_dir)`, reuse it in the blackboard and give
+   `examples/appraise_from_ledger.py` an `--archive-dir` (default
+   `evidence/`) so post-hoc appraisal bundles have bytes behind them.
+4. Tests: `test_ledger.py` helpers and the description assertions
+   (`signature_ref.slot`), `test_ledger_runs.py` and
+   `test_integration_ledger.py` slot assertions move to the description.
+5. Docs: `ledger_records.md` nested-model tables (`SlotRef` becomes
+   "internal to reading, never stored"), `ledger.md` key table, this status.
+6. Schema compatibility note: readers at `36906fd` required `slot` and
+   would reject L records; no such reader exists outside this checkout and
+   nothing has been pushed to the mirror, so L is the one incompatible
+   tweak made before the first v2 push. After that push, removals need a
+   tag bump.
+7. `pybb2`: `immuadmin database unload` + `delete`, then bootstrap; rerun
+   the Rocq status run and the two post-hoc appraisals with archiving;
+   refresh the `pybb2` summary; one commit on `ledger`.
 
 ## M. Configurable bundle shapes (planning, 2026-11-19)
 
