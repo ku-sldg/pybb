@@ -95,7 +95,8 @@ Without `ledger=` the predicate runs the legacy single-run flow unchanged.
 With it, every protocol runs as measurement + appraisal and the `Verdict`
 carries `bid` (the measurement bundle id), `ledger_ref` (`bundle/<appraisal
 bid>`, the appraisal the verdict came from), `evidence_ref`, `appraisal_ref`
-and `components_ref`. A verdict fails closed when the CVM
+and `components_ref`. The judged outcome's class is `Appraised` (`Verdict`
+remains as an alias); the recorded-but-unjudged outcome is `Measured`. A verdict fails closed when the CVM
 fails, the package is not describable, its assurance is below the minimum
 without an exception, its nonce is already in the ledger, or the ledger is
 unreachable.
@@ -109,6 +110,21 @@ appraise the ledger-held bundle again instead of measuring the live tree (an
 audit rung); the verdict is truthy only if the verified reads, the byte and
 bundle-id checks, and the fresh signed appraisal all hold, and it fails with
 a reason when the audit disagrees with the live appraisal.
+
+## Measure now, appraise later
+
+Appraisal does not have to happen in the run that measured. With a ledger,
+`make_measurement_predicate` records a protocol's signed measurement as one
+bundle and returns a `Measured` outcome — truthy when recorded, carrying
+`bid` and `ledger_ref`, and deliberately not an `Appraised`: nothing has
+judged it, and the trust-decision logic consumes judged outcomes only.
+Later, `ledger_request(bid)` on an attestation predicate, or
+`examples/appraise_from_ledger.py`, judges the stored measurement under the
+protocol's session or any other policy; the first such appraisal is
+labelled `deferred`, later ones `audit` or whatever the caller names them.
+The Rocq driver does this with `--ledger --ledger-mode measure`. In the
+ordinary live flow, a measurement whose appraisal run fails is still
+recorded, with `error` saying why, and the outcome fails (plan N.4).
 
 ## Records and keys
 

@@ -82,7 +82,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("bid", nargs="?", help="bundle id (sha256 of its nonce)")
     ap.add_argument("--latest", metavar="PROTOCOL_ID", help="most recent measurement bundle of this protocol")
-    ap.add_argument("--kind", default="audit", help="appraisal_kind label for the new appraisal bundle")
+    ap.add_argument("--kind", default=None,
+                    help="appraisal_kind label for the new appraisal bundle (default: 'deferred' for the first "
+                         "appraisal of an unjudged measurement, else 'audit')")
     ap.add_argument("--session", help="session JSON overriding the protocol's (a different appraisal policy)")
     ap.add_argument("--ledger", help="FileLedger path (default: immudb from the environment)")
     ap.add_argument("--archive-dir", default=str(REPO / "evidence"),
@@ -105,7 +107,7 @@ def main() -> int:
         sys.exit(f"no protocol dir at {proto_dir}")
     protocol = ProtocolDir.load(str(proto_dir))
     session = json.loads(Path(args.session).read_text()) if args.session else None
-    print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ({args.kind}) ==")
+    print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ({args.kind or 'deferred/audit'}) ==")
     rep = appraise_bundle(CvmSubprocessClient(), protocol, ledger, config, bid,
                           session_override=session, appraisal_kind=args.kind,
                           archive=archiver(args.archive_dir))

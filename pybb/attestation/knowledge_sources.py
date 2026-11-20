@@ -106,6 +106,26 @@ class Appraised(BaseModel):
 Verdict = Appraised  # Phase 1 name, kept as an alias (plan N.2)
 
 
+class Measured(BaseModel):
+    """
+    Outcome of a measurement-only run (plan N.2): the signed measurement
+    bundle is in the ledger and nothing has judged it. Truthy iff recorded.
+    It is deliberately not an `Appraised`: the trust-decision logic consumes
+    judged outcomes only, and a later `ledger_request(bid)` turns this
+    measurement into one when policy says so.
+    """
+
+    protocol: str
+    bid: str = ""
+    ledger_ref: str = ""  # `bundle/<bid>`
+    evidence_ref: str = ""
+    assurance: str = ""
+    error: str = ""
+
+    def __bool__(self) -> bool:
+        return self.error == "" and self.bid != "" and self.ledger_ref != ""
+
+
 def make_attestation_predicate(
     client: Any, protocols: Dict[str, Any], archive_dir: Any = None,
     ledger: Any = None, ledger_config: Any = None,
@@ -170,6 +190,66 @@ def make_attestation_predicate(
 
     predicate.forget = forget
     return predicate
+
+
+def make_measurement_predicate(
+    client: Any, protocols: Dict[str, Any], archive_dir: Any = None,
+    ledger: Any = None, ledger_config: Any = None,
+) -> Callable[[dict], Measured]:
+    """
+    Predicate over measurement requests `{"protocol": pid}`: run the named
+    protocol's `measure` term, archive the package, and commit ONE
+    measurement bundle to the ledger (plan N.1). Returns `Measured`, never a
+    judged outcome; appraisal happens later through `ledger_request(bid)`
+    on an attestation predicate. Memoized and restartable like
+    `make_attestation_predicate`. A ledger is required: recording is the
+    point.
+    """
+    from .ledger import LedgerConfig
+
+    if ledger is not None and ledger_config is None:
+        ledger_config = LedgerConfig()
+    cache: Dict[str, Measured] = {}
+    tooling_resolver: List[Any] = [None]
+    if archive_dir is None:
+        def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
+            return ""
+    else:
+        from .ledger_runs import archiver
+
+        _archive = archiver(archive_dir)
+
+    def predicate(measurement: dict) -> Measured:
+        key = json.dumps(measurement, sort_keys=True)
+        if key not in cache:
+            cache[key] = _measure_ledger(client, protocols, measurement, _archive, ledger,
+                                         ledger_config, tooling_resolver)
+        return cache[key]
+
+    def forget(measurement: dict) -> None:
+        cache.pop(json.dumps(measurement, sort_keys=True), None)
+
+    predicate.forget = forget
+    return predicate
+
+
+def _measure_ledger(client: Any, protocols: Dict[str, Any], measurement: dict, archive: Any,
+                    ledger: Any, config: Any, tooling_resolver: List[Any]) -> Measured:
+    from .ledger_runs import measure
+
+    protocol_id = measurement.get("protocol", "")
+    protocol = protocols.get(protocol_id)
+    if protocol is None:
+        return Measured(protocol=protocol_id, error=f"unknown protocol '{protocol_id}'")
+    if ledger is None:
+        return Measured(protocol=protocol_id, error="measurement-only recording needs a ledger")
+    if tooling_resolver[0] is None:
+        from .ledger_tooling import ToolingResolver
+
+        tooling_resolver[0] = ToolingResolver(client, protocols, ledger, config, archive=archive)
+    r = measure(client, protocol, ledger, config, archive=archive, tooling=tooling_resolver[0].ref(protocol_id))
+    return Measured(protocol=protocol_id, bid=r.bid, ledger_ref=r.ledger_ref, evidence_ref=r.evidence_ref,
+                    assurance=r.assurance, error=r.error)
 
 
 def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
@@ -237,7 +317,7 @@ def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
         return Appraised(protocol=protocol_id, passed=False, bid=bid,
                        error=f"unknown protocol '{protocol_id}' for ledger bundle {bid}")
     rep = appraise_bundle(client, protocol, ledger, config, bid, archive=archive,
-                          appraisal_kind=measurement.get("appraisal_kind", "audit"))
+                          appraisal_kind=measurement.get("appraisal_kind"))  # None: deferred/audit per plan N.3
     error = rep.error
     if not error and rep.agrees_with_live is False:
         live = live_appraisal_of(ledger, bid)

@@ -580,6 +580,25 @@ def tamper_axiom(cfg: RocqExampleConfig) -> bytes:
     return original
 
 
+# ── measurement only (--ledger-mode measure; plan N) ──────────────────────────
+
+def measure_flow(cfg: RocqExampleConfig, protocols: dict) -> None:
+    """Record every protocol's signed measurement in the ledger without
+    judging it; appraisal happens later, under any policy, with
+    examples/appraise_from_ledger.py (which labels the first one `deferred`)."""
+    from pybb.attestation import make_measurement_predicate
+    predicate = make_measurement_predicate(CvmSubprocessClient(), _with_tooling(protocols),
+                                           archive_dir=EVIDENCE_DIR, ledger=_LEDGER["ledger"],
+                                           ledger_config=_LEDGER["config"])
+    print("measurement only: recording, not judging")
+    for pid in cfg.all_ids:
+        m = predicate({"protocol": pid})
+        if m:
+            print(f"  {pid:36s} recorded {m.ledger_ref}  assurance={m.assurance}")
+        else:
+            print(f"  {pid:36s} NOT recorded: {m.error}")
+
+
 # ── the progress view (--status / --ready) ────────────────────────────────────
 
 def _blessed_text(cfg: RocqExampleConfig, protocols: dict) -> str:
@@ -1228,6 +1247,10 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
     parser.add_argument("--bundle-shape", choices=("split", "combined"), default=None,
                         help="ledger bundle shape for every protocol (default: split, or "
                              "PYBB_BUNDLE_SHAPE); combined does measurement and appraisal in one CVM run")
+    parser.add_argument("--ledger-mode", choices=("attest", "measure"), default="attest",
+                        help="with --ledger: 'attest' (default) records measurement and live appraisal; "
+                             "'measure' records the protocols' measurements only (plan N) — appraise "
+                             "them later with examples/appraise_from_ledger.py")
     parser.add_argument("--synthesize", action="store_true")
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--llm", choices=("anthropic", "openai"),
@@ -1369,6 +1392,11 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
             if pristine_impl is not None and not cli.keep:
                 (cfg.package_root / cfg.impl_rel).write_bytes(pristine_impl)
                 print(f"\nRestored pristine {cfg.impl_rel}")
+        return
+    if cli.ledger_mode == "measure":
+        if _LEDGER["ledger"] is None:
+            parser.error("--ledger-mode measure needs --ledger")
+        measure_flow(cfg, load_protocols(cfg))
         return
     if cli.status or cli.ready:
         status_flow(cfg, load_protocols(cfg), ready=cli.ready,

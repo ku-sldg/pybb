@@ -58,10 +58,10 @@ hashed and laid out. What the bundle is evidence *of* is its `role` and its
 | `exception_reason` | string or absent | set only when the run committed below the configured minimum assurance through an explicit exception |
 | `tooling` | ToolingRef or absent | the Copland evidence identifying the binaries in force (the tooling blessing) |
 | `error` | string | non-empty on a measurement whose live appraisal never happened: why |
-| `shape` | string or absent | the term shape that produced the package (plan M): `split`, `combined`, `appraise` (a later appraisal), `measure` (provisioning); absent on legacy or foreign bundles. Readers use it to pick the session typing a package lays out under |
+| `shape` | string or absent | the term constructor that produced the package (plan M, N.5): `measure` (a measurement run, from the split flow, a measurement-only run, or provisioning), `appraise` (an appraisal run: live, deferred or audit), `combined` (the one-run shape); absent on legacy or foreign bundles. Readers use it to pick the session typing a package lays out under |
 | `inputs` | list of InputRef, appraisal only (and a challenged measurement) | the bundles this run took as initial evidence: an appraisal names the one bundle it judged; a challenged measurement names its challenge |
 | `verdict` | Verdict, appraisal only | the reading of this appraisal package |
-| `appraisal_kind` | string, appraisal only | caller-chosen label: `live` (the appraisal run right after the measurement), `audit`, or a policy name such as `slices-only` |
+| `appraisal_kind` | string, appraisal only | caller-chosen label: `live` (the appraisal run of the same `attest` call), `deferred` (the first appraisal of a measurement that had no live one, plan N.3), `audit`, or a policy name such as `slices-only` |
 | `provision` | ProvisionInfo, provision only | goldens timestamp and target count |
 | `state`, `challenge` | challenge only | section G lifecycle (`issued`, `bound`, `consumed`, `expired`) and the challenge's metadata; the only key the appraiser ever writes twice |
 

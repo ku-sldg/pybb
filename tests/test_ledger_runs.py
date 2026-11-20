@@ -190,8 +190,12 @@ def test_cvm_failures_fail_closed(proto, config, tmp_path):
     ledger = FileLedger(tmp_path / "ledger.jsonl")
     r = attest(CannedClient(fail_on="measurement"), proto, ledger, config)
     assert not r.passed and r.error.startswith("measurement run failed") and len(ledger) == 0
+    # plan N.4: a good measurement whose appraisal run fails is still recorded, with `error`
     r = attest(CannedClient(fail_on="appraisal"), proto, ledger, config)
-    assert not r.passed and r.error.startswith("appraisal run failed") and len(ledger) == 0
+    assert not r.passed and r.error.startswith("appraisal run failed") and len(ledger) == 1
+    m = ledger.get(r.bid)
+    assert m.role == "measurement" and m.error.startswith("appraisal run failed") and m.shape == "measure"
+    assert r.ledger_ref == f"bundle/{r.bid}" and ledger.appraisals_of(r.bid) == []
 
 
 def test_assurance_policy_refuses_unsigned_runs_unless_excepted(proto, config, tmp_path):
@@ -454,3 +458,75 @@ def test_appraising_a_combined_appraisal_bundle_keeps_the_extend_typing(proto, c
     audit = ledger.get(rep.appraisal_bid)
     assert audit.shape == "appraise" and audit.inputs[0].bid == a.bid and needs_keep(ledger, audit)
     assert ledger.appraisals_of(a.bid) == [audit]
+
+
+# ── measure now, appraise later (plan N) ─────────────────────────────────────
+
+
+def test_measure_records_one_bundle_and_nothing_judges_it(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import appraise_bundle, measure
+
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    r = measure(CannedClient(), proto, ledger, config, archive=_archiver(tmp_path))
+    assert r.error == "", r.error
+    assert r.bid and r.ledger_ref == f"bundle/{r.bid}" and r.assurance == "signed+nonce" and r.shape == "measure"
+    assert len(ledger) == 1 and [k for _t, k, _r in ledger.history()] == [r.ledger_ref]
+    m = ledger.get(r.bid)
+    assert m.role == "measurement" and m.shape == "measure" and m.error == "" and ledger.appraisals_of(m.bid) == []
+    assert Path(r.evidence_ref).is_file()
+    # the same package again is a duplicate
+    again = measure(CannedClient(), proto, ledger, config)
+    assert "duplicate" in again.error and len(ledger) == 1
+    # the first later appraisal is labelled `deferred` (N.3), with no live verdict to agree with
+    rep = appraise_bundle(CannedClient(appr=_distinct_appraisal(21)), proto, ledger, config, r.bid)
+    assert rep.error == "" and rep.appraisal_kind == "deferred" and rep.agrees_with_live is None
+    a = ledger.appraisals_of(r.bid)[0]
+    assert a.appraisal_kind == "deferred" and a.shape == "appraise" and a.inputs[0].bid == r.bid
+    # the next one is an audit by default, and a caller may still label either
+    rep2 = appraise_bundle(CannedClient(appr=_distinct_appraisal(22)), proto, ledger, config, r.bid)
+    assert rep2.appraisal_kind == "audit"
+    rep3 = appraise_bundle(CannedClient(appr=_distinct_appraisal(23)), proto, ledger, config, r.bid,
+                           appraisal_kind="golden-set-2026-11")
+    assert ledger.get(rep3.appraisal_bid).appraisal_kind == "golden-set-2026-11"
+
+
+def test_measure_fails_closed_like_attest(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import measure
+
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    r = measure(CannedClient(fail_on="measurement"), proto, ledger, config)
+    assert r.error.startswith("measurement run failed") and not r.bid and len(ledger) == 0
+    raw = json.loads(json.dumps(RAW)); et = raw["PAYLOAD"][1]
+    raw["PAYLOAD"] = [{"RawEv": raw["PAYLOAD"][0]["RawEv"][1:]}, et["EvidenceT_BODY"][2]]  # unsigned
+    r = measure(CannedClient(raw=raw), proto, ledger, config)
+    assert "assurance nonce below minimum" in r.error and len(ledger) == 0
+
+
+def test_shape_names_the_constructor(proto, config, tmp_path):
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    r = attest(CannedClient(), proto, ledger, config)
+    assert ledger.get(r.bid).shape == "measure" and ledger.get(r.appraisal_bid).shape == "appraise"
+
+
+def test_measurement_predicate_returns_measured_not_appraised(proto, config, tmp_path):
+    from pybb.attestation import Appraised, Measured, ledger_request, make_measurement_predicate
+
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    client = CannedClient()
+    measured = make_measurement_predicate(client, {proto.protocol_id: proto}, archive_dir=tmp_path / "evidence",
+                                          ledger=ledger, ledger_config=config)
+    m = measured({"protocol": proto.protocol_id})
+    assert isinstance(m, Measured) and not isinstance(m, Appraised)
+    assert m and m.bid and m.ledger_ref == f"bundle/{m.bid}" and Path(m.evidence_ref).is_file()
+    assert len(client.requests) == 1 and len(ledger) == 1
+    assert measured({"protocol": proto.protocol_id}) is m  # memoized
+    assert not measured({"protocol": "nope"}) and "unknown protocol" in measured({"protocol": "nope"}).error
+    # judging it later goes through the attestation predicate, as a deferred appraisal
+    client.appr = _distinct_appraisal(31)
+    judged = make_attestation_predicate(client, {proto.protocol_id: proto}, archive_dir=tmp_path / "evidence",
+                                        ledger=ledger, ledger_config=config)(ledger_request(m.bid))
+    assert isinstance(judged, Appraised) and judged and judged.bid == m.bid
+    assert ledger.get(judged.ledger_ref.split("/", 1)[1]).appraisal_kind == "deferred"
+    # without a ledger there is nothing to record into
+    unled = make_measurement_predicate(CannedClient(), {proto.protocol_id: proto})({"protocol": proto.protocol_id})
+    assert not unled and "needs a ledger" in unled.error

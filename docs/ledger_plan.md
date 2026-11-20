@@ -1917,6 +1917,90 @@ summarizer needed changing. Response saved for a fixture
    `writer`, lenient `describe_package`), since all of them serve clients
    that are not pybb.
 
+## N. Measure now, appraise later: the two halves of `split` (planning 2026-11-20; decisions accepted 2026-11-20)
+
+**STATUS: implemented 2026-11-20** (`measure`, `Measured`, `make_measurement_predicate`, `Appraised` + `Verdict` alias, `deferred` default, N.4 error branch, constructor names in `shape`, Rocq `--ledger-mode measure`). `split` is `measure` then `appraise`.
+Appraisal-only already exists (`appraise_bundle`, reached from the
+blackboard by `ledger_request(bid)`). Measurement-only does not: `attest`
+always performs the live appraisal and the attestation predicate always
+returns a judged outcome. N adds the missing half and names the two
+outcomes as a pair.
+
+### N.1 The measurement-only flow
+
+`measure(client, protocol, ledger, config, archive, tooling)` runs the
+`measure` term, archives the package, builds the measurement bundle through
+`build_bundle_record`, applies the assurance policy, and commits **one
+record in one transaction**. It returns a `Measured` report: `bid`,
+`evidence_ref`, `assurance`, `ledger_ref = bundle/<bid>`, `error`; no
+verdict, by construction. `_attest_split` is composed from it: `measure`,
+then `appraise` over the result, committed together as before.
+
+### N.2 Outcomes on the blackboard: `Measured` and `Appraised`
+
+A measurement that has not been judged is not a verdict, and the
+controller reads `good_standing = bool(result)`. So measurement-only does
+not flow through the attestation predicate. `make_measurement_predicate`
+returns a `Measured` outcome, truthy when the bundle is in the ledger, with
+`bid`, `ledger_ref`, `evidence_ref`, `assurance`, `error`; the
+trust-decision logic keeps consuming judged outcomes only; a later
+`ledger_request(bid)` turns a recorded measurement into a judged outcome
+when policy says so. Naming (2026-11-20): the judged outcome, Phase 1's
+`Verdict`, is renamed **`Appraised`** with `Verdict = Appraised` kept as a
+module-level alias so Phase 1 callers and external code keep working; the
+nested model on an appraisal bundle stays `Verdict` in `ledger.py`,
+exported as `BundleVerdict`. Recording and judging are different acts with
+different consumers; the names say so.
+
+### N.3 The first deferred appraisal
+
+`appraisal_kind: live` means the appraisal run of the same `attest` call.
+The first appraisal of a measurement-only bundle is not that: when no live
+appraisal exists for the input, `appraise_bundle` defaults the label to
+**`deferred`** (caller override allowed) and leaves `agrees_with_live`
+absent. `live_appraisal_of` is unchanged.
+
+### N.4 A live appraisal that fails after a good measurement
+
+Plan K.8.2 says a run whose appraisal never happened has a measurement
+bundle whose `error` says why; the code committed nothing in that case.
+Adopted: in a split live run, if the measurement succeeded and passed the
+assurance policy but the appraisal run or its interpretation fails, commit
+the measurement bundle alone with `error` set, and return a failing
+`Appraised` whose `bid` names it. The measurement is still good evidence
+and can be appraised later. A duplicate-nonce refusal or a ledger outage
+still commits nothing.
+
+### N.5 `shape` names the constructor
+
+Bundles from the split flow carried `shape: split` on both P and A. A
+measurement-only P is the same artifact as a split P, so the field names
+the term constructor that produced the package: `measure`, `appraise`,
+`combined` (provisioning bundles: `measure`). `split` remains the name of
+the *configured* shape, measure-then-appraise live. Readers that pick the
+session typing (`needs_keep`) are unaffected: only `combined` and
+appraisals over combined packages need the EXTEND typing.
+
+### N.6 Scenario
+
+Rocq driver `--ledger-mode measure`: the status run records the three
+protocols' measurements without judging them (one transaction each).
+Then `appraise_from_ledger.py --latest temp_control_rocq_verification`
+judges one later under the protocol's own session (`deferred`), and the
+same again with `--session` carrying a different policy to show a second
+appraisal of the same bytes. `pybb2` summary gains the new groups.
+
+### N.7 Code impact
+
+| where | change |
+|---|---|
+| `knowledge_sources.py` | `Appraised` (+ `Verdict` alias), `Measured`, `make_measurement_predicate`; `_attest_ledger` maps `LedgerAttestation` as before |
+| `ledger_runs.py` | `measure`, `Measured` report (`LedgerMeasurement`), `_attest_split` composed from it, N.4 error branch, N.3 default, N.5 shape names |
+| `ledger.py` | none (schema already has `error`, `shape`) |
+| `repair.py`, `summary.py`, `synthesis.py`, examples, tests | the rename (mechanical, aliased) |
+| Rocq driver, `examples/appraise_from_ledger.py` | `--ledger-mode measure|attest`; `--kind` default follows N.3 |
+| docs | `ledger.md` "measure now, appraise later"; `ledger_records.md` shape values; this section |
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
