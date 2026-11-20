@@ -2,7 +2,7 @@
 fixture, judged downgrade-only from the tier's verdict."""
 
 from pybb.attestation.appraisal import ComponentResult
-from pybb.attestation.knowledge_sources import Verdict
+from pybb.attestation.knowledge_sources import Appraised
 from pybb.attestation.marker_status import marker_crate_checklist
 from pybb.attestation.proof_status import FAILING, PROVED, UNKNOWN, render_checklist
 
@@ -23,7 +23,7 @@ def _comp(targ, passed):
 
 
 def _verdict(*components, error=""):
-    return Verdict(protocol="l1b", passed=all(c.passed for c in components),
+    return Appraised(protocol="l1b", passed=all(c.passed for c in components),
                    components=list(components), error=error)
 
 

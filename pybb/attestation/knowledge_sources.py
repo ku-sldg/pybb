@@ -8,7 +8,7 @@ descriptor
 
 and the registered predicate (built by `make_attestation_predicate`) runs
 that protocol via the client, appraises the response, and returns a
-`Verdict` — truthy iff every appraised component passed — which the
+`Appraised` — truthy iff every appraised component passed — which the
 controller stores as the entry's result / good_standing. Protocols measure
 the live target tree they were provisioned against; the clean copy for
 repair / re-runs is a `TargetSnapshot`, outside the measurement path.
@@ -26,7 +26,7 @@ reads: a passing l1 verdict is provisional until semantic validation
 confirms it; a failing l1 verdict is attributed per-contract at l2. Either
 chosen tier's pass ends the episode in good standing; its failure exhausts
 the chain and the controller moves the entry to the escalate segment
-carrying that tier's failing Verdict as the report.
+carrying that tier's failing Appraised as the report.
 
 The controller re-evaluates every entry each cycle, so the predicate
 memoizes on the measurement: each protocol attests at most once per
@@ -72,7 +72,7 @@ def ledger_request(bid: str) -> dict:
     return {"ledger_bundle": bid}
 
 
-class Verdict(BaseModel):
+class Appraised(BaseModel):
     """
     Appraised outcome of one protocol run; an attestation entry's result.
 
@@ -103,10 +103,13 @@ class Verdict(BaseModel):
         return [c for c in self.components if not c.passed]
 
 
+Verdict = Appraised  # Phase 1 name, kept as an alias (plan N.2)
+
+
 def make_attestation_predicate(
     client: Any, protocols: Dict[str, Any], archive_dir: Any = None,
     ledger: Any = None, ledger_config: Any = None,
-) -> Callable[[dict], Verdict]:
+) -> Callable[[dict], Appraised]:
     """
     Predicate over attestation-request measurements: run the named protocol
     (ProtocolDir | RodeoProtocol) via the client and appraise the response.
@@ -132,7 +135,7 @@ def make_attestation_predicate(
     if ledger is not None and ledger_config is None:
         ledger_config = LedgerConfig()
     tooling_resolver: List[Any] = [None]  # built lazily: needs _archive
-    cache: Dict[str, Verdict] = {}
+    cache: Dict[str, Appraised] = {}
     if archive_dir is None:
         def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
             return ""
@@ -141,7 +144,7 @@ def make_attestation_predicate(
 
         _archive = archiver(archive_dir)  # one episode directory per predicate instance
 
-    def predicate(measurement: dict) -> Verdict:
+    def predicate(measurement: dict) -> Appraised:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
             if measurement.get("ledger_bundle") or measurement.get("ledger_nonce"):
@@ -170,23 +173,23 @@ def make_attestation_predicate(
 
 
 def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
-            archive: Any = None) -> Verdict:
+            archive: Any = None) -> Appraised:
     protocol_id = measurement.get("protocol", "")
     protocol = protocols.get(protocol_id)
     if protocol is None:
-        return Verdict(protocol=protocol_id, passed=False,
+        return Appraised(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
     try:
         response = client.run_protocol(protocol)
     except Exception as e:
-        return Verdict(protocol=protocol_id, passed=False, error=str(e))
+        return Appraised(protocol=protocol_id, passed=False, error=str(e))
     ref = archive(response, protocol_id) if archive else ""
     components = _interpret(response, protocol)
     if isinstance(components, str):  # summarizer refusal — fail closed
-        return Verdict(protocol=protocol_id, passed=False, error=components,
+        return Appraised(protocol=protocol_id, passed=False, error=components,
                        evidence_ref=ref)
     stamp_measured_files(components)  # freshness key for derived views
-    return Verdict(
+    return Appraised(
         protocol=protocol_id,
         passed=overall_verdict(components),
         components=components,
@@ -195,43 +198,43 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
 
 
 def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
-                   archive: Any, ledger: Any, config: Any, tooling_resolver: Any = None) -> Verdict:
-    """The nonce'd two-run flow (ledger_runs.attest_with_ledger) as a Verdict,
+                   archive: Any, ledger: Any, config: Any, tooling_resolver: Any = None) -> Appraised:
+    """The nonce'd two-run flow (ledger_runs.attest_with_ledger) as a Appraised,
     carrying the tooling reference the B.8 cadence prescribes."""
     from .ledger_runs import attest
 
     protocol_id = measurement.get("protocol", "")
     protocol = protocols.get(protocol_id)
     if protocol is None:
-        return Verdict(protocol=protocol_id, passed=False,
+        return Appraised(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
     tooling = tooling_resolver.ref(protocol_id) if tooling_resolver is not None else None
     r = attest(client, protocol, ledger, config, archive=archive, tooling=tooling)
-    return Verdict(protocol=protocol_id, passed=r.passed, components=r.components,
+    return Appraised(protocol=protocol_id, passed=r.passed, components=r.components,
                    error=r.error, evidence_ref=r.evidence_ref, appraisal_ref=r.appraisal_ref,
                    components_ref=r.components_ref, bid=r.bid, ledger_ref=r.ledger_ref)
 
 
 def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
-                  archive: Any, ledger: Any, config: Any) -> Verdict:
+                  archive: Any, ledger: Any, config: Any) -> Appraised:
     """Appraise a ledger-held bundle again (ledger_runs.appraise_bundle) as a
-    Verdict: truthy iff the ledger reads verified, the bytes and bundle id
+    Appraised: truthy iff the ledger reads verified, the bytes and bundle id
     matched, and the fresh signed appraisal passed. A disagreement with the
     live appraisal is surfaced as the error, never re-decided."""
     from .ledger_runs import appraise_bundle, live_appraisal_of
 
     bid = measurement.get("ledger_bundle") or measurement.get("ledger_nonce", "")
     if ledger is None:
-        return Verdict(protocol="", passed=False, bid=bid,
+        return Appraised(protocol="", passed=False, bid=bid,
                        error="ledger audit requested but no ledger is configured")
     try:
         target = ledger.get(bid)
     except Exception as e:
-        return Verdict(protocol="", passed=False, bid=bid, error=f"ledger bundle {bid}: {e}")
+        return Appraised(protocol="", passed=False, bid=bid, error=f"ledger bundle {bid}: {e}")
     protocol_id = target.protocol_id
     protocol = protocols.get(protocol_id)
     if protocol is None:
-        return Verdict(protocol=protocol_id, passed=False, bid=bid,
+        return Appraised(protocol=protocol_id, passed=False, bid=bid,
                        error=f"unknown protocol '{protocol_id}' for ledger bundle {bid}")
     rep = appraise_bundle(client, protocol, ledger, config, bid, archive=archive,
                           appraisal_kind=measurement.get("appraisal_kind", "audit"))
@@ -242,7 +245,7 @@ def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
         error = (f"audit verdict ({'pass' if rep.passed else 'fail'}) disagrees with the "
                  f"live appraisal ({'pass' if recorded else 'fail'})")
     local = next((l.path for l in target.blob.locations if l.store == "local"), "")
-    return Verdict(protocol=protocol_id, passed=bool(rep), components=rep.components, error=error,
+    return Appraised(protocol=protocol_id, passed=bool(rep), components=rep.components, error=error,
                    evidence_ref=local, appraisal_ref=rep.appraisal_ref, bid=bid, ledger_ref=rep.ledger_ref)
 
 

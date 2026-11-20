@@ -14,7 +14,7 @@ from pybb.attestation import (
     ProtocolDir,
     SliceRestoreKS,
     TierKS,
-    Verdict,
+    Appraised,
     WholeFileRestoreKS,
     make_attestation_predicate,
     trust_summary,
@@ -40,8 +40,8 @@ def _component(passed: bool, args: dict, targ_id: str = "") -> ComponentResult:
                            passed=passed, args=args)
 
 
-def _verdict(protocol: str, components: list) -> Verdict:
-    return Verdict(protocol=protocol,
+def _verdict(protocol: str, components: list) -> Appraised:
+    return Appraised(protocol=protocol,
                    passed=all(c.passed for c in components),
                    components=components)
 

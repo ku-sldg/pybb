@@ -43,7 +43,7 @@ from pybb.attestation.rocq_synthesis import (
     parse_file_blocks,
 )
 from pybb.attestation.appraisal import ComponentResult
-from pybb.attestation.knowledge_sources import Verdict
+from pybb.attestation.knowledge_sources import Appraised
 from pybb.attestation.proof_status import (
     FAILING,
     NO_WITNESS,
@@ -213,7 +213,7 @@ def _cmd(targ, passed, status=0, stdout="", stderr="", reason="", meta=""):
 
 
 def _verdict(*components, error=""):
-    return Verdict(protocol="stub", passed=all(c.passed for c in components),
+    return Appraised(protocol="stub", passed=all(c.passed for c in components),
                    components=list(components), error=error)
 
 
@@ -403,7 +403,7 @@ def test_audit_status_tool_poisoning_and_protocol_error(tmp_path):
     assert {s.state for s in
             rocq_audit_status(poisoned, BUILD, AUDIT, GOALS, w, a).values()} \
         == {UNKNOWN}
-    errored = Verdict(protocol="stub", passed=False, error="cvm died")
+    errored = Appraised(protocol="stub", passed=False, error="cvm died")
     assert {s.state for s in
             rocq_audit_status(errored, BUILD, AUDIT, GOALS, w, a).values()} \
         == {UNKNOWN}

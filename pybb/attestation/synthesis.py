@@ -6,7 +6,7 @@ Two layers:
 
 **BlackBoxRepairKS** (ecosystem-agnostic): wraps an OPAQUE external
 repair tool — e.g. AutoVerus for Verus/Rust proof repair — as a chain
-rung. The tool gets a RepairContext (the entry's failing Verdict with
+rung. The tool gets a RepairContext (the entry's failing Appraised with
 per-component reasons and retained measured output, the working file
 set) and may mutate the working files however it likes; its claim of
 success is worthless by design. Re-appraisal between repair attempts is
@@ -54,7 +54,7 @@ class RepairContext(BaseModel):
     """What an opaque repair tool is handed: attribution, not trust."""
 
     key: str                 # the blackboard entry under repair
-    verdict: Any             # the failing Verdict: components (reasons,
+    verdict: Any             # the failing Appraised: components (reasons,
                              # retained measured_b64 output), evidence_ref
     files: List[str] = []    # the working file set the tool may touch
     package_root: str = ""

@@ -26,7 +26,7 @@ from pybb.attestation import (
     splice_proof,
 )
 from pybb.attestation.appraisal import ComponentResult
-from pybb.attestation.knowledge_sources import Verdict
+from pybb.attestation.knowledge_sources import Appraised
 from pybb.attestation.synthesis import RepairContext
 
 
@@ -182,7 +182,7 @@ def test_out_of_band_ineffective_claim_costs_a_restart_then_escalates():
 
 
 def test_out_of_band_work_order_renders_verdict_and_report():
-    verdict = Verdict(protocol="p", passed=False, components=[
+    verdict = Appraised(protocol="p", passed=False, components=[
         ComponentResult(appr_asp="a", target_asp="t", targ_id="slice_targ",
                         passed=False, reason="hash mismatch",
                         args={"filepath": "/pkg/Props.v"}),

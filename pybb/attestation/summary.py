@@ -15,16 +15,16 @@ from __future__ import annotations
 from typing import Iterable, List, Tuple
 
 from ..blackboard import Blackboard
-from .knowledge_sources import Verdict
+from .knowledge_sources import Appraised
 from .readiness import ReadinessReport
 
 
-def _tier_trail(blackboard: Blackboard, key: str) -> List[Verdict]:
+def _tier_trail(blackboard: Blackboard, key: str) -> List[Appraised]:
     """Distinct (protocol, passed) verdicts for key, in evaluation order."""
-    trail: List[Verdict] = []
+    trail: List[Appraised] = []
     seen: set[Tuple[str, bool]] = set()
     for hist_key, entry in blackboard.get_history():
-        if hist_key != key or not isinstance(entry.result, Verdict):
+        if hist_key != key or not isinstance(entry.result, Appraised):
             continue
         sig = (entry.result.protocol, entry.result.passed)
         if sig not in seen:
@@ -33,7 +33,7 @@ def _tier_trail(blackboard: Blackboard, key: str) -> List[Verdict]:
     return trail
 
 
-def _attribution(trail: List[Verdict]) -> str:
+def _attribution(trail: List[Appraised]) -> str:
     """Failing components from the finest-grained failing verdict."""
     failing_verdicts = [v for v in trail if not v.passed and v.failing()]
     if not failing_verdicts:
@@ -140,12 +140,12 @@ def trust_summary(blackboard: Blackboard, semantic: Iterable[str] = ()) -> str:
     lines += [
         _summarize_key(blackboard, key, escalated=False, semantic=semantic)
         for key, entry in blackboard.get_all_entries().items()
-        if isinstance(entry.result, Verdict)
+        if isinstance(entry.result, Appraised)
     ]
     lines += [
         _summarize_key(blackboard, key, escalated=True, semantic=semantic)
         for key, entry in blackboard.get_escalate().items()
-        if isinstance(entry.result, Verdict)
+        if isinstance(entry.result, Appraised)
     ]
     lines += [
         f"{key}: " + "; ".join(

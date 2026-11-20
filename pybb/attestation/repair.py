@@ -31,21 +31,21 @@ from typing import Dict, List, Optional, Tuple
 
 from ..blackboard import Blackboard
 from ..knowledge_source import KnowledgeSource
-from .knowledge_sources import Verdict
+from .knowledge_sources import Appraised
 from .snapshot import mirror_path
 from .synthesis import BlackBoxRepairKS, RepairContext
 
 
-def _latest_verdict(blackboard: Blackboard, key: str, protocol: str) -> Optional[Verdict]:
-    """Most recent Verdict for key rendered by the named protocol."""
+def _latest_verdict(blackboard: Blackboard, key: str, protocol: str) -> Optional[Appraised]:
+    """Most recent Appraised for key rendered by the named protocol."""
     for hist_key, entry in reversed(blackboard.get_history()):
-        if hist_key == key and isinstance(entry.result, Verdict) \
+        if hist_key == key and isinstance(entry.result, Appraised) \
                 and entry.result.protocol == protocol:
             return entry.result
     return None
 
 
-def _failing_filepaths(verdict: Verdict) -> List[str]:
+def _failing_filepaths(verdict: Appraised) -> List[str]:
     return [c.args["filepath"] for c in verdict.failing() if c.args.get("filepath")]
 
 
@@ -67,10 +67,10 @@ class WholeFileRestoreKS(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             refine = _latest_verdict(blackboard, key, self.refined_by)
-            # NB: `refine if refine else ...` would be wrong — Verdict
+            # NB: `refine if refine else ...` would be wrong — Appraised
             # truthiness is the appraisal outcome, and the refinement
             # verdict is failing precisely when repair has work to do
             targets = _failing_filepaths(entry.result if refine is None else refine)
@@ -119,7 +119,7 @@ class SliceRestoreKS(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             restored, unrestorable = [], []
             for comp in entry.result.failing():
@@ -190,7 +190,7 @@ class RangeSliceRestoreKS(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             refine = (_latest_verdict(blackboard, key, self.refined_by)
                       if self.refined_by else None)
@@ -328,7 +328,7 @@ class OutOfBandRepairKS(BlackBoxRepairKS):
         lines = [f"  {self.name}: '{ctx.key}' paused for out-of-band "
                  f"repair (attempt {ctx.attempt}/{self.max_attempts})"]
         verdict = ctx.verdict
-        if isinstance(verdict, Verdict):
+        if isinstance(verdict, Appraised):
             # dedupe: bseq(both_paths) replicates prior evidence into
             # every branch, so one violated event (e.g. a woven tool
             # measurement) is witnessed once per branch — same

@@ -170,7 +170,7 @@ from pybb.attestation import (
     StartAttestationKS,
     TargetSnapshot,
     TierKS,
-    Verdict,
+    Appraised,
     WholeFileRestoreKS,
     attestation_request,
     carry_goldens,
@@ -1207,7 +1207,7 @@ class CrateFileRestoreKS(KnowledgeSource):
     def execute(self, blackboard: Blackboard, keys: List[str]) -> None:
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             crate_dirs = [Path(c.args["cwd"]) for c in entry.result.failing()
                           if (c.args or {}).get("cwd")]
@@ -1719,13 +1719,13 @@ class GenSrcDriftDiagnosisKS(KnowledgeSource):
             # escalate map — look in both places
             cheat = (blackboard.get_entry(self.cheats_key)
                      or blackboard.get_escalate().get(self.cheats_key))
-            if cheat is not None and isinstance(cheat.result, Verdict):
+            if cheat is not None and isinstance(cheat.result, Appraised):
                 cheat_failing = {
                     self._crate_of(c.targ_id or "", "_cheat_targ")
                     for c in cheat.result.failing()}
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             for c in entry.result.failing():
                 crate = self._crate_of(c.targ_id or "", "_gensrc_targ")
@@ -1855,7 +1855,7 @@ class ContractsIntactDiagnosisKS(KnowledgeSource):
         import base64
         for key in keys:
             entry = blackboard.get_entry(key)
-            if not isinstance(entry.result, Verdict):
+            if not isinstance(entry.result, Appraised):
                 continue
             crate_dirs = [c.args["cwd"] for c in entry.result.failing()
                           if (c.args or {}).get("cwd")]

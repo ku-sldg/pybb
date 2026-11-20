@@ -355,7 +355,7 @@ def test_audit_regenerate_ks_rerenders_from_config(tmp_path, capsys):
     the rung decline so the chain can hand off."""
     from pybb.blackboard import Blackboard
     from pybb.attestation import AuditRegenerateKS
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
 
     rocq = _rocq_example()
     pristine = (ROCQ_ROOT / "Assumptions.v").read_bytes()
@@ -368,7 +368,7 @@ def test_audit_regenerate_ks_rerenders_from_config(tmp_path, capsys):
                            audit_goals=list(rocq.CONFIG.audit_goals))
     bb = Blackboard()
     bb.write_entry(key="k", predicate="attestation", measurement={},
-                   result=Verdict(protocol="p", passed=False, components=[]))
+                   result=Appraised(protocol="p", passed=False, components=[]))
     ks.execute(bb, ["k"])
     assert (tmp_path / "Assumptions.v").read_bytes() == pristine, \
         "regeneration must be byte-identical to the canonical rendering"
@@ -405,7 +405,7 @@ def test_audit_status_poisons_on_audit_file_divergence(tmp_path):
     sections bind to goals only through the canonical rendering, so a
     divergent rendering makes clean-looking sections unattributable."""
     from pybb.attestation.appraisal import ComponentResult
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
     from pybb.attestation.rocq_status import rocq_audit_status
     from pybb.attestation.proof_status import UNKNOWN
 
@@ -424,7 +424,7 @@ def test_audit_status_poisons_on_audit_file_divergence(tmp_path):
                         target_asp="run_command_rocq", targ_id="a",
                         passed=True, args={}),
     ]
-    v = Verdict(protocol="p", passed=False, components=comps)
+    v = Appraised(protocol="p", passed=False, components=comps)
     st = rocq_audit_status(v, "b", "a", goals, w)
     assert st["g"].state == UNKNOWN
     assert "diverged from its canonical rendering" in st["g"].detail
@@ -713,7 +713,7 @@ def test_escalation_detail_renders_failing_contracts():
     entries that share a verdict."""
     from pybb.blackboard import Blackboard
     from pybb.attestation.appraisal import ComponentResult
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
 
     rw = _rocq_workflow()
     comp = ComponentResult(
@@ -722,7 +722,7 @@ def test_escalation_detail_renders_failing_contracts():
         reason="Evidence bytes do not match golden\nsecond line",
         args={"metadata": "TempControl.Props::SetPoint_valid",
               "filepath": "/x/Props.v", "start_index": 23, "end_index": 24})
-    verdict = Verdict(protocol="contracts_p", passed=False,
+    verdict = Appraised(protocol="contracts_p", passed=False,
                       components=[comp])
     bb = Blackboard()
     for key in ("a:model", "a:contracts"):
@@ -746,12 +746,12 @@ def test_declined_out_of_band_repair_is_not_repaired_from_golden():
     required', never the restore rungs' 'repaired from golden'."""
     from pybb.blackboard import Blackboard
     from pybb.attestation import trust_summary
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
 
     def escalated_with(ks_name):
         bb = Blackboard()
         bb.write_entry(key="k:ver", predicate="attestation", measurement={},
-                       result=Verdict(protocol="p", passed=False,
+                       result=Appraised(protocol="p", passed=False,
                                       components=[]))
         bb.entries["k:ver"].ks_history[ks_name] = 3
         bb.escalate["k:ver"] = bb.entries.pop("k:ver")
@@ -773,7 +773,7 @@ def test_escalation_detail_moved_vs_modified(tmp_path):
     import base64
     from pybb.blackboard import Blackboard
     from pybb.attestation.appraisal import ComponentResult
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
 
     rw = _rocq_workflow()
     live = tmp_path / "Props.v"
@@ -796,7 +796,7 @@ def test_escalation_detail_moved_vs_modified(tmp_path):
                   "start_index": 1, "end_index": 2,
                   "golden_b64": base64.b64encode(golden.encode()).decode()})
 
-    v = Verdict(protocol="p", passed=False, components=[
+    v = Appraised(protocol="p", passed=False, components=[
         comp("alpha", "Definition alpha (x : Z) : Prop :=  0 <= x."),
         comp("beta", "Definition beta (x : Z) : Prop :=  x <= 42."),
         comp("gamma", "anything")])

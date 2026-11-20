@@ -986,13 +986,13 @@ def _escalation_detail(blackboard) -> str:
     disposition, and the appraiser's reason — deduped across entries
     (the model entry's refined verdict and the always-run contracts
     entry share components)."""
-    from pybb.attestation.knowledge_sources import Verdict
+    from pybb.attestation.knowledge_sources import Appraised
 
     seen = set()
     by_protocol = {}
     for _key, entry in blackboard.get_escalate().items():
         verdict = entry.result
-        if not isinstance(verdict, Verdict):
+        if not isinstance(verdict, Appraised):
             continue
         for comp in verdict.failing():
             if (verdict.protocol, comp.targ_id) in seen:

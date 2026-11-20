@@ -21,7 +21,7 @@ import json
 from pathlib import Path
 
 from pybb.attestation.appraisal import ComponentResult, digest_file
-from pybb.attestation.knowledge_sources import Verdict
+from pybb.attestation.knowledge_sources import Appraised
 from pybb.attestation.proof_status import (
     FAILING,
     NO_WITNESS,
@@ -58,7 +58,7 @@ def _component(passed: bool, diags=None, targ=TARG, reason="", meta=""):
 
 
 def _verdict(*components, error=""):
-    return Verdict(protocol="stub", passed=all(c.passed for c in components),
+    return Appraised(protocol="stub", passed=all(c.passed for c in components),
                    components=list(components), error=error)
 
 
@@ -140,7 +140,7 @@ def test_tool_poisoning_and_protocol_error(tmp_path):
                         args={"metadata": "tool::lean"}))
     assert {s.state for s in decl_status(poisoned, TARG, f).values()} \
         == {UNKNOWN}
-    errored = Verdict(protocol="stub", passed=False, error="cvm died")
+    errored = Appraised(protocol="stub", passed=False, error="cvm died")
     assert {s.state for s in decl_status(errored, TARG, f).values()} \
         == {UNKNOWN}
 

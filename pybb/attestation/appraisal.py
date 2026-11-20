@@ -19,7 +19,7 @@ from pydantic import BaseModel
 
 
 class ComponentResult(BaseModel):
-    """Verdict for one appraised measurement target."""
+    """Appraised for one appraised measurement target."""
 
     appr_asp: str
     target_asp: str
