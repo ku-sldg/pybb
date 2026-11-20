@@ -37,7 +37,7 @@ from .ledger import (
 )
 
 # v2 prefixes first; the v1 prefixes keep a v1 database readable through `history()`
-RECORD_PREFIXES = ("bundle/", "judged_by/", "mirror/", "restore/",
+RECORD_PREFIXES = ("bundle/", "judged_by/", "mirror/", "restore/", "blessing/",
                    "nonce/", "evidence/", "verdict/", "locator/", "appraisal/")
 
 MIRROR_TABLE = "attestation_records"
@@ -47,13 +47,15 @@ MIRROR_DDL = f"""CREATE TABLE IF NOT EXISTS {MIRROR_TABLE} (
   key VARCHAR[160], kind VARCHAR[16], role VARCHAR[16], protocol_id VARCHAR[96],
   input_bid VARCHAR[64], appraisal_kind VARCHAR[32], passed BOOLEAN,
   assurance VARCHAR[16], freshness VARCHAR[16], blob_sha256 VARCHAR[64],
-  created_at VARCHAR[32], content_sha256 VARCHAR[64], PRIMARY KEY key)"""
+  created_at VARCHAR[32], content_sha256 VARCHAR[64], baseline VARCHAR[160], PRIMARY KEY key)"""
+# columns added after the table first shipped (immudb has no IF NOT EXISTS for columns)
+MIRROR_ALTERS = (f"ALTER TABLE {MIRROR_TABLE} ADD COLUMN baseline VARCHAR[160]",)
 MIRROR_INDEXES = (
     f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(input_bid)",
     f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(protocol_id, created_at)",
 )
 _COLS = ("key", "kind", "role", "protocol_id", "input_bid", "appraisal_kind", "passed",
-         "assurance", "freshness", "blob_sha256", "created_at", "content_sha256")
+         "assurance", "freshness", "blob_sha256", "created_at", "content_sha256", "baseline")
 # two statements: immudb-py cannot bind a NULL parameter, so records without
 # a verdict omit the `passed` column (NULL by omission)
 MIRROR_UPSERT = (f"UPSERT INTO {MIRROR_TABLE}({', '.join(_COLS)}) VALUES "
@@ -99,6 +101,7 @@ def mirror_row(key: str, rec: Any) -> Dict[str, Any]:
         "assurance": d.get("assurance") or d.get("evidence_assurance") or "",
         "freshness": d.get("freshness") or "", "blob_sha256": blob,
         "created_at": d.get("created_at") or "", "content_sha256": rec.content_sha256(),
+        "baseline": d.get("baseline") or "",
     }
 
 
@@ -159,6 +162,12 @@ class ImmudbLedger(Ledger):
                 self.client.sqlExec(stmt)
         except Exception as e:
             raise LedgerError(f"could not create the SQL mirror table: {e}") from e
+        for stmt in MIRROR_ALTERS:  # tables created before the column existed
+            try:
+                self.client.sqlExec(stmt)
+            except Exception as e:
+                if "already" not in str(e).lower() and "exists" not in str(e).lower():
+                    raise LedgerError(f"could not extend the SQL mirror table: {e}") from e
 
     def _mirror(self, rows: List[Dict[str, Any]]) -> None:
         for row in rows:

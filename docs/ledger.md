@@ -37,12 +37,20 @@ The one check pybb owns is refusing a nonce the ledger already holds.
    `scripts/immudb_dev.sh bootstrap` to create database `pybb` and user
    `pybb`; `scripts/immudb_dev.sh rotate-admin NEWPASS` replaces the default
    admin password. `pip install -e '.[ledger]'` adds `immudb-py`.
-3. **Bless the stack.** `python examples/provision_tools.py` builds the
-   `attestation_tools` protocol (CVM binary, verified summarizer, every ASP
-   the configured protocols use, verifying key), provisions it — the CVM
-   hashes the live binaries and signs — and records the bundle. This is the
-   only time the tools are measured under the default cadence; repeat it
-   after rebuilding asp-libs or the CVM.
+3. **Measure and bless the stack; measure the configurations.**
+   `python examples/ledger_context.py measure stack --bless` runs the CVM
+   once over the installation — the CVM binary, the verified summarizer,
+   the verifying key, every executable in the ASP directory and the CVM
+   invocation settings — and records a signed `stack` bundle plus your
+   `blessing` of it. `python examples/ledger_context.py measure config
+   --all` records one `config` bundle per protocol: the exact term, session
+   and manifest pybb hands the CVM for every term constructor. Both commit
+   unconditionally and only when you run them: pybb has no cadence and
+   never measures its stack or inputs on its own. Repeat `measure stack`
+   after rebuilding asp-libs or the CVM (then `audit` and `bless` the new
+   bundle), and `measure config <pid>` after editing a protocol. Runs carry
+   no pointer to either; `ledger_context.py show` and
+   `appraise_from_ledger.py` derive what was in force (plan section O).
 4. **Evidence repository** (optional until you want durability). Clone any
    git repository you choose and set `PYBB_EVIDENCE_REPO` to the clone's
    path, or write the path to `~/.pybb/evidence_repo`. The repository's
@@ -67,8 +75,8 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 | `golden_root` | `PYBB_GOLDEN_ROOT` or `golden` | where provisioning bundles live |
 | `min_assurance` | `signed+nonce` | runs below it are refused at commit |
 | `assurance_exceptions` | `{}` | `protocol_id -> reason` for protocols allowed below the minimum |
-| `tooling.protocol_id` | `attestation_tools` | the tooling protocol; `None` disables tooling tracking |
-| `tooling.measure` | `at_provisioning` | `every_episode` / `every_run` re-measure the tools as ordinary ledger runs |
+| `context.stack_protocol_id`, `context.config_protocol_id` | `attestation_stack`, `attestation_config` | the generated protocols `ledger_context.py` measures the installation and each protocol's inputs with (plan O); no cadence exists |
+| `context.dir` | `context` | under `state_dir`: materialized inputs, their content-addressed copies, `stack/cvm_config.json`, and the default archive of context packages |
 | `fail_open` | `False` | with `True`, a ledger outage leaves the verdict unledgered instead of failing it |
 | `default_shape`, `shapes` | `split` (`PYBB_BUNDLE_SHAPE`), `{}` | the bundle shape per protocol: `split` (two CVM runs; the appraisal can also happen later, by anyone with the package) or `combined` (one run yielding the same two artifacts; the live appraisal judges the measurements only) — plan section M |
 | `appraiser_id` | generated once under `state_dir` | opaque id of this installation; never a hostname |
@@ -102,8 +110,11 @@ without an exception, its nonce is already in the ledger, or the ledger is
 unreachable.
 
 Readiness with `ledger_config=` reports, before attestation starts: missing
-ledger ASPs; each protocol's reachable assurance against `min_assurance`;
-and a missing tooling protocol or blessing when tooling tracking is on.
+ledger ASPs and each protocol's reachable assurance against `min_assurance`.
+With `ledger=` too, it reports as problems a writer with no `stack` bundle
+or no blessing in the ledger, and informationally (`report.context`)
+whether the latest stack bundle is blessed and how its last audit against
+the latest blessing went.
 
 `ledger_request(bid)` as an entry's measurement makes the predicate
 appraise the ledger-held bundle again instead of measuring the live tree (an
@@ -139,7 +150,8 @@ its `inputs`. Keys:
 
 | key | holds |
 |---|---|
-| `bundle/<bid>` | one CVM run output: `role` (`measurement`, `appraisal`, `provision`, `challenge`), protocol and config hashes, `response_sha256`, `blob` (hash, size, every location), `rawev_sha256`, `nonce` (which ASP, the bytes), `signature`, `assurance`, `freshness`, `tooling`; an appraisal adds `inputs` (the bundle it judged, with its `hashevidence` binding), `verdict` and `appraisal_kind`; a provisioning bundle adds `provision` (legacy nonce-less bundles: `bundle/sha256:<hash>`) |
+| `bundle/<bid>` | one CVM run output: `role` (`measurement`, `appraisal`, `provision`, `challenge`, `stack`, `config`), the hashes of the exact term/session/manifest the CVM was handed, `response_sha256`, `blob` (hash, size, every location), `rawev_sha256`, `nonce` (which ASP, the bytes), `signature`, `assurance`, `freshness`; an appraisal adds `inputs` (the bundle it judged, with its `hashevidence` binding), `verdict`, `appraisal_kind` and, for a stack audit, `baseline`; a provisioning bundle adds `provision`; a `stack` bundle adds `stack`, a `config` bundle `config` (its archived input files) (legacy nonce-less bundles: `bundle/sha256:<hash>`) |
+| `blessing/<stack bid>` | the operator's approval of a `stack` bundle: its target ids and the measured values read off its signed package, the goldens later stack audits judge against |
 | `judged_by/<bid>/<appraisal bid>` | pointer from a bundle to each appraisal of it: "every appraisal of X" is one prefix scan |
 | `mirror/<store>/<state_tx>` | one push to an evidence store: commit, ledger head, journal range, blobs carried, blobs skipped |
 | `restore/<created_at>` | a restore event |
@@ -260,8 +272,13 @@ documented and awaiting a decision in plan section J.
 - The verified summarizer does not type-check an audit of an appraisal
   package; those verdicts are read by slot layout and recorded as
   `interpreter: legacy-walker`.
-- Under `at_provisioning`, a record's `tooling` says which blessing was in
-  force, not that the binaries were unchanged at run time.
+- A run's stack and configuration are derived from the same writer's
+  latest `stack` and `config` bundles at a lower transaction. They say what
+  was last measured, not that nothing changed since: a rebuilt binary is
+  invisible until the operator runs `measure stack` again, and only an
+  `audit` against a blessing turns the difference into a verdict. A run
+  whose pins do not match the config in force ran under inputs nobody
+  measured.
 - Legacy bundles (provisioned before nonces) are recorded by content hash
   with `assurance: signed` until the protocol is re-provisioned.
 - Provisioning overwrites `golden/_bundles/<pid>/provision_bundle.json`. A

@@ -65,11 +65,12 @@ class ReadinessReport(BaseModel):
     problems: List[str] = []
     baseline_verified: List[str] = []  # protocols with a verified signed baseline
     baseline_problems: List[str] = []
-    # ledger runs (docs/ledger_plan.md B.7/B.8): the assurance level each
-    # protocol's configuration can reach, and the tooling blessing in force
+    # ledger runs (docs/ledger_plan.md B.7 / O.10): the assurance level each
+    # protocol's configuration can reach, and this writer's stack evidence
     assurance: Dict[str, str] = {}
     assurance_excepted: Dict[str, str] = {}  # protocol -> reason
-    tooling_blessing: str = ""  # path of the attestation_tools bundle, "" if none
+    # with a ledger: stack_bid, blessing_key, latest_stack_blessed, stack_audit
+    context: Dict[str, str] = {}
 
     def __bool__(self) -> bool:
         return (bool(self.checked) and not self.problems
@@ -79,7 +80,7 @@ class ReadinessReport(BaseModel):
 def make_readiness_predicate(
     protocols: Dict[str, Any], config: Optional[CvmConfig] = None, *,
     baseline_root: Optional[Any] = None, client: Optional[Any] = None,
-    ledger_config: Optional[Any] = None,
+    ledger_config: Optional[Any] = None, ledger: Optional[Any] = None,
 ) -> Callable[[dict], ReadinessReport]:
     """
     Predicate over readiness measurements: check every named protocol
@@ -98,9 +99,12 @@ def make_readiness_predicate(
     With `ledger_config` (a `ledger.LedgerConfig`), readiness also reports,
     as configuration failures before any attestation runs: the ledger ASPs
     missing from asp_bin; every protocol whose configuration cannot reach
-    `min_assurance` and is not in `assurance_exceptions`; and, when tooling
-    tracking is on, a missing `attestation_tools` protocol or blessing
-    bundle (docs/ledger_plan.md B.7/B.8).
+    `min_assurance` and is not in `assurance_exceptions`. With `ledger` too,
+    it reports as problems a writer with no `stack` bundle or no blessing in
+    the ledger, and informationally (`report.context`) whether the latest
+    stack bundle is blessed and how its last audit against the latest
+    blessing went (docs/ledger_plan.md B.7 / O.10). pybb reads verdicts off
+    the ledger; it computes none.
     """
     config = config or CvmConfig()
     cache: Dict[str, ReadinessReport] = {}
@@ -110,7 +114,7 @@ def make_readiness_predicate(
         if key not in cache:
             report = _check(protocols, config, measurement)
             if ledger_config is not None:
-                _ledger_checks(protocols, config, ledger_config, measurement, report)
+                _ledger_checks(protocols, config, ledger_config, measurement, report, ledger)
             if baseline_root is not None:
                 _verify_baselines(protocols, config, client, baseline_root, report)
             cache[key] = report
@@ -202,9 +206,7 @@ def _term_has_sig(term: Any) -> bool:
 
 
 def _ledger_checks(protocols: Dict[str, Any], config: CvmConfig, ledger_config: Any,
-                   measurement: dict, report: ReadinessReport) -> None:
-    from pathlib import Path
-
+                   measurement: dict, report: ReadinessReport, ledger: Optional[Any] = None) -> None:
     from .ledger import assurance_at_least
     from .ledger_runs import LEDGER_ASPS
 
@@ -229,17 +231,31 @@ def _ledger_checks(protocols: Dict[str, Any], config: CvmConfig, ledger_config: 
             else:
                 report.assurance_excepted[pid] = reason
 
-    tooling_pid = ledger_config.tooling.protocol_id
-    if tooling_pid:
-        if tooling_pid not in protocols:
-            report.problems.append(
-                f"tooling tracking is on but protocol '{tooling_pid}' is not loaded "
-                f"(examples/provision_tools.py builds it)")
-        else:
-            bundle = Path(ledger_config.golden_root) / "_bundles" / tooling_pid / "provision_bundle.json"
-            if bundle.is_file():
-                report.tooling_blessing = str(bundle)
-            else:
-                report.problems.append(
-                    f"no blessing for the attestation stack at {bundle} "
-                    f"(provision '{tooling_pid}' once after deploying the tools)")
+    if ledger is not None:
+        _context_checks(ledger, ledger_config, report)
+
+
+def _context_checks(ledger: Any, ledger_config: Any, report: ReadinessReport) -> None:
+    """Plan O.10: this writer's stack evidence. A missing stack bundle or
+    blessing is a problem; the audit state of the latest stack bundle is
+    reported, not judged."""
+    from .ledger import load_appraiser_id
+
+    writer = ledger_config.appraiser_id or load_appraiser_id(ledger_config.state_dir)
+    stacks = [b for b in ledger.bundles(role="stack") if b.appraiser_id == writer]
+    if not stacks:
+        report.problems.append("no stack bundle for this writer in the ledger "
+                               "(python examples/ledger_context.py measure stack --bless)")
+        return
+    latest = stacks[-1]
+    report.context["stack_bid"] = latest.key_id
+    blessed = [b for b in stacks if ledger.blessing_of(b.key_id) is not None]
+    if not blessed:
+        report.problems.append("no blessing for this writer's stack in the ledger "
+                               f"(python examples/ledger_context.py bless {latest.key_id})")
+        return
+    report.context["blessing_key"] = f"blessing/{blessed[-1].key_id}"
+    report.context["latest_stack_blessed"] = str(ledger.blessing_of(latest.key_id) is not None).lower()
+    audits = [a for a in ledger.appraisals_of(latest.key_id)
+              if a.baseline == report.context["blessing_key"] and a.verdict is not None]
+    report.context["stack_audit"] = ("passed" if audits[-1].verdict.passed else "failed") if audits else "none"

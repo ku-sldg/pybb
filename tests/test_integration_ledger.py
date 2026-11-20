@@ -161,50 +161,87 @@ def test_appraisal_paths_against_the_real_cvm(tmp_path, config):
     assert not tampered and "blob_sha256" in tampered.error
 
 
-def test_blessing_the_real_stack_and_runs_reference_it(tmp_path, config):
-    """B.8 default cadence: provision attestation_tools once (the CVM hashes
-    the live CVM, summarizer, ASPs and key, then signs), record the bundle,
-    and every later run carries that bundle's hash as its tooling ref."""
+def test_stack_and_config_evidence_with_the_real_cvm(tmp_path, config):
+    """Plan O: the CVM measures the installation (`stack`) and one protocol's
+    inputs (`config`); runs carry no pointer, the reader derives both; an
+    audit judges a stack bundle against a blessing's goldens and a config
+    bundle against its archived files; a rebuilt binary fails the audit
+    against the old blessing and passes after re-blessing."""
+    import shutil
+
     from pybb.attestation.client import CvmConfig
-    from pybb.attestation.ledger import ToolingRef
-    from pybb.attestation.ledger_tooling import (
-        TOOLING_PROTOCOL_ID, bless_tools, build_attestation_tools_protocol, tooling_ref_for)
+    from pybb.attestation.ledger_context import bless, derive_context, measure_config, measure_stack
+    from pybb.attestation.ledger_runs import appraise_bundle, archiver
 
     proto = ProtocolDir.load(str(L1A))
     cfg = config.model_copy(update={"golden_root": str(tmp_path / "golden")})
-    tp = build_attestation_tools_protocol(tmp_path / TOOLING_PROTOCOL_ID, CvmConfig(),
-                                          {proto.protocol_id: proto}, cfg)
-    assert len(tp.asp_args["hashfile"]) >= 6  # cvm, summarizer, key, several ASPs
     ledger = FileLedger(tmp_path / "ledger.jsonl")
     client = CvmSubprocessClient()
+    archive = archiver(tmp_path / "evidence")
 
-    b = bless_tools(client, tp, cfg.golden_root, ledger, cfg)
-    assert b.error == "", b.error
-    assert Path(b.bundle_path).is_file() and b.ledger_key and b.ledger_key.startswith("bundle/")
-    assert len(b.provisioned) == len(tp.asp_args["hashfile"])
-    rec = ledger.get_record(b.ledger_key)
-    # provisioning runs carry generate_nonce (plan point 4): the blessing is a
-    # signed+nonce package keyed by its nonce id
-    assert rec.protocol_id == TOOLING_PROTOCOL_ID and rec.assurance == "signed+nonce" and rec.signature.present
-    assert rec.role == "provision" and rec.bid and b.ledger_key == f"bundle/{rec.bid}"
-    # idempotent: unchanged tools -> same bundle, no second record
-    b2 = bless_tools(client, tp, cfg.golden_root, ledger, cfg)
-    assert b2.bundle_sha256 == b.bundle_sha256 and len(ledger.bundles(role="provision")) == 1
+    # a copy of the ASP directory stands in for an installation we may rebuild
+    real = CvmConfig()
+    asps = tmp_path / "asps"
+    asps.mkdir()
+    for name in ("hashfile", "sig", "sig_appr", "goldenbytes_appr", "generate_nonce", "nonce_appr"):
+        shutil.copy2(Path(real.asp_bin) / name, asps / name)
+    fake = real.model_copy(update={"asp_bin": str(asps)})
 
-    protocols = {proto.protocol_id: proto, tp.protocol_id: tp}
-    assert tooling_ref_for(ledger, cfg, protocols) == ToolingRef(kind="bundle", ref=b.bundle_sha256)
-    predicate = make_attestation_predicate(client, protocols, archive_dir=tmp_path / "evidence",
+    s1 = measure_stack(client, ledger, cfg, cvm_config=fake, archive=archive)
+    assert s1, s1.error
+    rec = ledger.get(s1.bid)
+    assert rec.role == "stack" and rec.assurance == "signed+nonce" and rec.stack.executables == 8  # cvm, summarizer, 6 asps
+    assert s1.targets == 10  # + key + invocation
+    b1 = bless(ledger, cfg, s1.bid, note="first install")
+    assert set(b1.goldens) == {"stack:cvm", "stack:summarizer", "stack:pubkey", "stack:invocation"} | {
+        f"stack:asp:{n}" for n in ("hashfile", "sig", "sig_appr", "goldenbytes_appr", "generate_nonce", "nonce_appr")}
+    c1 = measure_config(client, proto, ledger, cfg, archive=archive)
+    assert c1, c1.error
+
+    # runs carry no pointer; the reader derives stack, blessing and configuration
+    predicate = make_attestation_predicate(client, {proto.protocol_id: proto}, archive_dir=tmp_path / "evidence",
                                            ledger=ledger, ledger_config=cfg)
     v = predicate({"protocol": proto.protocol_id})
     assert v.error == "", v.error
     m = ledger.get(v.bid)
-    assert m.tooling == ToolingRef(kind="bundle", ref=b.bundle_sha256)
-    assert ledger.appraisals_of(v.bid)[0].tooling == m.tooling
+    assert m.tooling is None and m.to_dict().get("context") is None
+    d = derive_context(ledger, m)
+    assert d and d.constructor == "measure" and d.stack_bid == s1.bid and d.stack_status == "blessed"
+    assert d.config_bid == c1.bid and d.pins == {"term": True, "session": True, "manifest": True}
+    live = ledger.appraisals_of(v.bid)[0]
+    assert derive_context(ledger, live).constructor == "appraise"
+    # the B.6 audit of the live appraisal now runs under the static audit session: constructor `audit`
+    audit = appraise_bundle(client, proto, ledger, cfg, live.key_id, archive=archive)
+    assert audit, audit.error
+    assert derive_context(ledger, ledger.get(audit.appraisal_bid)).constructor == "audit"
 
-    # the blessing bundle itself is re-verifiable through verify_bundle's APPR-only path
-    from pybb.attestation import verify_bundle
-    report = verify_bundle(client, tp, Path(cfg.golden_root))
-    assert report, report.problems
+    # audits of the context bundles themselves (plan O.6)
+    sa = appraise_bundle(client, None, ledger, cfg, s1.bid, archive=archive)
+    assert sa.error == "", sa.error
+    assert sa.passed and sa.baseline == f"blessing/{s1.bid}" and sa.signature_ok and sa.nonce_wellformed
+    assert len([c for c in sa.components if c.appr_asp == "goldenbytes_appr"]) == s1.targets
+    assert ledger.get(sa.appraisal_bid).baseline == f"blessing/{s1.bid}"
+    ca = appraise_bundle(client, None, ledger, cfg, c1.bid, archive=archive)
+    assert ca.error == "", ca.error
+    assert ca.passed and ca.baseline == "" and ledger.get(ca.appraisal_bid).baseline is None
+
+    # "rebuild" one ASP: the next stack measurement fails the audit against the old blessing
+    (asps / "nonce_appr").write_bytes((asps / "nonce_appr").read_bytes() + b"\n# rebuilt\n")
+    s2 = measure_stack(client, ledger, cfg, cvm_config=fake, archive=archive)
+    assert s2, s2.error
+    drift = appraise_bundle(client, None, ledger, cfg, s2.bid, archive=archive)
+    assert drift.error == "", drift.error
+    assert not drift.passed and drift.baseline == f"blessing/{s1.bid}"
+    assert {c.targ_id for c in drift.components if not c.passed} == {"stack:asp:nonce_appr"}
+    bless(ledger, cfg, s2.bid, note="rebuilt nonce_appr")
+    ok = appraise_bundle(client, None, ledger, cfg, s2.bid, archive=archive)
+    assert ok.passed and ok.baseline == f"blessing/{s2.bid}", ok.error
+    # runs between the rebuild and `measure stack` derive S1; later ones S2
+    assert derive_context(ledger, m).stack_bid == s1.bid
+    predicate.forget({"protocol": proto.protocol_id})
+    v2 = predicate({"protocol": proto.protocol_id})
+    assert v2.error == "", v2.error
+    assert derive_context(ledger, ledger.get(v2.bid)).stack_bid == s2.bid
 
 
 def test_nonced_provisioning_bundle_verifies_and_keys_by_nonce(tmp_path, config):

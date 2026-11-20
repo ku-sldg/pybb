@@ -9,14 +9,15 @@ v2 do not break older readers. v1 records (`pybb-ledger/v1`, the seven-kind
 schema) remain readable through `pybb/attestation/ledger_v1.py`; nothing
 writes them.
 
-Four kinds, four key shapes:
+Five kinds, five key shapes:
 
 | key | kind | one per |
 |---|---|---|
-| `bundle/<bid>` (legacy: `bundle/sha256:<blob hash>`) | `bundle` | CVM run output: a measurement, an appraisal, a provisioning bundle, a (planned) challenge |
+| `bundle/<bid>` (legacy: `bundle/sha256:<blob hash>`) | `bundle` | CVM run output: a measurement, an appraisal, a provisioning bundle, a `stack` or `config` context bundle (plan O), a (planned) challenge |
 | `judged_by/<bid>/<appraisal bid>` | `judged_by` | appraisal, pointing from the bundle it judged |
 | `mirror/<store>/<state_tx>` | `mirror` | push to an evidence store |
 | `restore/<created_at>` | `restore` | restore of the ledger from a mirror |
+| `blessing/<stack bid>` | `blessing` | operator approval of one `stack` bundle (plan O.5) |
 
 `bid` is the **bundle id**: the sha256 of the nonce the CVM's `generate_nonce`
 ASP drew inside that run. A bundle and its nonce are one thing; a replayed
@@ -29,7 +30,7 @@ on every `bundle/` key).
 | field | type | description |
 |---|---|---|
 | `schema` | string | `"pybb-ledger/v2"` |
-| `kind` | string | `bundle`, `judged_by`, `mirror`, `restore` |
+| `kind` | string | `bundle`, `judged_by`, `mirror`, `restore`, `blessing` |
 | `bid` | hex | on bundles: the bundle id (absent on legacy nonce-less bundles); on `judged_by`: the judged bundle |
 | `created_at` | RFC 3339 UTC | when pybb built the record (the ledger's own transaction order is authoritative) |
 | `committer_fp` | `sha256:<hex>` | fingerprint of the verifying public key pybb trusts |
@@ -44,9 +45,9 @@ hashed and laid out. What the bundle is evidence *of* is its `role` and its
 
 | field | type | description |
 |---|---|---|
-| `role` | `measurement`, `appraisal`, `provision`, `challenge` | a measurement of the target system; an appraisal of another bundle; a provisioning bundle (signed golden baseline, including the tooling blessing); a pre-registered challenge (section G, planned) |
-| `protocol_id` | string | the protocol configuration the run belongs to (for an appraisal: the protocol it appraises) |
-| `term_sha256`, `session_sha256`, `manifest_sha256` | hex | hashes of the exact term/session/manifest the CVM ran; for an appraisal these pin the **appraisal policy** (companion map, goldens) |
+| `role` | `measurement`, `appraisal`, `provision`, `challenge`, `stack`, `config` | a measurement of the target system; an appraisal of another bundle; a provisioning bundle (signed golden baseline); a pre-registered challenge (section G, planned); the CVM/asp-libs installation measured by the CVM (`stack`, plan O.1); one protocol's exact inputs measured by the CVM (`config`, plan O.2) |
+| `protocol_id` | string | the protocol configuration the run belongs to (for an appraisal: the protocol it appraises; for a `config` bundle: the protocol it describes; a `stack` bundle: `attestation_stack`) |
+| `term_sha256`, `session_sha256`, `manifest_sha256` | hex | hashes of the **canonical term, session and manifest pybb placed in the request the CVM ran** (plan O.3; before O the term pin was of the raw `term.json`). A `config` bundle's `input:<constructor>:<term|session|manifest>` targets measure exactly those bytes, so a reader joins a run to its configuration by hash equality. For an appraisal they pin the **appraisal policy** (companion map, goldens) |
 | `response_sha256` | hex | hash of the package's canonical JSON; the stable identity of the evidence |
 | `blob` | BlobRef | the archived bytes: hash, size, encoding and every known location |
 | `rawev_count` | int | number of RawEv slots |
@@ -56,18 +57,23 @@ hashed and laid out. What the bundle is evidence *of* is its `role` and its
 | `assurance` | `signed+nonce`, `signed`, `nonce`, `none` | computed from the package as produced |
 | `freshness` | `post-hoc`, `pre-registered`, `none` | what the nonce proves: `post-hoc` today (binding, uniqueness, order; not a challenge) |
 | `exception_reason` | string or absent | set only when the run committed below the configured minimum assurance through an explicit exception |
-| `tooling` | ToolingRef or absent | the Copland evidence identifying the binaries in force (the tooling blessing) |
+| `tooling` | ToolingRef or absent | legacy (plan B.8, retired by O): the tooling blessing in force; readable on old bundles, never written again. Runs now carry **no pointer** to their context — see "What a reader derives" below |
 | `error` | string | non-empty on a measurement whose live appraisal never happened: why |
 | `shape` | string or absent | the term constructor that produced the package (plan M, N.5): `measure` (a measurement run, from the split flow, a measurement-only run, or provisioning), `appraise` (an appraisal run: live, deferred or audit), `combined` (the one-run shape); absent on legacy or foreign bundles. Readers use it to pick the session typing a package lays out under |
 | `inputs` | list of InputRef, appraisal only (and a challenged measurement) | the bundles this run took as initial evidence: an appraisal names the one bundle it judged; a challenged measurement names its challenge |
 | `verdict` | Verdict, appraisal only | the reading of this appraisal package |
 | `appraisal_kind` | string, appraisal only | caller-chosen label: `live` (the appraisal run of the same `attest` call), `deferred` (the first appraisal of a measurement that had no live one, plan N.3), `audit`, or a policy name such as `slices-only` |
 | `provision` | ProvisionInfo, provision only | goldens timestamp and target count |
+| `stack` | StackInfo, stack only | `plc` (the Copland place the CVM ran as), `executables` (CVM, summarizer and ASP executables measured) |
+| `config` | ConfigInfo, config only | `constructors` (the term constructors whose inputs were measured) and `files` (`[{targ_id, blob}]`: each materialized input archived as a content-addressed `json` blob, so a reader can fetch the exact session a package laid out under) |
+| `baseline` | string, appraisal only | on an audit of a `stack` bundle: the `blessing/<bid>` key whose goldens the CVM judged against |
 | `state`, `challenge` | challenge only | section G lifecycle (`issued`, `bound`, `consumed`, `expired`) and the challenge's metadata; the only key the appraiser ever writes twice |
 
 Validation: `bid == sha256(nonce bytes)`; an appraisal has `inputs` and a
 `verdict`, no other role carries a verdict or `appraisal_kind`; a challenged
-measurement names exactly one input; a challenge has a `state`.
+measurement names exactly one input; a challenge has a `state`; only a
+`stack` bundle carries `stack`, only a `config` bundle carries `config`, and
+only an appraisal carries `baseline`.
 
 ### What a run writes
 
@@ -76,7 +82,32 @@ measurement names exactly one input; a challenge has a `state`.
 | live run (two CVM invocations) | `bundle/<mid>` (measurement) + `bundle/<abid>` (appraisal, `inputs=[mid]`, `appraisal_kind: live`) + `judged_by/<mid>/<abid>` |
 | later appraisal of a measurement (`appraise_bundle`), same or different policy | `bundle/<abid2>` (`inputs=[mid]`, `appraisal_kind` set, `session_sha256` pinning the policy) + `judged_by/<mid>/<abid2>` |
 | appraisal of an appraisal bundle (plan B.6: signature, appraiser nonce and binding judged inside the CVM) | `bundle/<abid3>` with `inputs=[abid]` + `judged_by/<abid>/<abid3>` |
-| provisioning / tooling blessing | `bundle/<bid>` (`provision`) |
+| provisioning | `bundle/<bid>` (`provision`) |
+| `examples/ledger_context.py measure stack` (operator command) | `bundle/<sbid>` (`stack`); with `--bless` also `blessing/<sbid>` |
+| `examples/ledger_context.py measure config <pid>` (operator command) | `bundle/<cbid>` (`config`, `protocol_id = pid`) |
+| audit of a stack / config bundle (`appraise_bundle`) | `bundle/<abid>` (`inputs=[sbid]`, `baseline` set for a stack) + `judged_by/<sbid>/<abid>` |
+
+### What a reader derives (plan O.7)
+
+Runs store no pointer to the stack or configuration they ran under: pybb
+runs the CVM in the state it is in, and the ledger says afterwards whether
+that state had been measured. For a run bundle R by writer W
+(`appraiser_id`, or `committer_fp`), `ledger_context.derive_context` finds:
+
+- the **stack in force**: W's latest `stack` bundle at a lower transaction,
+  and whether a `blessing/` record exists for it;
+- the **configuration in force**: W's latest `config` bundle with
+  `protocol_id == R.protocol_id` at a lower transaction;
+- the **pins**: R's `term_sha256`/`session_sha256`/`manifest_sha256` against
+  that config bundle's `input:<constructor>:*` file hashes, for some
+  constructor (`measure`, `appraise`, `combined`, `audit`,
+  `appraise_combined`, `audit_combined`).
+
+Pins matching: R ran under a measured configuration. Pins differing: the
+inputs changed after the last `measure config`; R belongs to no measured
+configuration. No earlier `config` bundle from W: no configuration evidence
+exists for R. `examples/appraise_from_ledger.py` prints this beside every
+bundle; `examples/ledger_context.py show` prints it for one.
 
 ## `judged_by/<bid>/<appraisal bid>`
 
@@ -114,6 +145,25 @@ is the ledger head the push captured, zero-padded to 12 digits.
 A stated location is **durable** when the clone (or the remote) has the file
 at that path and it hashes to its name; `reconcile` reports stated-but-absent
 blobs as pending. Nothing is derived from mirror records alone.
+
+## `blessing/<stack bid>`
+
+The operator's approval of one `stack` bundle (plan O.5), written by
+`examples/ledger_context.py bless` (or `measure stack --bless`). One per
+stack bundle; attributable to the installation that made it through the
+envelope. Configurations are not blessed.
+
+| field | type | description |
+|---|---|---|
+| `stack_bid` | hex | the approved stack bundle |
+| `targets` | list of string | its `stack:*` target ids |
+| `goldens` | map target id → base64 | the measured values read off the stack bundle's signed package (identification, no judgment): the expectations a later stack audit injects for `goldenbytes_appr` |
+| `note` | string | operator note (`--note`) |
+
+The blessing in force when a bundle was written is the latest `blessing`
+from the same writer at a lower transaction — derived by order, never
+asserted. A blessing made by one writer serves others through audits
+(`--against blessing/<bid>`): equal binaries yield equal goldens.
 
 ## `restore/<created_at>`
 
@@ -193,7 +243,13 @@ not pybb's handling of it.
 **Interpreter**: `kind` (`verified-summary` or `legacy-walker`), `tool` (a
 name, never a hash; tool identity is the `tooling` reference).
 
-**ToolingRef**
+**StackInfo** (stack bundles): `plc`, `executables`.
+
+**ConfigInfo** (config bundles): `constructors` (list), `files` (list of
+`{targ_id, blob: BlobRef}`; `encoding: json`, the blob hash is the file's
+sha256, which is also what the `hashfile` target measured).
+
+**ToolingRef** (legacy, plan B.8; read-only)
 
 | field | type | description |
 |---|---|---|

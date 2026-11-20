@@ -414,6 +414,10 @@ Policy, in `LedgerConfig`:
 
 ### B.8 Tooling identity: measured only by the CVM, on a configurable cadence
 
+*Superseded by section O (implemented 2026-11-20): the `stack` bundle and
+`blessing` record replace `attestation_tools`, `tooling` and the cadence.
+B.8 is kept as history; `tooling` values on older bundles stay readable.*
+
 The binaries that produce a verdict — the CVM, the summarizer, the ASPs
 (which embed the verifying public key) — are themselves measured only by
 Copland, never by pybb. pybb never hashes or inspects a tool binary.
@@ -1900,7 +1904,8 @@ summarizer needed changing. Response saved for a fixture
 5. *Resolved 2026-11-20:* **`shape` is an explicit bundle field** (`split`,
    `combined`, `appraise`, `measure`; absent on legacy/foreign bundles) and
    a lifted measurement's blob carries `derived_from: <appraisal bid>`.
-6. *Open — needs fleshing out:* **the context blob.** Sketch: optional
+6. *Superseded by section O (2026-11-20), which records stack and
+   configuration as separate Copland bundles.* Original sketch: **the context blob.** Sketch: optional
    `context: BlobRef` on a bundle pointing at an archived copy of the
    session (or the `[payload, ctx]` pair provision bundles already store),
    content-addressed and stated at commit like the package blob;
@@ -2001,6 +2006,279 @@ appraisal of the same bytes. `pybb2` summary gains the new groups.
 | Rocq driver, `examples/appraise_from_ledger.py` | `--ledger-mode measure|attest`; `--kind` default follows N.3 |
 | docs | `ledger.md` "measure now, appraise later"; `ledger_records.md` shape values; this section |
 
+## O. Run context: stack and configuration evidence (planning 2026-11-20; design settled 2026-11-20)
+
+**STATUS: implemented 2026-11-20** (`ledger_context.py`: `measure_stack`,
+`measure_config`, `bless`, `derive_context`; roles `stack`/`config`,
+`blessing/<bid>`, `baseline`; canonical pins; stack/config audits in
+`appraise_bundle`; `examples/ledger_context.py`; `attestation_tools`,
+`ledger_tooling.py`, `ToolingConfig` and the `tooling` field retired).
+Implementation notes: target ids use colons only (`input:<constructor>:<name>`,
+not a slash) so no tool ever sees a path separator in a target id; the
+constructors are `measure`, `appraise`, `combined`, `audit`,
+`appraise_combined`, `audit_combined` (the B.6 audit session became a
+function of the protocol alone, `audit_appraisers`, so it is measurable);
+context packages archive under `<state_dir>/context/archive` when no
+archive callback is given, since blessings and audits read the bytes back;
+blessings carry the measured `goldens` read off the stack package, so a
+stack audit needs no local golden files. Supersedes the "context blob"
+sketch of M.6.6 / L.4.3 and the tooling blessing of B.8.
+
+A bundle today says which protocol ran and pins `term_sha256`,
+`session_sha256`, `manifest_sha256`, and under B.8 points at a blessing of
+the binaries. Three gaps: the exact inputs the CVM was handed are not
+recoverable (the client writes request and manifest to temp files and
+deletes them); `term_sha256` is the hash of the raw `term.json`, not of the
+shaped term the CVM ran; and nothing records protocol configuration at all.
+O records, as Copland evidence measured by the CVM, two things an auditor
+needs to interpret any run: **the stack** (the CVM and asp-libs
+installation) and **the configuration** (each protocol's inputs). Runs are
+tied to both by hash equality and ledger order, never by a pointer pybb
+asserts.
+
+### O.0 Principles (what was tried and rejected on the way)
+
+- pybb hashes no binary and judges no evidence (B.9). It may hash the JSON
+  it writes itself, to identify it.
+- pybb decides nothing about *when* to measure. Rejected: a session-only
+  "context blob" (too little); one context bundle per episode (ledger
+  growth for no decision); commit-on-change with pybb comparing measured
+  values against the previous bundle (pybb deciding what is new);
+  `on_change` detection over regenerated files (machinery for little gain).
+  Remeasurement is an **operator policy decision pybb carries out**, like
+  re-blessing goldens.
+- Runs carry **no pointer** to stack or configuration. Rejected: a
+  `context.bid` field filled by reading the latest context off the ledger
+  at episode start. pybb runs the CVM in the state it is in; readers derive
+  what was in force from writer identity and transaction order (O.7).
+- Stack and configuration are **separate records** with separate lineages:
+  shared binaries may serve different protocols and other configs, and only
+  the stack is blessed. Rejected: one `context` bundle grouping both by
+  target-id prefix.
+
+### O.1 The `stack` bundle: the installation
+
+Protocol `attestation_stack`, generated per installation by
+`ledger_context.py` from the tool registry (`tools.build_tools_protocol_dir`
+pattern), `measure` shape (`lseq (bseq left_path (asp generate_nonce) M)
+SIG`), `M` = `hashfile` over:
+
+| target id | path (in the ASP args, measured and signed) |
+|---|---|
+| `stack:cvm` | `CvmConfig.cvm_binary` |
+| `stack:summarizer` | the verified summarizer binary |
+| `stack:pubkey` | `LedgerConfig.verify_key_path` |
+| `stack:asp:<name>` | **every executable in `CvmConfig.asp_bin`**, not only the ASPs some protocol uses — the stack is independent of the protocol set |
+| `stack:invocation` | `cvm_config.json`: canonical JSON of `CvmConfig` (binary path, `asp_bin`, `log_level`, `path_prepend`) written by pybb at measure time |
+
+Target ids are logical; absolute paths live only in the args, so two
+installations' stack bundles compare target by target. Role `stack`,
+`protocol_id = attestation_stack`, `shape = measure`, nonce'd and signed by
+the installation's key; `StackInfo{plc, executables}` (O.8).
+
+### O.2 The `config` bundle: one protocol's inputs
+
+Protocol `attestation_config`, same constructor, one run **per protocol**;
+the bundle's existing `protocol_id` names the protocol it describes. `M` =
+`hashfile` over that protocol's materialized inputs, one target per file:
+
+| target id | file |
+|---|---|
+| `input:<constructor>:term` | the term as handed to the CVM for that constructor, `asp_args` injected (so goldens are covered) |
+| `input:<constructor>:session` | the shaped session (`ledger_session`, `combined_session`, `audit_session` as the constructor needs) |
+| `input:<constructor>:manifest` | the ledger manifest |
+
+for every constructor pybb can run for the protocol: `measure`, `appraise`,
+`combined`, and `audit` (the B.6 appraisal-of-appraisal session); the exact
+list is fixed at implementation from `ledger_runs` and recorded in
+`ConfigInfo.constructors`. Role `config`, `shape = measure`;
+`ConfigInfo{constructors, files}` where `files[{targ_id, blob}]` are the
+materialized files archived as content-addressed blobs (small canonical
+JSON, `encoding: json`), stated and pushed like any blob, so an auditor can
+fetch the exact session a package laid out under (what the M.6.6 context
+blob wanted, as a by-product).
+
+### O.3 Inputs: pins and materialization
+
+- **Run path, unchanged except the pins.** pybb hands the CVM its request
+  and manifest as today. A run bundle's `term_sha256`, `session_sha256`,
+  `manifest_sha256` become the hashes of the canonical term, session and
+  manifest pybb actually placed in that request (today's term pin is of the
+  raw `term.json`, a bug fixed here). No run reads the ledger or any
+  materialized file.
+- **Measure path.** `measure config <pid>` writes those same canonical
+  bytes to `<state_dir>/context/<pid>/<constructor>/{term,session,manifest}.json`
+  so `hashfile` can measure them. Same generator, same bytes: a run's pins
+  equal the config bundle's `input:*` values iff nothing changed in between.
+- Runs regenerate inputs live, so a protocol edit takes effect at once and
+  the pins reveal the stale configuration. The stricter policy — runs read
+  the last measured files, so configuration cannot change without a
+  remeasurement — is a possible later flag, not built now.
+
+### O.4 Operator commands (pybb has no cadence)
+
+```
+python examples/ledger_context.py measure stack [--bless] [--note "..."]
+python examples/ledger_context.py measure config <protocol_id>... | --all
+python examples/ledger_context.py bless <stack bid> [--note "..."]
+python examples/ledger_context.py audit <bid> [--against <blessing key>]
+```
+
+`measure` runs the protocol once and **commits unconditionally**: the
+operator asked for a fresh signed statement of the state at this moment,
+and it is recorded even if nothing changed. `--bless` writes the blessing
+record (O.5) for the new stack bundle in the same step — the
+re-provisioning gesture. When to run these is the operator's process (after
+a rebuild, after a protocol edit, from cron or CI). `ToolingConfig.measure`
+is removed without replacement. Nothing runs at episode start.
+
+### O.5 The blessing: an operator act over a stack bundle
+
+`blessing/<stack bid>`: `{stack_bid, targets: [stack target ids], note}`
+plus the envelope (`appraiser_id`, `committer_fp`, `created_at`). Writing
+it extracts goldens for the `stack:*` targets from that bundle's signed
+package into the local `attestation_stack` asp_args (the provisioning
+extraction, pointed at a stack package). The key makes a blessing unique
+per stack bundle; a blessing is attributable to the installation that made
+it; the blessing in force when a bundle was written is the latest
+`blessing` record at a lower tx from the same writer — derived by order,
+never asserted. Configurations are **not blessed**; an "approved protocol"
+record, if ever wanted, is a separate kind.
+
+### O.6 Audits detect drift
+
+`appraise_bundle` on a `stack` bundle runs the `appraise` term over its
+package: `goldenbytes_appr` per target with goldens from a blessing — the
+latest by default, or `--against <blessing key>`. The result is an ordinary
+appraisal bundle (`inputs=[stack bid]`, `judged_by` pointer,
+`appraisal_kind` audit/deferred) with a new field **`baseline`** naming the
+blessing the goldens came from. A rebuilt ASP is a failing component named
+by its target id.
+
+On a `config` bundle the expectation per `input:*` target is the hash of
+the archived file in `ConfigInfo.files` (pybb supplies its own record as
+the expectation; the CVM compares — B.9 rule 2), confirming the file
+measured is the file archived. No `baseline`.
+
+A blessing made by one writer serves others through audits:
+`audit <W2's stack bid> --against blessing/<W1's stack bid>` passes when the
+binaries are the same build, so a shared CVM/asp-libs install can be blessed
+once without any cross-writer pointer. Audits run by command or from
+`appraise_from_ledger.py`; none runs automatically at measure.
+
+### O.7 What a reader derives (no pointers)
+
+For run bundle R written by W (`appraiser_id`, or `committer_fp`):
+
+- **stack in force**: W's latest `stack` bundle at tx < R's tx; its blessing
+  status is the latest `blessing` for it and the audits against that
+  blessing;
+- **configuration in force**: W's latest `config` bundle with
+  `protocol_id == R.protocol_id` at tx < R's tx;
+- **pins**: R's `term_sha256`/`session_sha256`/`manifest_sha256` against
+  that config bundle's `input:<constructor>/*` values for R's constructor
+  (`shape`).
+
+Outcomes, all readable without pybb: pins match — R ran under a measured
+configuration on a stack whose blessing status is known; pins differ — the
+inputs changed after the last `measure config` and R belongs to no measured
+configuration; no earlier bundle from W — no evidence of configuration
+exists for R. `appraise_from_ledger.py`'s graph printer shows the derivation
+beside each bundle. The SQL mirror needs no join column: writer and tx
+order are already there.
+
+### O.8 Records (schema stays `pybb-ledger/v2`; additive)
+
+| change | detail |
+|---|---|
+| `Role` | gains `stack`, `config`; role gates as for `provision` (no inputs, no verdict) |
+| `StackInfo` | on `stack` bundles: `plc` (the `Session_Plc` the CVM ran as), `executables` (count) |
+| `ConfigInfo` | on `config` bundles: `constructors: [str]`, `files: [{targ_id, blob: BlobRef}]` |
+| `blessing/<stack bid>` | new kind: `stack_bid`, `targets`, `note`, envelope; `record_relpath` → `ledger/blessing/<bid>.json` |
+| `baseline` | on appraisal bundles that audited a stack bundle: the blessing key |
+| `tooling`, `ToolingRef` | no longer written; readable on old records |
+| SQL mirror | `attestation_records` gains `baseline`; `kind` already distinguishes blessings |
+
+Pins: `term_sha256` redefined as in O.3 (same field, correct value;
+v2 readers unaffected). `stated_blobs` gains part `config-file` for
+`ConfigInfo.files`.
+
+### O.9 Instances
+
+Every record already carries `appraiser_id`, `committer_fp`, `pybb_version`
+and the package signature. Each installation measures and signs its own
+stack and its own configs, so two machines writing one ledger have separate
+lineages, joined by W in O.7 and compared across writers by target-id
+equality (O.1) or audits against one blessing (O.6). The stack bundle
+covers the local CVM pybb invokes; a protocol dispatching to a remote place
+(`@p`) gets evidence signed there, whose stack is that place's own
+installation's business (section G). Cross-instance appraisal needs the
+judged writer's session (O.2 supplies it) and key distribution to
+`sig_appr` (asp-libs/session format, outside this plan); who may write is
+section J, which O makes easier (an installation has a stack bundle to
+register against) but does not require.
+
+### O.10 What O retires
+
+`attestation_tools` and its provisioning (`bless_tools`,
+`tooling_ref_for`, `ToolingResolver`, the `tooling` blackboard entry and
+`ToolingConfig.measure`); `attestation_stack` subsumes the artifact list.
+`ToolingConfig.protocol_id` is dropped; `LedgerConfig.context` holds the two
+protocol ids and `state_dir`-relative paths. Readiness replaces "a tooling
+blessing exists" with "a stack bundle and a blessing exist for this writer"
+and reports, informationally, whether the latest stack bundle has a passing
+audit against the latest blessing (pybb reads verdicts off the ledger; it
+computes none). Existing `tooling` values on `pybb2` bundles stay as they
+are (no backfill; records are immutable).
+
+### O.11 Scenario
+
+1. Fresh install: `measure stack --bless`, `measure config --all` → one
+   `stack` bundle S1 + `blessing/S1`, one `config` bundle per Rocq protocol.
+2. Rocq episodes (split, combined, measure-only) run unchanged; the graph
+   printer shows S1 and the matching config beside every bundle, pins equal.
+3. Edit a protocol's goldens (re-provision a target); run an episode: its
+   bundles' pins no longer match → "no measured configuration". `measure
+   config <pid>` → C2; the next episode matches C2.
+4. Rebuild asp-libs; episodes keep deriving S1 (nothing told the ledger).
+   `measure stack` → S2; `audit S2` against `blessing/S1` fails on
+   `stack:asp:<rebuilt>`; `bless S2`; `audit S2` passes. Runs between the
+   rebuild and `measure stack` derive S1 — the honest record.
+5. `pybb2` summary gains the `stack`, `config`, `blessing` groups.
+
+### O.12 Code impact
+
+| where | change |
+|---|---|
+| `ledger.py` | `Role` += `stack`, `config`; `StackInfo`, `ConfigInfo`, `BlessingRecord` (+ `RECORD_TYPES`, `key_for`, `parse_record`); `baseline` on `BundleRecord`; `LedgerConfig.context` replaces `ToolingConfig` |
+| `ledger_context.py` (new; replaces `ledger_tooling.py`) | stack/config protocol builders, `materialize_inputs`, `measure_stack`, `measure_config`, `bless`, golden extraction from a stack package |
+| `ledger_runs.py` | canonical pins (O.3); `appraise_bundle` branches for `stack` (goldens from a blessing, `baseline`) and `config` (expectations from `ConfigInfo.files`); `tooling` parameters removed |
+| `ledger_repo.py` | `record_relpath` for `blessing`; `stated_blobs` part `config-file` |
+| `ledger_immudb.py` | mirror column `baseline` |
+| `knowledge_sources.py`, `readiness.py`, `baseline.py` | drop `ToolingResolver`/`tooling` entry; readiness per O.10 |
+| `examples/ledger_context.py` (new), `appraise_from_ledger.py` | commands of O.4; derivation display of O.7 |
+| tests | role gates; blessing record round trip; pins equal materialized hashes; stack/config/blessing in `FileLedger`; integration: scenario steps 1–4 against the real CVM |
+| docs | `ledger_records.md` (roles, `StackInfo`, `ConfigInfo`, `blessing`, `baseline`, pin redefinition), `ledger.md` (operator commands, reader derivation), B.8 and M.6.6 pointers to O, this section |
+
+### O.13 Decisions
+
+1. *Resolved 2026-11-20:* two bundle roles, `stack` and `config`, not one
+   `context`; only the stack is blessed.
+2. *Resolved:* `config` is one bundle per protocol, keyed by `protocol_id`.
+3. *Resolved:* the stack measures every executable in `asp_bin`;
+   `cvm_config.json` is a stack target (`stack:invocation`).
+4. *Resolved:* measurement only on operator command, always committed;
+   `--bless` combines measure and bless. No cadence, no dedup.
+5. *Resolved:* no pointer on run bundles and no ledger read at run time;
+   readers derive stack and configuration in force (O.7).
+6. *Resolved:* the blessing is a ledger record over a stack bundle;
+   `attestation_tools` is retired.
+7. *Resolved:* runs regenerate inputs live; pins reveal staleness.
+8. *Resolved:* audits by command only; `baseline` names the blessing used.
+9. *Open, deferred:* a `required` gate refusing runs without a measured
+   stack/config; an "approved protocol" record; the frozen-inputs policy of
+   O.3; informational readiness line only for now.
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
@@ -2012,6 +2290,10 @@ appraisal of the same bytes. `pybb2` summary gains the new groups.
 7. F docs.
 8. G (two-run pre-registration) — detailed plan in section G (2026-11-18), awaiting its decisions; separate change set.
 9. K (unified bundle records, schema v2) — plan in section K, all decisions resolved 2026-11-19; precedes G, since G's challenge becomes a `challenge` bundle.
+10. L (position-free records) — implemented 2026-11-20.
+11. M (configurable bundle shapes: `split`, `combined`) — implemented 2026-11-20.
+12. N (measure now, appraise later; `Measured`/`Appraised`) — implemented 2026-11-20.
+13. O (stack and configuration evidence; operator-commanded; retires B.8's blessing) — implemented 2026-11-20; precedes G, whose remote attester needs its own stack lineage.
 
 ## Decisions (all resolved 2026-11-17)
 

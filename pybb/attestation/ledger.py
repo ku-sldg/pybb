@@ -11,8 +11,13 @@ names as input (bound to it by a `hashevidence` value) and carries its own
 `verdict`, so one measurement can be judged any number of times by any
 policy. `judged_by/<input>/<appraisal>` pointers make those judgments one
 prefix scan; a `mirror` record per push to a store witnesses what has been
-mirrored; `restore` records a restore. Four kinds, nothing written about a
-run after its batch.
+mirrored; `restore` records a restore. Two further bundle roles record the
+run context as Copland evidence (plan section O): a `stack` bundle is the
+CVM/asp-libs installation measured by the CVM, a `config` bundle is one
+protocol's exact inputs; a `blessing` record is the operator's approval of
+a stack bundle. Runs carry no pointer to either: readers derive what was in
+force from writer identity and transaction order. Five kinds, nothing
+written about a run after its batch.
 
 Division of labour (plan B.9): pybb IDENTIFIES and DESCRIBES evidence — it
 hashes bytes to key and index them and reads evidence structure to label
@@ -58,7 +63,7 @@ from .ledger_common import (  # noqa: F401  (re-exported)
 import json  # noqa: E402
 
 SCHEMA = "pybb-ledger/v2"
-Role = Literal["measurement", "appraisal", "provision", "challenge"]
+Role = Literal["measurement", "appraisal", "provision", "challenge", "stack", "config"]
 
 
 # ── record schema (plan section K) ───────────────────────────────────────────
@@ -197,6 +202,31 @@ class ChallengeInfo(BaseModel):
     expires_at: str = ""
 
 
+class StackInfo(BaseModel):
+    """On a `stack` bundle (plan O.1): the CVM/asp-libs installation the CVM
+    measured. `plc` is the Copland place the CVM ran as; `executables` is
+    the number of `stack:*` targets."""
+
+    plc: str = ""
+    executables: int = 0
+
+
+class ConfigFile(BaseModel):
+    """One materialized input of a `config` bundle, archived as a blob so a
+    reader can fetch the exact term/session/manifest a run used."""
+
+    targ_id: str
+    blob: BlobRef
+
+
+class ConfigInfo(BaseModel):
+    """On a `config` bundle (plan O.2): one protocol's inputs per term
+    constructor pybb can run."""
+
+    constructors: List[str] = []
+    files: List[ConfigFile] = []
+
+
 class BundleRecord(LedgerRecord):
     """One record per CVM run output (plan K.1)."""
 
@@ -227,6 +257,11 @@ class BundleRecord(LedgerRecord):
     provision: Optional[ProvisionInfo] = None
     state: Optional[str] = None
     challenge: Optional[ChallengeInfo] = None
+    # run context (plan O): stack / config bundles describe themselves; an
+    # audit of a stack bundle names the blessing its goldens came from
+    stack: Optional[StackInfo] = None
+    config: Optional[ConfigInfo] = None
+    baseline: Optional[str] = None
 
     @model_validator(mode="after")
     def _role_invariants(self) -> "BundleRecord":
@@ -251,6 +286,12 @@ class BundleRecord(LedgerRecord):
             raise ValueError("a challenge bundle needs a state")
         if self.role != "challenge" and (self.state or self.challenge):
             raise ValueError(f"a {self.role} bundle has no challenge state")
+        if self.stack is not None and self.role != "stack":
+            raise ValueError(f"a {self.role} bundle carries no stack info")
+        if self.config is not None and self.role != "config":
+            raise ValueError(f"a {self.role} bundle carries no config info")
+        if self.baseline is not None and self.role != "appraisal":
+            raise ValueError(f"a {self.role} bundle names no baseline")
         return self
 
     @property
@@ -291,11 +332,26 @@ class RestoreRecord(LedgerRecord):
     tx_count: int
 
 
+class BlessingRecord(LedgerRecord):
+    """The operator's approval of a `stack` bundle (plan O.5): "these are the
+    binaries I trust". `goldens` are the measured values read off that
+    bundle's signed package, target id -> base64 hash, so an audit of a
+    later stack bundle takes its expectations from the ledger alone. One
+    blessing per stack bundle; attributable through the envelope."""
+
+    kind: Literal["blessing"] = "blessing"
+    stack_bid: str
+    targets: List[str] = []
+    goldens: Dict[str, str] = {}
+    note: str = ""
+
+
 RECORD_TYPES = {
     "bundle": BundleRecord,
     "judged_by": JudgedByRecord,
     "mirror": MirrorRecord,
     "restore": RestoreRecord,
+    "blessing": BlessingRecord,
 }
 
 
@@ -327,6 +383,8 @@ def key_for(record: Any) -> str:
         return f"mirror/{store_slug(record.store)}/{record.state_tx:012d}"
     if k == "restore":
         return f"restore/{record.created_at}"
+    if k == "blessing":
+        return f"blessing/{record.stack_bid}"
     if str(getattr(record, "schema_version", "")).endswith("/v1"):
         from .ledger_v1 import key_for as key_for_v1
 
@@ -604,9 +662,15 @@ def _read_secret(path: str) -> str:
         return ""
 
 
-class ToolingConfig(BaseModel):
-    protocol_id: Optional[str] = "attestation_tools"
-    measure: Literal["at_provisioning", "every_episode", "every_run"] = "at_provisioning"
+class ContextConfig(BaseModel):
+    """Run context (plan O): the generated protocols that measure the stack
+    and each protocol's inputs, and where their materialized files live
+    (relative to `state_dir`). There is no cadence: measurement happens only
+    on operator command (`examples/ledger_context.py`)."""
+
+    stack_protocol_id: str = "attestation_stack"
+    config_protocol_id: str = "attestation_config"
+    dir: str = "context"
 
 
 class LedgerConfig(BaseModel):
@@ -627,13 +691,12 @@ class LedgerConfig(BaseModel):
     # PYBB_EVIDENCE_REPO, else the clone path written to <state_dir>/evidence_repo
     evidence_repo: Optional[str] = Field(default_factory=lambda: os.environ.get("PYBB_EVIDENCE_REPO")
                                          or _read_secret(os.path.expanduser("~/.pybb/evidence_repo")) or None)
-    # where provisioning bundles live (<golden_root>/_bundles/<pid>/); the
-    # attestation_tools blessing is read from here (B.8)
+    # where provisioning bundles live (<golden_root>/_bundles/<pid>/)
     golden_root: str = Field(default_factory=lambda: os.environ.get("PYBB_GOLDEN_ROOT", "golden"))
     fail_open: bool = False
     min_assurance: AssuranceLevel = "signed+nonce"
     assurance_exceptions: Dict[str, str] = {}  # protocol_id -> reason
-    tooling: ToolingConfig = ToolingConfig()
+    context: ContextConfig = ContextConfig()
     appraiser_id: Optional[str] = None  # None: load or create under state_dir
     # bundle shapes (plan M): `split` (two runs; appraisal now or later) or
     # `combined` (one run; same two artifacts); per protocol, else the default
@@ -767,6 +830,20 @@ class Ledger(ABC):
 
     def commit_restore(self, restore: RestoreRecord) -> Receipt:
         return self._write_batch([restore])
+
+    def commit_blessing(self, blessing: BlessingRecord) -> Receipt:
+        """One blessing per stack bundle (plan O.5); the bundle must be a
+        `stack` bundle already in the ledger."""
+        rec = self.get_record(f"bundle/{blessing.stack_bid}")
+        if not isinstance(rec, BundleRecord) or rec.role != "stack":
+            raise LedgerError(f"{blessing.stack_bid} is not a stack bundle in the ledger")
+        if self.exists(key_for(blessing)):
+            raise LedgerError(f"stack bundle {blessing.stack_bid} is already blessed")
+        return self._write_batch([blessing])
+
+    def blessing_of(self, stack_bid: str) -> Optional[BlessingRecord]:
+        rec = self.get_record(f"blessing/{stack_bid}")
+        return rec if isinstance(rec, BlessingRecord) else None
 
     # -- reads ----------------------------------------------------------------
 

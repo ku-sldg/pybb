@@ -154,7 +154,6 @@ def make_attestation_predicate(
 
     if ledger is not None and ledger_config is None:
         ledger_config = LedgerConfig()
-    tooling_resolver: List[Any] = [None]  # built lazily: needs _archive
     cache: Dict[str, Appraised] = {}
     if archive_dir is None:
         def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
@@ -171,13 +170,8 @@ def make_attestation_predicate(
                 cache[key] = _audit_ledger(client, protocols, measurement, _archive,
                                            ledger, ledger_config)
             elif ledger is not None:
-                if tooling_resolver[0] is None:
-                    from .ledger_tooling import ToolingResolver
-
-                    tooling_resolver[0] = ToolingResolver(client, protocols, ledger,
-                                                          ledger_config, archive=_archive)
                 cache[key] = _attest_ledger(client, protocols, measurement, _archive,
-                                            ledger, ledger_config, tooling_resolver[0])
+                                            ledger, ledger_config)
             else:
                 cache[key] = _attest(client, protocols, measurement, _archive)
         return cache[key]
@@ -210,7 +204,6 @@ def make_measurement_predicate(
     if ledger is not None and ledger_config is None:
         ledger_config = LedgerConfig()
     cache: Dict[str, Measured] = {}
-    tooling_resolver: List[Any] = [None]
     if archive_dir is None:
         def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
             return ""
@@ -222,8 +215,7 @@ def make_measurement_predicate(
     def predicate(measurement: dict) -> Measured:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
-            cache[key] = _measure_ledger(client, protocols, measurement, _archive, ledger,
-                                         ledger_config, tooling_resolver)
+            cache[key] = _measure_ledger(client, protocols, measurement, _archive, ledger, ledger_config)
         return cache[key]
 
     def forget(measurement: dict) -> None:
@@ -234,7 +226,7 @@ def make_measurement_predicate(
 
 
 def _measure_ledger(client: Any, protocols: Dict[str, Any], measurement: dict, archive: Any,
-                    ledger: Any, config: Any, tooling_resolver: List[Any]) -> Measured:
+                    ledger: Any, config: Any) -> Measured:
     from .ledger_runs import measure
 
     protocol_id = measurement.get("protocol", "")
@@ -243,11 +235,7 @@ def _measure_ledger(client: Any, protocols: Dict[str, Any], measurement: dict, a
         return Measured(protocol=protocol_id, error=f"unknown protocol '{protocol_id}'")
     if ledger is None:
         return Measured(protocol=protocol_id, error="measurement-only recording needs a ledger")
-    if tooling_resolver[0] is None:
-        from .ledger_tooling import ToolingResolver
-
-        tooling_resolver[0] = ToolingResolver(client, protocols, ledger, config, archive=archive)
-    r = measure(client, protocol, ledger, config, archive=archive, tooling=tooling_resolver[0].ref(protocol_id))
+    r = measure(client, protocol, ledger, config, archive=archive)
     return Measured(protocol=protocol_id, bid=r.bid, ledger_ref=r.ledger_ref, evidence_ref=r.evidence_ref,
                     assurance=r.assurance, error=r.error)
 
@@ -278,9 +266,10 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
 
 
 def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
-                   archive: Any, ledger: Any, config: Any, tooling_resolver: Any = None) -> Appraised:
-    """The nonce'd two-run flow (ledger_runs.attest_with_ledger) as a Appraised,
-    carrying the tooling reference the B.8 cadence prescribes."""
+                   archive: Any, ledger: Any, config: Any) -> Appraised:
+    """The nonce'd two-run flow (ledger_runs.attest) as an Appraised. Runs
+    carry no context pointer (plan O.7): the CVM runs in the state it is in
+    and readers derive the stack and configuration in force."""
     from .ledger_runs import attest
 
     protocol_id = measurement.get("protocol", "")
@@ -288,8 +277,7 @@ def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
     if protocol is None:
         return Appraised(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
-    tooling = tooling_resolver.ref(protocol_id) if tooling_resolver is not None else None
-    r = attest(client, protocol, ledger, config, archive=archive, tooling=tooling)
+    r = attest(client, protocol, ledger, config, archive=archive)
     return Appraised(protocol=protocol_id, passed=r.passed, components=r.components,
                    error=r.error, evidence_ref=r.evidence_ref, appraisal_ref=r.appraisal_ref,
                    components_ref=r.components_ref, bid=r.bid, ledger_ref=r.ledger_ref)

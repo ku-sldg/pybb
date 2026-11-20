@@ -11,7 +11,11 @@ Prints the bundle graph — the bundle, every appraisal recorded over it
 appraisal of the bundle through the CVM and records it as one more
 appraisal bundle. A measurement bundle is judged by the protocol's
 companions (or by --session, a different policy); an appraisal bundle is
-judged inside the CVM (its signature, appraiser nonce and binding).
+judged inside the CVM (its signature, appraiser nonce and binding); a
+`stack` or `config` bundle is judged against a blessing's goldens or the
+hashes of its archived files (--against picks the blessing). Beside every
+run bundle the graph shows the stack and configuration in force, derived
+from the same writer's earlier records (docs/ledger_plan.md O.7).
 
 Backend: --ledger FILE for a FileLedger, otherwise immudb from the
 environment (PYBB_IMMUDB_USER / PYBB_IMMUDB_PASSWORD, host 127.0.0.1:3322,
@@ -26,6 +30,7 @@ from pathlib import Path
 
 from pybb.attestation import CvmSubprocessClient, FileLedger, ProtocolDir
 from pybb.attestation.ledger import LedgerConfig
+from pybb.attestation.ledger_context import derive_context
 from pybb.attestation.ledger_runs import appraise_bundle, archiver
 
 REPO = Path(__file__).parent.parent
@@ -67,11 +72,23 @@ def show_bundle(ledger, bid: str, indent: str = "") -> None:
         print(f"{indent}  location {loc.store}: {loc.path}")
     for i in b.inputs or []:
         print(f"{indent}  input {i.bid[:16]}…  binding_hash {(i.binding_hash or '')[:16]}…")
+    if b.role in ("stack", "config"):
+        info = b.stack or b.config
+        extra = f" executables={b.stack.executables} plc={b.stack.plc}" if b.stack else \
+            f" constructors={len(b.config.constructors)} files={len(b.config.files)}"
+        blessing = ledger.blessing_of(b.key_id) if b.role == "stack" else None
+        print(f"{indent}  {b.role}:{extra}{'  blessed: ' + blessing.created_at if blessing else ''}")
+    else:
+        d = derive_context(ledger, b)
+        print(f"{indent}  context: stack={d.stack_bid[:16] + '…' if d.stack_bid else '-'} ({d.stack_status}) "
+              f"config={d.config_bid[:16] + '…' if d.config_bid else '-'} inputs={d.status}"
+              f"{' via ' + d.constructor if d.constructor else ''}"
+              f"{' pins=' + str(d.pins) if d.status == 'stale' else ''}")
     if b.verdict is not None:
         v = b.verdict
         print(f"{indent}  verdict[{b.appraisal_kind}]: passed={v.passed} components={v.components_total} "
               f"failed={v.components_failed} interpreter={v.interpreter.kind} checks={v.checks} "
-              f"agrees_with_live={v.agrees_with_live}")
+              f"agrees_with_live={v.agrees_with_live}{' baseline=' + b.baseline if b.baseline else ''}")
         for f in v.failing:
             print(f"{indent}    FAIL {f.targ_id} ({f.appr_asp}): {f.reason}")
     for a in ledger.appraisals_of(b.key_id):
@@ -89,6 +106,7 @@ def main() -> int:
     ap.add_argument("--ledger", help="FileLedger path (default: immudb from the environment)")
     ap.add_argument("--archive-dir", default=str(REPO / "evidence"),
                     help="where the new appraisal package is archived (default: evidence/)")
+    ap.add_argument("--against", help="stack audits: the blessing key (or stack bid) whose goldens to judge against")
     ap.add_argument("--no-run", action="store_true", help="show the graph only; run nothing")
     args = ap.parse_args()
 
@@ -102,21 +120,24 @@ def main() -> int:
         return 0
 
     target = ledger.get(bid)
-    proto_dir = FIXTURES / target.protocol_id
-    if not (proto_dir / "session.json").is_file():
-        sys.exit(f"no protocol dir at {proto_dir}")
-    protocol = ProtocolDir.load(str(proto_dir))
+    protocol = None
+    if target.role not in ("stack", "config"):  # context bundles bring their own protocol
+        proto_dir = FIXTURES / target.protocol_id
+        if not (proto_dir / "session.json").is_file():
+            sys.exit(f"no protocol dir at {proto_dir}")
+        protocol = ProtocolDir.load(str(proto_dir))
     session = json.loads(Path(args.session).read_text()) if args.session else None
     print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ({args.kind or 'deferred/audit'}) ==")
     rep = appraise_bundle(CvmSubprocessClient(), protocol, ledger, config, bid,
                           session_override=session, appraisal_kind=args.kind,
-                          archive=archiver(args.archive_dir))
+                          archive=archiver(args.archive_dir), baseline=args.against)
     if rep.error:
         print("ERROR:", rep.error)
         return 1
     print(f"recorded as {rep.ledger_ref}: passed={rep.passed} signature_ok={rep.signature_ok} "
           f"nonce_wellformed={rep.nonce_wellformed} binding_ok={rep.binding_ok} "
-          f"agrees_with_live={rep.agrees_with_live} assurance={rep.assurance}")
+          f"agrees_with_live={rep.agrees_with_live} assurance={rep.assurance}"
+          f"{' baseline=' + rep.baseline if rep.baseline else ''}")
     for c in rep.components:
         print(f"  {c.appr_asp:18s} over {c.target_asp:16s} targ={c.targ_id!s:40s} {'pass' if c.passed else 'FAIL ' + c.reason}")
     return 0 if rep else 1

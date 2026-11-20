@@ -194,7 +194,9 @@ and day-to-day use. Nothing below is needed for the demos.
 3. `export PYBB_IMMUDB_PASSWORD='<8-32 chars, upper+lower+digit+symbol>'`
    then `scripts/immudb_dev.sh bootstrap` (database `pybb2`, user `pybb`),
    and `scripts/immudb_dev.sh rotate-admin NEWPASS` once.
-4. `python examples/provision_tools.py` — bless the attestation stack.
+4. `python examples/ledger_context.py measure stack --bless` — measure and
+   bless the attestation stack; `python examples/ledger_context.py measure
+   config --all` — measure every protocol's inputs (plan section O).
 5. Optional: clone your evidence repository and `export
    PYBB_EVIDENCE_REPO=<clone path>`; `python examples/ledger_push.py`
    after an episode, `python examples/ledger_reconcile.py` to check.

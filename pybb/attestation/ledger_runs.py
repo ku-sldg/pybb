@@ -64,7 +64,8 @@ from .ledger import (
     PackageDescription,
     ProvisionInfo,
     SignatureInfo,
-    ToolingRef,
+    StackInfo,
+    ConfigInfo,
     Verdict,
     assurance_at_least,
     canonical_json,
@@ -458,14 +459,23 @@ def build_bundle_record(role: str, lp: Any, payload: list, desc: PackageDescript
                         verdict: Optional[Verdict] = None,
                         appraisal_kind: Optional[str] = None,
                         provision: Optional[ProvisionInfo] = None,
-                        tooling: Optional[ToolingRef] = None,
                         exception_reason: Optional[str] = None,
-                        error: str = "", shape: Optional[str] = None) -> BundleRecord:
+                        error: str = "", shape: Optional[str] = None,
+                        request: Optional[dict] = None,
+                        baseline: Optional[str] = None,
+                        stack: Optional[StackInfo] = None,
+                        config_info: Optional[ConfigInfo] = None) -> BundleRecord:
     """The one bundle builder (plan K.1): the package as `describe_package`
-    read it, the protocol files it ran under, where its bytes are, and the
+    read it, the inputs it ran under, where its bytes are, and the
     role-gated members the caller supplies. The role is asserted against
     the package: an appraisal package carries a `hashevidence` binding and
-    an appraiser nonce, the others do not."""
+    an appraiser nonce, the others do not.
+
+    Pins (plan O.3): with `request` — the exact request the CVM ran —
+    `term_sha256` and `session_sha256` hash the canonical TERM and
+    ATTESTATION_SESSION of that request, which is what a `config` bundle's
+    `input:*` targets measure; without it they hash the protocol's own
+    term and session (provisioning bundles)."""
     hs = desc.span_for("hashevidence")
     if role == "appraisal":
         if hs is None:
@@ -477,6 +487,8 @@ def build_bundle_record(role: str, lp: Any, payload: list, desc: PackageDescript
         inputs = [i.model_copy(update={"binding_hash": bound}) for i in inputs]
     elif hs is not None and role != "challenge":
         raise LedgerError(f"{role} bundle: package carries a hashevidence binding (is it an appraisal?)")
+    if (stack is not None) != (role == "stack") or (config_info is not None) != (role == "config"):
+        raise LedgerError(f"{role} bundle: stack/config info must match the role")
     env = record_env(config)
     nonce: Optional[NonceInfo] = None
     if desc.nonce is not None and desc.nonce_b64 is not None:
@@ -484,16 +496,19 @@ def build_bundle_record(role: str, lp: Any, payload: list, desc: PackageDescript
                           bytes=len(base64.b64decode(desc.nonce_b64)))
     sig = desc.signature.model_copy(update={"signer_fp": env["committer_fp"] or None}) \
         if desc.signature.present else SignatureInfo(present=False)
+    term = request["TERM"] if request is not None else lp.term
+    session = request["ATTESTATION_SESSION"] if request is not None else lp.session
     return BundleRecord(
         bid=desc.bid, role=role, protocol_id=protocol_id or lp.protocol_id,
-        term_sha256=sha256_hex(canonical_json(lp.term)),
-        session_sha256=sha256_hex(canonical_json(lp.session)),
+        term_sha256=sha256_hex(canonical_json(term)),
+        session_sha256=sha256_hex(canonical_json(session)),
         manifest_sha256=sha256_hex(canonical_json(lp.manifest)),
         response_sha256=desc.response_sha256, blob=blob, rawev_count=desc.rawev_count,
         rawev_sha256=desc.rawev_sha256, nonce=nonce, signature=sig, assurance=desc.assurance,
         freshness="post-hoc" if nonce else "none", exception_reason=exception_reason,
-        tooling=tooling, error=error, shape=shape, inputs=inputs, verdict=verdict,
-        appraisal_kind=appraisal_kind, provision=provision, **env)
+        error=error, shape=shape, inputs=inputs, verdict=verdict,
+        appraisal_kind=appraisal_kind, provision=provision, baseline=baseline,
+        stack=stack, config=config_info, **env)
 
 
 def verdict_from(components: List[ComponentResult], interpreter: Interpreter,
@@ -521,7 +536,6 @@ def remote_stores(config: LedgerConfig) -> List[str]:
 
 def attest(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
            archive: Optional[ArchiveFn] = None,
-           tooling: Optional[ToolingRef] = None,
            shape: Optional[str] = None) -> LedgerAttestation:
     """
     One live attestation of `protocol` under the configured bundle shape
@@ -544,20 +558,20 @@ def attest(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
         return out
     out.shape = shape
     if shape == "combined":
-        return _attest_combined(client, protocol, ledger, config, archive, tooling, out)
-    return _attest_split(client, protocol, ledger, config, archive, tooling, out)
+        return _attest_combined(client, protocol, ledger, config, archive, out)
+    return _attest_split(client, protocol, ledger, config, archive, out)
 
 
 def _attest_combined(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
-                     archive: Optional[ArchiveFn], tooling: Optional[ToolingRef],
-                     out: LedgerAttestation) -> LedgerAttestation:
+                     archive: Optional[ArchiveFn], out: LedgerAttestation) -> LedgerAttestation:
     """Shape `combined` (plan M.2): one run; P lifted from the hash lane."""
     pid = protocol.protocol_id
     lp = shaped_protocol(protocol, "combined")
 
     # 1. the one run
+    req = combined_request(lp)
     try:
-        resp = _run(client, lp, combined_request(lp))
+        resp = _run(client, lp, req)
     except Exception as e:
         out.error = f"combined run failed: {e}"
         return out
@@ -614,13 +628,13 @@ def _attest_combined(client: Any, protocol: Any, ledger: Ledger, config: LedgerC
         p_blob = blob_ref(out.evidence_ref, remote_stores=stores)
         p_blob = p_blob.model_copy(update={"derived_from": appr_desc.bid})
         measurement = build_bundle_record("measurement", lp, p_payload, raw_desc, p_blob, config,
-                                          tooling=tooling, exception_reason=exception_reason, shape="combined")
+                                          exception_reason=exception_reason, shape="combined", request=req)
         comp_blob = blob_ref(out.components_ref, remote_stores=stores) if out.components_ref else None
         appraisal = build_bundle_record(
             "appraisal", lp, payload, appr_desc, blob_ref(out.appraisal_ref, remote_stores=stores),
             config, inputs=[InputRef(bid=raw_desc.bid)],
             verdict=verdict_from(components, interpreter_used(), comp_blob),
-            appraisal_kind="live", tooling=tooling, shape="combined")
+            appraisal_kind="live", shape="combined", request=req)
         ledger.commit_bundles([measurement, appraisal])
         out.ledger_ref = key_for(appraisal)
     except DuplicateNonceError as e:
@@ -636,24 +650,26 @@ def _attest_combined(client: Any, protocol: Any, ledger: Ledger, config: LedgerC
     return out
 
 
-def _measure_step(client: Any, lp: Any, pid: str, archive: Optional[ArchiveFn]
-                  ) -> Tuple[Optional[list], Optional[PackageDescription], str, str]:
-    """The `measure` run: returns (payload, description, archived path, error)."""
+def _measure_step(client: Any, lp: Any, pid: str, archive: Optional[ArchiveFn], request: Optional[dict] = None
+                  ) -> Tuple[Optional[list], Optional[PackageDescription], str, str, dict]:
+    """The `measure` run: returns (payload, description, archived path, error,
+    the request that ran). `request` defaults to `measurement_request(lp)`."""
+    req = request if request is not None else measurement_request(lp)
     try:
-        resp = _run(client, lp, measurement_request(lp))
+        resp = _run(client, lp, req)
     except Exception as e:  # CvmError and transport failures alike
-        return None, None, "", f"measurement run failed: {e}"
+        return None, None, "", f"measurement run failed: {e}", req
     if not resp.get("SUCCESS"):
-        return None, None, "", f"measurement run failed: {str(resp.get('PAYLOAD'))[:300]}"
+        return None, None, "", f"measurement run failed: {str(resp.get('PAYLOAD'))[:300]}", req
     payload = resp["PAYLOAD"]
     ref = archive(resp, pid, "response") if archive else ""
     try:
         desc = describe_package(payload, lp.session)
     except EvidenceLayoutError as e:
-        return None, None, ref, f"raw package not describable: {e}"
+        return None, None, ref, f"raw package not describable: {e}", req
     if desc.bid is None:
-        return None, None, ref, "raw package carries no generate_nonce event"
-    return payload, desc, ref, ""
+        return None, None, ref, "raw package carries no generate_nonce event", req
+    return payload, desc, ref, "", req
 
 
 def _assurance_exception(desc: PackageDescription, config: LedgerConfig, pid: str
@@ -669,8 +685,7 @@ def _assurance_exception(desc: PackageDescription, config: LedgerConfig, pid: st
 
 
 def measure(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
-            archive: Optional[ArchiveFn] = None,
-            tooling: Optional[ToolingRef] = None) -> LedgerMeasurement:
+            archive: Optional[ArchiveFn] = None) -> LedgerMeasurement:
     """
     Measurement-only (plan N.1): the `measure` run, archived, described,
     checked against the assurance policy, and committed as ONE measurement
@@ -680,7 +695,7 @@ def measure(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
     pid = protocol.protocol_id
     out = LedgerMeasurement(protocol=pid)
     lp = ledger_protocol(protocol)
-    payload, desc, out.evidence_ref, err = _measure_step(client, lp, pid, archive)
+    payload, desc, out.evidence_ref, err, req = _measure_step(client, lp, pid, archive)
     if err:
         out.error = err
         return out
@@ -693,7 +708,7 @@ def measure(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
     try:
         rec = build_bundle_record("measurement", lp, payload, desc,
                                   blob_ref(out.evidence_ref, remote_stores=remote_stores(config)),
-                                  config, tooling=tooling, exception_reason=exception_reason, shape="measure")
+                                  config, exception_reason=exception_reason, shape="measure", request=req)
         ledger.commit_bundles([rec])
         out.ledger_ref = key_for(rec)
     except DuplicateNonceError as e:
@@ -704,8 +719,7 @@ def measure(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
 
 
 def _attest_split(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
-                  archive: Optional[ArchiveFn], tooling: Optional[ToolingRef],
-                  out: LedgerAttestation) -> LedgerAttestation:
+                  archive: Optional[ArchiveFn], out: LedgerAttestation) -> LedgerAttestation:
     """Shape `split` (plan M.1): the `measure` run, then the `appraise` run
     over it, both bundles in one batch. If the appraisal half fails after a
     good measurement, the measurement bundle is committed alone with `error`
@@ -714,7 +728,7 @@ def _attest_split(client: Any, protocol: Any, ledger: Ledger, config: LedgerConf
     lp = ledger_protocol(protocol)
 
     # 1. measurement run -> raw signed package; assurance policy (plan B.7)
-    raw_payload, raw_desc, out.evidence_ref, err = _measure_step(client, lp, pid, archive)
+    raw_payload, raw_desc, out.evidence_ref, err, req1 = _measure_step(client, lp, pid, archive)
     if err:
         out.error = err
         return out
@@ -727,7 +741,7 @@ def _attest_split(client: Any, protocol: Any, ledger: Ledger, config: LedgerConf
     stores = remote_stores(config)
     measurement = build_bundle_record(
         "measurement", lp, raw_payload, raw_desc, blob_ref(out.evidence_ref, remote_stores=stores),
-        config, tooling=tooling, exception_reason=exception_reason, shape="measure")
+        config, exception_reason=exception_reason, shape="measure", request=req1)
 
     def measurement_only(reason: str) -> LedgerAttestation:
         """Plan N.4: the measurement stands as evidence; the verdict fails."""
@@ -744,8 +758,9 @@ def _attest_split(client: Any, protocol: Any, ledger: Ledger, config: LedgerConf
         return out
 
     # 2. appraisal run -> signed appraisal package
+    req2 = appraisal_request(lp, raw_payload)
     try:
-        resp2 = _run(client, lp, appraisal_request(lp, raw_payload))
+        resp2 = _run(client, lp, req2)
     except Exception as e:
         return measurement_only(f"appraisal run failed: {e}")
     if not resp2.get("SUCCESS"):
@@ -778,7 +793,7 @@ def _attest_split(client: Any, protocol: Any, ledger: Ledger, config: LedgerConf
             "appraisal", lp, appr_payload, appr_desc, blob_ref(out.appraisal_ref, remote_stores=stores),
             config, inputs=[InputRef(bid=raw_desc.bid)],
             verdict=verdict_from(components, interpreter_used(), comp_blob),
-            appraisal_kind="live", tooling=tooling, shape="appraise")
+            appraisal_kind="live", shape="appraise", request=req2)
         ledger.commit_bundles([measurement, appraisal])
         out.ledger_ref = key_for(appraisal)
     except DuplicateNonceError as e:
@@ -868,6 +883,7 @@ class LedgerAppraisal(BaseModel):
     appraisal_bid: str = ""  # the new appraisal bundle's id
     appraisal_kind: str = "audit"
     input_role: str = ""
+    baseline: str = ""  # stack audits: the blessing key the goldens came from
     ledger_verified: bool = False
     bytes_match: bool = False
     bid_ok: bool = False
@@ -925,7 +941,7 @@ def live_appraisal_of(ledger: Ledger, bid: str) -> Optional[BundleRecord]:
 def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerConfig, bid: str,
                     session_override: Optional[dict] = None, appraisal_kind: Optional[str] = None,
                     archive: Optional[ArchiveFn] = None,
-                    tooling: Optional[ToolingRef] = None) -> LedgerAppraisal:
+                    baseline: Optional[str] = None) -> LedgerAppraisal:
     """
     Plan K.4: fetch bundle `bid` by its stated locations, check it
     structurally (bytes and id against the record), run the signed B.6
@@ -941,6 +957,11 @@ def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerCo
     bundle is judged inside the CVM (plan B.6): `sig_appr`, `nonce_appr`,
     and `goldenbytes_appr` over its binding against the judged bundle's
     `rawev_sha256`, with `magic_appr` passing its verdict slots through.
+
+    A `stack` or `config` bundle (plan O.6) is judged under the generated
+    context protocol, `protocol` unused: stack targets against the goldens
+    of a blessing (`baseline`, a `blessing/<bid>` key; default the latest),
+    config targets against the hashes of the files the bundle archived.
     """
     rep = LedgerAppraisal(bid=bid, appraisal_kind=appraisal_kind or "audit")
     try:
@@ -949,6 +970,10 @@ def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerCo
         rep.error = f"fetch failed: {e}"
         return rep
     target = fetched.record
+    if target.role in ("stack", "config"):
+        rep.ledger_verified = rep.bytes_match = True
+        rep.location_used, rep.freshness, rep.input_role = fetched.location, target.freshness, target.role
+        return _appraise_context_bundle(client, ledger, config, target, fetched.payload, rep, archive, baseline)
     if appraisal_kind is None and target.role == "measurement" and not ledger.appraisals_of(bid):
         rep.appraisal_kind = "deferred"  # plan N.3: the first appraisal of a measurement nobody has judged
     keep = needs_keep(ledger, target)  # combined packages lay out under EXTEND hashevidence
@@ -965,8 +990,7 @@ def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerCo
     if target.role == "provision" and not (isinstance(payload[0], dict) and "RawEv" in payload[0]):
         payload = payload[0]  # provision bundle files are [payload, ctx]
     if target.role == "appraisal":
-        return _appraise_appraisal_bundle(client, lp, protocol, ledger, config, target, payload, rep,
-                                          archive, tooling)
+        return _appraise_appraisal_bundle(client, lp, protocol, ledger, config, target, payload, rep, archive)
 
     nonce_targid = NONCE_TARGID
     try:
@@ -981,8 +1005,9 @@ def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerCo
         return rep
 
     ap = lp if session_override is None else lp.model_copy(update={"session": ledger_session(session_override)})
+    req = appraisal_request(ap, payload)
     try:
-        resp = _run(client, ap, appraisal_request(ap, payload))
+        resp = _run(client, ap, req)
     except Exception as e:
         rep.error = f"appraisal run failed: {e}"
         return rep
@@ -1015,14 +1040,14 @@ def appraise_bundle(client: Any, protocol: Any, ledger: Ledger, config: LedgerCo
         rep.agrees_with_live = (rep.passed == live.verdict.passed)
 
     _commit_appraisal(ledger, ap, target, appr_payload, appr_desc, components, rep, config,
-                      interpreter_used(), tooling)
+                      interpreter_used(), req)
     return rep
 
 
 def _commit_appraisal(ledger: Ledger, ap: Any, target: BundleRecord, appr_payload: list,
                       appr_desc: PackageDescription, components: List[ComponentResult],
                       rep: LedgerAppraisal, config: LedgerConfig, interpreter: Interpreter,
-                      tooling: Optional[ToolingRef]) -> None:
+                      request: dict, baseline: Optional[str] = None) -> None:
     try:
         stores = remote_stores(config)
         verdict = verdict_from(components, interpreter,
@@ -1032,8 +1057,8 @@ def _commit_appraisal(ledger: Ledger, ap: Any, target: BundleRecord, appr_payloa
         rec = build_bundle_record("appraisal", ap, appr_payload, appr_desc,
                                   blob_ref(rep.appraisal_ref, remote_stores=stores), config,
                                   protocol_id=target.protocol_id, inputs=[InputRef(bid=target.key_id)],
-                                  verdict=verdict, appraisal_kind=rep.appraisal_kind, tooling=tooling,
-                                  shape="appraise")
+                                  verdict=verdict, appraisal_kind=rep.appraisal_kind,
+                                  shape="appraise", request=request, baseline=baseline)
         ledger.commit_bundles([rec])
         rep.ledger_ref = key_for(rec)
     except (LedgerError, OSError) as e:
@@ -1046,16 +1071,32 @@ def _commit_appraisal(ledger: Ledger, ap: Any, target: BundleRecord, appr_payloa
 PASSTHROUGH_APPR = "magic_appr"
 
 
-def audit_session(session: dict, appraiser_asps: List[str]) -> dict:
-    """The B.6 audit session: every appraiser ASP that appears in the package
-    gets the pass-through companion, so APPR over an appraisal package judges
-    its `sig`, `generate_nonce` and `hashevidence` events and passes the
-    verdict nodes through."""
+def audit_appraisers(session: dict) -> List[str]:
+    """Every appraiser ASP a protocol's packages can carry: its own
+    companions, the ledger's, and `sig_appr`. The static set makes the audit
+    session a function of the protocol alone, so a `config` bundle can
+    measure it (plan O.2, constructor `audit`)."""
+    comps = (session.get("Session_Context") or {}).get("ASP_Comps") or {}
+    return sorted(set(comps.values()) | set(LEDGER_ASP_COMPS.values()) | {"sig_appr"})
+
+
+def audit_session(session: dict, appraiser_asps: Optional[List[str]] = None) -> dict:
+    """The B.6 audit session: every appraiser ASP (`audit_appraisers`, plus
+    any the caller found in a package) gets the pass-through companion, so
+    APPR over an appraisal package judges its `sig`, `generate_nonce` and
+    `hashevidence` events and passes the verdict nodes through."""
     s = ledger_session(session)
     comps = s["Session_Context"]["ASP_Comps"]
-    for a in appraiser_asps:
+    for a in sorted(set(appraiser_asps or []) | set(audit_appraisers(session))):
         comps.setdefault(a, PASSTHROUGH_APPR)
     return s
+
+
+def audit_manifest(manifest: dict) -> dict:
+    """The audit run's manifest: the ledger manifest plus the pass-through companion."""
+    m = ledger_manifest(manifest)
+    m["ASPS"] = sorted(set(m["ASPS"]) | {PASSTHROUGH_APPR})
+    return m
 
 
 def inject_binding_golden(et: Any, golden_b64: str) -> Any:
@@ -1128,7 +1169,7 @@ def components_from_layout(branch_payload: list, session: dict) -> List[Componen
 
 def _appraise_appraisal_bundle(client: Any, lp: Any, protocol: Any, ledger: Ledger, config: LedgerConfig,
                                target: BundleRecord, appr_payload: list, rep: LedgerAppraisal,
-                               archive: Optional[ArchiveFn], tooling: Optional[ToolingRef]) -> LedgerAppraisal:
+                               archive: Optional[ArchiveFn]) -> LedgerAppraisal:
     """Plan B.6: judge a recorded appraisal package inside the CVM — its
     signature (`sig_appr`), its appraiser nonce (`nonce_appr`) and its binding
     to the bundle it judged (`goldenbytes_appr` against that bundle's
@@ -1158,10 +1199,10 @@ def _appraise_appraisal_bundle(client: Any, lp: Any, protocol: Any, ledger: Ledg
         session["Session_Context"]["ASP_Types"]["hashevidence"] = copy.deepcopy(HASHEVIDENCE_KEEP)
     golden_b64 = base64.b64encode(bytes.fromhex(judged.rawev_sha256)).decode()
     evidence = [appr_payload[0], inject_binding_golden(appr_payload[1], golden_b64)]
-    ap = lp.model_copy(update={"session": session,
-                               "manifest": {**lp.manifest, "ASPS": sorted(set(lp.manifest["ASPS"]) | {PASSTHROUGH_APPR})}})
+    ap = lp.model_copy(update={"session": session, "manifest": audit_manifest(protocol.manifest)})
+    req = _request(ap, appraisal_term(), evidence)
     try:
-        resp = _run(client, ap, _request(ap, appraisal_term(), evidence))
+        resp = _run(client, ap, req)
     except Exception as e:
         rep.error = f"audit run failed: {e}"
         return rep
@@ -1190,5 +1231,99 @@ def _appraise_appraisal_bundle(client: Any, lp: Any, protocol: Any, ledger: Ledg
     rep.passed = overall_verdict(components)
     rep.agrees_with_live = None  # this judges the appraisal package, not the targets
     interp = Interpreter(kind="legacy-walker", tool="pybb.attestation.ledger_runs.components_from_layout")
-    _commit_appraisal(ledger, ap, target, audit_payload, ad, components, rep, config, interp, tooling)
+    _commit_appraisal(ledger, ap, target, audit_payload, ad, components, rep, config, interp, req)
+    return rep
+
+
+# ── audits of stack / config bundles (plan O.6) ──────────────────────────────
+
+
+MISSING_GOLDEN_B64 = base64.b64encode(bytes(32)).decode()  # a target the baseline does not know: fails
+
+
+def inject_goldens(et: Any, goldens: Dict[str, str], asp_id: str = "hashfile") -> Any:
+    """Put a `golden_b64` into every `asp_id` event's args of a package's
+    (unsigned) evidence type, by `asp_targid` — the `_inject_goldens`
+    pattern (plan B.9 rule 2): pybb supplies the expectation, the CVM's
+    `goldenbytes_appr` compares. A target with no golden gets a value that
+    cannot match."""
+    et = copy.deepcopy(et)
+
+    def walk(n: Any) -> None:
+        if not isinstance(n, dict):
+            return
+        c, b = n.get("EvidenceT_CONSTRUCTOR"), n.get("EvidenceT_BODY")
+        if c == "asp_evt":
+            params = b[1]
+            if params.get("ASP_ID") == asp_id:
+                args = dict(params.get("ASP_ARGS") or {})
+                args["golden_b64"] = goldens.get(str(args.get("asp_targid", "")), MISSING_GOLDEN_B64)
+                params["ASP_ARGS"] = args
+            walk(b[2])
+        elif c == "split_evt":
+            walk(b[0]); walk(b[1])
+        elif c in ("left_evt", "right_evt"):
+            walk(b if isinstance(b, dict) else b[0])
+
+    walk(et)
+    return et
+
+
+def _appraise_context_bundle(client: Any, ledger: Ledger, config: LedgerConfig, target: BundleRecord,
+                             payload: list, rep: LedgerAppraisal, archive: Optional[ArchiveFn],
+                             baseline: Optional[str]) -> LedgerAppraisal:
+    """Plan O.6: judge a `stack` bundle against a blessing's goldens, or a
+    `config` bundle against the hashes of the files it archived, inside the
+    CVM with the ordinary `appraise` term under the generated context
+    protocol. The result is an appraisal bundle with `inputs=[the bundle]`
+    and, for a stack audit, `baseline` naming the blessing."""
+    from .ledger_context import context_goldens, context_protocol
+
+    cp = context_protocol(target, config)
+    try:
+        desc = describe_package(payload, cp.session)
+    except EvidenceLayoutError as e:
+        rep.error = f"fetched package not describable: {e}"
+        return rep
+    rep.bid_ok = (desc.bid == target.bid and desc.rawev_sha256 == target.rawev_sha256)
+    if not rep.bid_ok:
+        rep.error = "fetched package does not reproduce the recorded bundle id / rawev hash"
+        return rep
+    goldens, baseline_key, err = context_goldens(ledger, target, baseline)
+    if err:
+        rep.error = err
+        return rep
+    rep.baseline = baseline_key
+    evidence = [payload[0], inject_goldens(payload[1], goldens)]
+    req = _request(cp, appraisal_term(), evidence)
+    try:
+        resp = _run(client, cp, req)
+    except Exception as e:
+        rep.error = f"audit run failed: {e}"
+        return rep
+    if not resp.get("SUCCESS"):
+        rep.error = f"audit run failed: {str(resp.get('PAYLOAD'))[:300]}"
+        return rep
+    appr_payload = resp["PAYLOAD"]
+    if archive:
+        rep.appraisal_ref = archive(resp, target.protocol_id, f"appraisal-{rep.appraisal_kind}-{target.role}")
+    try:
+        appr_desc = describe_package(appr_payload, cp.session, nonce_targid=APPRAISER_NONCE_TARGID)
+    except EvidenceLayoutError as e:
+        rep.error = f"audit package not describable: {e}"
+        return rep
+    if appr_desc.bid is None:
+        rep.error = "audit package carries no appraiser nonce"
+        return rep
+    rep.appraisal_bid, rep.assurance = appr_desc.bid, appr_desc.assurance
+    components = interpret_appraisal(appr_payload, cp)
+    if isinstance(components, str):
+        rep.error = components
+        return rep
+    rep.components = components
+    rep.passed = overall_verdict(components)
+    rep.signature_ok = _verdict_of(components, "sig_appr")
+    rep.nonce_wellformed = _verdict_of(components, "nonce_appr")
+    _commit_appraisal(ledger, cp, target, appr_payload, appr_desc, components, rep, config,
+                      interpreter_used(), req, baseline=baseline_key or None)
     return rep

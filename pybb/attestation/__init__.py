@@ -8,11 +8,12 @@ from .client import (
     ProtocolDir,
 )
 from .ledger_immudb import ImmudbLedger
-from .ledger_tooling import (
-    ToolingResolver,
-    bless_tools,
-    build_attestation_tools_protocol,
-    tooling_ref_for,
+from .ledger_context import (
+    ContextMeasurement,
+    bless,
+    derive_context,
+    measure_config,
+    measure_stack,
 )
 from .ledger_repo import (
     EvidenceRepo,
@@ -131,10 +132,11 @@ from .summary import trust_summary
 
 __all__ = [
     "ImmudbLedger",
-    "ToolingResolver",
-    "bless_tools",
-    "build_attestation_tools_protocol",
-    "tooling_ref_for",
+    "ContextMeasurement",
+    "bless",
+    "derive_context",
+    "measure_config",
+    "measure_stack",
     "EvidenceRepo",
     "record_provision_bundles",
     "push_archive",

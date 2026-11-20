@@ -184,9 +184,9 @@ def test_starter_never_clobbers_live_episode(tmp_path):
 
 
 def _ledger_cfg(tmp_path, **kw):
-    from pybb.attestation.ledger import LedgerConfig, ToolingConfig
-    base = dict(state_dir=str(tmp_path / "state"), appraiser_id="ap-r",
-                golden_root=str(tmp_path / "golden"), tooling=ToolingConfig(protocol_id=None))
+    from pybb.attestation.ledger import LedgerConfig
+    base = dict(state_dir=str(tmp_path / "state"), appraiser_id="ap-r", evidence_repo="",
+                golden_root=str(tmp_path / "golden"))
     base.update(kw)
     return LedgerConfig(**base)
 
@@ -230,18 +230,34 @@ def test_ledger_readiness_requires_the_ledger_asps(tmp_path):
     assert missing == {"generate_nonce", "nonce_appr", "hashevidence", "magic_appr"}
 
 
-def test_ledger_readiness_requires_a_tooling_blessing_when_tracking_is_on(tmp_path):
-    from pybb.attestation.ledger import ToolingConfig
-    cfg = _ledger_cfg(tmp_path, tooling=ToolingConfig(protocol_id="attestation_tools"))
+def test_ledger_readiness_reports_this_writers_stack_evidence(tmp_path):
+    """Plan O.10: with a ledger, readiness needs a stack bundle and a blessing
+    from this writer (problems), and reports the latest stack bundle's
+    blessing and audit state (information)."""
+    from pybb.attestation import FileLedger
+    from pybb.attestation.ledger_context import bless, measure_stack
+    from test_ledger_context import ContextClient
+
+    cfg = _ledger_cfg(tmp_path)
     protos = {"l1": _sig_protocol()}
     cvm = _config(tmp_path, LEDGER_ASPS)
-    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
-    assert not r and any("not loaded" in p for p in r.problems)
-    protos["attestation_tools"] = _sig_protocol("attestation_tools")
-    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
-    assert not r and any("no blessing for the attestation stack" in p for p in r.problems)
-    bundle = tmp_path / "golden" / "_bundles" / "attestation_tools" / "provision_bundle.json"
-    bundle.parent.mkdir(parents=True)
-    bundle.write_text("[]")
-    r = make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))
-    assert r and r.tooling_blessing == str(bundle)
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg, ledger=ledger)(readiness_request(["l1"]))
+    assert not r and any("no stack bundle for this writer" in p for p in r.problems)
+
+    fake = type("Cvm", (), {})()
+    fake.cvm_binary, fake.asp_bin, fake.log_level, fake.timeout_s, fake.path_prepend = \
+        str(cvm.cvm_binary), str(cvm.asp_bin), "Info", 10, []
+    m = measure_stack(ContextClient(), ledger, cfg, cvm_config=fake, summarizer_bin=str(cvm.cvm_binary))
+    assert m, m.error
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg, ledger=ledger)(readiness_request(["l1"]))
+    assert not r and any("no blessing for this writer" in p for p in r.problems)
+    assert r.context["stack_bid"] == m.bid
+
+    bless(ledger, cfg, m.bid)
+    r = make_readiness_predicate(protos, cvm, ledger_config=cfg, ledger=ledger)(readiness_request(["l1"]))
+    assert r, r.problems
+    assert r.context == {"stack_bid": m.bid, "blessing_key": f"blessing/{m.bid}",
+                         "latest_stack_blessed": "true", "stack_audit": "none"}
+    # without a ledger handle nothing about the stack is checked
+    assert make_readiness_predicate(protos, cvm, ledger_config=cfg)(readiness_request(["l1"]))

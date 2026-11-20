@@ -11,6 +11,7 @@ content-addressed and append-only by convention:
     ledger/journal.jsonl                one line per ledger tx: {tx, ts, db, keys:{key: content_sha256}}
     ledger/bundles/<bid>.json           bundle records
     ledger/judged_by/<mid>/<abid>.json  pointer records
+    ledger/blessing/<stack bid>.json       operator blessings of stack bundles (plan O.5)
     ledger/mirror/<store>/<tx>.json     mirror records
     ledger/restores/<created_at>.json   restore records
     ledger/state/<tx>.json              the ledger backend's head at each push
@@ -163,6 +164,8 @@ def record_relpath(key: str, rec: Any) -> str:
         return f"ledger/mirror/{store_slug(rec.store)}/{rec.state_tx:012d}.json"
     if kind == "restore":
         return f"ledger/restores/{rec.created_at}.json"
+    if kind == "blessing":
+        return f"ledger/blessing/{rec.stack_bid}.json"
     # v1 kinds (readable mirrors of a v1 database)
     if kind in ("nonce", "evidence", "verdict"):
         return f"ledger/records/{rec.nid}/{kind}.json"
@@ -181,6 +184,8 @@ def _record_file_for_key(repo_path: Path, key: str) -> Optional[Path]:
         p = repo_path / f"ledger/mirror/{rest}.json"
     elif kind == "restore":
         p = repo_path / f"ledger/restores/{rest}.json"
+    elif kind == "blessing":
+        p = repo_path / f"ledger/blessing/{rest}.json"
     elif kind in ("nonce", "evidence", "verdict"):
         p = repo_path / f"ledger/records/{rest}/{kind}.json"
     elif kind in ("appraisal", "locator"):
@@ -214,11 +219,11 @@ def last_journaled_tx(repo: EvidenceRepo) -> int:
 
 class StatedBlob(BaseModel):
     """One blob as a bundle states it: its hash, which bundle, which part
-    (`package` or `components`), its local path and its path in `store`."""
+    (`package`, `components` or `config-file`), its local path and its path in `store`."""
 
     bid: str
     protocol_id: str = ""
-    part: str  # package | components
+    part: str  # package | components | config-file
     blob_sha256: str
     encoding: str
     local_path: str = ""
@@ -236,6 +241,8 @@ def stated_blobs(ledger: Ledger, store: str) -> List[StatedBlob]:
         parts = [("package", rec.blob)]
         if rec.verdict is not None and rec.verdict.components_blob is not None:
             parts.append(("components", rec.verdict.components_blob))
+        if rec.config is not None:  # a config bundle's materialized inputs (plan O.5)
+            parts.extend(("config-file", f.blob) for f in rec.config.files)
         for part, blob in parts:
             remote = next((l.path for l in blob.locations if l.store == store), None)
             if remote is None or not blob.blob_sha256:

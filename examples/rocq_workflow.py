@@ -102,7 +102,7 @@ EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
 # ── attestation ledger (docs/ledger.md), opt-in via --ledger ─────────────────
 # With a ledger every protocol runs as the nonce'd two-run flow and its records
 # land in immudb (or a FileLedger); readiness additionally reports ledger
-# assurance and the tooling blessing. Off by default: nothing else changes.
+# assurance and the stack/blessing state. Off by default: nothing else changes.
 _LEDGER: dict = {"ledger": None, "config": None}
 
 
@@ -126,26 +126,14 @@ def configure_ledger(spec: str | None, shape: str | None = None) -> None:
     print(f"ledger: {where} (appraiser {cfg.appraiser_id or 'from ~/.pybb'}, shape {cfg.default_shape})")
 
 
-def _with_tooling(protocols: dict) -> dict:
-    """The protocol map plus the attestation_tools protocol when it exists
-    (the ledger's tooling reference / readiness check need it loaded)."""
-    tools_dir = REPO / "tests" / "fixtures" / "attestation_tools"
-    if _LEDGER["ledger"] is None or "attestation_tools" in protocols \
-            or not (tools_dir / "session.json").is_file():
-        return protocols
-    out = dict(protocols)
-    out["attestation_tools"] = ProtocolDir.load(str(tools_dir))
-    return out
-
-
 def _attestation(client, protocols: dict, archive_dir=None):
-    return make_attestation_predicate(client, _with_tooling(protocols), archive_dir=archive_dir,
+    return make_attestation_predicate(client, protocols, archive_dir=archive_dir,
                                       ledger=_LEDGER["ledger"], ledger_config=_LEDGER["config"])
 
 
 def _readiness(protocols: dict, client=None):
-    return make_readiness_predicate(_with_tooling(protocols), baseline_root=GOLDEN_ROOT,
-                                    client=client, ledger_config=_LEDGER["config"])
+    return make_readiness_predicate(protocols, baseline_root=GOLDEN_ROOT, client=client,
+                                    ledger_config=_LEDGER["config"], ledger=_LEDGER["ledger"])
 CONTRACTS_TEMPLATE = "temp_control_aadl_slang_l2"  # session/manifest shape
 WORKSPACE_BIN = Path.home() / "Claude_workspace" / "bin"
 OPAM_BIN = Path.home() / ".opam" / "5.2" / "bin"
@@ -587,7 +575,7 @@ def measure_flow(cfg: RocqExampleConfig, protocols: dict) -> None:
     judging it; appraisal happens later, under any policy, with
     examples/appraise_from_ledger.py (which labels the first one `deferred`)."""
     from pybb.attestation import make_measurement_predicate
-    predicate = make_measurement_predicate(CvmSubprocessClient(), _with_tooling(protocols),
+    predicate = make_measurement_predicate(CvmSubprocessClient(), protocols,
                                            archive_dir=EVIDENCE_DIR, ledger=_LEDGER["ledger"],
                                            ledger_config=_LEDGER["config"])
     print("measurement only: recording, not judging")
