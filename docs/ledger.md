@@ -70,6 +70,7 @@ The one check pybb owns is refusing a nonce the ledger already holds.
 | `tooling.protocol_id` | `attestation_tools` | the tooling protocol; `None` disables tooling tracking |
 | `tooling.measure` | `at_provisioning` | `every_episode` / `every_run` re-measure the tools as ordinary ledger runs |
 | `fail_open` | `False` | with `True`, a ledger outage leaves the verdict unledgered instead of failing it |
+| `default_shape`, `shapes` | `split` (`PYBB_BUNDLE_SHAPE`), `{}` | the bundle shape per protocol: `split` (two CVM runs; the appraisal can also happen later, by anyone with the package) or `combined` (one run yielding the same two artifacts; the live appraisal judges the measurements only) — plan section M |
 | `appraiser_id` | generated once under `state_dir` | opaque id of this installation; never a hostname |
 
 The Rocq scenario runs under the ledger with `python

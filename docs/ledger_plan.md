@@ -1615,7 +1615,7 @@ recreated rather than migrated; the schema tag stays `pybb-ledger/v2`.
 
 ## M. Configurable bundle shapes (planning, 2026-11-19)
 
-**STATUS: plan only; shapes and setting decided, context blob open.** The
+**STATUS: implemented 2026-11-20** (`split` and `combined`; `LedgerConfig.default_shape` / `shapes`, `PYBB_BUNDLE_SHAPE`, Rocq `--bundle-shape`; `shape` on bundles, `blob.derived_from` on lifted measurements; context blob still open). The
 ledger does not prescribe one way to build a bundle. A protocol chooses a
 **shape**: a Copland term construction that answers, for every package it
 produces, the four questions the ledger needs — where the nonce is, what
@@ -1666,40 +1666,82 @@ Run 2 may happen at any later time instead, under any session, from the
 recorded P (`appraise_bundle`). P is a signed measurement artifact that
 stands on its own and can be handed to a third party.
 
-### M.2 Shape `inline` (one run, one nonce, one SIG)
+### M.2 Shape `combined` (one run; signed measurement and signed appraisal in one package; 2026-11-20)
+
+Supersedes the earlier "term 2" (`inline`, one nonce, one SIG, verdicts
+over sig and nonce too), which was spiked successfully and then set aside:
+it gave up the standalone signed measurement and judged the measurer's own
+signature and nonce in the same breath. The combined shape keeps the split
+flow's two artifacts and produces them in one CVM run.
 
 ```
-lseq (bseq left_path (asp generate_nonce) M)                            → P' (unsigned)
-     (lseq (bseq both_paths (asp hashevidence) APPR) SIG)
+lseq M
+     (lseq (bseq both_paths (lseq (lseq (asp generate_nonce) SIG) (asp hashevidence))   ← P, then H over P
+                            APPR)                                                      ← verdicts over M only
+           (lseq (asp generate_nonce) SIG))                                            ← nonce2, outer SIG
 ```
 
-`hashevidence` typed **EXTEND** with `EvInSig: ALL` (it must receive the
-bits to hash them): the hash lane comes out as `H` followed by all of P'
-exactly once; the APPR lane keeps REPLACE companions and adds verdicts
-only. Bits for the two-measurement `M`:
+`M` runs first; its evidence goes to both lanes. The signing lane draws the
+measurement nonce, signs (that is P), then `hashevidence` — typed
+**EXTEND**, `EvInSig: ALL` — prepends `H = sha256(P's RawEv)` and keeps P
+behind it. The appraisal lane receives `M`'s evidence only, so no
+companion for `sig` or `generate_nonce` runs: the live appraisal judges
+what was measured and nothing else (every `asp_evt` in APPR's input must
+have a companion, so sig/nonce can only be left unjudged by keeping them
+out of the input — a term shape, not a setting). Then the appraiser nonce
+and the outer SIG.
+
+Bits (two-measurement `M`; l1a has four leaves → 13 slots):
 
 ```
-[ sig, H, nonce, h_a, h_b, v_nonce, v_a, v_b ]        8 slots
-       └── P' ──────────┘  └── verdicts ──┘
+[ sig2, nonce2, H, sig, nonce, h_a, h_b, v_a, v_b ]        9 slots
+                   └──── P, byte for byte ────┘  └─────┘ verdicts over M
 ```
 
-Type: `asp_evt SIG · split_evt(asp_evt hashevidence · et_P', APPR-tree)`,
-where the APPR-tree is the same tree as in `split` minus `sig_appr`
-(there is no inner signature to judge). No second nonce: one signed
-object, one identity (`bid = sha256(nonce)`), one bundle.
+Type: `asp_evt SIG · asp_evt generate_nonce · split_evt(asp_evt hashevidence · asp_evt SIG · asp_evt generate_nonce · et_M, APPR-tree(et_M))`.
 
-Ledger: one appraisal bundle, `verdict.scope: inline`, no `inputs`,
-`binding_hash = H` over its own retained P' span. `H` is what any later
-appraiser's `hashevidence` computes over the extracted P' bits, so later
-appraisals bind to the same value.
+Why `H` is over P including the inner signature (decision M.6.4): the
+binding names the *artifact* the ledger records and re-appraises; hashing
+only the content would not distinguish signers (ECDSA signatures are
+randomized), would break `binding_hash == P.rawev_sha256` (a later
+appraiser's `hashevidence` over the lifted P covers the signature, Copland
+cannot slice evidence), and would make the B.6 audit need a second recorded
+hash. Placing `hashevidence` before `SIG` would put `H` under the signature
+that already binds those bytes — redundant.
 
-Why no inner `SIG`: a signed P plus an outer SIG duplicates signatures and
-signature appraisals in one package (the "term 1" variant, 11 slots with a
-second nonce); the user chose the single-signature form. What is given up:
-P' is covered only by the outer SIG, so no excerpt of the package is a
-signed measurement on its own. Clients that need that use `split`.
+Note the measurement nonce is drawn after `M` here (it wraps `et_M` in the
+type) rather than beside it in a `left_path` split as in `measure`. The
+freshness claim is `post-hoc` either way; `describe_package` and
+`appraise_bundle` are type-driven and read both. Uniformity option: let
+`measure` adopt `lseq M (lseq (asp generate_nonce) SIG)` too.
 
-### M.3 What other clients can do with an inline package
+Ledger: the split flow's two bundles and pointer, from one run — P
+(`bid = sha256(nonce)`, `rawev_sha256 = H`, blob = the span beneath the
+`hashevidence` node lifted out as `[RawEv_P, et_P]`, with an optional
+`blob.derived_from: <A' bid>` saying pybb assembled it from A'), A'
+(`bid = sha256(nonce2)`, `inputs=[P]`, `binding_hash = H` read from the
+slot, `appraisal_kind: live`), `judged_by/P/A'`. Nothing about the binding
+is computed outside the CVM. Readers cannot tell combined from split except
+by `derived_from`.
+
+Later appraisals: `appraise_bundle(P)` on the lifted P runs the ordinary
+`appraise` term and binds to the same `H`; `appraise_bundle(A')` (B.6)
+judges `sig2`/`nonce2`, passes the verdict nodes through, and at the EXTEND
+`hashevidence` node runs `goldenbytes_appr` against P's `rawev_sha256` then
+re-appraises P beneath it, signature and nonce included.
+
+Reader changes: lift P from the span beneath `hashevidence`; start the APPR
+lane after the whole left lane (`1 + size(et_P)` past `H`) —
+`appraisal_branch` today assumes a REPLACE `hashevidence`.
+
+Session typing caveat: a session has one FWD per ASP id. Typing
+`hashevidence` EXTEND for combined runs also makes the `appraise` term's
+`hashevidence` retain its input in any run under that session (an audit of
+A' would carry all of A' again). Either accept the duplication for audits,
+or give the retaining variant its own ASP id (same binary under a second
+name, e.g. `hashevidence_keep`) so the two typings coexist. Decide in M.6.
+
+### M.3 What other clients can do with a one-run package
 
 With the session's `ASP_Types`/`ASP_Comps` and the signer's key: lay the
 package out, lift `[RawEv_P', et_P']` out as evidence, verify `H`, and
@@ -1711,6 +1753,38 @@ their companions re-judge the measurements directly while pass-through
 companions (`magic_appr`) carry the existing verdict nodes and `sig_appr`
 judges the outer signature — the B.6 machinery without extraction. Both
 yield an appraisal bundle with `inputs=[inline bid]` and a pointer.
+
+### M.3a The collection: three constructors, two shapes (2026-11-20)
+
+A shape is a named, code-defined recipe: a term constructor from the
+protocol's `M` and session to one or more CVM requests, plus a reader that
+turns the package(s) into bundles. Shapes are not user-written Copland — a
+free-form term can break the contract below and leave pybb unable to read
+what it recorded. The configuration surface is a shape *name*; the shapes
+live in a small registry in `ledger_runs`.
+
+Contract every package of every shape must meet: (1) exactly one
+`generate_nonce` event with the expected target id, one slot (a `bid` is
+derivable); (2) a signature whose coverage is known; (3) full slot
+accounting under the session; (4) if it carries verdicts, an extractable
+APPR branch the verified summarizer accepts and a stated `binding_hash`.
+The reader asserts the contract on the actual package before recording.
+
+| constructor | term | used by |
+|---|---|---|
+| `measure` | `lseq (bseq left_path (asp generate_nonce) M) SIG` | split run 1; provisioning (APPR stripped); tooling blessing |
+| `appraise` | `lseq (bseq both_paths (asp hashevidence) APPR) (lseq (asp generate_nonce) SIG)` over a stored package | split run 2, live or later, under any session (`appraise_bundle`) |
+| `combined` | `lseq M (lseq (bseq both_paths (lseq (lseq (asp generate_nonce) SIG) (asp hashevidence)) APPR) (lseq (asp generate_nonce) SIG))`, `hashevidence` EXTEND | one-run live appraisal yielding the same two artifacts as split |
+
+`split` = `measure` then `appraise`; `combined` yields both artifacts in one run. Policy axes:
+appraisal timing (split: now, later or both, by anyone with the package;
+inline: now); a signed measurement artifact that can be handed on (split
+only); identities (two nonces/signatures/bundles vs one); re-appraisal
+(from P, or from the retained P' bytes); size (4 + 7 slots across two
+packages vs 8 in one, two-measurement `M`). A fourth shape appears only
+with a new policy axis; the one in sight is G's remote attester (who draws
+the nonce, who signs). Whether the shape is also an explicit bundle field
+(`shape: inline`) is open; leaning yes — it is what a reader wants first.
 
 ### M.4 Configuration and code
 
@@ -1734,24 +1808,99 @@ yield an appraisal bundle with `inputs=[inline bid]` and a pointer.
 - The Rocq driver gets the setting per protocol; the demonstration is one
   protocol run `inline` into `pybb2` beside the `split` ones.
 
-### M.5 Gate: the term-2 spike
+### M.5 Gate: the spike (combined-term criteria fixed 2026-11-20)
 
-One real-CVM run of the `inline` term on the l1a fixture: `hashevidence`
-retyped EXTEND/`EvInSig: ALL` runs; the retained P' span lays out and
-`sha256(P' bits) == H`; the APPR branch extracts and type-checks in the
-verified summarizer; `describe_package` finds exactly one nonce. Nothing
-in M is implemented before this passes.
+One real-CVM run of the `combined` term on the l1a fixture (`M` = four
+`hashfile` leaves). Pass criteria:
+
+1. The CVM accepts `hashevidence` retyped `{EXTEND, 1, EvInSig: ALL}` and
+   the run succeeds.
+2. RawEv has 13 slots — `sig2, nonce2, H, sig, nonce, h1..h4, v1..v4` —
+   and `slot_layout` accounts for all of them.
+3. `H` equals sha256 of the six retained P slots and
+   `describe_package(P).rawev_sha256` for the lifted `[RawEv_P, et_P]`;
+   the lifted P is `signed+nonce` with `bid = sha256(nonce)`.
+4. `describe_package` of the whole package with the appraiser target id
+   finds exactly one nonce (`nonce2`), `signed+nonce`, a `bid` distinct
+   from P's.
+5. The APPR lane (after the whole left lane) type-checks in the verified
+   summarizer: four `goldenbytes_appr`, all passing, no `sig_appr`, no
+   `nonce_appr`.
+6. Extract-and-appraise: the lifted P fed to the `appraise` term yields a
+   binding equal to `H`.
+7. Audit (B.6 path) of the whole package with `H` injected as the golden
+   for the `hashevidence` node: `goldenbytes_appr` reports the binding ok,
+   and P beneath it is re-judged (`sig_appr`, `nonce_appr`, goldens). This
+   is the check the term-2 spike did not cover: the companion of an EXTEND
+   `hashevidence` receives the hash *and* the retained P as input.
+
+Not decided by the spike: the configuration surface, the `shape` field,
+the context blob, the `hashevidence` typing caveat (M.4, M.6).
+
+**Spike result, combined term (2026-11-20, real CVM, l1a): all seven
+criteria pass.** 13 slots `[sig2, nonce2, H, sig, nonce, h1..h4, v1..v4]`,
+all accounted; the lifted P (6 slots) is `signed+nonce`, its
+`rawev_sha256` equals `H`; the whole package has one appraiser nonce and a
+`bid` distinct from P's; the summarizer accepts the APPR lane: four
+`goldenbytes_appr`, all passing, no `sig_appr`/`nonce_appr`; the lifted P
+fed to `appraise` binds to the same `H` (its six components pass,
+`sig_appr` and `nonce_appr` now among them, as a later appraiser wants);
+the B.6 audit of the whole package reports the binding ok — so
+`goldenbytes_appr` judges the leading slot of an EXTEND `hashevidence`
+node — and re-judges P beneath it (2 × `sig_appr`, 2 × `nonce_appr`, 4
+goldens, 4 `magic_appr` pass-throughs, 13 components, all passing). The
+audit package is 29 slots: the audit run's own `hashevidence`, EXTEND under
+the same session, retained all 13 slots of A' — the session typing caveat
+of M.2 observed, not a defect. Fixtures:
+`tests/fixtures/ledger/l1a_combined.response.json`,
+`l1a_combined_audit.response.json`, `l1a_combined.term.json`.
+
+**Earlier spike, term 2 (`inline`), kept for the record.**
+**Spike result (2026-11-20, real CVM, l1a): all six criteria pass.**
+12 slots `[sig, H, nonce, h1..h4, v_nonce, v1..v4]`; layout accounts for
+all; `H` equals the sha256 of the five retained P' bytes and
+`describe_package(P').rawev_sha256`; the whole package has one nonce,
+`signed+nonce`, and the same `bid` as the lifted P' (which alone labels
+`nonce`, as expected — its only signature is the outer one); the verified
+summarizer accepts the APPR lane and returns `nonce_appr` + 4 ×
+`goldenbytes_appr`, all passing, no `sig_appr`; feeding the lifted P' to
+the `appraise` term yields a binding equal to `H`, and its five components
+pass. One reader change surfaced: `appraisal_branch` computes the APPR
+lane's offset as `hashevidence.start + count` (1 slot), which is right for
+REPLACE but under EXTEND must skip the retained P' as well
+(`start + 1 + size(et_P')`); the `inline` reader needs that generalisation
+(size of the subtree beneath `hashevidence` from the layout). Nothing else
+in `describe_package`, `slot_layout`, `interpret_appraisal` or the
+summarizer needed changing. Response saved for a fixture
+(`tests/fixtures/ledger/l1a_inline.response.json` when M is implemented).
 
 ### M.6 Decisions
 
 1. *Resolved 2026-11-19:* **shapes are configurable per protocol**, not
    prescribed; the ledger needs only the four answers in the preamble.
-2. *Resolved 2026-11-19:* **two shapes now**: `split` (default; appraisal
-   now or later; signed measurement artifact) and `inline` (term 2; one
-   nonce, one SIG, EXTEND `hashevidence` carrying P'). Rejected: EXTEND
-   companions (duplication, M.0), inline with inner SIG (duplicate
-   signatures), `NULL` branches (erase).
-3. *Open — needs fleshing out:* **the context blob.** Sketch: optional
+2. *Resolved 2026-11-19, revised 2026-11-20:* **two shapes now**: `split`
+   (default; appraisal now or later; signed measurement artifact) and
+   `combined` (M.2: one run, both artifacts, verdicts over `M` only).
+   Rejected: EXTEND companions (duplication, M.0); `NULL` branches (erase);
+   `inline`/term 2 (spiked fine, but no standalone signed measurement and
+   it judged the measurer's own sig/nonce inline); hashing only the
+   measurement bits (M.6.4).
+4. *Resolved 2026-11-20:* **`H` is over P including the inner signature**
+   (rationale in M.2).
+3. *Resolved 2026-11-20:* **the `hashevidence` typing caveat — accept the
+   duplication on audits.** A session has one FWD per ASP id, so an audit
+   (`appraise` term) over a combined package runs under the EXTEND typing
+   and retains its input (29 slots for l1a). Chosen over a second ASP id
+   (`hashevidence_keep`, a renamed binary in asp-libs) for now; readers pick
+   the typing from the bundle's `shape` (`needs_keep`: combined packages,
+   and appraisals whose input needed it). Because a retained input carries
+   its own nonce and signature events, `slot_layout` marks spans beneath a
+   `hashevidence` node as `input` and `describe_package` never takes this
+   package's nonce or signature from them.
+5. *Resolved 2026-11-20:* **`shape` is an explicit bundle field** (`split`,
+   `combined`, `appraise`, `measure`; absent on legacy/foreign bundles) and
+   a lifted measurement's blob carries `derived_from: <appraisal bid>`.
+6. *Open — needs fleshing out:* **the context blob.** Sketch: optional
    `context: BlobRef` on a bundle pointing at an archived copy of the
    session (or the `[payload, ctx]` pair provision bundles already store),
    content-addressed and stated at commit like the package blob;

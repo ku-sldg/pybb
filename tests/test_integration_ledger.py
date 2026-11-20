@@ -259,3 +259,33 @@ def test_nonced_provisioning_bundle_verifies_and_keys_by_nonce(tmp_path, config)
     keys2 = record_provision_bundles(ledger, golden, {proto.protocol_id: proto}, cfg)
     assert len(keys2) == 1 and keys2[0] != keys[0]
     assert verify_bundle(client, proto, golden, ledger=ledger)
+
+
+def test_combined_shape_against_the_real_cvm(tmp_path, config):
+    """Plan M.2: one run yields the signed measurement P (lifted) and the live
+    appraisal; P re-appraises under the ordinary term and binds to the same
+    H; the B.6 audit of the whole package verifies the binding."""
+    from pybb.attestation.ledger_runs import appraise_bundle, archiver, needs_keep
+
+    proto = ProtocolDir.load(str(L1A))
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    client = CvmSubprocessClient()
+    archive = archiver(tmp_path / "evidence")
+    r = attest(client, proto, ledger, config, archive=archive, shape="combined")
+    assert r.error == "", r.error
+    assert r.passed and [c.appr_asp for c in r.components] == ["goldenbytes_appr"] * 4
+    m, a = ledger.get(r.bid), ledger.get(r.appraisal_bid)
+    assert m.shape == "combined" and m.blob.derived_from == a.bid
+    assert a.inputs[0].binding_hash == m.rawev_sha256 and m.assurance == a.assurance == "signed+nonce"
+
+    later = appraise_bundle(client, proto, ledger, config, m.bid, archive=archive)
+    assert later.error == "", later.error
+    assert later and later.agrees_with_live is True
+    assert ledger.get(later.appraisal_bid).inputs[0].binding_hash == m.rawev_sha256
+    assert {c.appr_asp for c in later.components} == {"sig_appr", "nonce_appr", "goldenbytes_appr"}
+
+    audit = appraise_bundle(client, proto, ledger, config, a.bid, archive=archive)
+    assert audit.error == "", audit.error
+    assert audit and audit.binding_ok is True and audit.signature_ok is True and audit.nonce_wellformed is True
+    assert len(audit.components) == 13 and needs_keep(ledger, ledger.get(audit.appraisal_bid))
+    assert [x.appraisal_kind for x in ledger.appraisals_of(m.bid)] == ["live", "audit"]

@@ -355,3 +355,102 @@ def test_ledger_request_routes_the_predicate_to_an_audit(proto, config, tmp_path
     plain = make_attestation_predicate(CannedClient(), {proto.protocol_id: proto})
     v = plain(ledger_request(live.bid))
     assert not v and "no ledger is configured" in v.error
+
+
+# ── shape `combined` (plan M.2), on the spiked l1a packages ──────────────────
+
+COMBINED = json.loads((FIXTURES / "ledger/l1a_combined.response.json").read_text())
+COMBINED_AUDIT = json.loads((FIXTURES / "ledger/l1a_combined_audit.response.json").read_text())
+COMBINED_TERM = json.loads((FIXTURES / "ledger/l1a_combined.term.json").read_text())
+
+
+def test_combined_term_and_session_match_the_spike(proto):
+    from pybb.attestation.ledger_runs import combined_session, combined_term
+
+    assert combined_term(proto) == COMBINED_TERM
+    types = combined_session(proto.session)["Session_Context"]["ASP_Types"]
+    assert types["hashevidence"]["FWD"] == {"FWD": "EXTEND", "_BODY": 1, "EvInSig": "ALL"}
+    assert types["goldenbytes_appr"]["FWD"]["FWD"] == "REPLACE"  # companions unchanged
+    assert "hashevidence" in types and types["sig"]["FWD"]["FWD"] == "EXTEND"
+
+
+def test_hash_lane_offsets_for_replace_and_extend(proto):
+    from pybb.attestation.ledger_runs import combined_session, hash_lane, lift_measurement
+
+    split_sess = ledger_protocol(proto).session
+    _l, right, off = hash_lane(APPR["PAYLOAD"], split_sess)
+    assert off == 3  # sig, nonce, H under a REPLACE hashevidence
+    comb_sess = combined_session(proto.session)
+    _l, right, off = hash_lane(COMBINED["PAYLOAD"], comb_sess)
+    assert off == 9  # sig2, nonce2, H, then the six retained slots of P
+    p = lift_measurement(COMBINED["PAYLOAD"], comb_sess)
+    assert len(p[0]["RawEv"]) == 6
+    dp = describe_package(p, comb_sess)
+    assert dp.assurance == "signed+nonce" and dp.bid
+    H = base64.b64decode(COMBINED["PAYLOAD"][0]["RawEv"][2]).hex()
+    assert dp.rawev_sha256 == H
+    # the whole package: one appraiser nonce, a different bundle id
+    da = describe_package(COMBINED["PAYLOAD"], comb_sess, nonce_targid=APPRAISER_NONCE_TARGID)
+    assert da.assurance == "signed+nonce" and da.bid != dp.bid and da.rawev_count == 13
+
+
+def test_attest_combined_yields_the_split_artifacts_from_one_run(proto, config, tmp_path):
+    from pybb.attestation.ledger import InputRef
+    from pybb.attestation.ledger_runs import fetch_bundle, lift_measurement, combined_session
+
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    client = CannedClient(appr=COMBINED)  # the combined term contains APPR: served the combined package
+    r = attest(client, proto, ledger, config, archive=_archiver(tmp_path), shape="combined")
+    assert r.error == "", r.error
+    assert r.shape == "combined" and r.passed and len(client.requests) == 1
+    assert [c.appr_asp for c in r.components] == ["goldenbytes_appr"] * 4  # M only: no sig/nonce verdicts
+    m, a = ledger.get(r.bid), ledger.get(r.appraisal_bid)
+    assert m.shape == a.shape == "combined" and m.role == "measurement" and a.role == "appraisal"
+    assert m.blob.derived_from == a.bid and a.blob.derived_from is None
+    assert a.inputs == [InputRef(bid=m.bid, binding_hash=m.rawev_sha256)]
+    assert a.verdict.passed and a.verdict.components_total == 4 and a.appraisal_kind == "live"
+    assert ledger.appraisals_of(m.bid) == [a] and len(ledger) == 1
+    # the lifted P is archived as a response of its own and fetches back byte for byte
+    fetched = fetch_bundle(ledger, m.bid)
+    assert fetched.payload == lift_measurement(COMBINED["PAYLOAD"], combined_session(proto.session))
+    assert m.signature.asp == "sig" and m.nonce.asp == "generate_nonce" and m.assurance == "signed+nonce"
+    # the whole package is the appraisal bundle's blob
+    assert fetch_bundle(ledger, a.bid).payload == COMBINED["PAYLOAD"]
+
+
+def test_shape_comes_from_config(proto, config, tmp_path, monkeypatch):
+    from pybb.attestation.ledger import LedgerConfig
+
+    assert config.shape_for(proto.protocol_id) == "split"
+    cfg = config.model_copy(update={"shapes": {proto.protocol_id: "combined"}})
+    assert cfg.shape_for(proto.protocol_id) == "combined" and cfg.shape_for("other") == "split"
+    monkeypatch.setenv("PYBB_BUNDLE_SHAPE", "combined")
+    assert LedgerConfig(evidence_repo="").default_shape == "combined"
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    r = attest(CannedClient(appr=COMBINED), proto, ledger, cfg)
+    assert r.error == "" and r.shape == "combined"
+    bad = attest(CannedClient(), proto, ledger, config, shape="sideways")
+    assert not bad.passed and "unknown bundle shape" in bad.error and len(ledger) == 1
+
+
+def test_appraising_a_combined_appraisal_bundle_keeps_the_extend_typing(proto, config, tmp_path):
+    from pybb.attestation.ledger_runs import appraise_bundle, needs_keep
+
+    ledger = FileLedger(tmp_path / "ledger.jsonl")
+    archive = _archiver(tmp_path)
+    live = attest(CannedClient(appr=COMBINED), proto, ledger, config, archive=archive, shape="combined")
+    assert live.error == ""
+    a = ledger.get(live.appraisal_bid)
+    assert needs_keep(ledger, a) and not needs_keep(ledger, ledger.get(live.bid))
+    rep = appraise_bundle(CannedClient(appr=COMBINED_AUDIT), proto, ledger, config, live.appraisal_bid,
+                          archive=archive)
+    assert rep.error == "", rep.error
+    assert rep and rep.input_role == "appraisal" and rep.binding_ok is True
+    assert rep.signature_ok is True and rep.nonce_wellformed is True
+    kinds = {}
+    for c in rep.components:
+        kinds[c.appr_asp] = kinds.get(c.appr_asp, 0) + 1
+    assert kinds == {"sig_appr": 2, "nonce_appr": 2, "goldenbytes_appr": 5, "magic_appr": 4}
+    audit = ledger.get(rep.appraisal_bid)
+    assert audit.shape == "appraise" and audit.inputs[0].bid == a.bid and needs_keep(ledger, audit)
+    assert ledger.appraisals_of(a.bid) == [audit]

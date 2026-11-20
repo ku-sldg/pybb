@@ -106,12 +106,14 @@ EVIDENCE_DIR = REPO / "evidence"  # per-episode archived responses (gzipped)
 _LEDGER: dict = {"ledger": None, "config": None}
 
 
-def configure_ledger(spec: str | None) -> None:
-    """`immudb` (connection from the environment / ~/.pybb) or a FileLedger path."""
+def configure_ledger(spec: str | None, shape: str | None = None) -> None:
+    """`immudb` (connection from the environment / ~/.pybb) or a FileLedger
+    path; `shape` is the bundle shape for every protocol (docs/ledger.md:
+    `split`, the default, or `combined`)."""
     if not spec:
         return
     from pybb.attestation.ledger import LedgerConfig
-    cfg = LedgerConfig(golden_root=str(GOLDEN_ROOT))
+    cfg = LedgerConfig(golden_root=str(GOLDEN_ROOT), **({"default_shape": shape} if shape else {}))
     if spec == "immudb":
         from pybb.attestation import ImmudbLedger
         ledger = ImmudbLedger(cfg)
@@ -121,7 +123,7 @@ def configure_ledger(spec: str | None) -> None:
         ledger = FileLedger(spec)
         where = f"file {spec}"
     _LEDGER.update(ledger=ledger, config=cfg)
-    print(f"ledger: {where} (appraiser {cfg.appraiser_id or 'from ~/.pybb'})")
+    print(f"ledger: {where} (appraiser {cfg.appraiser_id or 'from ~/.pybb'}, shape {cfg.default_shape})")
 
 
 def _with_tooling(protocols: dict) -> dict:
@@ -1223,6 +1225,9 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                         help="record every run in the attestation ledger "
                              "(docs/ledger.md): 'immudb' uses the connection "
                              "from the environment / ~/.pybb, a PATH a FileLedger")
+    parser.add_argument("--bundle-shape", choices=("split", "combined"), default=None,
+                        help="ledger bundle shape for every protocol (default: split, or "
+                             "PYBB_BUNDLE_SHAPE); combined does measurement and appraisal in one CVM run")
     parser.add_argument("--synthesize", action="store_true")
     parser.add_argument("--keep", action="store_true")
     parser.add_argument("--llm", choices=("anthropic", "openai"),
@@ -1272,7 +1277,7 @@ def run_cli(cfg: RocqExampleConfig, description: str) -> None:
                              "(complete file contents), instead of the "
                              "impl-then-proofs rung chain; requires --llm")
     cli = parser.parse_args()
-    configure_ledger(cli.ledger)
+    configure_ledger(cli.ledger, cli.bundle_shape)
 
     if sum((cli.tamper, cli.tamper_admitted, cli.tamper_axiom,
             cli.tamper_audit, cli.tamper_audit_subst)) > 1:

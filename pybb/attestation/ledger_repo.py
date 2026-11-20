@@ -636,7 +636,8 @@ def provision_bundle_record(bundle_path: str | Path, protocol: Any, config: Ledg
     targets = sum(len(t) for a, t in protocol.asp_args.items() if a in comps)
     blob = blob_ref(str(p), data, encoding="json", remote_stores=remote_stores(config))
     return build_bundle_record("provision", lp, payload, desc, blob, config,
-                               provision=ProvisionInfo(golden_ts=golden_ts, targets=targets))
+                               provision=ProvisionInfo(golden_ts=golden_ts, targets=targets),
+                               shape="measure" if desc.nonce else None)
 
 
 def record_provision_bundles(ledger: Ledger, golden_root: str | Path, protocols: Dict[str, Any],

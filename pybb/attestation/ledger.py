@@ -140,6 +140,9 @@ class BlobRef(BaseModel):
     blob_bytes: int
     encoding: str = "gzip+json"
     locations: List[Location] = []
+    # set when pybb assembled these bytes from a span of another bundle's
+    # package (the lifted P of a `combined` run, plan M.2): that bundle's id
+    derived_from: Optional[str] = None
 
 
 class InputRef(BaseModel):
@@ -214,6 +217,9 @@ class BundleRecord(LedgerRecord):
     exception_reason: Optional[str] = None
     tooling: Optional[ToolingRef] = None
     error: str = ""  # measurement whose appraisal never happened: why
+    # the term shape that produced this package (plan M.3a): `split`,
+    # `combined`, `measure` (provisioning); None on foreign or legacy bundles
+    shape: Optional[str] = None
     # role-gated members (serialized only when set)
     inputs: Optional[List[InputRef]] = None
     verdict: Optional[Verdict] = None
@@ -336,7 +342,11 @@ class SlotSpan(BaseModel):
 
     `companion` marks an appraiser event (a value of the session's
     ASP_Comps); `retained` marks the appraised evidence bytes an EXTEND
-    companion keeps beneath its verdict (attributed to the measured ASP)."""
+    companion keeps beneath its verdict (attributed to the measured ASP);
+    `input` marks events beneath a `hashevidence` node — the package that
+    ASP hashed, kept behind the hash when it is typed EXTEND (plan M.2).
+    Input events belong to another package: `describe_package` never takes
+    this package's nonce or signature from them."""
 
     asp: str
     plc: str = ""
@@ -345,6 +355,7 @@ class SlotSpan(BaseModel):
     count: int
     companion: bool = False
     retained: bool = False
+    input: bool = False
 
     @property
     def asp_targid(self) -> Optional[str]:
@@ -403,6 +414,7 @@ def slot_layout(et: Any, session: dict) -> List[SlotSpan]:
     companions = set((ctx.get("ASP_Comps") or {}).values())
     spans: List[SlotSpan] = []
     cursor = [0]
+    depth_input = [0]  # > 0 while walking beneath a hashevidence node
 
     def measured_size(node: Any) -> int:
         """Bytes of a raw-package subtree (measurement semantics)."""
@@ -442,7 +454,8 @@ def slot_layout(et: Any, session: dict) -> List[SlotSpan]:
             is_companion = asp_id in companions
             spans.append(SlotSpan(asp=asp_id, plc=str(plc),
                                   args=dict(params.get("ASP_ARGS") or {}),
-                                  start=cursor[0], count=size, companion=is_companion))
+                                  start=cursor[0], count=size, companion=is_companion,
+                                  input=depth_input[0] > 0))
             cursor[0] += size
             if is_companion:
                 if kind == "EXTEND":
@@ -458,7 +471,12 @@ def slot_layout(et: Any, session: dict) -> List[SlotSpan]:
                     cursor[0] += kept
                 return  # the type beneath a companion is attribution only
             if kind == "EXTEND":
-                walk(sub)
+                if asp_id == "hashevidence":
+                    depth_input[0] += 1
+                    walk(sub)
+                    depth_input[0] -= 1
+                else:
+                    walk(sub)
             return  # REPLACE measurement: the sub-evidence bytes are gone
         if ctor == "split_evt":
             walk(body[0])
@@ -518,7 +536,7 @@ def describe_package(payload: list, session: dict,
         raise EvidenceLayoutError(
             f"evidence type accounts for {accounted} slots, RawEv has {len(raw)}")
 
-    nonces = [sp for sp in spans if sp.asp == NONCE_ASP
+    nonces = [sp for sp in spans if sp.asp == NONCE_ASP and not sp.input
               and (nonce_targid is None or sp.asp_targid == nonce_targid)]
     nonce_ref: Optional[SlotRef] = None
     bid: Optional[str] = None
@@ -533,7 +551,7 @@ def describe_package(payload: list, session: dict,
         bid = sha256_hex(raw[sp.start])
         nonce_b64 = payload[0]["RawEv"][sp.start]
 
-    sigs = [sp for sp in spans if sp.asp in SIG_ASPS]
+    sigs = [sp for sp in spans if sp.asp in SIG_ASPS and not sp.input]
     signature_ref: Optional[SlotRef] = None
     if sigs:
         sp = sigs[0]
@@ -617,6 +635,13 @@ class LedgerConfig(BaseModel):
     assurance_exceptions: Dict[str, str] = {}  # protocol_id -> reason
     tooling: ToolingConfig = ToolingConfig()
     appraiser_id: Optional[str] = None  # None: load or create under state_dir
+    # bundle shapes (plan M): `split` (two runs; appraisal now or later) or
+    # `combined` (one run; same two artifacts); per protocol, else the default
+    default_shape: str = Field(default_factory=lambda: os.environ.get("PYBB_BUNDLE_SHAPE", "split"))
+    shapes: Dict[str, str] = {}  # protocol_id -> shape
+
+    def shape_for(self, protocol_id: str) -> str:
+        return self.shapes.get(protocol_id, self.default_shape)
 
 
 def load_appraiser_id(state_dir: str) -> str:

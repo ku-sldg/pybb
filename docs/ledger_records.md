@@ -58,6 +58,7 @@ hashed and laid out. What the bundle is evidence *of* is its `role` and its
 | `exception_reason` | string or absent | set only when the run committed below the configured minimum assurance through an explicit exception |
 | `tooling` | ToolingRef or absent | the Copland evidence identifying the binaries in force (the tooling blessing) |
 | `error` | string | non-empty on a measurement whose live appraisal never happened: why |
+| `shape` | string or absent | the term shape that produced the package (plan M): `split`, `combined`, `appraise` (a later appraisal), `measure` (provisioning); absent on legacy or foreign bundles. Readers use it to pick the session typing a package lays out under |
 | `inputs` | list of InputRef, appraisal only (and a challenged measurement) | the bundles this run took as initial evidence: an appraisal names the one bundle it judged; a challenged measurement names its challenge |
 | `verdict` | Verdict, appraisal only | the reading of this appraisal package |
 | `appraisal_kind` | string, appraisal only | caller-chosen label: `live` (the appraisal run right after the measurement), `audit`, or a policy name such as `slices-only` |
@@ -136,6 +137,7 @@ One per restore of a ledger from the evidence repo.
 | `blob_bytes` | int | size |
 | `encoding` | string | `gzip+json` (packages, component lists) or `json` (provision bundles) |
 | `locations` | list of Location | every place the bytes are or will be |
+| `derived_from` | hex or absent | set when pybb assembled the bytes from a span of another bundle's package — the signed measurement lifted out of a `combined` run names that run's appraisal bundle |
 
 **Location**
 
