@@ -6,8 +6,8 @@ protocol's exact inputs (`config`), and the operator's blessing of a stack.
     python examples/ledger_context.py measure stack [--bless] [--note "..."]
     python examples/ledger_context.py measure config <protocol_id>... | --all
     python examples/ledger_context.py bless <stack bid> [--note "..."]
-    python examples/ledger_context.py audit <bid> [--against <blessing key>] [--kind LABEL]
-    python examples/ledger_context.py show [<bid> | --latest <protocol_id>]
+    python examples/ledger_context.py audit <bid> [--against <blessing key>]
+    python examples/ledger_context.py show [<bid> | --latest <protocol_id>]   (derivation, claim, claim check)
     python examples/ledger_context.py list
 
 `measure` runs the CVM once over the live files and COMMITS UNCONDITIONALLY:
@@ -30,7 +30,7 @@ from pathlib import Path
 
 from pybb.attestation import CvmSubprocessClient, FileLedger, ProtocolDir
 from pybb.attestation.ledger import LedgerConfig
-from pybb.attestation.ledger_context import bless, blessings, derive_context, measure_config, measure_stack
+from pybb.attestation.ledger_context import bless, blessings, derive_context, measure_config, measure_stack, verify_claim
 from pybb.attestation.ledger_runs import appraise_bundle, archiver
 
 REPO = Path(__file__).parent.parent
@@ -62,7 +62,7 @@ def cmd_measure(args, ledger, config) -> int:
         if not m:
             print("ERROR:", m.error)
             return 1
-        print(f"stack bundle {m.ledger_ref}  targets={m.targets}  archived {m.evidence_ref}")
+        print(f"stack bundle {m.ledger_ref}  targets={m.targets}  fingerprint={m.fingerprint}  archived {m.evidence_ref}")
         if args.bless:
             rec = bless(ledger, config, m.bid, note=args.note or "")
             print(f"blessed: blessing/{rec.stack_bid}  goldens={len(rec.goldens)}")
@@ -80,7 +80,7 @@ def cmd_measure(args, ledger, config) -> int:
             continue
         m = measure_config(client, ProtocolDir.load(str(proto_dir)), ledger, config, archive=archive)
         if m:
-            print(f"config bundle {m.ledger_ref}  protocol={pid}  files={m.targets}")
+            print(f"config bundle {m.ledger_ref}  protocol={pid}  targets={m.targets}  fingerprint={m.fingerprint}")
         else:
             print(f"{pid}: ERROR {m.error}")
             rc = 1
@@ -98,13 +98,15 @@ def cmd_audit(args, ledger, config) -> int:
     if target.role not in ("stack", "config"):
         print(f"{args.bid[:16]}… is a {target.role} bundle; use examples/appraise_from_ledger.py")
         return 2
-    rep = appraise_bundle(CvmSubprocessClient(), None, ledger, config, args.bid, appraisal_kind=args.kind,
-                          archive=archiver(args.archive_dir), baseline=args.against)
+    rep = appraise_bundle(CvmSubprocessClient(), None, ledger, config, args.bid,
+                          archive=archiver(args.archive_dir), against=args.against)
     if rep.error:
         print("ERROR:", rep.error)
         return 1
     print(f"recorded as {rep.ledger_ref}: passed={rep.passed} signature_ok={rep.signature_ok} "
-          f"nonce_wellformed={rep.nonce_wellformed}{' baseline=' + rep.baseline if rep.baseline else ''}")
+          f"nonce_wellformed={rep.nonce_wellformed}")
+    for g in rep.golden_provenance:
+        print(f"  goldens from {g.source}{' ' + g.ref if g.ref else ''}")
     for c in rep.components:
         print(f"  {c.appr_asp:18s} targ={c.targ_id!s:44s} {'pass' if c.passed else 'FAIL ' + c.reason}")
     return 0 if rep else 1
@@ -132,14 +134,25 @@ def cmd_show(args, ledger, config) -> int:
           f"{'  via constructor ' + d.constructor if d.constructor else ''}")
     if d.pins:
         print(f"  pins           : {d.pins}")
+    c = b.claim
+    if c is None or not (c.stack_bid or c.config_bid):
+        print("  claim          : none (the lane measured no claimed context)" if c else "  claim          : none")
+        return 0
+    print(f"  claim          : stack {short(c.stack_bid)} ({c.stack_measured_at}) config {short(c.config_bid)} "
+          f"({c.config_measured_at}) fresh={c.fresh} policy={c.policy}")
+    v = verify_claim(ledger, b)
+    print(f"  claim check    : {'consistent' if v else 'PROBLEMS'}  stack_ok={v.stack_ok} config_ok={v.config_ok} "
+          f"latest={v.stack_is_latest} pins={v.pins_match}{' via ' + v.constructor if v.constructor else ''}")
+    for p in v.problems:
+        print(f"    - {p}")
     return 0
 
 
 def cmd_list(args, ledger, config) -> int:
     for role in ("stack", "config"):
         for b in ledger.bundles(role=role):
-            extra = f"executables={b.stack.executables}" if b.stack else \
-                f"protocol={b.protocol_id} files={len(b.config.files) if b.config else 0}"
+            extra = f"executables={b.stack.executables} fingerprint={b.stack.fingerprint[:12]}…" if b.stack else \
+                f"protocol={b.protocol_id} files={len(b.config.files) if b.config else 0} fingerprint={b.config.fingerprint[:12] if b.config else ''}…"
             bl = ledger.blessing_of(b.key_id) if role == "stack" else None
             print(f"{role:6s} bundle/{b.key_id}  {b.created_at}  by {b.appraiser_id}  {extra}"
                   f"{'  BLESSED ' + bl.created_at if bl else ''}")
@@ -166,7 +179,6 @@ def main() -> int:
     a = sub.add_parser("audit", help="appraise a stack or config bundle inside the CVM")
     a.add_argument("bid")
     a.add_argument("--against", help="blessing key (or stack bid) for a stack audit; default the latest")
-    a.add_argument("--kind", default=None, help="appraisal_kind label (default deferred/audit)")
     s = sub.add_parser("show", help="what a reader derives for a run bundle")
     s.add_argument("bid", nargs="?")
     s.add_argument("--latest", metavar="PROTOCOL_ID")

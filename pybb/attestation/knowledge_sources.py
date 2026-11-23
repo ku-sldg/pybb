@@ -65,11 +65,15 @@ def attestation_request(protocol_id: str) -> dict:
     return {"protocol": protocol_id}
 
 
-def ledger_request(bid: str) -> dict:
-    """Measurement descriptor for an audit entry: re-appraise the run the
-    ledger holds under `bid` (docs/ledger_plan.md, B.5/E/K.4) instead of
-    measuring the live tree. Needs a ledger on the predicate."""
-    return {"ledger_bundle": bid}
+def ledger_request(bid: str, fresh_context: bool = False) -> dict:
+    """A measurement asking the attestation predicate to appraise the
+    ledger-held bundle `bid` again (an audit rung). `fresh_context=True`
+    demands that the stack and this protocol's config be re-measured first
+    (plan P.4, on demand)."""
+    req = {"ledger_bundle": bid}
+    if fresh_context:
+        req["context"] = "fresh"
+    return req
 
 
 class Appraised(BaseModel):
@@ -155,6 +159,7 @@ def make_attestation_predicate(
     if ledger is not None and ledger_config is None:
         ledger_config = LedgerConfig()
     cache: Dict[str, Appraised] = {}
+    refresh_state: dict = {}  # plan P.4: `every_episode` refreshes once per predicate instance
     if archive_dir is None:
         def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
             return ""
@@ -168,10 +173,10 @@ def make_attestation_predicate(
         if key not in cache:
             if measurement.get("ledger_bundle") or measurement.get("ledger_nonce"):
                 cache[key] = _audit_ledger(client, protocols, measurement, _archive,
-                                           ledger, ledger_config)
+                                           ledger, ledger_config, refresh_state)
             elif ledger is not None:
                 cache[key] = _attest_ledger(client, protocols, measurement, _archive,
-                                            ledger, ledger_config)
+                                            ledger, ledger_config, refresh_state)
             else:
                 cache[key] = _attest(client, protocols, measurement, _archive)
         return cache[key]
@@ -204,6 +209,7 @@ def make_measurement_predicate(
     if ledger is not None and ledger_config is None:
         ledger_config = LedgerConfig()
     cache: Dict[str, Measured] = {}
+    refresh_state: dict = {}
     if archive_dir is None:
         def _archive(response: Any, protocol_id: str, kind: str = "response") -> str:
             return ""
@@ -215,7 +221,8 @@ def make_measurement_predicate(
     def predicate(measurement: dict) -> Measured:
         key = json.dumps(measurement, sort_keys=True)
         if key not in cache:
-            cache[key] = _measure_ledger(client, protocols, measurement, _archive, ledger, ledger_config)
+            cache[key] = _measure_ledger(client, protocols, measurement, _archive, ledger, ledger_config,
+                                         refresh_state)
         return cache[key]
 
     def forget(measurement: dict) -> None:
@@ -225,8 +232,18 @@ def make_measurement_predicate(
     return predicate
 
 
+def _refresh(client: Any, protocol: Any, measurement: dict, archive: Any, ledger: Any, config: Any,
+             state: dict) -> str:
+    """Plan P.4: carry out the refresh policy (and a run's own demand,
+    `"context": "fresh"`) before the run; returns the claim's `fresh` label."""
+    from .ledger_context import refresh_if_due
+
+    return refresh_if_due(client, protocol, ledger, config, state,
+                          demand=measurement.get("context") == "fresh", archive=archive)
+
+
 def _measure_ledger(client: Any, protocols: Dict[str, Any], measurement: dict, archive: Any,
-                    ledger: Any, config: Any) -> Measured:
+                    ledger: Any, config: Any, state: Optional[dict] = None) -> Measured:
     from .ledger_runs import measure
 
     protocol_id = measurement.get("protocol", "")
@@ -235,7 +252,11 @@ def _measure_ledger(client: Any, protocols: Dict[str, Any], measurement: dict, a
         return Measured(protocol=protocol_id, error=f"unknown protocol '{protocol_id}'")
     if ledger is None:
         return Measured(protocol=protocol_id, error="measurement-only recording needs a ledger")
-    r = measure(client, protocol, ledger, config, archive=archive)
+    try:
+        fresh = _refresh(client, protocol, measurement, archive, ledger, config, state if state is not None else {})
+    except Exception as e:
+        return Measured(protocol=protocol_id, error=f"context refresh failed: {e}")
+    r = measure(client, protocol, ledger, config, archive=archive, fresh=fresh)
     return Measured(protocol=protocol_id, bid=r.bid, ledger_ref=r.ledger_ref, evidence_ref=r.evidence_ref,
                     assurance=r.assurance, error=r.error)
 
@@ -266,10 +287,11 @@ def _attest(client: Any, protocols: Dict[str, Any], measurement: dict,
 
 
 def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
-                   archive: Any, ledger: Any, config: Any) -> Appraised:
+                   archive: Any, ledger: Any, config: Any, state: Optional[dict] = None) -> Appraised:
     """The nonce'd two-run flow (ledger_runs.attest) as an Appraised. Runs
-    carry no context pointer (plan O.7): the CVM runs in the state it is in
-    and readers derive the stack and configuration in force."""
+    carry no pointer to their context; they carry the writer's CLAIM of it,
+    measured into the run's lane (plan P.2/P.3), refreshed first when the
+    policy or the measurement (`"context": "fresh"`) says so (P.4)."""
     from .ledger_runs import attest
 
     protocol_id = measurement.get("protocol", "")
@@ -277,19 +299,23 @@ def _attest_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
     if protocol is None:
         return Appraised(protocol=protocol_id, passed=False,
                        error=f"unknown protocol '{protocol_id}'")
-    r = attest(client, protocol, ledger, config, archive=archive)
+    try:
+        fresh = _refresh(client, protocol, measurement, archive, ledger, config, state if state is not None else {})
+    except Exception as e:
+        return Appraised(protocol=protocol_id, passed=False, error=f"context refresh failed: {e}")
+    r = attest(client, protocol, ledger, config, archive=archive, fresh=fresh)
     return Appraised(protocol=protocol_id, passed=r.passed, components=r.components,
                    error=r.error, evidence_ref=r.evidence_ref, appraisal_ref=r.appraisal_ref,
                    components_ref=r.components_ref, bid=r.bid, ledger_ref=r.ledger_ref)
 
 
 def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
-                  archive: Any, ledger: Any, config: Any) -> Appraised:
-    """Appraise a ledger-held bundle again (ledger_runs.appraise_bundle) as a
+                  archive: Any, ledger: Any, config: Any, state: Optional[dict] = None) -> Appraised:
+    """Appraise a ledger-held bundle again (ledger_runs.appraise_bundle) as an
     Appraised: truthy iff the ledger reads verified, the bytes and bundle id
-    matched, and the fresh signed appraisal passed. A disagreement with the
-    live appraisal is surfaced as the error, never re-decided."""
-    from .ledger_runs import appraise_bundle, live_appraisal_of
+    matched, and the fresh signed appraisal passed. Agreement with earlier
+    appraisals is a reader's comparison over the chain, not recorded (P.11)."""
+    from .ledger_runs import appraise_bundle
 
     bid = measurement.get("ledger_bundle") or measurement.get("ledger_nonce", "")
     if ledger is None:
@@ -304,14 +330,12 @@ def _audit_ledger(client: Any, protocols: Dict[str, Any], measurement: dict,
     if protocol is None:
         return Appraised(protocol=protocol_id, passed=False, bid=bid,
                        error=f"unknown protocol '{protocol_id}' for ledger bundle {bid}")
-    rep = appraise_bundle(client, protocol, ledger, config, bid, archive=archive,
-                          appraisal_kind=measurement.get("appraisal_kind"))  # None: deferred/audit per plan N.3
+    try:
+        fresh = _refresh(client, protocol, measurement, archive, ledger, config, state if state is not None else {})
+    except Exception as e:
+        return Appraised(protocol=protocol_id, passed=False, bid=bid, error=f"context refresh failed: {e}")
+    rep = appraise_bundle(client, protocol, ledger, config, bid, archive=archive, fresh=fresh)
     error = rep.error
-    if not error and rep.agrees_with_live is False:
-        live = live_appraisal_of(ledger, bid)
-        recorded = live.verdict.passed if live is not None and live.verdict is not None else None
-        error = (f"audit verdict ({'pass' if rep.passed else 'fail'}) disagrees with the "
-                 f"live appraisal ({'pass' if recorded else 'fail'})")
     local = next((l.path for l in target.blob.locations if l.store == "local"), "")
     return Appraised(protocol=protocol_id, passed=bool(rep), components=rep.components, error=error,
                    evidence_ref=local, appraisal_ref=rep.appraisal_ref, bid=bid, ledger_ref=rep.ledger_ref)

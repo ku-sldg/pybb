@@ -2281,7 +2281,22 @@ are (no backfill; records are immutable).
 
 ## P. Context claims: CVM-computed fingerprints, the measured claim lane, refresh policy (planning 2026-11-23; spike passed 2026-11-23)
 
-**STATUS: planned, not implemented.** Builds on O. O linked a run to its
+**STATUS: implemented 2026-11-23** in three stages: P.11 (appraisal chains,
+`golden_provenance`); P.1 (fingerprints as CVM slots, the settings lane,
+slot copies on `StackInfo`/`ConfigInfo`/`BlessingRecord`, the cache file);
+P.2–P.5 (the claim lane in every run term, `ContextClaim` on run bundles,
+`ContextConfig.refresh` with `manual` default and on-demand refresh,
+`verify_claim`, lane goldens in live and later appraisals). Implementation
+notes: the lane's `hashfile`/`goldenbytes_appr` typing joined
+`LEDGER_ASP_TYPES`, so every ledger session types them; a run whose writer
+has measured nothing still measures its lane and records the five files
+under an empty claim, so later appraisals can judge the lane; lane goldens
+are injected `only_known`, never clobbering a measurement's provisioned
+goldens; `--against claim:<bid>` for stack audits was dropped — a claim
+carries fingerprints, not per-target goldens, so a stack audit against a
+claim would be the fingerprint check `verify_claim` already reports;
+`scripts/spike_context_lane.py` is the P.2 spike (right_path semantics and
+the three shapes, real CVM). Builds on O. O linked a run to its
 configuration by hash equality of pybb-computed pins and to its stack by
 ledger order only (O.7). P makes both links CVM-made and lets a platform
 *claim* its context on every run, re-measuring on a policy or on demand.
@@ -2495,8 +2510,8 @@ re-measured and the claim's `fresh`/`policy` say why.
    `every_run`, `max_age`, plus on demand via the blackboard measurement.
 6. *Resolved:* verification by CVM audits with injected goldens (blessing
    or claim as the source); `verify_claim` is a reader's report.
-7. *Open:* whether the verifying key belongs inside `H_bin` (today yes:
-   different keys are different stacks) or in its own lane.
+7. *Resolved 2026-11-23 (stage 2):* the verifying key stays inside `H_bin`:
+   the ASPs embed it, so a different key is a different stack.
 8. *Resolved 2026-11-23:* **no backwards compatibility** with earlier
    ledger records or schemas while the design iterates: fields are removed
    outright, no legacy readers or aliases; `pybb2` is recreated after P.
@@ -2620,7 +2635,7 @@ failing component by the entry covering its target.
 11. M (configurable bundle shapes: `split`, `combined`) — implemented 2026-11-20.
 12. N (measure now, appraise later; `Measured`/`Appraised`) — implemented 2026-11-20.
 13. O (stack and configuration evidence; operator-commanded; retires B.8's blessing) — implemented 2026-11-20; precedes G, whose remote attester needs its own stack lineage.
-14. P (CVM-computed fingerprints, the measured claim lane, context claims and refresh policy) — planned 2026-11-23, spike passed; awaiting go-ahead to implement.
+14. P (CVM-computed fingerprints, the measured claim lane, context claims and refresh policy) — implemented 2026-11-23 in three stages.
 
 ## Decisions (all resolved 2026-11-17)
 

@@ -166,11 +166,6 @@ def record_relpath(key: str, rec: Any) -> str:
         return f"ledger/restores/{rec.created_at}.json"
     if kind == "blessing":
         return f"ledger/blessing/{rec.stack_bid}.json"
-    # v1 kinds (readable mirrors of a v1 database)
-    if kind in ("nonce", "evidence", "verdict"):
-        return f"ledger/records/{rec.nid}/{kind}.json"
-    if kind in ("appraisal", "locator"):
-        return f"ledger/records/{rec.nid}/{kind}-{rec.seq}.json"
     return f"ledger/other/{key.replace('/', '_')}.json"
 
 
@@ -186,11 +181,6 @@ def _record_file_for_key(repo_path: Path, key: str) -> Optional[Path]:
         p = repo_path / f"ledger/restores/{rest}.json"
     elif kind == "blessing":
         p = repo_path / f"ledger/blessing/{rest}.json"
-    elif kind in ("nonce", "evidence", "verdict"):
-        p = repo_path / f"ledger/records/{rest}/{kind}.json"
-    elif kind in ("appraisal", "locator"):
-        nid, seq = rest.split("/")
-        p = repo_path / f"ledger/records/{nid}/{kind}-{seq}.json"
     else:
         p = repo_path / f"ledger/other/{key.replace('/', '_')}.json"
     return p if p.is_file() else None

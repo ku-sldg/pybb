@@ -72,13 +72,13 @@ def test_sql_mirror_rows_match_kv_content_hashes(ledger):
     m, a = _pair()
     ledger.commit_bundles([m, a])
     rows = ledger.mirror_query(
-        "SELECT key, kind, role, appraisal_kind, passed, content_sha256 FROM attestation_records "
+        "SELECT key, kind, role, passed, content_sha256 FROM attestation_records "
         "WHERE key = @mk OR input_bid = @bid", {"mk": f"bundle/{m.bid}", "bid": m.bid})
     by_key = {r[0] if isinstance(r, (list, tuple)) else r["key"]: r for r in rows}
     assert set(by_key) == {f"bundle/{m.bid}", f"bundle/{a.bid}", f"judged_by/{m.bid}/{a.bid}"}
     arow = by_key[f"bundle/{a.bid}"]
     vals = list(arow) if isinstance(arow, (list, tuple)) else list(arow.values())
-    assert a.content_sha256() in vals and True in vals and "live" in vals  # passed=True, appraisal_kind mirrored
+    assert a.content_sha256() in vals and True in vals  # passed=True mirrored
     # a reader can verify the row against the KV value
     assert ledger.get_record(f"bundle/{a.bid}").content_sha256() == a.content_sha256()
 

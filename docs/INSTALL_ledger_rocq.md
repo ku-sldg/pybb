@@ -174,7 +174,11 @@ CVM, for every term constructor) become one `config` bundle per protocol:
 Repeat `measure stack` after rebuilding asp-libs or the CVM (then `audit`
 and `bless` the new bundle, step 7), and `measure config <protocol>` after
 editing or re-provisioning a protocol. Nothing reminds you; the ledger
-shows afterwards which runs happened under an unmeasured configuration.
+shows afterwards which runs happened under an unmeasured configuration. If
+you would rather pybb re-measure for you, set the refresh policy
+(`LedgerConfig.context.refresh`: `every_episode`, `every_run` or
+`max_age:<seconds>`); every run's claim records which policy was in force
+and what it re-measured.
 
 ## 5. Run the Rocq scenario under the ledger
 
@@ -234,8 +238,8 @@ derived context beside each — without running anything:
 ```
 
 Appraise a stored bundle again (a fresh, signed CVM appraisal, recorded as
-one more bundle pointing at it; the first appraisal of a measurement-only
-bundle is labelled `deferred`, later ones `audit`):
+one more bundle pointing at it; there are no kinds of appraisal, the chain
+order says which came first):
 
 ```bash
 .venv/bin/python examples/appraise_from_ledger.py --latest temp_control_rocq_verification
@@ -248,7 +252,7 @@ immuclient login pybb && immuclient use pybb2 && immuclient scan --prefix bundle
 ```
 
 ```bash
-immuclient query "SELECT key, role, appraisal_kind, passed, created_at FROM attestation_records WHERE kind = 'bundle' ORDER BY created_at"
+immuclient query "SELECT key, role, passed, created_at FROM attestation_records WHERE kind = 'bundle' ORDER BY created_at"
 ```
 
 ## 7. Audit the context itself

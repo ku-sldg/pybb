@@ -18,6 +18,7 @@ from pybb.attestation.ledger import (
     APPRAISER_NONCE_TARGID,
     DuplicateNonceError,
     EvidenceLayoutError,
+    GoldenProvenance,
     LedgerConfig,
     describe_package,
     sha256_hex,
@@ -167,7 +168,8 @@ def test_attest_with_ledger_commits_a_full_run(proto, config, tmp_path):
     assert m.blob.blob_sha256 == sha256_hex(Path(archived["response"]).read_bytes())
     assert [l.store for l in m.blob.locations] == ["local"] and m.appraiser_id == "ap-test"
     assert m.verdict is None and m.inputs is None
-    assert a.role == "appraisal" and a.appraisal_kind == "live" and a.protocol_id == proto.protocol_id
+    assert a.role == "appraisal" and a.protocol_id == proto.protocol_id
+    assert a.golden_provenance == [GoldenProvenance(source="protocol")]
     assert a.inputs == [__import__("pybb.attestation.ledger", fromlist=["InputRef"]).InputRef(
         bid=m.bid, binding_hash=m.rawev_sha256)]
     assert a.verdict.passed and a.verdict.components_total == 6 and a.verdict.failing == []
@@ -296,14 +298,14 @@ def test_appraise_bundle_records_another_appraisal_of_the_measurement(proto, con
     assert rep.error == "", rep.error
     assert rep and rep.ledger_verified and rep.bytes_match and rep.bid_ok and rep.input_role == "measurement"
     assert rep.signature_ok is True and rep.nonce_wellformed is True and rep.binding_ok is None
-    assert rep.agrees_with_live is True and rep.appraisal_kind == "audit"
+    assert rep.golden_provenance == [GoldenProvenance(source="protocol")]
     assert rep.ledger_ref == f"bundle/{rep.appraisal_bid}"
     of_m = ledger.appraisals_of(live.bid)
-    assert [a.appraisal_kind for a in of_m] == ["live", "audit"]
+    assert len(of_m) == 2 and of_m[0].bid == live.appraisal_bid  # ledger order: live first (plan P.11)
     audit = of_m[1]
     assert audit.inputs[0].bid == live.bid and audit.inputs[0].binding_hash == ledger.get(live.bid).rawev_sha256
-    assert audit.verdict.checks == {"ledger_verified": True, "bytes_match": True, "bid_ok": True}
-    assert audit.verdict.agrees_with_live is True and audit.session_sha256 == of_m[0].session_sha256
+    assert audit.golden_provenance == [GoldenProvenance(source="protocol")]
+    assert audit.session_sha256 == of_m[0].session_sha256  # same policy: a reader compares the two verdicts
     # the same canned appraiser nonce again: refused as a duplicate
     again = appraise_bundle(CannedClient(appr=_distinct_appraisal(7)), proto, ledger, config, live.bid)
     assert "duplicate" in again.error and not again
@@ -312,10 +314,10 @@ def test_appraise_bundle_records_another_appraisal_of_the_measurement(proto, con
     session = json.loads(json.dumps(proto.session))
     session["Session_Context"]["ASP_Types"]["extra_appr"] = {"FWD": {"FWD": "REPLACE", "_BODY": 1}, "ATTRS": []}
     rep2 = appraise_bundle(CannedClient(appr=_distinct_appraisal(8)), proto, ledger, config, live.bid,
-                           session_override=session, appraisal_kind="no-goldens")
-    assert rep2.error == "" and rep2.agrees_with_live is None
+                           session_override=session)
+    assert rep2.error == ""
     other = ledger.get(rep2.appraisal_bid)
-    assert other.appraisal_kind == "no-goldens" and other.session_sha256 != audit.session_sha256
+    assert other.session_sha256 != audit.session_sha256  # the policy is the pin, not a label
 
 
 def test_appraise_bundle_fails_closed_on_unknown_bundle_and_wrong_protocol(proto, config, tmp_path):
@@ -344,16 +346,19 @@ def test_ledger_request_routes_the_predicate_to_an_audit(proto, config, tmp_path
     audit = predicate(ledger_request(live.bid))
     assert audit.error == "", audit.error
     assert audit and audit.bid == live.bid and audit.ledger_ref.startswith("bundle/") and audit.ledger_ref != live.ledger_ref
-    assert audit.protocol == proto.protocol_id and Path(audit.appraisal_ref).name.startswith(proto.protocol_id + ".appraisal-audit")
+    assert audit.protocol == proto.protocol_id and Path(audit.appraisal_ref).name.startswith(proto.protocol_id + ".reappraisal")
     assert len(client.requests) == 3  # two live runs + one audit appraisal run
 
-    # a disagreeing audit is a failing verdict with an explicit reason
+    # a later appraisal that fails is simply a failing verdict in the chain; agreement with
+    # the live one is the reader's comparison, not a recorded judgment (plan P.11)
     failing_pkg = _distinct_appraisal(11)
     failing_pkg["PAYLOAD"][0]["RawEv"][5] = base64.b64encode(b"File contents do not match").decode()
     client.appr = failing_pkg
     predicate.forget(ledger_request(live.bid))
     disagree = predicate(ledger_request(live.bid))
-    assert not disagree and "disagrees with the live appraisal" in disagree.error
+    assert not disagree and disagree.error == ""
+    chain = ledger.appraisals_of(live.bid)
+    assert [a.verdict.passed for a in chain] == [True, True, False]
 
     # without a ledger the audit request is a configuration error
     plain = make_attestation_predicate(CannedClient(), {proto.protocol_id: proto})
@@ -412,7 +417,7 @@ def test_attest_combined_yields_the_split_artifacts_from_one_run(proto, config, 
     assert m.shape == a.shape == "combined" and m.role == "measurement" and a.role == "appraisal"
     assert m.blob.derived_from == a.bid and a.blob.derived_from is None
     assert a.inputs == [InputRef(bid=m.bid, binding_hash=m.rawev_sha256)]
-    assert a.verdict.passed and a.verdict.components_total == 4 and a.appraisal_kind == "live"
+    assert a.verdict.passed and a.verdict.components_total == 4
     assert ledger.appraisals_of(m.bid) == [a] and len(ledger) == 1
     # the lifted P is archived as a response of its own and fetches back byte for byte
     fetched = fetch_bundle(ledger, m.bid)
@@ -477,17 +482,14 @@ def test_measure_records_one_bundle_and_nothing_judges_it(proto, config, tmp_pat
     # the same package again is a duplicate
     again = measure(CannedClient(), proto, ledger, config)
     assert "duplicate" in again.error and len(ledger) == 1
-    # the first later appraisal is labelled `deferred` (N.3), with no live verdict to agree with
+    # the first later appraisal is just an appraisal; its position in the chain says it was the first (P.11)
     rep = appraise_bundle(CannedClient(appr=_distinct_appraisal(21)), proto, ledger, config, r.bid)
-    assert rep.error == "" and rep.appraisal_kind == "deferred" and rep.agrees_with_live is None
+    assert rep.error == "" and rep.golden_provenance == [GoldenProvenance(source="protocol")]
     a = ledger.appraisals_of(r.bid)[0]
-    assert a.appraisal_kind == "deferred" and a.shape == "appraise" and a.inputs[0].bid == r.bid
-    # the next one is an audit by default, and a caller may still label either
+    assert a.shape == "appraise" and a.inputs[0].bid == r.bid and a.golden_provenance == rep.golden_provenance
+    assert ledger.tx_of(f"bundle/{a.bid}") > ledger.tx_of(f"bundle/{r.bid}")
     rep2 = appraise_bundle(CannedClient(appr=_distinct_appraisal(22)), proto, ledger, config, r.bid)
-    assert rep2.appraisal_kind == "audit"
-    rep3 = appraise_bundle(CannedClient(appr=_distinct_appraisal(23)), proto, ledger, config, r.bid,
-                           appraisal_kind="golden-set-2026-11")
-    assert ledger.get(rep3.appraisal_bid).appraisal_kind == "golden-set-2026-11"
+    assert rep2.error == "" and len(ledger.appraisals_of(r.bid)) == 2
 
 
 def test_measure_fails_closed_like_attest(proto, config, tmp_path):
@@ -526,7 +528,7 @@ def test_measurement_predicate_returns_measured_not_appraised(proto, config, tmp
     judged = make_attestation_predicate(client, {proto.protocol_id: proto}, archive_dir=tmp_path / "evidence",
                                         ledger=ledger, ledger_config=config)(ledger_request(m.bid))
     assert isinstance(judged, Appraised) and judged and judged.bid == m.bid
-    assert ledger.get(judged.ledger_ref.split("/", 1)[1]).appraisal_kind == "deferred"
+    assert ledger.get(judged.ledger_ref.split("/", 1)[1]).inputs[0].bid == m.bid
     # without a ledger there is nothing to record into
     unled = make_measurement_predicate(CannedClient(), {proto.protocol_id: proto})({"protocol": proto.protocol_id})
     assert not unled and "needs a ledger" in unled.error

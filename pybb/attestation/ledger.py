@@ -26,8 +26,7 @@ bundle id the ledger already holds.
 
 This module holds the v2 records, the package inspection helpers, the
 `Ledger` interface and `FileLedger` (a JSONL hash chain for tests and the
-no-server fallback). immudb lives in `ledger_immudb.py`; v1 records are
-readable through `ledger_v1.py`.
+no-server fallback). immudb lives in `ledger_immudb.py`.
 """
 
 from __future__ import annotations
@@ -122,13 +121,6 @@ class SignatureInfo(BaseModel):
     signer_fp: Optional[str] = None
 
 
-class ToolingRef(BaseModel):
-    """Copland evidence identifying the binaries in force (plan B.8)."""
-
-    kind: Literal["bundle", "run"]
-    ref: str
-
-
 class Location(BaseModel):
     """One place a blob is or will be. `store` is `local` or a configured
     store id such as `github:owner/name`; remote paths are content-addressed
@@ -181,11 +173,6 @@ class Verdict(BaseModel):
     components_sha256: str = ""
     components_blob: Optional[BlobRef] = None
     interpreter: Interpreter
-    # appraisals of a stored bundle: the ledger/bytes/id checks pybb made
-    checks: Dict[str, bool] = {}
-    # agreement with the input measurement's live appraisal, when this is a
-    # later appraisal of the same measurement under the same policy
-    agrees_with_live: Optional[bool] = None
 
 
 class ProvisionInfo(BaseModel):
@@ -203,12 +190,18 @@ class ChallengeInfo(BaseModel):
 
 
 class StackInfo(BaseModel):
-    """On a `stack` bundle (plan O.1): the CVM/asp-libs installation the CVM
-    measured. `plc` is the Copland place the CVM ran as; `executables` is
-    the number of `stack:*` targets."""
+    """On a `stack` bundle (plan O.1 / P.1): the CVM/asp-libs installation
+    the CVM measured. `plc` is the Copland place the CVM ran as;
+    `executables` the number of binaries measured; `fingerprint` the
+    package's `H_bin` slot (the CVM's `hashevidence` over the binaries' and
+    key's digests in term order, base64) and `invocation` its
+    `stack:invocation` slot (the digest of `cvm_config.json`) — slot copies,
+    never computed by pybb."""
 
     plc: str = ""
     executables: int = 0
+    fingerprint: str = ""
+    invocation: str = ""
 
 
 class ConfigFile(BaseModel):
@@ -220,11 +213,56 @@ class ConfigFile(BaseModel):
 
 
 class ConfigInfo(BaseModel):
-    """On a `config` bundle (plan O.2): one protocol's inputs per term
-    constructor pybb can run."""
+    """On a `config` bundle (plan O.2 / P.1): one protocol's inputs per term
+    constructor pybb can run; `fingerprint` is the package's `H_cfg` slot
+    (the CVM's `hashevidence` over the inputs' digests), a slot copy."""
 
     constructors: List[str] = []
     files: List[ConfigFile] = []
+    fingerprint: str = ""
+    settings: Dict[str, str] = {}  # the settings-lane slots (config:term … config:invocation), base64
+
+
+class ContextClaim(BaseModel):
+    """The writer's claim of the stack and configuration a run was made
+    under (plan P.3): slot copies from the writer's cache, the ledger keys
+    they came from, when the CVM measured them, what this run re-measured
+    (`fresh`) and the refresh policy in force. A claim is a statement, not
+    evidence; the CVM binds it to the run by hashing the claim file in the
+    run's lane (P.2), and `files` are the five lane files archived so an
+    audit can hand their digests back as goldens."""
+
+    stack_bid: str = ""
+    stack_fingerprint: str = ""
+    stack_measured_at: str = ""
+    config_bid: str = ""
+    config_fingerprint: str = ""
+    config_measured_at: str = ""
+    fresh: Literal["none", "stack", "config", "both"] = "none"
+    policy: str = "manual"
+    files: List[ConfigFile] = []  # claim:term, claim:session, claim:manifest, claim:invocation, claim:claim
+
+
+class GoldenProvenance(BaseModel):
+    """Where the goldens an appraisal's CVM run compared against came from
+    (plan P.11). Every golden reached the CVM either in the measured
+    package's evidence type (provisioned into the term: `protocol`) or by
+    pybb's injection into the evidence type before the run (`bundle`: values
+    read off a ledger bundle's record or package; `blessing`: a `blessing/`
+    record; `claim`: the claim a run bundle carries). pybb's statement, like
+    `inputs`, and checkable the same way: fetch the source, inject again,
+    run again."""
+
+    source: Literal["protocol", "bundle", "blessing", "claim"]
+    ref: Optional[str] = None  # the ledger key the values were read from
+    targets: List[str] = []  # target ids injected for (`*` patterns allowed)
+    asp: Optional[str] = None  # a golden with no target id: the ASP whose event received it
+
+    @model_validator(mode="after")
+    def _ref_rule(self) -> "GoldenProvenance":
+        if self.source != "protocol" and not self.ref:
+            raise ValueError(f"golden_provenance source '{self.source}' needs a ref")
+        return self
 
 
 class BundleRecord(LedgerRecord):
@@ -245,7 +283,6 @@ class BundleRecord(LedgerRecord):
     assurance: AssuranceLevel
     freshness: Freshness = "post-hoc"
     exception_reason: Optional[str] = None
-    tooling: Optional[ToolingRef] = None
     error: str = ""  # measurement whose appraisal never happened: why
     # the term shape that produced this package (plan M.3a): `split`,
     # `combined`, `measure` (provisioning); None on foreign or legacy bundles
@@ -253,15 +290,15 @@ class BundleRecord(LedgerRecord):
     # role-gated members (serialized only when set)
     inputs: Optional[List[InputRef]] = None
     verdict: Optional[Verdict] = None
-    appraisal_kind: Optional[str] = None
+    golden_provenance: Optional[List[GoldenProvenance]] = None  # appraisal only (plan P.11)
     provision: Optional[ProvisionInfo] = None
     state: Optional[str] = None
     challenge: Optional[ChallengeInfo] = None
-    # run context (plan O): stack / config bundles describe themselves; an
-    # audit of a stack bundle names the blessing its goldens came from
+    # run context (plan O): stack / config bundles describe themselves
     stack: Optional[StackInfo] = None
     config: Optional[ConfigInfo] = None
-    baseline: Optional[str] = None
+    # the writer's claim of its context, measured into the run's lane (plan P.2/P.3)
+    claim: Optional[ContextClaim] = None
 
     @model_validator(mode="after")
     def _role_invariants(self) -> "BundleRecord":
@@ -275,10 +312,12 @@ class BundleRecord(LedgerRecord):
         if self.role == "appraisal":
             if not self.inputs or self.verdict is None:
                 raise ValueError("an appraisal bundle needs inputs and a verdict")
+            if not self.golden_provenance:
+                raise ValueError("an appraisal bundle needs golden_provenance")
         else:
             if self.inputs and self.role != "challenge" and self.role != "measurement":
                 raise ValueError(f"a {self.role} bundle takes no inputs")
-            if self.verdict is not None or self.appraisal_kind is not None:
+            if self.verdict is not None or self.golden_provenance:
                 raise ValueError(f"a {self.role} bundle carries no verdict")
         if self.role == "measurement" and self.inputs and len(self.inputs) != 1:
             raise ValueError("a challenged measurement names exactly one challenge bundle")
@@ -290,8 +329,8 @@ class BundleRecord(LedgerRecord):
             raise ValueError(f"a {self.role} bundle carries no stack info")
         if self.config is not None and self.role != "config":
             raise ValueError(f"a {self.role} bundle carries no config info")
-        if self.baseline is not None and self.role != "appraisal":
-            raise ValueError(f"a {self.role} bundle names no baseline")
+        if self.claim is not None and self.role in ("stack", "config"):
+            raise ValueError(f"a {self.role} bundle makes no claim (it is the context)")
         return self
 
     @property
@@ -343,6 +382,7 @@ class BlessingRecord(LedgerRecord):
     stack_bid: str
     targets: List[str] = []
     goldens: Dict[str, str] = {}
+    fingerprint: str = ""  # the blessed package's H_bin slot (plan P.1)
     note: str = ""
 
 
@@ -356,13 +396,7 @@ RECORD_TYPES = {
 
 
 def parse_record(data: dict) -> Any:
-    """Rebuild the typed record from its stored dict. v1 records (by their
-    `schema` tag) come back as `ledger_v1` models; unknown v2 kinds stay
-    generic."""
-    if str(data.get("schema", "")).endswith("/v1"):
-        from .ledger_v1 import parse_record_v1
-
-        return parse_record_v1(data)
+    """Rebuild the typed record from its stored dict; unknown kinds stay generic."""
     cls = RECORD_TYPES.get(data.get("kind", ""), LedgerRecord)
     return cls.model_validate(data)
 
@@ -385,10 +419,6 @@ def key_for(record: Any) -> str:
         return f"restore/{record.created_at}"
     if k == "blessing":
         return f"blessing/{record.stack_bid}"
-    if str(getattr(record, "schema_version", "")).endswith("/v1"):
-        from .ledger_v1 import key_for as key_for_v1
-
-        return key_for_v1(record)
     raise LedgerError(f"no key rule for record kind '{k}'")
 
 
@@ -663,14 +693,19 @@ def _read_secret(path: str) -> str:
 
 
 class ContextConfig(BaseModel):
-    """Run context (plan O): the generated protocols that measure the stack
-    and each protocol's inputs, and where their materialized files live
-    (relative to `state_dir`). There is no cadence: measurement happens only
-    on operator command (`examples/ledger_context.py`)."""
+    """Run context (plan O / P): the generated protocols that measure the
+    stack and each protocol's inputs, where their materialized files live
+    (relative to `state_dir`), and the refresh policy the operator set. With
+    `manual`, measurement happens only on operator command
+    (`examples/ledger_context.py`)."""
 
     stack_protocol_id: str = "attestation_stack"
     config_protocol_id: str = "attestation_config"
     dir: str = "context"
+    # when pybb re-measures the stack and the run's protocol config before a
+    # run (plan P.4): `manual` (never on its own), `every_episode`,
+    # `every_run`, `max_age:<seconds>`; a run can also demand it
+    refresh: str = "manual"
 
 
 class LedgerConfig(BaseModel):
@@ -821,6 +856,9 @@ class Ledger(ABC):
                                                    committer_fp=b.committer_fp,
                                                    pybb_version=b.pybb_version,
                                                    appraiser_id=b.appraiser_id))
+            for g in b.golden_provenance or []:  # plan P.11: a ref must be a key the ledger holds
+                if g.ref and not (g.ref.startswith("bundle/") and g.ref[7:] in in_batch) and not self.exists(g.ref):
+                    raise LedgerError(f"commit_bundles: golden_provenance ref {g.ref} is not in the ledger")
         return self._write_batch([*bundles, *pointers])
 
     def commit_mirror(self, mirror: MirrorRecord) -> Receipt:

@@ -42,6 +42,9 @@ context evidence and the Rocq scenario — see
    `pybb`; `scripts/immudb_dev.sh rotate-admin NEWPASS` replaces the default
    admin password. `pip install -e '.[ledger]'` adds `immudb-py`.
 3. **Measure and bless the stack; measure the configurations.**
+   The stack's identity is a fingerprint the CVM computes and signs inside
+   the package (`hashevidence` over the binaries' digests, plan P.1), so
+   identical builds on any machine share it and pybb never hashes a binary.
    `python examples/ledger_context.py measure stack --bless` runs the CVM
    once over the installation — the CVM binary, the verified summarizer,
    the verifying key, every executable in the ASP directory and the CVM
@@ -50,11 +53,16 @@ context evidence and the Rocq scenario — see
    --all` records one `config` bundle per protocol: the exact term, session
    and manifest pybb hands the CVM for every term constructor. Both commit
    unconditionally and only when you run them: pybb has no cadence and
-   never measures its stack or inputs on its own. Repeat `measure stack`
-   after rebuilding asp-libs or the CVM (then `audit` and `bless` the new
-   bundle), and `measure config <pid>` after editing a protocol. Runs carry
-   no pointer to either; `ledger_context.py show` and
-   `appraise_from_ledger.py` derive what was in force (plan section O).
+   never measures its stack or inputs on its own unless `context.refresh`
+   says so. Repeat `measure stack` after rebuilding asp-libs or the CVM
+   (then `audit` and `bless` the new bundle), and `measure config <pid>`
+   after editing a protocol. Every run then **claims** the stack and
+   configuration it was made under (the writer's cache of its latest
+   measurements) and the CVM hashes that claim, with the run's own term,
+   session, manifest and invocation settings, into the run's package (plan
+   P); `ledger_context.py show` and `appraise_from_ledger.py` print the
+   claim, check it against the bundles it names, and derive what was in
+   force independently of it.
 4. **Evidence repository** (optional until you want durability). Clone any
    git repository you choose and set `PYBB_EVIDENCE_REPO` to the clone's
    path, or write the path to `~/.pybb/evidence_repo`. The repository's
@@ -71,7 +79,7 @@ context evidence and the Rocq scenario — see
 
 | field | default | meaning |
 |---|---|---|
-| `host`, `port`, `db` | `127.0.0.1`, `3322`, `pybb2` (`PYBB_IMMUDB_DB`) | immudb connection; `pybb` holds the schema v1 records |
+| `host`, `port`, `db` | `127.0.0.1`, `3322`, `pybb2` (`PYBB_IMMUDB_DB`) | immudb connection |
 | `user`, `password` | `PYBB_IMMUDB_USER` / `PYBB_IMMUDB_PASSWORD` | the non-admin user |
 | `state_dir` | `~/.pybb` | client state (verified root) and the appraiser id |
 | `verify_key_path` | `PYBB_VERIFY_KEY` or asp-libs' demo public key | fingerprinted into every record as `committer_fp` |
@@ -80,7 +88,8 @@ context evidence and the Rocq scenario — see
 | `min_assurance` | `signed+nonce` | runs below it are refused at commit |
 | `assurance_exceptions` | `{}` | `protocol_id -> reason` for protocols allowed below the minimum |
 | `context.stack_protocol_id`, `context.config_protocol_id` | `attestation_stack`, `attestation_config` | the generated protocols `ledger_context.py` measures the installation and each protocol's inputs with (plan O); no cadence exists |
-| `context.dir` | `context` | under `state_dir`: materialized inputs, their content-addressed copies, `stack/cvm_config.json`, and the default archive of context packages |
+| `context.dir` | `context` | under `state_dir`: materialized inputs, their content-addressed copies, the lane files of every run (`runs/<pid>/<constructor>/`), the writer's cache `claim.json`, and the default archive of context packages |
+| `context.refresh` | `manual` | when pybb re-measures the stack and the run's protocol config before a run (plan P.4): `manual` never on its own, `every_episode` once per predicate instance, `every_run`, `max_age:<seconds>` when the cache entry is older. A measurement carrying `"context": "fresh"` (or `ledger_request(bid, fresh_context=True)`) demands it for one run. Each refresh is an ordinary stack/config measurement on the ledger, and the run's claim says what was refreshed and why |
 | `fail_open` | `False` | with `True`, a ledger outage leaves the verdict unledgered instead of failing it |
 | `default_shape`, `shapes` | `split` (`PYBB_BUNDLE_SHAPE`), `{}` | the bundle shape per protocol: `split` (two CVM runs; the appraisal can also happen later, by anyone with the package) or `combined` (one run yielding the same two artifacts; the live appraisal judges the measurements only) — plan section M |
 | `appraiser_id` | generated once under `state_dir` | opaque id of this installation; never a hostname |
@@ -123,8 +132,9 @@ the latest blessing went.
 `ledger_request(bid)` as an entry's measurement makes the predicate
 appraise the ledger-held bundle again instead of measuring the live tree (an
 audit rung); the verdict is truthy only if the verified reads, the byte and
-bundle-id checks, and the fresh signed appraisal all hold, and it fails with
-a reason when the audit disagrees with the live appraisal.
+bundle-id checks, and the fresh signed appraisal all hold. Agreement with
+earlier appraisals of the same bundle is a reader's comparison over the
+chain, not something pybb decides.
 
 ## Measure now, appraise later
 
@@ -135,8 +145,9 @@ bundle and returns a `Measured` outcome — truthy when recorded, carrying
 judged it, and the trust-decision logic consumes judged outcomes only.
 Later, `ledger_request(bid)` on an attestation predicate, or
 `examples/appraise_from_ledger.py`, judges the stored measurement under the
-protocol's session or any other policy; the first such appraisal is
-labelled `deferred`, later ones `audit` or whatever the caller names them.
+protocol's session or any other policy. There are no kinds of appraisal:
+live, first-later and audit are positions in the chain `judged_by/<bid>/…`,
+and every appraisal's `golden_provenance` says where its goldens came from.
 The Rocq driver does this with `--ledger --ledger-mode measure`. In the
 ordinary live flow, a measurement whose appraisal run fails is still
 recorded, with `error` saying why, and the outcome fails (plan N.4).
@@ -161,7 +172,7 @@ its `inputs`. Keys:
 | `restore/<created_at>` | a restore event |
 
 A live run's commit is one batch: the measurement bundle, its live appraisal
-bundle (`appraisal_kind: live`) and the pointer between them. A later
+bundle and the pointer between them. A later
 appraisal of the same measurement — an audit, or a *different policy* via a
 session override — is one more appraisal bundle plus pointer; judging an
 appraisal bundle (its signature, nonce and binding, inside the CVM) is just
@@ -184,8 +195,8 @@ immuclient use pybb2
 immuclient get bundle/<bid>                      # any key, as canonical JSON
 immuclient scan --prefix judged_by/<bid>/        # every appraisal of a bundle
 immuclient scan --prefix mirror/                 # every push to an evidence store
-immuclient query "SELECT key, role, appraisal_kind, passed, assurance, created_at FROM attestation_records WHERE protocol_id = 'temp_control_aadl_slang_l1a' AND role = 'appraisal' ORDER BY created_at DESC LIMIT 20"
-immuclient query "SELECT key, appraisal_kind, passed FROM attestation_records WHERE input_bid = '<bid>'"
+immuclient query "SELECT key, role, passed, assurance, created_at FROM attestation_records WHERE protocol_id = 'temp_control_aadl_slang_l1a' AND role = 'appraisal' ORDER BY created_at DESC LIMIT 20"
+immuclient query "SELECT key, passed FROM attestation_records WHERE input_bid = '<bid>'"
 immuclient query "SELECT key FROM attestation_records WHERE kind = 'bundle' AND assurance <> 'signed+nonce'"
 ```
 
@@ -199,7 +210,7 @@ immuclient query "SELECT key FROM attestation_records WHERE kind = 'bundle' AND 
 ```bash
 python examples/appraise_from_ledger.py --latest temp_control_aadl_slang_l1a       # graph + fresh signed appraisal (audit)
 python examples/appraise_from_ledger.py <appraisal bid>                              # judge an appraisal bundle inside the CVM
-python examples/appraise_from_ledger.py <bid> --kind slices-only --session s.json    # a different appraisal policy
+python examples/appraise_from_ledger.py <bid> --session s.json                       # a different appraisal policy
 python examples/appraise_from_ledger.py <bid> --no-run                               # graph only
 ```
 
@@ -208,8 +219,8 @@ path, then the evidence store), refuses bytes whose hash is not the
 record's, checks that the package reproduces the recorded bundle id, runs
 the same signed appraisal term under the protocol's session (or a session
 override: a different policy, pinned by `session_sha256`), and commits one
-appraisal bundle with `inputs=[bid]`, its `appraisal_kind` label and, under
-the same session, `agrees_with_live`. Given an appraisal bundle it judges
+appraisal bundle with `inputs=[bid]` and a `golden_provenance` naming where
+its goldens came from. Given an appraisal bundle it judges
 that package's signature, appraiser nonce and binding inside the CVM
 (`sig_appr`, `nonce_appr`, `goldenbytes_appr` with the judged bundle's
 `rawev_sha256` as golden), with the appraiser nodes passed through

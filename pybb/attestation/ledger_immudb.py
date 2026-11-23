@@ -37,25 +37,22 @@ from .ledger import (
 )
 
 # v2 prefixes first; the v1 prefixes keep a v1 database readable through `history()`
-RECORD_PREFIXES = ("bundle/", "judged_by/", "mirror/", "restore/", "blessing/",
-                   "nonce/", "evidence/", "verdict/", "locator/", "appraisal/")
+RECORD_PREFIXES = ("bundle/", "judged_by/", "mirror/", "restore/", "blessing/")
 
 MIRROR_TABLE = "attestation_records"
 # immudb caps indexed key sizes: the longest ledger key is ~140 bytes
 # (`judged_by/<64 hex>/<64 hex>`), so the primary key is VARCHAR[160]
 MIRROR_DDL = f"""CREATE TABLE IF NOT EXISTS {MIRROR_TABLE} (
   key VARCHAR[160], kind VARCHAR[16], role VARCHAR[16], protocol_id VARCHAR[96],
-  input_bid VARCHAR[64], appraisal_kind VARCHAR[32], passed BOOLEAN,
+  input_bid VARCHAR[64], passed BOOLEAN,
   assurance VARCHAR[16], freshness VARCHAR[16], blob_sha256 VARCHAR[64],
-  created_at VARCHAR[32], content_sha256 VARCHAR[64], baseline VARCHAR[160], PRIMARY KEY key)"""
-# columns added after the table first shipped (immudb has no IF NOT EXISTS for columns)
-MIRROR_ALTERS = (f"ALTER TABLE {MIRROR_TABLE} ADD COLUMN baseline VARCHAR[160]",)
+  created_at VARCHAR[32], content_sha256 VARCHAR[64], PRIMARY KEY key)"""
 MIRROR_INDEXES = (
     f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(input_bid)",
     f"CREATE INDEX IF NOT EXISTS ON {MIRROR_TABLE}(protocol_id, created_at)",
 )
-_COLS = ("key", "kind", "role", "protocol_id", "input_bid", "appraisal_kind", "passed",
-         "assurance", "freshness", "blob_sha256", "created_at", "content_sha256", "baseline")
+_COLS = ("key", "kind", "role", "protocol_id", "input_bid", "passed",
+         "assurance", "freshness", "blob_sha256", "created_at", "content_sha256")
 # two statements: immudb-py cannot bind a NULL parameter, so records without
 # a verdict omit the `passed` column (NULL by omission)
 MIRROR_UPSERT = (f"UPSERT INTO {MIRROR_TABLE}({', '.join(_COLS)}) VALUES "
@@ -77,31 +74,24 @@ def _client_module():
 
 
 def mirror_row(key: str, rec: Any) -> Dict[str, Any]:
-    """The SQL mirror's view of one record (v2 columns; v1 records map onto
-    the same columns as far as they can)."""
+    """The SQL mirror's view of one record."""
     d = rec.to_dict()
     passed: Optional[bool] = None
     role = d.get("role") or ""
     input_bid = ""
-    appraisal_kind = ""
     if rec.kind == "bundle" and d.get("verdict"):
         passed = d["verdict"].get("passed")
     if rec.kind == "bundle" and d.get("inputs"):
         input_bid = d["inputs"][0].get("bid") or ""
-        appraisal_kind = d.get("appraisal_kind") or ""
     if rec.kind == "judged_by":
         input_bid = d.get("bid") or ""
-    if rec.kind in ("verdict", "appraisal"):  # v1
-        passed = d.get("passed")
-    blob = d.get("blob_sha256") or (d.get("blob") or {}).get("blob_sha256") or ""
+    blob = (d.get("blob") or {}).get("blob_sha256") or ""
     return {
         "key": key, "kind": rec.kind, "role": role,
-        "protocol_id": d.get("protocol_id") or "", "input_bid": input_bid,
-        "appraisal_kind": appraisal_kind, "passed": passed,
-        "assurance": d.get("assurance") or d.get("evidence_assurance") or "",
+        "protocol_id": d.get("protocol_id") or "", "input_bid": input_bid, "passed": passed,
+        "assurance": d.get("assurance") or "",
         "freshness": d.get("freshness") or "", "blob_sha256": blob,
         "created_at": d.get("created_at") or "", "content_sha256": rec.content_sha256(),
-        "baseline": d.get("baseline") or "",
     }
 
 
@@ -162,12 +152,6 @@ class ImmudbLedger(Ledger):
                 self.client.sqlExec(stmt)
         except Exception as e:
             raise LedgerError(f"could not create the SQL mirror table: {e}") from e
-        for stmt in MIRROR_ALTERS:  # tables created before the column existed
-            try:
-                self.client.sqlExec(stmt)
-            except Exception as e:
-                if "already" not in str(e).lower() and "exists" not in str(e).lower():
-                    raise LedgerError(f"could not extend the SQL mirror table: {e}") from e
 
     def _mirror(self, rows: List[Dict[str, Any]]) -> None:
         for row in rows:

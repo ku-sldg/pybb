@@ -256,6 +256,7 @@ def _context_checks(ledger: Any, ledger_config: Any, report: ReadinessReport) ->
         return
     report.context["blessing_key"] = f"blessing/{blessed[-1].key_id}"
     report.context["latest_stack_blessed"] = str(ledger.blessing_of(latest.key_id) is not None).lower()
-    audits = [a for a in ledger.appraisals_of(latest.key_id)
-              if a.baseline == report.context["blessing_key"] and a.verdict is not None]
+    audits = [a for a in ledger.appraisals_of(latest.key_id) if a.verdict is not None
+              and any(g.source == "blessing" and g.ref == report.context["blessing_key"]
+                      for g in a.golden_provenance or [])]
     report.context["stack_audit"] = ("passed" if audits[-1].verdict.passed else "failed") if audits else "none"

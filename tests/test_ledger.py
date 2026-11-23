@@ -19,6 +19,7 @@ from pybb.attestation.ledger import (
     DuplicateNonceError,
     EvidenceLayoutError,
     FileLedger,
+    GoldenProvenance,
     InputRef,
     Interpreter,
     JudgedByRecord,
@@ -43,7 +44,6 @@ from pybb.attestation.ledger import (
     sha256_hex,
     slot_layout,
 )
-from pybb.attestation.ledger_v1 import EvidenceRecord as EvidenceRecordV1
 
 # ── synthetic Copland evidence ───────────────────────────────────────────────
 
@@ -127,19 +127,10 @@ def test_envelope_uses_schema_alias_omits_none_and_preserves_unknown_fields():
     m = _measurement_bundle()
     d = m.to_dict()
     assert d["schema"] == "pybb-ledger/v2" and "schema_version" not in d
-    assert "verdict" not in d and "inputs" not in d and "appraisal_kind" not in d  # None omitted
+    assert "verdict" not in d and "inputs" not in d and "golden_provenance" not in d  # None omitted
     rec = parse_record({**d, "future_field": {"kept": True}})
     assert isinstance(rec, BundleRecord) and rec.to_dict()["future_field"] == {"kept": True}
     assert rec.content_sha256() == sha256_hex(canonical_json(rec.to_dict()))
-
-
-def test_v1_records_still_parse_through_their_schema_tag():
-    rec = parse_record({"schema": "pybb-ledger/v1", "kind": "evidence", "nid": "00",
-                        "protocol_id": "p", "response_sha256": "r", "blob_sha256": "b",
-                        "blob_bytes": 1, "rawev_count": 1, "rawev_sha256": "h",
-                        "signature": {"present": False}, "nonce": {"slot": 0, "asp": "generate_nonce"},
-                        "assurance": "nonce"})
-    assert isinstance(rec, EvidenceRecordV1) and key_for(rec) == "evidence/00"
 
 
 def test_unknown_kind_parses_as_generic_record():
@@ -168,8 +159,7 @@ def _measurement_bundle(nonce_bytes: bytes = NONCE, protocol: str = "proto", **k
     return BundleRecord(**fields)
 
 
-def _appraisal_bundle(of: BundleRecord, nonce_bytes: bytes = None, passed: bool = True, kind: str = "live",
-                      **kw) -> BundleRecord:
+def _appraisal_bundle(of: BundleRecord, nonce_bytes: bytes = None, passed: bool = True, **kw) -> BundleRecord:
     nonce = nonce_bytes or secrets.token_bytes(32)
     fields = dict(bid=sha256_hex(nonce), role="appraisal", protocol_id=of.protocol_id, response_sha256="q" * 64,
                   blob=_blob("c" * 64, "evidence/x/p.appraisal.json.gz"), rawev_count=5, rawev_sha256="g" * 64,
@@ -178,7 +168,7 @@ def _appraisal_bundle(of: BundleRecord, nonce_bytes: bytes = None, passed: bool 
                   inputs=[InputRef(bid=of.key_id, binding_hash=of.rawev_sha256)],
                   verdict=Verdict(passed=passed, components_total=2, components_failed=0 if passed else 1,
                                   interpreter=Interpreter(kind="verified-summary", tool="copland-evidence-tools")),
-                  appraisal_kind=kind, appraiser_id="ap-1")
+                  golden_provenance=[GoldenProvenance(source="protocol")], appraiser_id="ap-1")
     fields.update(kw)
     return BundleRecord(**fields)
 
@@ -206,7 +196,11 @@ def test_role_invariants():
     with pytest.raises(ValidationError, match="carries no verdict"):
         _measurement_bundle(verdict=_appraisal_bundle(m).verdict)
     with pytest.raises(ValidationError, match="carries no verdict"):
-        _measurement_bundle(appraisal_kind="live")
+        _measurement_bundle(golden_provenance=[GoldenProvenance(source="protocol")])
+    with pytest.raises(ValidationError, match="needs golden_provenance"):
+        _appraisal_bundle(m, golden_provenance=None)
+    with pytest.raises(ValidationError, match="needs a ref"):
+        GoldenProvenance(source="blessing")
     with pytest.raises(ValidationError, match="takes no inputs"):
         _measurement_bundle(role="provision", inputs=[InputRef(bid="x" * 64)])
     with pytest.raises(ValidationError, match="needs a state"):
@@ -349,17 +343,24 @@ def test_commit_bundles_rejects_inconsistent_batches(tmp_path):
 def test_many_appraisals_over_one_measurement(tmp_path):
     led = FileLedger(tmp_path / "l.jsonl")
     m = _measurement_bundle()
-    live = _appraisal_bundle(m, kind="live")
+    live = _appraisal_bundle(m)
     led.commit_bundles([m, live])
-    audit = _appraisal_bundle(m, kind="audit", verdict=live.verdict.model_copy(update={"agrees_with_live": True}))
-    slices = _appraisal_bundle(m, kind="slices-only", passed=False, session_sha256="s" * 64)
+    audit = _appraisal_bundle(m)
+    slices = _appraisal_bundle(m, passed=False, session_sha256="s" * 64)  # a different policy: pinned by session
     led.commit_bundles([audit])
     led.commit_bundles([slices])
     of_m = led.appraisals_of(m.bid)
-    assert {a.appraisal_kind for a in of_m} == {"live", "audit", "slices-only"}
-    assert {a.verdict.passed for a in of_m if a.appraisal_kind == "slices-only"} == {False}
+    # no kinds (plan P.11): live is the one in the measurement's own tx, the rest follow in ledger order
+    assert [a.bid for a in of_m] == [live.bid, audit.bid, slices.bid]
+    assert led.tx_of(f"bundle/{live.bid}") == led.tx_of(f"bundle/{m.bid}") < led.tx_of(f"bundle/{audit.bid}")
+    assert [a.verdict.passed for a in of_m] == [True, True, False] and of_m[2].session_sha256 == "s" * 64
+    # a provenance ref must be a key the ledger holds
+    with pytest.raises(LedgerError, match="golden_provenance ref"):
+        led.commit_bundles([_appraisal_bundle(m, golden_provenance=[
+            GoldenProvenance(source="blessing", ref="blessing/" + "e" * 64, targets=["stack:*"])])])
     # an appraisal of an appraisal: just an appraisal whose input is an appraisal
-    audit2 = _appraisal_bundle(live, kind="audit")
+    audit2 = _appraisal_bundle(live, golden_provenance=[
+        GoldenProvenance(source="bundle", ref=f"bundle/{m.bid}", asp="hashevidence")])
     led.commit_bundles([audit2])
     assert [a.bid for a in led.appraisals_of(live.bid)] == [audit2.bid]
     assert len(led.bundles(role="appraisal")) == 4 and len(led.bundles(protocol_id="proto", role="measurement")) == 1

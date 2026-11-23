@@ -4,13 +4,15 @@ sections B.5, B.6, E, K.4).
 
     python examples/appraise_from_ledger.py <bid>
     python examples/appraise_from_ledger.py --latest <protocol_id>
-    python examples/appraise_from_ledger.py <bid> --kind slices-only --session PATH
+    python examples/appraise_from_ledger.py <bid> --session PATH
 
 Prints the bundle graph — the bundle, every appraisal recorded over it
 (`judged_by/`), and the appraisals of those — then runs a fresh signed
 appraisal of the bundle through the CVM and records it as one more
-appraisal bundle. A measurement bundle is judged by the protocol's
-companions (or by --session, a different policy); an appraisal bundle is
+appraisal bundle. There are no kinds of appraisal: live, first-later and
+audit are positions in the chain, and each appraisal's `golden_provenance`
+says where its goldens came from. A measurement bundle is judged by the
+protocol's companions (or by --session, a different policy); an appraisal bundle is
 judged inside the CVM (its signature, appraiser nonce and binding); a
 `stack` or `config` bundle is judged against a blessing's goldens or the
 hashes of its archived files (--against picks the blessing). Beside every
@@ -30,7 +32,7 @@ from pathlib import Path
 
 from pybb.attestation import CvmSubprocessClient, FileLedger, ProtocolDir
 from pybb.attestation.ledger import LedgerConfig
-from pybb.attestation.ledger_context import derive_context
+from pybb.attestation.ledger_context import derive_context, verify_claim
 from pybb.attestation.ledger_runs import appraise_bundle, archiver
 
 REPO = Path(__file__).parent.parent
@@ -84,11 +86,17 @@ def show_bundle(ledger, bid: str, indent: str = "") -> None:
               f"config={d.config_bid[:16] + '…' if d.config_bid else '-'} inputs={d.status}"
               f"{' via ' + d.constructor if d.constructor else ''}"
               f"{' pins=' + str(d.pins) if d.status == 'stale' else ''}")
+        if b.claim is not None and (b.claim.stack_bid or b.claim.config_bid):
+            v = verify_claim(ledger, b)
+            print(f"{indent}  claim: stack={b.claim.stack_bid[:16]}… config={b.claim.config_bid[:16]}… "
+                  f"fresh={b.claim.fresh} policy={b.claim.policy} check={'consistent' if v else 'PROBLEMS ' + '; '.join(v.problems)}")
     if b.verdict is not None:
         v = b.verdict
-        print(f"{indent}  verdict[{b.appraisal_kind}]: passed={v.passed} components={v.components_total} "
-              f"failed={v.components_failed} interpreter={v.interpreter.kind} checks={v.checks} "
-              f"agrees_with_live={v.agrees_with_live}{' baseline=' + b.baseline if b.baseline else ''}")
+        print(f"{indent}  verdict: passed={v.passed} components={v.components_total} "
+              f"failed={v.components_failed} interpreter={v.interpreter.kind}")
+        for g in b.golden_provenance or []:
+            print(f"{indent}  goldens from {g.source}{' ' + g.ref if g.ref else ''}"
+                  f"{' for ' + ', '.join(g.targets) if g.targets else ''}{' (' + g.asp + ')' if g.asp else ''}")
         for f in v.failing:
             print(f"{indent}    FAIL {f.targ_id} ({f.appr_asp}): {f.reason}")
     for a in ledger.appraisals_of(b.key_id):
@@ -99,9 +107,6 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("bid", nargs="?", help="bundle id (sha256 of its nonce)")
     ap.add_argument("--latest", metavar="PROTOCOL_ID", help="most recent measurement bundle of this protocol")
-    ap.add_argument("--kind", default=None,
-                    help="appraisal_kind label for the new appraisal bundle (default: 'deferred' for the first "
-                         "appraisal of an unjudged measurement, else 'audit')")
     ap.add_argument("--session", help="session JSON overriding the protocol's (a different appraisal policy)")
     ap.add_argument("--ledger", help="FileLedger path (default: immudb from the environment)")
     ap.add_argument("--archive-dir", default=str(REPO / "evidence"),
@@ -127,17 +132,16 @@ def main() -> int:
             sys.exit(f"no protocol dir at {proto_dir}")
         protocol = ProtocolDir.load(str(proto_dir))
     session = json.loads(Path(args.session).read_text()) if args.session else None
-    print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ({args.kind or 'deferred/audit'}) ==")
+    print(f"\n== signed appraisal of {target.role} bundle {bid[:16]}… ==")
     rep = appraise_bundle(CvmSubprocessClient(), protocol, ledger, config, bid,
-                          session_override=session, appraisal_kind=args.kind,
-                          archive=archiver(args.archive_dir), baseline=args.against)
+                          session_override=session, archive=archiver(args.archive_dir), against=args.against)
     if rep.error:
         print("ERROR:", rep.error)
         return 1
     print(f"recorded as {rep.ledger_ref}: passed={rep.passed} signature_ok={rep.signature_ok} "
-          f"nonce_wellformed={rep.nonce_wellformed} binding_ok={rep.binding_ok} "
-          f"agrees_with_live={rep.agrees_with_live} assurance={rep.assurance}"
-          f"{' baseline=' + rep.baseline if rep.baseline else ''}")
+          f"nonce_wellformed={rep.nonce_wellformed} binding_ok={rep.binding_ok} assurance={rep.assurance}")
+    for g in rep.golden_provenance:
+        print(f"  goldens from {g.source}{' ' + g.ref if g.ref else ''}")
     for c in rep.components:
         print(f"  {c.appr_asp:18s} over {c.target_asp:16s} targ={c.targ_id!s:40s} {'pass' if c.passed else 'FAIL ' + c.reason}")
     return 0 if rep else 1

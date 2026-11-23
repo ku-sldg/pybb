@@ -191,7 +191,7 @@ def _ledger_cfg(tmp_path, **kw):
     return LedgerConfig(**base)
 
 
-LEDGER_ASPS = ("hashfile", "sig", "generate_nonce", "nonce_appr", "hashevidence", "magic_appr")
+LEDGER_ASPS = ("hashfile", "goldenbytes_appr", "sig", "generate_nonce", "nonce_appr", "hashevidence", "magic_appr")
 
 
 def _sig_protocol(pid="l1"):
@@ -227,7 +227,7 @@ def test_ledger_readiness_requires_the_ledger_asps(tmp_path):
                                  ledger_config=_ledger_cfg(tmp_path))(readiness_request(["l1"]))
     assert not r
     missing = {p.split(": ")[1] for p in r.problems if p.startswith("ledger ASP executable not found")}
-    assert missing == {"generate_nonce", "nonce_appr", "hashevidence", "magic_appr"}
+    assert missing == {"generate_nonce", "nonce_appr", "hashevidence", "magic_appr", "goldenbytes_appr"}
 
 
 def test_ledger_readiness_reports_this_writers_stack_evidence(tmp_path):

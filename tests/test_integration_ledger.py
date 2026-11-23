@@ -14,7 +14,7 @@ import pytest
 
 from pybb.attestation import CvmSubprocessClient, FileLedger, ProtocolDir, make_attestation_predicate
 from pybb.attestation.client import DEFAULT_ASP_BIN, DEFAULT_CVM_BINARY
-from pybb.attestation.ledger import APPRAISER_NONCE_TARGID, LedgerConfig, describe_package
+from pybb.attestation.ledger import APPRAISER_NONCE_TARGID, GoldenProvenance, LedgerConfig, describe_package
 from pybb.attestation.ledger_runs import (
     appraisal_branch,
     attest,
@@ -77,7 +77,8 @@ def test_two_runs_land_in_the_ledger_with_distinct_nonces(tmp_path, config):
     m = ledger.get(v1.bid)
     a = ledger.appraisals_of(v1.bid)[0]
     assert d.bid == v1.bid and d.rawev_sha256 == m.rawev_sha256
-    assert m.assurance == "signed+nonce" and a.assurance == "signed+nonce" and a.appraisal_kind == "live"
+    assert m.assurance == "signed+nonce" and a.assurance == "signed+nonce"
+    assert a.golden_provenance[0].source == "protocol"
     # the appraisal package binds exactly that raw package
     appr = json.loads(gzip.open(v1.appraisal_ref).read())
     da = describe_package(appr["PAYLOAD"], lp.session, nonce_targid=APPRAISER_NONCE_TARGID)
@@ -137,17 +138,27 @@ def test_appraisal_paths_against_the_real_cvm(tmp_path, config):
 
     rep = appraise_bundle(client, proto, ledger, config, live.bid, archive=archive)
     assert rep.error == "", rep.error
-    assert rep and rep.signature_ok and rep.nonce_wellformed and rep.agrees_with_live
+    assert rep and rep.signature_ok and rep.nonce_wellformed
     assert rep.input_role == "measurement" and rep.assurance == "signed+nonce"
-    assert [a.appraisal_kind for a in ledger.appraisals_of(live.bid)] == ["live", "audit"]
+    chain = ledger.appraisals_of(live.bid)
+    assert len(chain) == 2 and chain[0].verdict.passed == chain[1].verdict.passed  # the reader's agreement check
 
-    audit = appraise_bundle(client, proto, ledger, config, live.appraisal_bid, appraisal_kind="audit", archive=archive)
+    audit = appraise_bundle(client, proto, ledger, config, live.appraisal_bid, archive=archive)
     assert audit.error == "", audit.error
     assert audit and audit.binding_ok and audit.signature_ok and audit.nonce_wellformed
     assert audit.input_role == "appraisal" and audit.assurance == "signed+nonce"
     of_live = ledger.appraisals_of(live.appraisal_bid)
     assert len(of_live) == 1 and of_live[0].inputs[0].bid == live.appraisal_bid
-    assert of_live[0].verdict.interpreter.kind == "legacy-walker" and of_live[0].verdict.agrees_with_live is None
+    assert of_live[0].verdict.interpreter.kind == "legacy-walker"
+    prov = of_live[0].golden_provenance
+    assert prov[0] == GoldenProvenance(source="bundle", ref=f"bundle/{live.bid}", asp="hashevidence")
+    # the appraisal package's own claim lane was judged against the files it archived (plan P.5)
+    assert prov[1].source == "bundle" and prov[1].ref == f"bundle/{live.appraisal_bid}"
+    assert prov[1].targets == ["claim:claim", "claim:invocation", "claim:manifest", "claim:session", "claim:term"]
+    lane_verdicts = [c for c in audit.components if (c.targ_id or "").startswith("claim:")]
+    # 5 goldenbytes_appr over the appraisal's own lane + 5 pass-throughs of the live verdicts over the measurement's lane
+    assert len([c for c in lane_verdicts if c.appr_asp == "goldenbytes_appr"]) == 5 and len(lane_verdicts) == 10
+    assert all(c.passed for c in lane_verdicts)
 
     # tamper the archived live appraisal package: the fetch refuses it
     p = Path(next(l.path for l in ledger.get(live.appraisal_bid).blob.locations if l.store == "local"))
@@ -191,9 +202,13 @@ def test_stack_and_config_evidence_with_the_real_cvm(tmp_path, config):
     assert s1, s1.error
     rec = ledger.get(s1.bid)
     assert rec.role == "stack" and rec.assurance == "signed+nonce" and rec.stack.executables == 8  # cvm, summarizer, 6 asps
-    assert s1.targets == 10  # + key + invocation
+    assert s1.targets == 9 + 4  # + key, plus the settings lane (term, session, manifest, invocation)
+    assert rec.stack.fingerprint == s1.fingerprint and rec.stack.fingerprint and rec.stack.invocation
+    assert rec.rawev_count == 2 + 1 + 9 + 4  # sig, nonce, H_bin, 9 digests, 4 settings
     b1 = bless(ledger, cfg, s1.bid, note="first install")
-    assert set(b1.goldens) == {"stack:cvm", "stack:summarizer", "stack:pubkey", "stack:invocation"} | {
+    assert b1.fingerprint == s1.fingerprint
+    assert set(b1.goldens) == {"stack:cvm", "stack:summarizer", "stack:pubkey",
+                               "stack:term", "stack:session", "stack:manifest", "stack:invocation"} | {
         f"stack:asp:{n}" for n in ("hashfile", "sig", "sig_appr", "goldenbytes_appr", "generate_nonce", "nonce_appr")}
     c1 = measure_config(client, proto, ledger, cfg, archive=archive)
     assert c1, c1.error
@@ -204,7 +219,14 @@ def test_stack_and_config_evidence_with_the_real_cvm(tmp_path, config):
     v = predicate({"protocol": proto.protocol_id})
     assert v.error == "", v.error
     m = ledger.get(v.bid)
-    assert m.tooling is None and m.to_dict().get("context") is None
+    assert m.golden_provenance is None
+    # the run claims the context the cache held (plan P.3), measured into its lane (P.2)
+    assert m.claim is not None and m.claim.stack_bid == s1.bid and m.claim.config_bid == c1.bid
+    assert m.claim.stack_fingerprint == s1.fingerprint and m.claim.fresh == "none" and m.claim.policy == "manual"
+    from pybb.attestation.ledger_context import verify_claim
+    vc = verify_claim(ledger, m)
+    assert vc and vc.constructor == "measure" and vc.stack_is_latest and vc.blessing_key == f"blessing/{s1.bid}", vc.problems
+    assert verify_claim(ledger, ledger.appraisals_of(v.bid)[0]).constructor == "appraise"
     d = derive_context(ledger, m)
     assert d and d.constructor == "measure" and d.stack_bid == s1.bid and d.stack_status == "blessed"
     assert d.config_bid == c1.bid and d.pins == {"term": True, "session": True, "manifest": True}
@@ -218,12 +240,23 @@ def test_stack_and_config_evidence_with_the_real_cvm(tmp_path, config):
     # audits of the context bundles themselves (plan O.6)
     sa = appraise_bundle(client, None, ledger, cfg, s1.bid, archive=archive)
     assert sa.error == "", sa.error
-    assert sa.passed and sa.baseline == f"blessing/{s1.bid}" and sa.signature_ok and sa.nonce_wellformed
-    assert len([c for c in sa.components if c.appr_asp == "goldenbytes_appr"]) == s1.targets
-    assert ledger.get(sa.appraisal_bid).baseline == f"blessing/{s1.bid}"
+    assert sa.passed and sa.signature_ok and sa.nonce_wellformed
+    assert sa.golden_provenance == [GoldenProvenance(source="blessing", ref=f"blessing/{s1.bid}", targets=["stack:*"]),
+                                    GoldenProvenance(source="blessing", ref=f"blessing/{s1.bid}", asp="hashevidence")]
+    assert len([c for c in sa.components if c.appr_asp == "goldenbytes_appr"]) == s1.targets + 1  # + the fingerprint
+    assert [c for c in sa.components if c.target_asp == "hashevidence"][0].passed  # the CVM judged H_bin
+    assert ledger.get(sa.appraisal_bid).golden_provenance == sa.golden_provenance
     ca = appraise_bundle(client, None, ledger, cfg, c1.bid, archive=archive)
     assert ca.error == "", ca.error
-    assert ca.passed and ca.baseline == "" and ledger.get(ca.appraisal_bid).baseline is None
+    assert ca.passed and ca.golden_provenance == [
+        GoldenProvenance(source="bundle", ref=f"bundle/{c1.bid}", targets=["input:*", "config:*"]),
+        GoldenProvenance(source="bundle", ref=f"bundle/{c1.bid}", asp="hashevidence")]
+
+    # the fingerprint is a CVM slot, stable across measurements of an unchanged stack (plan P.1)
+    s1b = measure_stack(client, ledger, cfg, cvm_config=fake, archive=archive)
+    assert s1b and s1b.bid != s1.bid and s1b.fingerprint == s1.fingerprint
+    again = appraise_bundle(client, None, ledger, cfg, s1b.bid, archive=archive)
+    assert again.passed, again.error  # judged against blessing/S1: same build, same fingerprint
 
     # "rebuild" one ASP: the next stack measurement fails the audit against the old blessing
     (asps / "nonce_appr").write_bytes((asps / "nonce_appr").read_bytes() + b"\n# rebuilt\n")
@@ -231,11 +264,13 @@ def test_stack_and_config_evidence_with_the_real_cvm(tmp_path, config):
     assert s2, s2.error
     drift = appraise_bundle(client, None, ledger, cfg, s2.bid, archive=archive)
     assert drift.error == "", drift.error
-    assert not drift.passed and drift.baseline == f"blessing/{s1.bid}"
-    assert {c.targ_id for c in drift.components if not c.passed} == {"stack:asp:nonce_appr"}
+    assert not drift.passed and drift.golden_provenance[0].ref == f"blessing/{s1.bid}"
+    assert ledger.get(s2.bid).stack.fingerprint != s1.fingerprint  # a rebuilt binary changes H_bin
+    failing = {(c.targ_id or c.target_asp) for c in drift.components if not c.passed}
+    assert failing == {"stack:asp:nonce_appr", "hashevidence"}  # the binary and, with it, the fingerprint
     bless(ledger, cfg, s2.bid, note="rebuilt nonce_appr")
     ok = appraise_bundle(client, None, ledger, cfg, s2.bid, archive=archive)
-    assert ok.passed and ok.baseline == f"blessing/{s2.bid}", ok.error
+    assert ok.passed and ok.golden_provenance[0].ref == f"blessing/{s2.bid}", ok.error
     # runs between the rebuild and `measure stack` derive S1; later ones S2
     assert derive_context(ledger, m).stack_bid == s1.bid
     predicate.forget({"protocol": proto.protocol_id})
@@ -317,12 +352,12 @@ def test_combined_shape_against_the_real_cvm(tmp_path, config):
 
     later = appraise_bundle(client, proto, ledger, config, m.bid, archive=archive)
     assert later.error == "", later.error
-    assert later and later.agrees_with_live is True
+    assert later
     assert ledger.get(later.appraisal_bid).inputs[0].binding_hash == m.rawev_sha256
     assert {c.appr_asp for c in later.components} == {"sig_appr", "nonce_appr", "goldenbytes_appr"}
 
     audit = appraise_bundle(client, proto, ledger, config, a.bid, archive=archive)
     assert audit.error == "", audit.error
     assert audit and audit.binding_ok is True and audit.signature_ok is True and audit.nonce_wellformed is True
-    assert len(audit.components) == 13 and needs_keep(ledger, ledger.get(audit.appraisal_bid))
-    assert [x.appraisal_kind for x in ledger.appraisals_of(m.bid)] == ["live", "audit"]
+    assert len(audit.components) == 13 + 5 and needs_keep(ledger, ledger.get(audit.appraisal_bid))  # + the lane
+    assert len(ledger.appraisals_of(m.bid)) == 2
