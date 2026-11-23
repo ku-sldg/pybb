@@ -2279,6 +2279,332 @@ are (no backfill; records are immutable).
    stack/config; an "approved protocol" record; the frozen-inputs policy of
    O.3; informational readiness line only for now.
 
+## P. Context claims: CVM-computed fingerprints, the measured claim lane, refresh policy (planning 2026-11-23; spike passed 2026-11-23)
+
+**STATUS: planned, not implemented.** Builds on O. O linked a run to its
+configuration by hash equality of pybb-computed pins and to its stack by
+ledger order only (O.7). P makes both links CVM-made and lets a platform
+*claim* its context on every run, re-measuring on a policy or on demand.
+
+### P.0 Priority
+
+**pybb never constructs or verifies the hashes that link evidence to its
+context.** pybb generates canonical terms (which are themselves measured),
+writes files, reads slots out of signed packages, copies them into records
+and caches, and injects expectations into evidence types. The CVM hashes
+(`hashfile`, `hashevidence`) and judges (`goldenbytes_appr`). A reader may
+compare two recorded strings for display; the authoritative answer to
+"does this match" is a companion verdict on the ledger. The pins of O.3
+(`term_sha256` …) stay as pybb's index of its own request, like
+`blob_sha256`; they are no longer the link.
+
+### P.1 Fingerprints are CVM slots
+
+The stack term becomes
+
+```
+lseq (bseq left_path (asp generate_nonce)
+                     (bseq both_paths (lseq M_bin (asp hashevidence))    ; hashevidence typed EXTEND
+                                      M_settings))
+     SIG
+```
+
+`M_bin` = the `hashfile` chain over the binaries and the verifying key,
+**sorted by target id** (codepoint order; `stack:asp:<basename>`,
+`stack:cvm`, `stack:pubkey`, `stack:summarizer`). `M_settings` = `hashfile`
+over the run's own `term.json`, `session.json`, `manifest.json` and
+`cvm_config.json`. RawEv:
+
+```
+[ sig, nonce, H_bin, h_1 … h_n, h_term, h_session, h_manifest, h_invocation ]
+```
+
+`H_bin = sha256(h_1 ‖ … ‖ h_n)` is computed and signed by the CVM. It
+depends on exactly two things — which file contents, in which order — and
+on nothing else: not the nonce or signature (above it), not paths or target
+ids (in the term and the unsigned type, never in RawEv), not the invocation
+(beside it). Identical binaries anywhere give the same `H_bin`; a file
+added, removed or renamed changes it. The config term is the same shape
+with `M_inputs` (the `input:<constructor>:<name>` files of O.2) under its
+own `hashevidence`, yielding `H_cfg`.
+
+Canonicity is therefore: the CVM fixes byte encoding (raw 32-byte digests,
+sha256 over the concatenation in DFS term order) and evaluation; pybb
+owns **order** (the sorted chain) and **membership** (every executable
+regular file in `asp_bin`, plus CVM, summarizer if present, key), both pure
+functions, both testable, and the term that ran is measured into the
+package (`h_term`) and pinned (`term_sha256 == h_term`). `measure config
+attestation_stack` records the generator's output as a config bundle so
+"the term was canonical" is itself on the ledger.
+
+**Implementation note (spike trap):** the EXTEND typing for `hashevidence`
+must be applied *after* `ledger_session`, which re-applies the ledger's
+REPLACE default (`combined_session` already does it in that order). With
+REPLACE the CVM silently erases the digests beneath `H`.
+
+### P.2 The measured claim lane in every run term
+
+Each run writes five files under `<state_dir>/context/runs/<run>/` just
+before it runs — its canonical `term.json` (the fixed point: its bytes are
+the request's TERM, including the lane's own targets), `session.json`,
+`manifest.json`, `cvm_config.json`, and `claim.json` (P.3) — and the term
+measures them in a lane the run's measurement never sees:
+
+| constructor | term |
+|---|---|
+| `measure` | `lseq (bseq left_path (asp generate_nonce) (bseq right_path CLAIM M)) SIG` |
+| `appraise` | `lseq (bseq right_path CLAIM (bseq both_paths (asp hashevidence) APPR)) (lseq (asp generate_nonce) SIG)` |
+| `combined` | `lseq M (lseq (bseq right_path CLAIM (bseq both_paths SIGN_LANE APPR)) (lseq (asp generate_nonce) SIG))` |
+
+`CLAIM` = `hashfile` chain over the five files, target ids `claim:term`,
+`claim:session`, `claim:manifest`, `claim:invocation`, `claim:claim`.
+`bseq right_path` hands the incoming evidence to the right branch and
+`mt_evc` to the lane, so an appraisal run's lane does not retain a copy of
+the package it appraises (an EXTEND `hashfile` prepends to its input). The
+lane is always the **left-most branch at the top of the term body**, so
+RawEv is `[sig, nonce, 5 claim slots, …as today]` for `measure` and
+`appraise`; readers (`hash_lane`, `appraisal_branch`, `lift_measurement`,
+`describe_package`) step over a fixed five-slot prefix located by layout
+(`claim:` target ids), and `APPR` judges only its own branch, so live
+verdicts are unchanged. *Confirm in the implementation spike:* `right_path`
+split semantics (`cvm/theories`: `left_path` → `(e, mt)`, `right_path` →
+`(mt, e)`, `both_paths` → `(e, e)`) and the combined shape.
+
+What it buys: the run package carries, under the attester's signature, the
+CVM's digests of exactly what it ran with and of the claim it made.
+`claim:term` in a run and `input:<constructor>:term` in the config bundle
+are `hashfile` outputs over the same bytes — the run→config link is CVM
+digest to CVM digest. The claim cannot be edited after the fact without the
+package contradicting it. The five files are archived as content-addressed
+`json` blobs stated on the run record (`claim.files`, like `ConfigInfo`),
+so a reader can fetch them and an audit can inject their digests as goldens.
+
+### P.3 The cache and the claim
+
+`measure stack` and `measure config <pid>` write
+`<state_dir>/context/claim.json`, the writer's structured log of what its
+CVM last measured about itself — slot copies, no pybb hashing:
+
+```json
+{"writer": "ap-…",
+ "stack":   {"bid": "…", "fingerprint": "<H_bin b64>", "measured_at": "…", "invocation": "<h_invocation b64>"},
+ "configs": {"<pid>": {"bid": "…", "fingerprint": "<H_cfg b64>", "measured_at": "…"}}}
+```
+
+Each run copies the cache (restricted to its protocol) into its lane's
+`claim.json` and into the record as `claim: ContextClaim` — `stack_bid`,
+`stack_fingerprint`, `stack_measured_at`, `config_bid`,
+`config_fingerprint`, `config_measured_at`, `fresh` (`none` | `stack` |
+`config` | `both`: what P.4 re-measured for this run), `policy`, and
+`files[{targ_id, blob}]`. A bundle with no cache has no claim and reads as
+in O.7. A platform claims only bundles it measured itself (same
+`appraiser_id`); shared binaries across writers compare by `H_bin`
+equality and by audits against one blessing, as in O.6.
+
+### P.4 Refresh policy (operator-set; pybb carries it out)
+
+`LedgerConfig.context.refresh`: `manual` (default; O.4 commands only),
+`every_episode` (stack + the episode's configs, before the first run),
+`every_run` (before each protocol run), `max_age:<seconds>` (re-measure
+when the cache's own timestamp is older; pybb compares a clock, not
+evidence). **On demand**: a blackboard measurement carrying `"context":
+"fresh"` (and `ledger_request(bid, fresh_context=True)` for audits)
+re-measures for that run; from the command line, `ledger_context.py
+measure`. A remote appraiser's demand is section G's challenge. Every
+refresh is an ordinary O.4 commit, so the ledger shows when the platform
+re-measured and the claim's `fresh`/`policy` say why.
+
+### P.5 Verification is the CVM's
+
+- **Stack bundle vs a baseline:** `appraise_bundle(stack bid, baseline=…)`
+  injects goldens per target *and* for the inner `hashevidence`
+  (`inject_goldens(et, {"": H}, "hashevidence")`): one `goldenbytes_appr`
+  verdict says whether the fingerprint matches. `--against` names a
+  `blessing/<bid>`, or `claim:<run bid>` to judge a stack bundle against
+  what a run claimed; the appraisal's `golden_provenance` (P.11) records
+  which.
+- **Run bundle's lane:** an audit of a measurement or appraisal bundle
+  (B.6 machinery) judges the lane's five `hashfile` events against goldens
+  taken from the record's `claim.files` digests — "the files measured are
+  the files archived" — and, for `claim:term`, against the config bundle's
+  `input:<constructor>:term` slot — "this run's inputs are the measured
+  configuration", decided by the CVM.
+- **Readers**: `verify_claim(ledger, bundle)` reports the equalities
+  (claimed stack exists, same writer, lower tx, fingerprint equals its
+  slot; likewise config; `measured_at` not after the run; whether the
+  claimed stack is the writer's latest) and the blessing/audit status of
+  the claimed stack. A report, not a verdict. `derive_context` remains for
+  bundles without a claim.
+
+### P.6 Spike results (2026-11-23, real CVM; `scripts/spike_context_fingerprint.py`)
+
+- Layout as in P.1: 17 slots for a 10-target copy of the stack, 58 slots /
+  51 digests for the real installation; the verified summarizer accepts it.
+- `H_bin == sha256(h_1‖…‖h_n)` in term order (the spike's one Python
+  hash, to confirm the CVM's `hashevidence` semantics; never done in pybb).
+- Same stack twice → equal `H_bin`, fresh nonce and signature. Same
+  binaries in another directory → equal `H_bin`, equal `h_invocation`,
+  different `h_term` (paths in the term). One added executable → different
+  `H_bin`. One renamed file → same digests, different `H_bin`.
+- Fixed point holds: `h_term` equals the digest of the term file the run
+  used, and equals the record's `term_sha256`.
+- CVM audit (`appraise` term, goldens injected per target + `H`): 17
+  components, all pass; a wrong target golden fails exactly that target; a
+  wrong `H` golden fails only the `hashevidence` component.
+- Trap found: EXTEND typing applied before `ledger_session` is lost → REPLACE
+  → digests erased (P.1 note).
+
+### P.7 Code impact
+
+| where | change |
+|---|---|
+| `ledger_context.py` | stack/config terms per P.1 (sorted chains, settings lane, EXTEND after `ledger_session`); `claim.json` cache (`write_cache`/`load_cache`); `materialize_run_inputs` (five files, fixed point); `CLAIM` lane constructors; `verify_claim`; `refresh_if_due`; `stack_goldens` reads `input` spans beneath `H` |
+| `ledger_runs.py` | constructors gain the lane (`measurement_term`, `appraisal_term`, `combined_term` take the lane targets); `hash_lane`, `appraisal_branch`, `lift_measurement` step over the `claim:` prefix; `build_bundle_record(claim=, golden_provenance=)`; `_appraise_context_bundle` injects the `hashevidence` golden; `_appraise_appraisal_bundle` and measurement audits inject lane goldens from `claim.files`; every injection site records its provenance entry; N.3's `deferred` default and `live_appraisal_of` go (P.11) |
+| `ledger.py` | `ContextClaim`; `StackInfo.fingerprint`, `StackInfo.invocation`, `ConfigInfo.fingerprint` (slot copies); `BlessingRecord.fingerprint`; `ContextConfig.refresh`; P.11: remove `appraisal_kind`, `Verdict.agrees_with_live`, `Verdict.checks`, `baseline`; add `golden_provenance: List[GoldenProvenance]` (required on appraisals); `shape` keeps `measure`/`appraise`/`combined` |
+| `knowledge_sources.py` | `"context": "fresh"`; episode/run refresh hooks per P.4 |
+| `examples/ledger_context.py`, `appraise_from_ledger.py` | `--against claim:<bid>`; print claims and `verify_claim` |
+| tests | the spike's six groups as integration tests; lane layout under the canned client; cache and claim round trip; each refresh policy; readers over lane-bearing packages |
+| docs | `ledger_records.md` (`claim`, fingerprints, lane slots), `ledger.md` (claims, policies, on demand), this section |
+
+### P.8 Limits (stated, not solved)
+
+- `H_bin` binds digests in order, not target names: the evidence type is
+  unsigned. Canonical term generation makes this moot in practice; binding
+  names would need `hashfile` to emit its target id (an asp-libs change
+  touching every protocol).
+- Config fingerprints are per installation: inputs carry absolute paths.
+- The stack measures itself: drift detection and provenance, not a root of
+  trust (B.8). A TPM-backed `sig` is the layer for that.
+- A claim says what the writer believed; `fresh: none` under `manual` means
+  the binaries were last measured when the operator last asked.
+
+### P.9 Decisions
+
+1. *Resolved 2026-11-23:* fingerprints are CVM `hashevidence` slots
+   (`H_bin`, `H_cfg`), never computed by pybb; the earlier canonical-JSON
+   recipe is dropped.
+2. *Resolved:* the invocation (`cvm_config.json`) is measured beside, not
+   inside, `H_bin`.
+3. *Resolved:* every run term carries the measured claim lane (five files,
+   left-most branch, `bseq right_path`); the `appraise` and `combined`
+   readers step over it.
+4. *Resolved:* the claim is also a record member (`claim: ContextClaim`)
+   with the five files archived as blobs; a platform claims only bundles it
+   measured.
+5. *Resolved:* refresh policies `manual` (default), `every_episode`,
+   `every_run`, `max_age`, plus on demand via the blackboard measurement.
+6. *Resolved:* verification by CVM audits with injected goldens (blessing
+   or claim as the source); `verify_claim` is a reader's report.
+7. *Open:* whether the verifying key belongs inside `H_bin` (today yes:
+   different keys are different stacks) or in its own lane.
+8. *Resolved 2026-11-23:* **no backwards compatibility** with earlier
+   ledger records or schemas while the design iterates: fields are removed
+   outright, no legacy readers or aliases; `pybb2` is recreated after P.
+   Compatibility becomes a concern only when the user declares the schemas
+   stable.
+9. *Resolved 2026-11-23:* `role` and `shape` both stay. `shape` keeps its
+   three values (`measure`, `appraise`, `combined`: the term that ran); the
+   six session variants of P.2 are pybb-internal names for a config
+   bundle's input sets and appear on no record (P.11).
+10. *Resolved 2026-11-23:* "audit" is not a record category. Appraisals
+    chain as one record shape; `appraisal_kind`, `agrees_with_live` and
+    `checks` are removed; `golden_provenance` replaces `baseline` (P.11).
+
+### P.10 Future enhancements (recorded 2026-11-23; not part of P)
+
+P measures the run's inputs by writing canonical copies to files and
+pointing `hashfile` at them, because that needs nothing from the CVM. The
+gap it leaves is that a reader trusts pybb to have handed the CVM the same
+bytes it wrote to the lane's files (`term_sha256 == h_term` on the record is
+pybb's own witness). Three ways the CVM could hash its own inputs, in
+increasing order of principle and cost:
+
+1. **Split input files (CVM command line).** The CVM takes `--term_file`,
+   `--session_file`, `--manifest_file`, `--evidence_file` instead of one
+   request file. pybb then passes the lane's files directly and `hashfile`
+   measures the very files the CVM read: no copies, no witness needed, the
+   lane and the fixed point unchanged. A `ku-sldg/cvm` CLI change with no
+   new semantics; the natural next step after P.
+2. **A built-in ASP over the request and manifest files** the CVM was
+   started with (paths exported to ASPs). Rejected as a direction: the
+   request file carries the initial evidence, so an appraisal run's digest
+   changes with every input package and is not comparable with a config
+   bundle; splitting it inside the ASP reopens the canonical-form question.
+3. **A built-in input-digest event.** On entry the CVM emits evidence slots
+   holding digests of the term, session and manifest it parsed, before any
+   ASP runs — the attester attesting its own inputs. New Copland semantics
+   in verified Rocq code, and a canonical-form decision: the digests are
+   over the CVM's own serialization of what it parsed, so pybb (and config
+   bundles) would have to serialize with the CVM's encoder rather than
+   `canonical_json`. The long-term form; belongs on the CVM project's agenda
+   with the canonical serializer as its first design item.
+
+### P.11 Appraisal chains and `golden_provenance` (2026-11-23)
+
+On the ledger every judgment is the same object: an appraisal bundle with
+`inputs=[the bundle judged]` and a `verdict`. What we called live, deferred
+and audit are positions in the chain, not kinds of record, and are
+**derived**:
+
+| former field | derived from |
+|---|---|
+| `appraisal_kind: live` | same transaction as its input, same writer |
+| `appraisal_kind: deferred` | no earlier appraisal of that input |
+| `appraisal_kind: audit` | a later transaction, or an input whose `role` is `appraisal`, `stack` or `config` |
+| `appraisal_kind: <policy>` | `session_sha256`; under P the config bundle whose inputs it matches |
+| `verdict.agrees_with_live` | compare verdicts of appraisals of one input under one `session_sha256` |
+| `verdict.checks` (`ledger_verified`, `bytes_match`, `bid_ok`) | a reader refetching; `bid_ok` is implied by the record |
+
+Removed: `appraisal_kind`, `Verdict.agrees_with_live`, `Verdict.checks`,
+`baseline`, and the N.3 `deferred` default. "Audit" survives as a verb in
+the CLI and docs — appraise something already on the ledger — and the chain
+is `judged_by/<bid>/…` scans to any depth, one record shape throughout.
+
+**`golden_provenance`** — the one thing a chain cannot derive: where the
+goldens the CVM compared against came from. Every golden reached the CVM
+either in the measured package's evidence type (provisioned into the term)
+or by pybb's injection into the evidence type before the run. Required and
+non-empty on every appraisal, absent on every other role; a list, since one
+appraisal may draw on several sources:
+
+```json
+"golden_provenance": [
+  {"source": "blessing", "ref": "blessing/<stack bid>", "targets": ["stack:*"]},
+  {"source": "bundle",   "ref": "bundle/<stack bid>",   "asp": "hashevidence"}
+]
+```
+
+| member | meaning |
+|---|---|
+| `source` | `protocol` (goldens provisioned into the term), `bundle` (values read off a ledger bundle's record or package), `blessing` (a `blessing/` record), `claim` (the claim carried by a run bundle) |
+| `ref` | the ledger key the values were read from; for `protocol`, the config bundle that measured the term holding those goldens when a claim names one, else absent |
+| `targets` | target ids the goldens were injected for (`*` patterns allowed) |
+| `asp` | for a golden without a target id, the ASP whose event received it (`hashevidence`: a binding or a fingerprint) |
+
+| appraisal of | entries |
+|---|---|
+| a measurement under the protocol's goldens (live or later) | `{protocol, ref: bundle/<config bid>}` when the claim names one |
+| a measurement under another policy | `{protocol, ref: <that config bundle>}` or what the override injected |
+| an appraisal bundle (B.6) | `{bundle, ref: bundle/<judged bid>, asp: hashevidence}` — its `rawev_sha256` as the binding golden |
+| a stack bundle | `{blessing \| claim, ref, targets: [stack:*]}` + `{same ref, asp: hashevidence}` for `H_bin` |
+| a config bundle | `{bundle, ref: bundle/<cbid>, targets: [input:*]}` — its own archived files |
+| a run carrying a claim lane | the entry for its main judgment, plus `{bundle, ref: bundle/<config bid>, targets: [claim:term, claim:session, claim:manifest]}` and `{bundle, ref: bundle/<run bid>, targets: [claim:invocation, claim:claim]}` |
+
+Rules: `ref`, when present, must be a key the ledger holds at commit
+(enforced like `inputs`); a `claim` source refers to the run bundle carrying
+the claim. `inputs` is the evidence the run took (what the CVM hashed, laid
+out and judged); `golden_provenance` is the yardstick (what it compared
+against). It is pybb's statement, like `inputs`, and checkable the same
+way: fetch the source, inject again, run again. It is not a hash or a copy
+of the goldens, and not a verification — the values live in the source and
+in the appraisal package's (unsigned) evidence type; the comparison lives in
+the CVM's verdict.
+
+Readers: reproduce a judgment; list every stack appraisal held to
+`blessing/<old>` after a re-blessing; flag an appraisal whose provenance
+names a record written after it or a claim from another writer; explain a
+failing component by the entry covering its target.
+
 ## Order of work
 
 1. A + `FileLedger` + unit tests (ledger shape settles independent of immudb).
@@ -2294,6 +2620,7 @@ are (no backfill; records are immutable).
 11. M (configurable bundle shapes: `split`, `combined`) — implemented 2026-11-20.
 12. N (measure now, appraise later; `Measured`/`Appraised`) — implemented 2026-11-20.
 13. O (stack and configuration evidence; operator-commanded; retires B.8's blessing) — implemented 2026-11-20; precedes G, whose remote attester needs its own stack lineage.
+14. P (CVM-computed fingerprints, the measured claim lane, context claims and refresh policy) — planned 2026-11-23, spike passed; awaiting go-ahead to implement.
 
 ## Decisions (all resolved 2026-11-17)
 
